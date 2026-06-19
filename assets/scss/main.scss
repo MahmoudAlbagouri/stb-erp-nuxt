@@ -1,0 +1,671 @@
+// ============================================
+// STB ERP - Main Stylesheet
+// ============================================
+
+@use "variables" as *;
+@use "mixins" as *;
+
+// --- Reset & Base ---
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: $font-family;
+  background: $stb-dark;
+  color: $stb-text-primary;
+  line-height: 1.6;
+  min-height: 100vh;
+  @include scrollbar;
+  -webkit-font-smoothing: antialiased;
+}
+
+// --- Typography ---
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: $font-family;
+  font-weight: 700;
+  line-height: 1.3;
+  color: $stb-text-primary;
+}
+
+a {
+  color: $stb-accent;
+  text-decoration: none;
+  transition: color $transition-fast;
+}
+a:hover {
+  color: $stb-accent-glow;
+}
+
+// --- Scrollbar Global ---
+@include scrollbar;
+
+// --- Buttons ---
+.btn {
+  @include btn-base;
+
+  &--primary {
+    background: $gradient-primary;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba($stb-primary, 0.4);
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba($stb-primary, 0.5);
+    }
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+
+  &--accent {
+    background: $gradient-accent;
+    color: $stb-dark;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba($stb-accent, 0.35);
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: $shadow-glow;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $stb-text-secondary;
+    border: 1px solid $stb-border;
+    &:hover:not(:disabled) {
+      background: $stb-surface-3;
+      color: $stb-text-primary;
+      border-color: $stb-border-light;
+    }
+  }
+
+  &--danger {
+    // background: rgba($stb-danger, 0.15);
+    color: $stb-danger;
+    border: 1px solid rgba($stb-danger, 0.3);
+    &:hover:not(:disabled) {
+      background: $stb-danger;
+      color: #fff;
+    }
+  }
+
+  &--sm {
+    padding: $space-1 $space-3;
+    font-size: $font-size-xs;
+  }
+  &--lg {
+    padding: $space-3 $space-8;
+    font-size: $font-size-base;
+  }
+  &--icon {
+    padding: $space-2;
+    width: 36px;
+    height: 36px;
+  }
+  &--full {
+    width: 100%;
+  }
+  &--loading {
+    position: relative;
+    color: transparent !important;
+  }
+}
+
+// --- Form Elements ---
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  label {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $stb-text-secondary;
+  }
+}
+
+.form-input {
+  @include input-base;
+}
+
+.form-select {
+  @include input-base;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a9cc4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left $space-3 center;
+  padding-left: $space-8;
+}
+
+.form-error {
+  font-size: $font-size-xs;
+  color: $stb-danger;
+}
+
+// --- Cards ---
+.card {
+  @include glass-card;
+  padding: $space-6;
+
+  &__header {
+    @include flex(row, center, space-between);
+    margin-bottom: $space-6;
+    padding-bottom: $space-4;
+    border-bottom: 1px solid $stb-border;
+  }
+
+  &__title {
+    font-size: $font-size-xl;
+    font-weight: 700;
+    color: $stb-text-primary;
+  }
+}
+
+// --- Table ---
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    padding: $space-3 $space-4;
+    text-align: right;
+    font-size: $font-size-xs;
+    font-weight: 700;
+    color: $stb-text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: $stb-surface;
+    border-bottom: 1px solid $stb-border;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: $space-3 $space-4;
+    font-size: $font-size-sm;
+    color: $stb-text-secondary;
+    border-bottom: 1px solid rgba($stb-border, 0.5);
+    vertical-align: middle;
+  }
+
+  tr {
+    transition: background $transition-fast;
+    &:hover td {
+      background: rgba($stb-primary, 0.05);
+    }
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+}
+
+// --- Status Badges ---
+.badge {
+  &--active {
+    @include status-badge($stb-success);
+  }
+  &--inactive {
+    @include status-badge($stb-text-muted);
+  }
+  &--terminated {
+    @include status-badge($stb-danger);
+  }
+  &--pending {
+    @include status-badge($stb-warning);
+  }
+  &--trial {
+    @include status-badge($stb-accent);
+  }
+  &--system {
+    @include status-badge($stb-primary-light);
+  }
+  &--tenant {
+    @include status-badge($stb-warning);
+  }
+}
+
+// --- Loading Spinner ---
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba($stb-accent, 0.2);
+  border-top-color: $stb-accent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+
+  &--lg {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+  }
+  &--page {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    border-width: 3px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// --- Modal Overlay ---
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba($stb-dark, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: $z-modal;
+  @include flex(row, center, center);
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  @include glass-card;
+  width: 90%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalIn 0.25s ease;
+  @include scrollbar;
+
+  &__header {
+    @include flex(row, center, space-between);
+    margin-bottom: $space-6;
+    padding-bottom: $space-4;
+    border-bottom: 1px solid $stb-border;
+
+    h3 {
+      font-size: $font-size-xl;
+      font-weight: 700;
+    }
+  }
+
+  &__footer {
+    @include flex(row, center, flex-end, $space-3);
+    margin-top: $space-6;
+    padding-top: $space-4;
+    border-top: 1px solid $stb-border;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// --- Toast ---
+.toast-container {
+  position: fixed;
+  bottom: $space-6;
+  left: $space-6;
+  z-index: $z-toast;
+  @include flex(column, flex-end, flex-end, $space-3);
+}
+
+.toast {
+  @include glass-card;
+  padding: $space-3 $space-5;
+  @include flex(row, center, flex-start, $space-3);
+  min-width: 280px;
+  animation: toastIn 0.3s ease;
+  font-size: $font-size-sm;
+
+  &--success {
+    border-right: 3px solid $stb-success;
+  }
+  &--error {
+    border-right: 3px solid $stb-danger;
+  }
+  &--info {
+    border-right: 3px solid $stb-accent;
+  }
+  &--warning {
+    border-right: 3px solid $stb-warning;
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// --- Page Container ---
+.page-container {
+  @include page-enter;
+  padding: $space-6;
+
+  @include respond-to("md") {
+    padding: $space-4;
+  }
+}
+
+.page-header {
+  @include flex(row, center, space-between);
+  margin-bottom: $space-6;
+  gap: $space-4;
+  flex-wrap: wrap;
+
+  &__title {
+    h1 {
+      font-size: $font-size-2xl;
+      font-weight: 800;
+    }
+    p {
+      color: $stb-text-secondary;
+      font-size: $font-size-sm;
+      margin-top: $space-1;
+    }
+  }
+}
+
+// --- Stats Card ---
+.stat-card {
+  @include glass-card;
+  padding: $space-5;
+  @include flex(row, center, flex-start, $space-4);
+  transition: all $transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    @include glow-border($stb-accent);
+  }
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-lg;
+    @include flex(row, center, center);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__value {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $stb-text-primary;
+    line-height: 1;
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    color: $stb-text-secondary;
+    margin-top: $space-1;
+  }
+}
+
+// --- Grid Utilities ---
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $space-4;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-4;
+}
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $space-4;
+}
+
+@include respond-to("lg") {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@include respond-to("md") {
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+// --- Empty State ---
+.empty-state {
+  @include flex(column, center, center, $space-4);
+  padding: $space-16 $space-8;
+  color: $stb-text-muted;
+  text-align: center;
+
+  &__icon {
+    font-size: 3rem;
+    opacity: 0.4;
+  }
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $stb-text-secondary;
+  }
+  &__text {
+    font-size: $font-size-sm;
+    max-width: 320px;
+  }
+}
+
+// --- Search Bar ---
+.search-bar {
+  position: relative;
+
+  &__icon {
+    position: absolute;
+    right: $space-3;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $stb-text-muted;
+    pointer-events: none;
+  }
+
+  input {
+    @include input-base;
+    padding-right: $space-10;
+  }
+}
+
+// --- Confirm Dialog ---
+.confirm-dialog {
+  @include glass-card;
+  padding: $space-6;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  animation: modalIn 0.25s ease;
+
+  &__icon {
+    font-size: 3rem;
+    margin-bottom: $space-4;
+  }
+  &__title {
+    font-size: $font-size-xl;
+    font-weight: 700;
+    margin-bottom: $space-2;
+  }
+  &__text {
+    color: $stb-text-secondary;
+    font-size: $font-size-sm;
+    margin-bottom: $space-6;
+  }
+  &__actions {
+    @include flex(row, center, center, $space-3);
+  }
+}
+
+// --- Pagination ---
+.pagination {
+  @include flex(row, center, center, $space-2);
+  margin-top: $space-6;
+
+  button {
+    @include btn-base;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: $stb-surface-2;
+    border: 1px solid $stb-border;
+    color: $stb-text-secondary;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+
+    &.active {
+      background: $gradient-primary;
+      border-color: $stb-primary;
+      color: #fff;
+      box-shadow: 0 0 12px rgba($stb-primary, 0.4);
+    }
+
+    &:hover:not(.active):not(:disabled) {
+      background: $stb-surface-3;
+      color: $stb-text-primary;
+    }
+  }
+}
+
+// --- Divider ---
+.divider {
+  border: none;
+  height: 1px;
+  background: $stb-border;
+  margin: $space-4 0;
+}
+
+// --- Checkbox ---
+.checkbox-label {
+  @include flex(row, center, flex-start, $space-2);
+  cursor: pointer;
+  font-size: $font-size-sm;
+  color: $stb-text-secondary;
+  user-select: none;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: $stb-accent;
+    cursor: pointer;
+  }
+}
+
+// --- Utility ---
+.text-muted {
+  color: $stb-text-muted !important;
+}
+.text-accent {
+  color: $stb-accent !important;
+}
+.text-success {
+  color: $stb-success !important;
+}
+.text-danger {
+  color: $stb-danger !important;
+}
+.text-warning {
+  color: $stb-warning !important;
+}
+.text-sm {
+  font-size: $font-size-sm !important;
+}
+.text-xs {
+  font-size: $font-size-xs !important;
+}
+.font-bold {
+  font-weight: 700 !important;
+}
+.mt-auto {
+  margin-top: auto !important;
+}
+.gap-2 {
+  gap: $space-2 !important;
+}
+.flex {
+  display: flex !important;
+}
+.items-center {
+  align-items: center !important;
+}
+.justify-between {
+  justify-content: space-between !important;
+}
+.w-full {
+  width: 100% !important;
+}
+
+// --- NuxtLink active ---
+.router-link-active {
+  color: $stb-accent;
+}
+
+// --- Transitions (Vue) ---
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
