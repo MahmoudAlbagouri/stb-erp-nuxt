@@ -1,5 +1,5 @@
 // ============================================
-// STB ERP - Type Definitions
+// STB ERP - Type Definitions (Updated)
 // ============================================
 
 export interface ApiResponse<T> {
@@ -63,16 +63,24 @@ export interface User {
   tenant?: Tenant;
 }
 
+// ✅ تحديث واجهة Employee لتشمل الجنسية والإقامة وحذف تاريخ التعيين
 export interface Employee {
   id: string;
   fullName: string;
   employeeCode: string;
+
+  // حقول الجنسية والإقامة الجديدة
+  nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
+  iqamaExpiryDate?: string | null;
+
   nationalId?: string | null;
   nationalIdCardPath?: string | null;
   phone: string | null;
   jobTitle: string | null;
   department: string | null;
-  hireDate: string | null;
+
+  // ❌ تم حذف hireDate نهائياً
+
   status: "active" | "inactive" | "terminated";
   tenantId: string;
   shiftId?: string | null;
@@ -80,7 +88,7 @@ export interface Employee {
   updatedAt: string;
   deletedAt: string | null;
   user?: User | null;
-  contract?: any; // يمكن تعريف نوع العقد لاحقاً
+  contract?: any;
 }
 
 // --- Auth ---
@@ -113,7 +121,7 @@ export interface RefreshedTokens {
   refreshToken: string;
 }
 
-// --- Forms ---
+// --- Forms & Payloads ---
 export interface CreateUserPayload {
   username: string;
   email: string;
@@ -144,15 +152,17 @@ export interface CreatePermissionPayload {
   scope?: "system" | "tenant";
 }
 
+// ✅ تحديث بايلودات الموظفين لتتوافق مع الواجهة الجديدة
 export interface CreateEmployeePayload {
   fullName: string;
-  employeeCode: string;
+  employeeCode?: string;
+  nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
+  iqamaExpiryDate?: string | null;
   nationalId?: string;
   nationalIdCardPath?: string;
   phone?: string;
   jobTitle?: string;
   department?: string;
-  hireDate?: string;
   status?: "active" | "inactive" | "terminated";
   userId?: string;
 }
@@ -160,25 +170,29 @@ export interface CreateEmployeePayload {
 export interface UpdateEmployeePayload {
   fullName?: string;
   employeeCode?: string;
+  nationalityType?: "saudi" | "non_saudi" | "outside_sponsorship";
+  iqamaExpiryDate?: string | null;
   nationalId?: string;
   nationalIdCardPath?: string;
   phone?: string;
   jobTitle?: string;
   department?: string;
-  hireDate?: string;
   status?: "active" | "inactive" | "terminated";
+  userId?: string;
 }
 
+// --- Leaves ---
 export interface LeaveRequest {
   id: string;
   employeeId: string;
   startDate: string;
   endDate: string;
+  type?: "annual" | "unpaid" | "other";
   status: "pending" | "approved" | "rejected";
   reason: string;
   tenantId: string;
   createdAt: string;
-  employee?: Employee; // في حال جلبنا بيانات الموظف
+  employee?: Employee;
 }
 
 export interface LeaveBalance {
@@ -193,7 +207,8 @@ export interface LeaveBalance {
 export interface CreateLeavePayload {
   startDate: string;
   endDate: string;
-  reason: string;
+  type: "annual" | "unpaid" | "other";
+  reason?: string;
 }
 
 export interface SetBalancePayload {
@@ -201,6 +216,8 @@ export interface SetBalancePayload {
   year: number;
   amount: number;
 }
+
+// --- Contracts ---
 export type ContractType = "دائم" | "جزئي" | "مرن" | "عن بعد" | "أخرى";
 
 export interface Contract {
@@ -215,7 +232,7 @@ export interface Contract {
   tenantId: string;
   createdAt: string;
   updatedAt: string;
-  employee?: Employee; // بيانات الموظف المرتبطة
+  employee?: Employee;
 }
 
 export interface CreateContractPayload {
@@ -225,6 +242,7 @@ export interface CreateContractPayload {
   endDate?: string;
   annualLeaveDays: number;
   notes?: string;
+  attachmentPaths?: string[];
 }
 
 export interface UpdateContractPayload {
@@ -233,14 +251,17 @@ export interface UpdateContractPayload {
   endDate?: string;
   annualLeaveDays?: number;
   notes?: string;
+  attachmentPaths?: string[];
 }
 
+// --- Advances ---
 export type AdvanceStatus = "pending" | "approved" | "rejected" | "paid";
 
 export interface Advance {
   id: string;
   amount: number;
-  numberOfInstallments: number;
+  numberOfInstallments?: number; // اختياري لأننا ألغينا التقسيط في السلف
+  repaymentDate?: string; // تاريخ السداد الجديد
   reason?: string | null;
   status: AdvanceStatus;
   employeeId: string;
@@ -251,17 +272,19 @@ export interface Advance {
 
 export interface CreateAdvancePayload {
   amount: number;
-  numberOfInstallments: number;
+  repaymentDate: string;
   reason?: string;
 }
 
-export type LoanStatus = "pending" | "approved" | "rejected" | "paid";
+// --- Loans ---
+export type LoanStatus = "pending" | "approved" | "rejected" | "completed";
 
 export interface Loan {
   id: string;
   totalAmount: number;
   installmentsCount: number;
-  monthlyInstallment: number; // يحسبه الباك إند تلقائياً
+  monthlyInstallment: number;
+  startDate?: string; // تاريخ بداية السداد للقرض
   reason?: string | null;
   status: LoanStatus;
   employeeId: string;
@@ -273,8 +296,11 @@ export interface Loan {
 export interface CreateLoanPayload {
   totalAmount: number;
   installmentsCount: number;
+  startDate: string;
   reason?: string;
 }
+
+// --- Salaries ---
 export interface Salary {
   id: string;
   employeeId: string;
@@ -286,7 +312,7 @@ export interface Salary {
   tenantId: string;
   createdAt: string;
   updatedAt: string;
-  employee?: Employee; // لتسهيل عرض الاسم في الجدول
+  employee?: Employee;
 }
 
 export interface CreateSalaryPayload {
@@ -304,6 +330,7 @@ export interface UpdateSalaryPayload {
   otherAllowances?: number;
 }
 
+// --- Biometric / Attendance ---
 export type DeviceStatus = "online" | "offline" | "disabled";
 export type PunchType = "check_in" | "check_out" | "break_out" | "break_in";
 export type VerifyMode = "fingerprint" | "card" | "password" | "face";
@@ -323,7 +350,7 @@ export interface BiometricDevice {
 
 export interface AttendanceLog {
   id: string;
-  deviceUserId: string; // PIN
+  deviceUserId: string;
   employeeId?: string;
   deviceId?: string;
   punchTime: string;
@@ -340,7 +367,8 @@ export interface CreateDevicePayload {
   location?: string;
   model?: string;
 }
-// --- JWT Decoded Payload (داخل accessToken) ---
+
+// --- JWT & Security ---
 export interface JwtPermission {
   name: string;
   scope: "system" | "tenant";

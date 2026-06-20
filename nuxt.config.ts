@@ -44,7 +44,9 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: "https://erp.api.stblink.com",
+      apiBase:
+        (globalThis as any).process?.env?.NUXT_PUBLIC_API_BASE ||
+        "https://erp.api.stblink.com",
     },
   },
 });

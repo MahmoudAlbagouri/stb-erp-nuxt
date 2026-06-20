@@ -1,6 +1,7 @@
 // stores/employees.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { useRuntimeConfig } from "#imports"; // ✅ استيراد useRuntimeConfig
 import { useApi } from "../composables/useApi";
 import type {
   Employee,
@@ -10,6 +11,7 @@ import type {
 
 export const useEmployeesStore = defineStore("employees", () => {
   const api = useApi();
+  const config = useRuntimeConfig(); // ✅ الحصول على إعدادات البيئة
 
   const employees = ref<Employee[]>([]);
   const loading = ref(false);
@@ -41,14 +43,57 @@ export const useEmployeesStore = defineStore("employees", () => {
 
   const update = async (id: string, payload: UpdateEmployeePayload) => {
     const res = await api.patch<Employee>(`/employees/${id}`, payload);
-    const idx = employees.value.findIndex((e) => e.id === id);
+    const idx = employees.value.findIndex((e: Employee) => e.id === id);
     if (idx !== -1) employees.value[idx] = res.data;
     return res.data;
   };
 
   const remove = async (id: string) => {
     await api.del(`/employees/${id}`);
-    employees.value = employees.value.filter((e) => e.id !== id);
+    employees.value = employees.value.filter((e: Employee) => e.id !== id);
+  };
+
+  /**
+   * ✅ دالة التصدير المحسنة باستخدام Blob وضمان استخدام رابط الباك إند الصحيح
+   */
+  const exportData = async (type: "excel" | "pdf") => {
+    try {
+      const token = localStorage.getItem("stb_access_token");
+
+      // ✅ بناء الرابط الكامل من الـ runtimeConfig
+      const baseUrl = (config.public.apiBase as string).replace(/\/$/, "");
+      const url = `${baseUrl}/employees/export/${type}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept:
+            type === "excel"
+              ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              : "application/pdf",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`فشل في تحميل التقرير (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `employees_report_${new Date().toISOString().split("T")[0]}.${extension}`;
+
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(link.href);
+    } catch (e: any) {
+      console.error("Export Error:", e);
+      throw e;
+    }
   };
 
   return {
@@ -60,5 +105,6 @@ export const useEmployeesStore = defineStore("employees", () => {
     create,
     update,
     remove,
+    exportData,
   };
 });

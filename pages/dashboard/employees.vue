@@ -6,9 +6,31 @@
         <h1>الموظفون</h1>
         <p>إدارة بيانات موظفي الشركة والهويات</p>
       </div>
-      <button class="btn btn--primary" @click="openCreate">
-        <span>+</span> إضافة موظف
-      </button>
+      <div class="page-header__actions">
+        <!-- ✅ زر Excel مربوط بالدالة مع حالة التحميل -->
+        <button
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="exporting"
+        >
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <span v-else>📊 Excel</span>
+        </button>
+
+        <!-- ✅ زر PDF مربوط بالدالة مع حالة التحميل -->
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <span v-else>📄 PDF</span>
+        </button>
+
+        <button class="btn btn--primary" @click="openCreate">
+          <span>+</span> إضافة موظف
+        </button>
+      </div>
     </div>
 
     <!-- ══ Filters ══════════════════════════════════════════════════════════ -->
@@ -31,12 +53,11 @@
       </div>
     </div>
 
-    <!-- ══ Loading ══════════════════════════════════════════════════════════ -->
+    <!-- ══ Loading & Empty State ════════════════════════════════════════════ -->
     <div v-if="store.loading" class="empty-state">
       <div class="spinner spinner--lg" />
     </div>
 
-    <!-- ══ Empty State ══════════════════════════════════════════════════════ -->
     <div v-else-if="!filtered.length" class="card">
       <div class="empty-state">
         <div class="empty-state__icon">👥</div>
@@ -69,6 +90,16 @@
         </div>
 
         <div class="emp-card__body">
+          <div class="emp-detail">
+            <span class="emp-detail__icon">🌍</span>
+            <span>{{ getNationalityLabel(emp.nationalityType) }}</span>
+          </div>
+
+          <div v-if="emp.iqamaExpiryDate" class="emp-detail">
+            <span class="emp-detail__icon">🗓️</span>
+            <span>الإقامة حتى: {{ formatDate(emp.iqamaExpiryDate) }}</span>
+          </div>
+
           <div v-if="emp.nationalId" class="emp-detail">
             <span class="emp-detail__icon">🆔</span>
             <span>{{ emp.nationalId }}</span>
@@ -85,12 +116,8 @@
             <span class="emp-detail__icon">📱</span>
             <span>{{ emp.phone }}</span>
           </div>
-          <div v-if="emp.hireDate" class="emp-detail">
-            <span class="emp-detail__icon">📅</span>
-            <span>{{ formatDate(emp.hireDate) }}</span>
-          </div>
           <div v-if="emp.nationalIdCardPath" class="emp-detail">
-            <span class="emp-detail__icon">📄</span>
+            <span class="emp-detail__icon"></span>
             <a :href="emp.nationalIdCardPath" target="_blank" class="link-sm">
               عرض الهوية
             </a>
@@ -118,7 +145,9 @@
         >
           <div class="modal" style="max-width: 700px">
             <div class="modal__header">
-              <h3>{{ editing ? "تعديل بيانات الموظف" : "إضافة موظف جديد" }}</h3>
+              <h3>
+                {{ editing ? "تعديل بيانات الموظف" : "إضافة موظف جديد" }}
+              </h3>
               <button
                 class="btn btn--icon btn--ghost"
                 @click="showModal = false"
@@ -129,7 +158,6 @@
 
             <form @submit.prevent="handleSubmit">
               <div class="grid-2">
-                <!-- الاسم الكامل -->
                 <div class="form-group">
                   <label>الاسم الكامل *</label>
                   <input
@@ -141,7 +169,6 @@
                   />
                 </div>
 
-                <!-- الرقم الوظيفي -->
                 <div class="form-group">
                   <label>الرقم الوظيفي (اختياري)</label>
                   <input
@@ -152,9 +179,35 @@
                   />
                 </div>
 
-                <!-- رقم الهوية -->
                 <div class="form-group">
-                  <label>رقم الهوية</label>
+                  <label>نوع الجنسية *</label>
+                  <select
+                    v-model="form.nationalityType"
+                    class="form-select"
+                    required
+                  >
+                    <option value="" disabled>اختر النوع</option>
+                    <option value="saudi">سعودي</option>
+                    <option value="non_saudi">غير سعودي</option>
+                    <option value="outside_sponsorship">خارج الكفالة</option>
+                  </select>
+                </div>
+
+                <div
+                  v-if="form.nationalityType === 'non_saudi'"
+                  class="form-group"
+                >
+                  <label>تاريخ انتهاء الإقامة *</label>
+                  <input
+                    v-model="form.iqamaExpiryDate"
+                    type="date"
+                    class="form-input"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>رقم الهوية / الإقامة</label>
                   <input
                     v-model="form.nationalId"
                     type="text"
@@ -163,7 +216,6 @@
                   />
                 </div>
 
-                <!-- المسمى الوظيفي -->
                 <div class="form-group">
                   <label>المسمى الوظيفي</label>
                   <input
@@ -174,7 +226,6 @@
                   />
                 </div>
 
-                <!-- القسم -->
                 <div class="form-group">
                   <label>القسم</label>
                   <input
@@ -185,7 +236,6 @@
                   />
                 </div>
 
-                <!-- رقم الهاتف -->
                 <div class="form-group">
                   <label>رقم الهاتف</label>
                   <input
@@ -195,17 +245,6 @@
                     placeholder="+966500000000"
                   />
                 </div>
-
-                <!-- تاريخ التعيين -->
-                <div class="form-group">
-                  <label>تاريخ التعيين</label>
-                  <input
-                    v-model="form.hireDate"
-                    type="date"
-                    class="form-input"
-                  />
-                </div>
-                <!-- ✅ صورة/ملف الهوية — StbUploader مع v-model -->
 
                 <div class="form-group" style="grid-column: span 2">
                   <label>صورة/ملف الهوية</label>
@@ -221,7 +260,6 @@
                   />
                 </div>
 
-                <!-- حساب المستخدم -->
                 <div class="form-group" style="grid-column: span 2">
                   <label>حساب المستخدم المرتبط (اختياري)</label>
                   <select v-model="form.userId" class="form-select">
@@ -236,7 +274,6 @@
                   </select>
                 </div>
 
-                <!-- الحالة (تعديل فقط) -->
                 <div v-if="editing" class="form-group">
                   <label>الحالة</label>
                   <select v-model="form.status" class="form-select">
@@ -291,18 +328,28 @@ import { useUsersStore } from "../../stores/users";
 import { useToast } from "../../composables/useToast";
 import type { Employee } from "../../types";
 
-// ─── Page Meta ─────────────────────────────────────────────────────────────────
-
 definePageMeta({ middleware: "auth" });
-
-// ─── Stores & Composables ──────────────────────────────────────────────────────
 
 const store = useEmployeesStore();
 const usersStore = useUsersStore();
 const toast = useToast();
 
-// ─── Filters ──────────────────────────────────────────────────────────────────
+// ─── Export State ────────────────────────────────────────────────────────────
+const exporting = ref<"excel" | "pdf" | null>(null);
 
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportData(type);
+    toast.success(`تم تصدير تقرير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
+  } finally {
+    exporting.value = null;
+  }
+};
+
+// ─── Filters ──────────────────────────────────────────────────────────────────
 const search = ref("");
 const statusFilter = ref("");
 
@@ -320,22 +367,21 @@ const filtered = computed(() =>
 );
 
 // ─── Modal State ───────────────────────────────────────────────────────────────
-
 const showModal = ref(false);
 const submitting = ref(false);
 const editing = ref<Employee | null>(null);
 
-// ─── Form ─────────────────────────────────────────────────────────────────────
-
+// ── Form ─────────────────────────────────────────────────────────────────────
 const EMPTY_FORM = {
   fullName: "",
   employeeCode: "",
+  nationalityType: "" as "saudi" | "non_saudi" | "outside_sponsorship" | "",
+  iqamaExpiryDate: "",
   nationalId: "",
-  nationalIdCardPath: "", // ← يُعبَّأ تلقائياً بـ v-model من StbUploader
+  nationalIdCardPath: "",
   phone: "",
   jobTitle: "",
   department: "",
-  hireDate: "",
   userId: "",
   status: "active" as "active" | "inactive" | "terminated",
 };
@@ -343,7 +389,6 @@ const EMPTY_FORM = {
 const form = reactive({ ...EMPTY_FORM });
 
 // ─── Open / Close ─────────────────────────────────────────────────────────────
-
 const openCreate = () => {
   editing.value = null;
   Object.assign(form, EMPTY_FORM);
@@ -355,12 +400,15 @@ const openEdit = (emp: Employee) => {
   Object.assign(form, {
     fullName: emp.fullName,
     employeeCode: emp.employeeCode,
+    nationalityType: emp.nationalityType,
+    iqamaExpiryDate: emp.iqamaExpiryDate
+      ? new Date(emp.iqamaExpiryDate).toISOString().split("T")[0]
+      : "",
     nationalId: emp.nationalId ?? "",
     nationalIdCardPath: emp.nationalIdCardPath ?? "",
     phone: emp.phone ?? "",
     jobTitle: emp.jobTitle ?? "",
     department: emp.department ?? "",
-    hireDate: emp.hireDate ?? "",
     userId: emp.user?.id ?? "",
     status: emp.status,
   });
@@ -368,21 +416,26 @@ const openEdit = (emp: Employee) => {
 };
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
-
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    const payload = {
+    const payload: any = {
       fullName: form.fullName,
       employeeCode: form.employeeCode,
+      nationalityType: form.nationalityType,
       nationalId: form.nationalId || undefined,
       nationalIdCardPath: form.nationalIdCardPath || undefined,
       phone: form.phone || undefined,
       jobTitle: form.jobTitle || undefined,
       department: form.department || undefined,
-      hireDate: form.hireDate || undefined,
       userId: form.userId || undefined,
     };
+
+    if (form.nationalityType === "non_saudi" && form.iqamaExpiryDate) {
+      payload.iqamaExpiryDate = form.iqamaExpiryDate;
+    } else {
+      payload.iqamaExpiryDate = null;
+    }
 
     if (editing.value) {
       await store.update(editing.value.id, { ...payload, status: form.status });
@@ -401,7 +454,6 @@ const handleSubmit = async () => {
 };
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
-
 const showConfirm = ref(false);
 const deleting = ref(false);
 const deleteTarget = ref<Employee | null>(null);
@@ -426,14 +478,25 @@ const doDelete = async () => {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const empStatusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", terminated: "منتهي" })[s] ?? s;
+
+const getNationalityLabel = (type?: string) => {
+  switch (type) {
+    case "saudi":
+      return "سعودي";
+    case "non_saudi":
+      return "غير سعودي";
+    case "outside_sponsorship":
+      return "خارج الكفالة";
+    default:
+      return "-";
+  }
+};
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-
 onMounted(() => {
   store.fetchAll();
   usersStore.fetchAll();
@@ -444,15 +507,16 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ── Grid ───────────────────────────────────────────────────────────────────────
+.page-header__actions {
+  display: flex;
+  gap: $space-2;
+}
 
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
-
-// ── Card ───────────────────────────────────────────────────────────────────────
 
 .emp-card {
   @include glass-card;
@@ -511,8 +575,6 @@ onMounted(() => {
   }
 }
 
-// ── Detail Row ─────────────────────────────────────────────────────────────────
-
 .emp-detail {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-xs;
@@ -528,8 +590,6 @@ onMounted(() => {
   text-decoration: underline;
   font-size: 0.8rem;
 }
-
-// ── Filters Row ────────────────────────────────────────────────────────────────
 
 .filters-row {
   display: flex;
