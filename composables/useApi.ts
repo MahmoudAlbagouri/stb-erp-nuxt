@@ -1,26 +1,41 @@
 // composables/useApi.ts
-// Central HTTP client - all API calls go through here
-
-import { useRuntimeConfig } from "nuxt/app";
+import { useRuntimeConfig, useRouter, useCookie } from "nuxt/app";
 import type { ApiResponse } from "../types";
+import { useAuthStore } from "../stores/auth";
 
 export const useApi = () => {
   const config = useRuntimeConfig();
+  const router = useRouter();
   const BASE_URL = config.public.apiBase as string;
 
-  // تعديل: إضافة فحص لـ FormData لعدم وضع Content-Type يدوياً
+  // ✅ إعدادات الكوكيز للـ localhost والإنتاج
+  const isSecure = false;
+
+  const accessTokenCookie = useCookie<string | null>("stb_access_token", {
+    maxAge: 60 * 15,
+    sameSite: "lax",
+    secure: isSecure,
+    path: "/",
+  });
+
+  const refreshTokenCookie = useCookie<string | null>("stb_refresh_token", {
+    maxAge: 60 * 60 * 24 * 7,
+    sameSite: "lax",
+    secure: isSecure,
+    path: "/",
+  });
+
+  // 1️⃣ تعريف دوال المعالجة أولاً لضمان توفرها عند الاستدعاء
+  const getAccessToken = () => accessTokenCookie.value;
+
   const getHeaders = (
     withAuth = true,
     isFormData = false,
   ): Record<string, string> => {
     const headers: Record<string, string> = {};
-
-    if (!isFormData) {
-      headers["Content-Type"] = "application/json";
-    }
-
-    if (withAuth && import.meta.client) {
-      const token = localStorage.getItem("stb_access_token");
+    if (!isFormData) headers["Content-Type"] = "application/json";
+    if (withAuth) {
+      const token = getAccessToken();
       if (token) headers["Authorization"] = `Bearer ${token}`;
     }
     return headers;
@@ -29,7 +44,6 @@ export const useApi = () => {
   const handleResponse = async <T>(
     response: Response,
   ): Promise<ApiResponse<T>> => {
-    // التعامل المرن مع الاستجابة (JSON أو نص)
     const contentType = response.headers.get("content-type");
     let data;
 
@@ -47,68 +61,150 @@ export const useApi = () => {
       throw new Error(errorMessage);
     }
 
-    // ضمان إرجاع الهيكلية الموحدة حتى لو كان الرد نصاً بسيطاً
-    if (typeof data !== "object") {
-      return {
-        success: true,
-        message: "Success",
-        statusCode: response.status,
-        data: data as unknown as T,
-      };
+    // التعامل مع الرد الموحد من الباك إند
+    if (typeof data === "object" && "success" in data) {
+      return data as ApiResponse<T>;
     }
 
-    return data as ApiResponse<T>;
+    // إذا كان الرد ليس بالهيكل الموحد، نلفّه فيه
+    return {
+      success: true,
+      message: "Success",
+      statusCode: response.status,
+      data: data as unknown as T,
+    };
   };
 
-  const get = async <T>(path: string, auth = true): Promise<ApiResponse<T>> => {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      method: "GET",
-      headers: getHeaders(auth),
-    });
-    return handleResponse<T>(res);
+  // 2️⃣ دالة التحديث الآن يمكنها استدعاء handleResponse بأمان
+  const refreshTokens = async (): Promise<boolean> => {
+    const currentRefreshToken = refreshTokenCookie.value;
+    if (!currentRefreshToken) return false;
+
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentRefreshToken}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Refresh failed");
+
+      // استخدام handleResponse لفك تغليف الرد الموحّد
+      const apiResponse = await handleResponse<{
+        accessToken: string;
+        refreshToken: string;
+      }>(res);
+
+      // ✅ استخراج التوكنات من داخل response.data
+      const tokens = apiResponse.data;
+
+      if (tokens?.accessToken && tokens?.refreshToken) {
+        accessTokenCookie.value = tokens.accessToken;
+        refreshTokenCookie.value = tokens.refreshToken;
+        return true;
+      }
+
+      console.warn(
+        "Refresh succeeded but tokens structure is invalid:",
+        tokens,
+      );
+      return false;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      return false;
+    }
   };
 
-  // تعديل: دعم FormData في دالة POST
-  const post = async <T>(
+  // 3️⃣ دالة التنفيذ الرئيسية
+  const executeRequest = async <T>(
     path: string,
-    body?: unknown,
+    options: RequestInit,
     auth = true,
+    retryCount = 0,
   ): Promise<ApiResponse<T>> => {
-    const isFormData = body instanceof FormData;
+    const res = await fetch(`${BASE_URL}${path}`, options);
 
-    const res = await fetch(`${BASE_URL}${path}`, {
-      method: "POST",
-      headers: getHeaders(auth, isFormData),
-      // إذا كان FormData نرسله كما هو، وإلا نحوله لـ JSON
-      body: isFormData
-        ? (body as FormData)
-        : body
-          ? JSON.stringify(body)
-          : undefined,
-    });
+    if (res.status === 401 && auth && retryCount === 0) {
+      const refreshed = await refreshTokens();
+      if (refreshed) {
+        const isFormData = options.body instanceof FormData;
+        const newOptions = {
+          ...options,
+          headers: getHeaders(auth, isFormData),
+        };
+        // ✅ إعادة المحاولة مباشرة بدون المرور بمعالجة الخطأ
+        return executeRequest(path, newOptions, auth, retryCount + 1);
+      } else {
+        accessTokenCookie.value = null;
+        refreshTokenCookie.value = null;
+        const authStore = useAuthStore();
+        authStore.logout();
+        if (import.meta.client) router.push("/auth/login");
+        throw new Error("Session expired. Please login again.");
+      }
+    }
+
+    // ✅ هنا فقط نتعامل مع الأخطاء الحقيقية (غير 401 الأولي)
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        data = await res.text();
+      }
+      const errorMessage =
+        typeof data === "object" ? data.message : data || `HTTP ${res.status}`;
+      throw new Error(errorMessage);
+    }
+
     return handleResponse<T>(res);
   };
 
-  const patch = async <T>(
-    path: string,
-    body?: unknown,
-    auth = true,
-  ): Promise<ApiResponse<T>> => {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      method: "PATCH",
-      headers: getHeaders(auth),
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return handleResponse<T>(res);
-  };
+  // 4️⃣ واجهة الاستخدام العامة
+  return {
+    get: async <T>(path: string, auth = true) =>
+      executeRequest<T>(
+        path,
+        { method: "GET", headers: getHeaders(auth) },
+        auth,
+      ),
 
-  const del = async <T>(path: string, auth = true): Promise<ApiResponse<T>> => {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      method: "DELETE",
-      headers: getHeaders(auth),
-    });
-    return handleResponse<T>(res);
-  };
+    post: async <T>(path: string, body?: unknown, auth = true) => {
+      const isFormData = body instanceof FormData;
+      return executeRequest<T>(
+        path,
+        {
+          method: "POST",
+          headers: getHeaders(auth, isFormData),
+          body: isFormData
+            ? (body as FormData)
+            : body
+              ? JSON.stringify(body)
+              : undefined,
+        },
+        auth,
+      );
+    },
 
-  return { get, post, patch, del };
+    patch: async <T>(path: string, body?: unknown, auth = true) =>
+      executeRequest<T>(
+        path,
+        {
+          method: "PATCH",
+          headers: getHeaders(auth),
+          body: body ? JSON.stringify(body) : undefined,
+        },
+        auth,
+      ),
+
+    del: async <T>(path: string, auth = true) =>
+      executeRequest<T>(
+        path,
+        { method: "DELETE", headers: getHeaders(auth) },
+        auth,
+      ),
+  };
 };

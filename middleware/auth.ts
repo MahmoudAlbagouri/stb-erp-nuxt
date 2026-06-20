@@ -1,10 +1,10 @@
-import { defineNuxtRouteMiddleware, navigateTo } from "nuxt/app";
-
 // middleware/auth.ts
-export default defineNuxtRouteMiddleware((to) => {
-  if (!import.meta.client) return;
+import { defineNuxtRouteMiddleware, navigateTo, useCookie } from "nuxt/app";
 
-  const token = localStorage.getItem("stb_access_token");
+export default defineNuxtRouteMiddleware((to) => {
+  const accessToken = useCookie<string | null>("stb_access_token");
+  const refreshToken = useCookie<string | null>("stb_refresh_token");
+
   const publicRoutes = [
     "/auth/login",
     "/auth/register",
@@ -12,11 +12,19 @@ export default defineNuxtRouteMiddleware((to) => {
     "/auth/reset-password",
   ];
 
-  if (!token && !publicRoutes.includes(to.path)) {
+  const isPublicRoute = publicRoutes.includes(to.path);
+
+  // ✅ المنطق الجديد: نعتبر المستخدم "محتمل المصادقة" إذا كان لديه refresh token
+  // حتى لو انتهى الـ access token، لأن الـ API سيقوم بتجديده تلقائياً
+  const hasValidSession = !!accessToken.value || !!refreshToken.value;
+
+  // الطرد فقط إذا لم يكن هناك أي توكن (حتى refresh) وكان المسار محمياً
+  if (!hasValidSession && !isPublicRoute) {
     return navigateTo("/auth/login");
   }
 
-  if (token && to.path.startsWith("/auth")) {
+  // إذا كان مسجلاً (أو لديه session صالحة) ويحاول دخول صفحة عامة -> حوّله للداشبورد
+  if (hasValidSession && to.path.startsWith("/auth")) {
     return navigateTo("/dashboard");
   }
 });
