@@ -1,7 +1,7 @@
 // stores/employees.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { useRuntimeConfig } from "#imports"; // ✅ استيراد useRuntimeConfig
+import { useRuntimeConfig } from "#imports";
 import { useApi } from "../composables/useApi";
 import type {
   Employee,
@@ -11,7 +11,7 @@ import type {
 
 export const useEmployeesStore = defineStore("employees", () => {
   const api = useApi();
-  const config = useRuntimeConfig(); // ✅ الحصول على إعدادات البيئة
+  const config = useRuntimeConfig();
 
   const employees = ref<Employee[]>([]);
   const loading = ref(false);
@@ -35,14 +35,19 @@ export const useEmployeesStore = defineStore("employees", () => {
     return res.data;
   };
 
+  // ✅ تنظيف الـ Payload قبل الإرسال لمنع إرسال employeeCode فارغ
   const create = async (payload: CreateEmployeePayload) => {
-    const res = await api.post<Employee>("/employees", payload);
+    const cleanPayload = { ...payload };
+    delete (cleanPayload as any).employeeCode;
+    const res = await api.post<Employee>("/employees", cleanPayload);
     employees.value.unshift(res.data);
     return res.data;
   };
 
   const update = async (id: string, payload: UpdateEmployeePayload) => {
-    const res = await api.patch<Employee>(`/employees/${id}`, payload);
+    const cleanPayload = { ...payload };
+    delete (cleanPayload as any).employeeCode;
+    const res = await api.patch<Employee>(`/employees/${id}`, cleanPayload);
     const idx = employees.value.findIndex((e: Employee) => e.id === id);
     if (idx !== -1) employees.value[idx] = res.data;
     return res.data;
@@ -53,14 +58,9 @@ export const useEmployeesStore = defineStore("employees", () => {
     employees.value = employees.value.filter((e: Employee) => e.id !== id);
   };
 
-  /**
-   * ✅ دالة التصدير المحسنة باستخدام Blob وضمان استخدام رابط الباك إند الصحيح
-   */
   const exportData = async (type: "excel" | "pdf") => {
     try {
       const token = localStorage.getItem("stb_access_token");
-
-      // ✅ بناء الرابط الكامل من الـ runtimeConfig
       const baseUrl = (config.public.apiBase as string).replace(/\/$/, "");
       const url = `${baseUrl}/employees/export/${type}`;
 

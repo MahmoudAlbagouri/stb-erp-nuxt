@@ -399,7 +399,7 @@ const openEdit = (emp: Employee) => {
   editing.value = emp;
   Object.assign(form, {
     fullName: emp.fullName,
-    employeeCode: emp.employeeCode,
+    // employeeCode: emp.employeeCode,
     nationalityType: emp.nationalityType,
     iqamaExpiryDate: emp.iqamaExpiryDate
       ? new Date(emp.iqamaExpiryDate).toISOString().split("T")[0]
