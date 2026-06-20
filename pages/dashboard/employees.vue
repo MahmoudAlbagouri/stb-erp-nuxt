@@ -169,7 +169,7 @@
                   />
                 </div>
 
-                <div class="form-group">
+                <!-- <div class="form-group">
                   <label>الرقم الوظيفي (اختياري)</label>
                   <input
                     v-model="form.employeeCode"
@@ -177,7 +177,7 @@
                     class="form-input"
                     placeholder="EMP-001"
                   />
-                </div>
+                </div> -->
 
                 <div class="form-group">
                   <label>نوع الجنسية *</label>
@@ -421,7 +421,7 @@ const handleSubmit = async () => {
   try {
     const payload: any = {
       fullName: form.fullName,
-      employeeCode: form.employeeCode,
+      // employeeCode: form.employeeCode,
       nationalityType: form.nationalityType,
       nationalId: form.nationalId || undefined,
       nationalIdCardPath: form.nationalIdCardPath || undefined,
