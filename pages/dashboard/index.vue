@@ -100,18 +100,20 @@
 </template>
 
 <script setup lang="ts">
-import { useUsersStore } from "~/stores/users";
-import { useEmployeesStore } from "~/stores/employees";
-import { useRolesStore } from "~/stores/roles";
-import { usePermissionsStore } from "~/stores/permissions";
+import { useUsersStore } from "../../stores/users";
+import { useEmployeesStore } from "../../stores/employees";
+import { useLeavesStore } from "../../stores/leaves";
+import { useAdvancesStore } from "../../stores/advances";
+import { useLoansStore } from "../../stores/loans";
 import { computed, onMounted, ref } from "vue";
 
 definePageMeta({ middleware: "auth" });
 
 const usersStore = useUsersStore();
 const employeesStore = useEmployeesStore();
-const rolesStore = useRolesStore();
-const permissionsStore = usePermissionsStore();
+const leavesStore = useLeavesStore();
+const advancesStore = useAdvancesStore();
+const loansStore = useLoansStore();
 
 const loading = ref(true);
 
@@ -119,11 +121,17 @@ onMounted(async () => {
   await Promise.all([
     usersStore.fetchAll(),
     employeesStore.fetchAll(),
-    rolesStore.fetchAll(),
-    permissionsStore.fetchAll(),
+    leavesStore.fetchAll(),
+    advancesStore.fetchAll(),
+    loansStore.fetchAll(),
   ]);
   loading.value = false;
 });
+
+// دالة مساعدة لحساب العناصر المعلقة
+const countPending = (items: any[]) => {
+  return items.filter((item) => item.status === "pending").length;
+};
 
 const stats = computed(() => [
   {
@@ -141,16 +149,23 @@ const stats = computed(() => [
     colorRgb: "16,185,129",
   },
   {
-    icon: "🛡",
-    label: "الأدوار",
-    value: rolesStore.roles.length,
+    icon: "🏖️",
+    label: "الإجازات المعلقة",
+    value: countPending(leavesStore.requests),
     color: "#f59e0b",
     colorRgb: "245,158,11",
   },
   {
-    icon: "🔑",
-    label: "الصلاحيات",
-    value: permissionsStore.permissions.length,
+    icon: "💰",
+    label: "السلف المعلقة",
+    value: countPending(advancesStore.advances),
+    color: "#ef4444",
+    colorRgb: "239,68,68",
+  },
+  {
+    icon: "🏦",
+    label: "القروض المعلقة",
+    value: countPending(loansStore.loans),
     color: "#a855f7",
     colorRgb: "168,85,247",
   },

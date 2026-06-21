@@ -43,6 +43,16 @@
           <span class="sidebar-nav__icon">⊞</span>
           <span>لوحة التحكم</span>
         </NuxtLink>
+
+        <!-- ✅ إضافة رابط مباشر للبروفايل في القائمة الرئيسية -->
+        <NuxtLink
+          to="/dashboard/profile"
+          class="sidebar-nav__item"
+          active-class="is-active"
+        >
+          <span class="sidebar-nav__icon">👤</span>
+          <span>ملفي الشخصي</span>
+        </NuxtLink>
       </div>
 
       <!-- إدارة النظام -->
@@ -53,7 +63,7 @@
           class="sidebar-nav__item"
           active-class="is-active"
         >
-          <span class="sidebar-nav__icon">👤</span>
+          <span class="sidebar-nav__icon">👥</span>
           <span>المستخدمون</span>
         </NuxtLink>
         <NuxtLink
@@ -118,12 +128,11 @@
               active-class="is-active"
             >
               <span class="sidebar-nav__icon">📅</span>
-              <span>الإجازات</span>ؤمس
+              <span>الإجازات</span>
             </NuxtLink>
-            <!-- داخل قسم الموارد البشرية -->
             <NuxtLink
               to="/dashboard/attendance"
-              class="sidebar-nav__item"
+              class="sidebar-nav__item sidebar-nav__item--sub"
               active-class="is-active"
             >
               <span class="sidebar-nav__icon">📟</span>
@@ -134,7 +143,7 @@
               class="sidebar-nav__item sidebar-nav__item--sub"
               active-class="is-active"
             >
-              <span class="sidebar-nav__icon">💸</span>
+              <span class="sidebar-nav__icon"></span>
               <span>السلف</span>
             </NuxtLink>
             <NuxtLink
@@ -150,27 +159,30 @@
       </div>
     </nav>
 
-    <!-- Footer -->
-    <div class="sidebar-footer">
-      <div class="sidebar-footer__avatar">
-        {{ auth.user?.email?.[0]?.toUpperCase() ?? "A" }}
+    <!-- Footer: تم تحويله لرابط قابل للنقر يوجه للبروفايل -->
+    <NuxtLink to="/dashboard/profile" class="sidebar-footer-link">
+      <div class="sidebar-footer">
+        <div class="sidebar-footer__avatar">
+          {{ profile.avatarInitials || "A" }}
+        </div>
+        <div class="sidebar-footer__info">
+          <span class="sidebar-footer__name">
+            {{ profile.fullName || "جاري التحميل..." }}
+          </span>
+          <span class="sidebar-footer__role">
+            {{ profile.data?.personal.user.role || "مستخدم" }}
+          </span>
+        </div>
       </div>
-      <div class="sidebar-footer__info">
-        <span class="sidebar-footer__email">{{
-          auth.user?.email ?? "مستخدم"
-        }}</span>
-        <span class="sidebar-footer__role">
-          {{ auth.isSuperAdmin ? "مدير النظام" : "مستخدم" }}
-        </span>
-      </div>
-      <button
-        class="sidebar-footer__logout"
-        @click="auth.logout"
-        title="تسجيل الخروج"
-      >
-        ⎋
-      </button>
-    </div>
+    </NuxtLink>
+
+    <button
+      class="sidebar-logout-btn"
+      @click="handleLogout"
+      title="تسجيل الخروج"
+    >
+      ⎋
+    </button>
   </aside>
 </template>
 
@@ -179,21 +191,27 @@ import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useUiStore } from "../../stores/ui";
 import { useAuthStore } from "../../stores/auth";
+import { useProfileStore } from "../../stores/profile"; // ✅ استيراد ستور البروفايل
 
 const ui = useUiStore();
 const auth = useAuthStore();
+const profile = useProfileStore(); // ✅ تهيئة الستور
 const route = useRoute();
 
 // حالة القائمة المنسدلة للموارد البشرية
-const isHrOpen = ref(true); // مفتوحة افتراضياً
+const isHrOpen = ref(true);
 
 // دالة التبديل
 const toggleHrMenu = () => {
   isHrOpen.value = !isHrOpen.value;
 };
 
-// فتح القائمة تلقائياً إذا كنا في إحدى صفحاتها
-onMounted(() => {
+// جلب بيانات البروفايل عند تحميل السايدبار لعرض الاسم والصورة
+onMounted(async () => {
+  if (auth.isAuthenticated && !profile.isLoaded) {
+    await profile.fetchProfile();
+  }
+
   const hrRoutes = [
     "/dashboard/employees",
     "/dashboard/contracts",
@@ -206,11 +224,16 @@ onMounted(() => {
     isHrOpen.value = true;
   }
 });
+
+const handleLogout = () => {
+  profile.clearProfile(); // مسح بيانات البروفايل عند الخروج
+  auth.logout();
+};
 </script>
 
 <style lang="scss">
-@use "../../assets//scss//variables" as *;
-@use "../../assets//scss/mixins" as *;
+@use "../../assets/scss/variables" as *;
+@use "../../assets/scss/mixins" as *;
 
 .app-sidebar {
   position: fixed;
@@ -291,7 +314,6 @@ onMounted(() => {
     padding: 0 $space-3 $space-1;
   }
 
-  // ✅ Header for Dropdown
   &__header {
     @include flex(row, center, space-between);
     padding: 0 $space-3 $space-1;
@@ -314,12 +336,11 @@ onMounted(() => {
   }
 }
 
-// ✅ Submenu Styles
 .sidebar-submenu {
   display: flex;
   flex-direction: column;
   gap: $space-1;
-  padding-right: $space-2; // Indentation for sub-items
+  padding-right: $space-2;
   border-right: 1px solid rgba($stb-border, 0.3);
   margin-right: $space-3;
 }
@@ -358,7 +379,6 @@ onMounted(() => {
     }
   }
 
-  // Sub-item specific styles
   &--sub {
     font-size: $font-size-xs;
     padding: $space-1 $space-3;
@@ -378,7 +398,17 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-// Footer
+// ✅ Footer Styles Updated for Profile Link
+.sidebar-footer-link {
+  text-decoration: none;
+  display: block;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: rgba($stb-primary, 0.15);
+  }
+}
+
 .sidebar-footer {
   @include flex(row, center, flex-start, $space-3);
   padding: $space-4;
@@ -404,9 +434,10 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  &__email {
+  &__name {
     font-size: $font-size-xs;
-    color: $stb-text-secondary;
+    color: $stb-text-primary;
+    font-weight: 600;
     @include truncate;
   }
 
@@ -414,30 +445,34 @@ onMounted(() => {
     font-size: $font-size-xs;
     color: $stb-accent;
     font-weight: 600;
-  }
-
-  &__logout {
-    width: 28px;
-    height: 28px;
-    border-radius: $radius-sm;
-    background: transparent;
-    border: 1px solid rgba($stb-border, 0.5);
-    color: $stb-text-muted;
-    cursor: pointer;
-    @include flex(row, center, center);
-    transition: all $transition-fast;
-    flex-shrink: 0;
-    font-size: $font-size-base;
-
-    &:hover {
-      background: rgba($stb-danger, 0.15);
-      border-color: $stb-danger;
-      color: $stb-danger;
-    }
+    margin-top: 2px;
   }
 }
 
-// ✅ Animation for Dropdown
+// Logout Button Positioned Separately or Integrated
+.sidebar-logout-btn {
+  position: absolute;
+  bottom: $space-4;
+  left: $space-4;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-sm;
+  background: transparent;
+  border: 1px solid rgba($stb-border, 0.5);
+  color: $stb-text-muted;
+  cursor: pointer;
+  @include flex(row, center, center);
+  transition: all $transition-fast;
+  font-size: $font-size-base;
+
+  &:hover {
+    background: rgba($stb-danger, 0.15);
+    border-color: $stb-danger;
+    color: $stb-danger;
+  }
+}
+
+// Animation for Dropdown
 .slide-down-enter-active,
 .slide-down-leave-active {
   transition: all 0.3s ease;
