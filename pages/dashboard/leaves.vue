@@ -80,6 +80,7 @@
             <th>من تاريخ</th>
             <th>إلى تاريخ</th>
             <th>عدد الأيام</th>
+            <th>النوع</th>
             <th>السبب</th>
             <th>الحالة</th>
             <th>تاريخ الطلب</th>
@@ -91,6 +92,11 @@
             <td>{{ formatDate(req.startDate) }}</td>
             <td>{{ formatDate(req.endDate) }}</td>
             <td>{{ calculateDays(req.startDate, req.endDate) }} يوم</td>
+            <td>
+              <span class="badge badge--neutral">
+                {{ getTypeLabel(req.type) }}
+              </span>
+            </td>
             <td>{{ req.reason || "-" }}</td>
             <td>
               <span :class="`badge badge--${req.status}`">
@@ -166,6 +172,20 @@
                   />
                 </div>
 
+                <!-- ✅ حقل نوع الإجازة الجديد (إلزامي في الـ backend) -->
+                <div class="form-group" style="grid-column: span 2">
+                  <label>نوع الإجازة *</label>
+                  <select v-model="createForm.type" class="form-input" required>
+                    <option
+                      v-for="opt in leaveTypeOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </div>
+
                 <div class="form-group" style="grid-column: span 2">
                   <label>سبب الإجازة</label>
                   <textarea
@@ -218,10 +238,20 @@ const toast = useToast();
 const showCreateModal = ref(false);
 const submitting = ref(false);
 
+// ✅ خيارات نوع الإجازة (لازم تطابق LeaveType في الـ backend)
+const leaveTypeOptions: { value: CreateLeavePayload["type"]; label: string }[] =
+  [
+    { value: "annual", label: "سنوية" },
+    { value: "unpaid", label: "بدون راتب" },
+    { value: "other", label: "أخرى" },
+  ];
+
 // تم حذف employeeId لأن الطلب سيكون للموظف الحالي تلقائياً
+// ✅ إضافة type كحقل إلزامي بقيمة افتراضية "annual"
 const createForm = reactive<CreateLeavePayload>({
   startDate: "",
   endDate: "",
+  type: "annual",
   reason: "",
 });
 
@@ -248,6 +278,16 @@ const getStatusLabel = (status: string) => {
   return map[status] || status;
 };
 
+// ✅ دالة لعرض تسمية نوع الإجازة بالعربي
+const getTypeLabel = (type?: string) => {
+  const map: Record<string, string> = {
+    annual: "سنوية",
+    unpaid: "بدون راتب",
+    other: "أخرى",
+  };
+  return type ? map[type] || type : "-";
+};
+
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("ar-SA");
@@ -264,14 +304,20 @@ const calculateDays = (start: string, end: string) => {
 // ─── Actions ───────────────────────────────────────────────────────────────
 
 const openCreateModal = () => {
-  Object.assign(createForm, { startDate: "", endDate: "", reason: "" });
+  // ✅ إعادة ضبط النوع للقيمة الافتراضية "annual" عند فتح الفورم من جديد
+  Object.assign(createForm, {
+    startDate: "",
+    endDate: "",
+    type: "annual",
+    reason: "",
+  });
   showCreateModal.value = true;
 };
 
 const handleCreateLeave = async () => {
   submitting.value = true;
   try {
-    // ✅ استخدام دالة my-leaves لتقديم الطلب للموظف الحالي
+    // ✅ استخدام دالة my-leaves لتقديم الطلب للموظف الحالي (يشمل النوع الآن)
     await store.createMyLeave(createForm);
 
     toast.success("تم إرسال طلب الإجازة بنجاح");
