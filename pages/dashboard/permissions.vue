@@ -53,7 +53,7 @@
             </td>
             <td>
               <span :class="`badge badge--${perm.scope}`">{{
-                perm.scope === "system" ? "نظام" : "مالك"
+                perm.scope === "system" ? "نظام" : "مستأجر"
               }}</span>
             </td>
             <td>
