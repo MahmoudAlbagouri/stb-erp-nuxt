@@ -36,7 +36,7 @@
           <div class="role-card__info">
             <h3>{{ role.name }}</h3>
             <span :class="`badge badge--${role.scope}`">{{
-              role.scope === "system" ? "نظام" : "مستأجر"
+              role.scope === "system" ? "نظام" : ""
             }}</span>
           </div>
         </div>
@@ -131,7 +131,7 @@
                       <span
                         :class="`badge badge--${perm.scope}`"
                         style="margin-right: auto; margin-left: 0"
-                        >{{ perm.scope === "system" ? "نظام" : "مستأجر" }}</span
+                        >{{ perm.scope === "system" ? "نظام" : "" }}</span
                       >
                     </label>
                   </div>

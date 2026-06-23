@@ -24,7 +24,7 @@
         <select v-model="scopeFilter" class="form-select" style="width: 160px">
           <option value="">كل النطاقات</option>
           <option value="system">نظام</option>
-          <option value="tenant">مستأجر</option>
+          <option value="tenant">صلاحيات انشأتها</option>
         </select>
       </div>
     </div>
@@ -42,7 +42,7 @@
           <tr>
             <th>اسم الصلاحية</th>
             <th>النطاق</th>
-            <th>معرف المستأجر</th>
+            <th>منشأة من قبل من</th>
             <th>الإجراءات</th>
           </tr>
         </thead>
@@ -53,7 +53,7 @@
             </td>
             <td>
               <span :class="`badge badge--${perm.scope}`">{{
-                perm.scope === "system" ? "نظام" : "مستأجر"
+                perm.scope === "system" ? "نظام" : "مالك"
               }}</span>
             </td>
             <td>
