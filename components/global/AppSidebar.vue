@@ -2,7 +2,7 @@
   <aside class="app-sidebar" :class="{ 'is-open': ui.sidebarOpen }">
     <!-- Logo -->
     <div class="sidebar-logo">
-      <div class="sidebar-logo__icon">
+      <!-- <div class="sidebar-logo__icon">
         <svg viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="20" r="20" fill="url(#sgrad)" />
           <text
@@ -23,10 +23,13 @@
             </linearGradient>
           </defs>
         </svg>
+      </div> -->
+      <div class="sidabar-logo-image">
+        <img src="/public//images/logo.png" alt="" />
       </div>
       <div class="sidebar-logo__text">
-        <span class="sidebar-logo__name">STB ERP</span>
-        <span class="sidebar-logo__sub">نظام إدارة المؤسسات</span>
+        <span class="sidebar-logo__name">STB HR</span>
+        <span class="sidebar-logo__sub">نظام إدارة الموارد البشرية</span>
       </div>
     </div>
 
@@ -41,7 +44,7 @@
           active-class="is-active"
         >
           <span class="sidebar-nav__icon">⊞</span>
-          <span>لوحة التحكم</span>
+          <span>الصفحة الرئيسية</span>
         </NuxtLink>
 
         <!-- ✅ إضافة رابط مباشر للبروفايل في القائمة الرئيسية -->
@@ -72,7 +75,7 @@
           active-class="is-active"
         >
           <span class="sidebar-nav__icon">🛡</span>
-          <span>الأدوار</span>
+          <span>المسمى الوظيفي</span>
         </NuxtLink>
         <NuxtLink
           to="/dashboard/permissions"
@@ -257,7 +260,15 @@ const handleLogout = () => {
   padding: $space-5 $space-4;
   border-bottom: 1px solid rgba($stb-border, 0.5);
   flex-shrink: 0;
-
+  .sidabar-logo-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    img {
+      width: 100%;
+    }
+  }
   &__icon {
     width: 40px;
     height: 40px;

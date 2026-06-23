@@ -1,8 +1,15 @@
-// stores/loans.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
-import type { Loan, LoanStatus, CreateLoanPayload } from "../types";
+import type { Loan, LoanStatus } from "../types";
+
+// ✅ تعريف نوع البيانات المرسل للباك إند مطابق تماماً لـ CreateLoanDto
+export interface CreateLoanPayload {
+  totalAmount: number;
+  installmentsCount: number;
+  reason?: string;
+  startDate: string; // YYYY-MM-DD
+}
 
 export const useLoansStore = defineStore("loans", () => {
   const api = useApi();
@@ -23,10 +30,10 @@ export const useLoansStore = defineStore("loans", () => {
     }
   };
 
-  // تقديم قرض للموظف الحالي (Self-Service)
+  // ✅ تقديم قرض للموظف الحالي (Self-Service)
   const createMyLoan = async (payload: CreateLoanPayload) => {
     const res = await api.post<Loan>("/loans/my-loans", payload);
-    await fetchAll();
+    await fetchAll(); // تحديث القائمة بعد الإضافة
     return res.data;
   };
 

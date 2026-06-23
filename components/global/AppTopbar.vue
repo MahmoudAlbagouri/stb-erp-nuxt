@@ -7,7 +7,7 @@
     </button>
 
     <div class="topbar-breadcrumb">
-      <span class="topbar-breadcrumb__home">STB ERP</span>
+      <span class="topbar-breadcrumb__home">STB HR</span>
       <span class="topbar-breadcrumb__sep">/</span>
       <span class="topbar-breadcrumb__current">{{ pageTitle }}</span>
     </div>
@@ -32,11 +32,18 @@ const auth = useAuthStore();
 const route = useRoute();
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "لوحة التحكم",
+  "/dashboard": "الصفحة الرئيسية",
+  "/dashboard/profile": "الملف الشخصي",
   "/dashboard/users": "المستخدمون",
-  "/dashboard/roles": "الأدوار",
+  "/dashboard/roles": "المسمى الوظيفي",
   "/dashboard/permissions": "الصلاحيات",
   "/dashboard/employees": "الموظفون",
+  "/dashboard/contracts": "العقود",
+  "/dashboard/salaries": "الرواتب",
+  "/dashboard/leaves": "الاجازات",
+  "/dashboard/attendance": "البصمة والحضور",
+  "/dashboard/advances": "السلف",
+  "/dashboard/loans": "القروض",
 };
 
 const pageTitle = computed(() => pageTitles[route.path] ?? "الصفحة");

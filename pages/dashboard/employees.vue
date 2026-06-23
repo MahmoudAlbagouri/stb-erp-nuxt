@@ -180,7 +180,7 @@
                 </div> -->
 
                 <div class="form-group">
-                  <label>نوع الجنسية *</label>
+                  <label>الحالة *</label>
                   <select
                     v-model="form.nationalityType"
                     class="form-select"
@@ -197,7 +197,7 @@
                   v-if="form.nationalityType === 'non_saudi'"
                   class="form-group"
                 >
-                  <label>تاريخ انتهاء الإقامة *</label>
+                  <label>تاريخ انتهاء *</label>
                   <input
                     v-model="form.iqamaExpiryDate"
                     type="date"
@@ -207,7 +207,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label>رقم الهوية / الإقامة</label>
+                  <label>رقم الهوية</label>
                   <input
                     v-model="form.nationalId"
                     type="text"

@@ -1,17 +1,17 @@
 <template>
   <div class="page-container">
-    <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
+    <!-- ══ Page Header ═════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>إدارة السلف</h1>
-        <p>متابعة طلبات السلف المالية والأقساط</p>
+        <p>متابعة طلبات السلف المالية ومواعيد السداد</p>
       </div>
       <button class="btn btn--primary" @click="openCreateModal">
         <span>+</span> طلب سلفة جديدة
       </button>
     </div>
 
-    <!-- ══ Stats Cards ══════════════════════════════════════════════════════ -->
+    <!-- ═ Stats Cards ══════════════════════════════════════════════════════ -->
     <div class="grid-3" style="margin-bottom: 2rem">
       <div class="stat-card">
         <div
@@ -79,9 +79,8 @@
           <tr>
             <th>الموظف</th>
             <th>المبلغ</th>
-            <th>عدد الأقساط</th>
-            <th>القسط الشهري</th>
             <th>السبب</th>
+            <th>تاريخ السداد</th>
             <th>الحالة</th>
             <th>تاريخ الطلب</th>
             <th>الإجراءات</th>
@@ -100,8 +99,6 @@
             <td style="font-weight: bold; color: var(--stb-accent)">
               {{ formatCurrency(adv.amount) }}
             </td>
-            <td>{{ adv.numberOfInstallments }} شهر</td>
-            <td>{{ formatCurrency(adv.amount / adv.numberOfInstallments) }}</td>
             <td>
               <span
                 v-if="adv.reason"
@@ -111,6 +108,16 @@
                 }}{{ adv.reason.length > 30 ? "..." : "" }}
               </span>
               <span v-else>-</span>
+            </td>
+            <td>
+              <span
+                v-if="adv.repaymentDate"
+                class="badge badge--trial"
+                style="direction: ltr"
+              >
+                {{ formatDate(adv.repaymentDate) }}
+              </span>
+              <span v-else class="text-muted text-xs">غير محدد</span>
             </td>
             <td>
               <span :class="`badge badge--${adv.status}`">
@@ -164,8 +171,6 @@
 
             <form @submit.prevent="handleSubmit">
               <div class="grid-2">
-                <!-- ✅ تم حذف حقل اختيار الموظف ليكون الطلب ذاتي (My Advance) -->
-
                 <!-- المبلغ -->
                 <div class="form-group">
                   <label>مبلغ السلفة *</label>
@@ -180,17 +185,25 @@
                   />
                 </div>
 
-                <!-- عدد الأقساط -->
+                <!-- ✅ تاريخ السداد (بدلاً من عدد الأقساط) -->
                 <div class="form-group">
-                  <label>عدد الأقساط (شهور) *</label>
+                  <label>تاريخ السداد المتوقع *</label>
                   <input
-                    v-model.number="form.numberOfInstallments"
-                    type="number"
+                    v-model="form.repaymentDate"
+                    type="date"
                     class="form-input"
-                    placeholder="مثال: 10"
                     required
-                    min="1"
                   />
+                  <small
+                    style="
+                      color: var(--stb-text-muted);
+                      font-size: 0.75rem;
+                      margin-top: 4px;
+                      display: block;
+                    "
+                  >
+                    سيتم خصم المبلغ من راتب هذا الشهر
+                  </small>
                 </div>
 
                 <!-- السبب -->
@@ -202,35 +215,6 @@
                     rows="3"
                     placeholder="اكتب سبب الطلب هنا..."
                   ></textarea>
-                </div>
-
-                <!-- ملخص سريع -->
-                <div
-                  v-if="form.amount && form.numberOfInstallments"
-                  class="card"
-                  style="
-                    grid-column: span 2;
-                    padding: 1rem;
-                    background: rgba(0, 170, 255, 0.05);
-                    border-color: rgba(0, 170, 255, 0.2);
-                  "
-                >
-                  <div
-                    style="font-size: 0.9rem; color: var(--stb-text-secondary)"
-                  >
-                    قيمة القسط الشهري التقريبية:
-                    <span
-                      style="
-                        font-weight: bold;
-                        color: var(--stb-accent);
-                        font-size: 1.1rem;
-                      "
-                    >
-                      {{
-                        formatCurrency(form.amount / form.numberOfInstallments)
-                      }}
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -264,7 +248,6 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useAdvancesStore } from "../../stores/advances";
 import { useEmployeesStore } from "../../stores/employees";
 import { useToast } from "../../composables/useToast";
-import type { CreateAdvancePayload } from "../../types";
 
 definePageMeta({ middleware: "auth" });
 
@@ -277,11 +260,11 @@ const toast = useToast();
 const showModal = ref(false);
 const submitting = ref(false);
 
-// تم حذف employeeId من الفورم لأن الطلب سيكون للموظف الحالي تلقائياً
-const EMPTY_FORM: CreateAdvancePayload = {
+// ✅ تحديث الفورم ليتطابق مع CreateAdvanceDto الجديد
+const EMPTY_FORM = {
   amount: 0,
-  numberOfInstallments: 1,
   reason: "",
+  repaymentDate: "", // التاريخ بصيغة YYYY-MM-DD
 };
 
 const form = reactive({ ...EMPTY_FORM });
@@ -302,15 +285,18 @@ const totalAmount = computed(() => {
 
 const openCreateModal = () => {
   Object.assign(form, EMPTY_FORM);
+  // تعيين تاريخ افتراضي (مثلاً نهاية الشهر الحالي أو الشهر القادم)
+  const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  form.repaymentDate = nextMonth.toISOString().split("T")[0];
+
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    // ✅ استخدام دالة my-advances لتقديم الطلب للموظف الحالي
     await store.createMyAdvance(form);
-
     toast.success("تم تقديم طلب السلفة بنجاح");
     showModal.value = false;
   } catch (e: any) {
@@ -357,7 +343,7 @@ const getStatusLabel = (status: string) => {
   return map[status] || status;
 };
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | undefined) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("ar-SA");
 };

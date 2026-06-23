@@ -1,8 +1,14 @@
-// stores/advances.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
-import type { Advance, AdvanceStatus, CreateAdvancePayload } from "../types";
+import type { Advance, AdvanceStatus } from "../types";
+
+// ✅ تعريف نوع البيانات المرسل للباك إند بناءً على الـ DTO الجديد
+export interface CreateAdvancePayload {
+  amount: number;
+  reason?: string;
+  repaymentDate: string; // YYYY-MM-DD
+}
 
 export const useAdvancesStore = defineStore("advances", () => {
   const api = useApi();
@@ -23,7 +29,7 @@ export const useAdvancesStore = defineStore("advances", () => {
     }
   };
 
-  // ✅ جديد: تقديم سلفة للموظف الحالي (Self-Service)
+  // ✅ تقديم سلفة للموظف الحالي (Self-Service)
   const createMyAdvance = async (payload: CreateAdvancePayload) => {
     const res = await api.post<Advance>("/advances/my-advances", payload);
     await fetchAll(); // تحديث القائمة بعد الإضافة
@@ -54,7 +60,7 @@ export const useAdvancesStore = defineStore("advances", () => {
     advances,
     loading,
     fetchAll,
-    createMyAdvance, // تصدير الدالة الجديدة
+    createMyAdvance,
     createForEmployee,
     updateStatus,
   };

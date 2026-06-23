@@ -4,14 +4,14 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>إدارة القروض</h1>
-        <p>متابعة طلبات القروض طويلة الأجل والأقساط</p>
+        <p>متابعة طلبات القروض طويلة الأجل ومواعيد السداد</p>
       </div>
       <button class="btn btn--primary" @click="openCreateModal">
         <span>+</span> طلب قرض جديد
       </button>
     </div>
 
-    <!-- ══ Stats Cards ══════════════════════════════════════════════════════ -->
+    <!-- ══ Stats Cards ═════════════════════════════════════════════════════ -->
     <div class="grid-3" style="margin-bottom: 2rem">
       <div class="stat-card">
         <div
@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <!-- ══ Loading State ════════════════════════════════════════════════════ -->
+    <!-- ══ Loading State ═══════════════════════════════════════════════════ -->
     <div v-if="store.loading || employeesStore.loading" class="empty-state">
       <div class="spinner spinner--lg" />
     </div>
@@ -72,7 +72,7 @@
       </div>
     </div>
 
-    <!-- ══ Loans Table ══════════════════════════════════════════════════════ -->
+    <!-- ══ Loans Table ═════════════════════════════════════════════════════ -->
     <div v-else class="card" style="padding: 0; overflow: hidden">
       <table class="data-table">
         <thead>
@@ -81,6 +81,7 @@
             <th>مبلغ القرض</th>
             <th>عدد الأقساط</th>
             <th>القسط الشهري</th>
+            <th>بداية السداد</th>
             <th>السبب</th>
             <th>الحالة</th>
             <th>تاريخ الطلب</th>
@@ -104,6 +105,16 @@
             <td>{{ formatCurrency(loan.monthlyInstallment) }}</td>
             <td>
               <span
+                v-if="loan.startDate"
+                class="badge badge--trial"
+                style="direction: ltr"
+              >
+                {{ formatDate(loan.startDate) }}
+              </span>
+              <span v-else class="text-muted text-xs">غير محدد</span>
+            </td>
+            <td>
+              <span
                 v-if="loan.reason"
                 style="font-size: 0.8rem; color: var(--stb-text-secondary)"
               >
@@ -120,7 +131,6 @@
             <td>{{ formatDate(loan.createdAt) }}</td>
             <td>
               <div style="display: flex; gap: 0.5rem">
-                <!-- ✅ تم إزالة شرط auth.isSuperAdmin لضمان ظهور الأزرار -->
                 <template v-if="loan.status === 'pending'">
                   <button
                     class="btn btn--sm btn--primary"
@@ -144,7 +154,7 @@
       </table>
     </div>
 
-    <!-- ══ Create Loan Modal ════════════════════════════════════════════════ -->
+    <!--  Create Loan Modal ════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -193,6 +203,27 @@
                   />
                 </div>
 
+                <!-- ✅ تاريخ بداية السداد (جديد) -->
+                <div class="form-group" style="grid-column: span 2">
+                  <label>تاريخ بداية الخصم *</label>
+                  <input
+                    v-model="form.startDate"
+                    type="date"
+                    class="form-input"
+                    required
+                  />
+                  <small
+                    style="
+                      color: var(--stb-text-muted);
+                      font-size: 0.75rem;
+                      margin-top: 4px;
+                      display: block;
+                    "
+                  >
+                    سيتم بدء خصم أول قسط من راتب هذا التاريخ
+                  </small>
+                </div>
+
                 <!-- السبب -->
                 <div class="form-group" style="grid-column: span 2">
                   <label>سبب القرض</label>
@@ -206,7 +237,9 @@
 
                 <!-- ملخص سريع -->
                 <div
-                  v-if="form.totalAmount && form.installmentsCount"
+                  v-if="
+                    form.totalAmount && form.installmentsCount && form.startDate
+                  "
                   class="card"
                   style="
                     grid-column: span 2;
@@ -216,22 +249,39 @@
                   "
                 >
                   <div
-                    style="font-size: 0.9rem; color: var(--stb-text-secondary)"
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                    "
                   >
-                    قيمة القسط الشهري التقريبية:
-                    <span
+                    <div
                       style="
-                        font-weight: bold;
-                        color: var(--stb-accent);
-                        font-size: 1.1rem;
+                        font-size: 0.9rem;
+                        color: var(--stb-text-secondary);
                       "
                     >
-                      {{
-                        formatCurrency(
-                          form.totalAmount / form.installmentsCount,
-                        )
-                      }}
-                    </span>
+                      قيمة القسط الشهري التقريبية:
+                      <span
+                        style="
+                          font-weight: bold;
+                          color: var(--stb-accent);
+                          font-size: 1.1rem;
+                        "
+                      >
+                        {{
+                          formatCurrency(
+                            form.totalAmount / form.installmentsCount,
+                          )
+                        }}
+                      </span>
+                    </div>
+                    <div
+                      style="font-size: 0.85rem; color: var(--stb-text-muted)"
+                    >
+                      بداية السداد:
+                      <strong>{{ formatDate(form.startDate) }}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -266,7 +316,6 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useLoansStore } from "../../stores/loans";
 import { useEmployeesStore } from "../../stores/employees";
 import { useToast } from "../../composables/useToast";
-import type { CreateLoanPayload } from "../../types";
 
 definePageMeta({ middleware: "auth" });
 
@@ -279,10 +328,12 @@ const toast = useToast();
 const showModal = ref(false);
 const submitting = ref(false);
 
-const EMPTY_FORM: CreateLoanPayload = {
+// ✅ الفورم يحتوي الآن على جميع حقول الـ DTO المطلوبة
+const EMPTY_FORM = {
   totalAmount: 0,
   installmentsCount: 12,
   reason: "",
+  startDate: "", // YYYY-MM-DD
 };
 
 const form = reactive({ ...EMPTY_FORM });
@@ -294,7 +345,7 @@ const pendingCount = computed(
 );
 const totalApprovedAmount = computed(() => {
   return store.loans
-    .filter((l) => l.status === "approved" || l.status === "paid")
+    .filter((l) => l.status === "approved" || l.status === "completed")
     .reduce((sum, l) => sum + Number(l.totalAmount), 0)
     .toLocaleString("ar-SA");
 });
@@ -303,13 +354,17 @@ const totalApprovedAmount = computed(() => {
 
 const openCreateModal = () => {
   Object.assign(form, EMPTY_FORM);
+  // تعيين تاريخ افتراضي لبداية الشهر التالي
+  const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  form.startDate = nextMonth.toISOString().split("T")[0];
+
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    // استخدام دالة الموظف الذاتي فقط
     await store.createMyLoan(form);
     toast.success("تم تقديم طلب القرض بنجاح");
     showModal.value = false;
@@ -340,7 +395,7 @@ const rejectLoan = async (id: string) => {
   }
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
 
 const getEmployeeName = (id: string) => {
   const emp = employeesStore.employees.find((e) => e.id === id);
@@ -352,12 +407,12 @@ const getStatusLabel = (status: string) => {
     pending: "قيد الانتظار",
     approved: "موافق عليه",
     rejected: "مرفوض",
-    paid: "تم السداد",
+    completed: "تم السداد",
   };
   return map[status] || status;
 };
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | undefined) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("ar-SA");
 };
