@@ -1,23 +1,34 @@
 import { defineNuxtConfig } from "nuxt/config";
 
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  modules: [["@pinia/nuxt", { storesDir: ["./stores/**"] }]],
+  // هذا المجلد هو الجذر الجديد لكل شيء
+  srcDir: "app/",
 
-  css: ["~/assets/scss/main.scss"],
+  modules: [
+    // المسار هنا يجب أن يكون نسبياً من داخل app/
+    ["@pinia/nuxt", { storesDirs: ["./stores/**"] }],
+  ],
 
-  // vite: {
-  //   css: {
-  //     preprocessorOptions: {
-  //       scss: {
-  //         additionalData: `@use "~/assets/scss/_variables.scss" as *;`,
-  //       },
-  //     },
-  //   },
-  // },
+  // استخدام @ يشير تلقائياً إلى داخل مجلد app/
+  css: ["@/assets/scss/main.scss"],
 
+  vite: {
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@use "@/assets/scss/_variables.scss" as *;`,
+        },
+      },
+    },
+    optimizeDeps: {
+      include: ["@vue/devtools-core", "@vue/devtools-kit", "pinia"],
+    },
+  },
+
+  // بقية الإعدادات (head, runtimeConfig) صحيحة ولا تحتاج تعديل
   app: {
     head: {
       charset: "utf-8",
@@ -25,10 +36,7 @@ export default defineNuxtConfig({
       title: "STB ERP - نظام إدارة المؤسسات",
       htmlAttrs: { lang: "ar", dir: "rtl" },
       link: [
-        {
-          rel: "preconnect",
-          href: "https://fonts.googleapis.com",
-        },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
           href: "https://fonts.gstatic.com",
@@ -46,8 +54,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase:
-        (globalThis as any).process?.env?.NUXT_PUBLIC_API_BASE ||
-        "https://erp.api.stblink.com",
+        process.env.NUXT_PUBLIC_API_BASE || "https://erp.api.stblink.com",
     },
   },
 });

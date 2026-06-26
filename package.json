@@ -9,13 +9,15 @@
     "preview": "nuxt preview"
   },
   "dependencies": {
-    "nuxt": "^3.11.0",
-    "vue": "^3.4.0",
-    "pinia": "^2.1.7",
     "@pinia/nuxt": "^0.5.1",
-    "sass": "^1.72.0"
+    "lucide-vue-next": "^1.0.0",
+    "nuxt": "^4.4.8",
+    "pinia": "^2.1.7",
+    "sass": "^1.72.0",
+    "vue": "^3.4.0"
   },
   "devDependencies": {
-    "@nuxtjs/color-mode": "^3.4.0"
+    "@nuxtjs/color-mode": "^3.4.0",
+    "@types/node": "^26.0.1"
   }
 }

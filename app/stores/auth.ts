@@ -1,0 +1,174 @@
+// stores/auth.ts
+import { defineStore } from "pinia";
+import { useApi } from "../composables/useApi";
+import type {
+  AuthTokens,
+  LoginPayload,
+  RegisterPayload,
+  DecodedToken,
+} from "@/types";
+import { useRouter, useCookie } from "nuxt/app";
+import { computed, ref } from "vue";
+
+function decodeJwt<T>(token: string): T | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2 || !parts[1]) {
+      return null;
+    }
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join(""),
+    );
+    return JSON.parse(json) as T;
+  } catch {
+    return null;
+  }
+}
+
+export const useAuthStore = defineStore("auth", () => {
+  const api = useApi();
+  const router = useRouter();
+
+  const accessTokenCookie = useCookie<string | null>("stb_access_token");
+  const refreshTokenCookie = useCookie<string | null>("stb_refresh_token");
+
+  // --- State ---
+  const user = ref<AuthTokens | null>(null);
+  const decodedToken = ref<DecodedToken | null>(null);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+
+  // --- Computed ---
+  const isAuthenticated = computed(() => !!accessTokenCookie.value);
+  const isSuperAdmin = computed(() => user.value?.isSuperAdmin ?? false);
+  const isSystemAdmin = computed(() => user.value?.isSystemAdmin ?? false);
+  const role = computed(() => decodedToken.value?.role ?? null);
+  const permissions = computed(() => decodedToken.value?.permissions ?? []);
+  const employeeId = computed(() => decodedToken.value?.employeeId);
+
+  // --- Hydrate & Persist ---
+  const hydrate = () => {
+    if (accessTokenCookie.value) {
+      try {
+        decodedToken.value = decodeJwt<DecodedToken>(accessTokenCookie.value);
+        user.value = {
+          accessToken: accessTokenCookie.value!,
+          refreshToken: refreshTokenCookie.value!,
+          isSuperAdmin: decodedToken.value?.isSuperAdmin || false,
+          isSystemAdmin: decodedToken.value?.isSystemAdmin || false,
+        } as AuthTokens;
+      } catch {
+        clearAuth();
+      }
+    }
+  };
+
+  const persist = (data: AuthTokens) => {
+    user.value = data;
+    decodedToken.value = decodeJwt<DecodedToken>(data.accessToken);
+    accessTokenCookie.value = data.accessToken;
+    refreshTokenCookie.value = data.refreshToken;
+  };
+
+  const clearAuth = () => {
+    user.value = null;
+    decodedToken.value = null;
+    accessTokenCookie.value = null;
+    refreshTokenCookie.value = null;
+  };
+
+  // --- Actions ---
+  const login = async (payload: LoginPayload) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const res = await api.post<AuthTokens>("/auth/login", payload, false);
+      persist(res.data);
+      router.push("/dashboard");
+    } catch (e: any) {
+      error.value = e.message || "خطأ في تسجيل الدخول";
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const register = async (payload: RegisterPayload) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await api.post("/auth/register", payload, false);
+      router.push("/auth/login");
+    } catch (e: any) {
+      error.value = e.message || "خطأ في إنشاء الحساب";
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // ✅ إضافة دالة طلب رمز الاستعادة
+  const forgotPassword = async (email: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await api.post("/auth/forgot-password", { email }, false);
+    } catch (e: any) {
+      error.value = e.message || "حدث خطأ أثناء إرسال الرمز";
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // ✅ تعديل دالة إعادة التعيين لتتوافق مع الـ DTO الجديد
+  const resetPassword = async (
+    email: string,
+    code: string,
+    newPassword: string,
+  ) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await api.post(
+        "/auth/reset-password",
+        { email, code, newPassword },
+        false,
+      );
+      router.push("/auth/login?reset=success");
+    } catch (e: any) {
+      error.value = e.message || "فشل تغيير كلمة المرور";
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const logout = () => {
+    clearAuth();
+    router.push("/auth/login");
+  };
+
+  return {
+    user,
+    decodedToken,
+    role,
+    permissions,
+    employeeId,
+    loading,
+    error,
+    isAuthenticated,
+    isSuperAdmin,
+    isSystemAdmin,
+    hydrate,
+    login,
+    register,
+    logout,
+    forgotPassword, // ✅ تصدير الدوال الجديدة
+    resetPassword,
+  };
+});
