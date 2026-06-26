@@ -197,12 +197,16 @@
             <span v-if="emp.contract" class="mini-badge mini-badge--contract">
               <FileText :size="11" /> عقد
             </span>
-            <span
+            <a
               v-if="emp.nationalIdCardPath"
+              :href="emp.nationalIdCardPath"
+              target="_blank"
+              rel="noopener noreferrer"
               class="mini-badge mini-badge--doc"
+              title="عرض الهوية"
             >
               <Paperclip :size="11" /> هوية
-            </span>
+            </a>
           </div>
         </div>
 
