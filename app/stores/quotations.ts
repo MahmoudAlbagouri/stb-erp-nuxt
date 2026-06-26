@@ -40,6 +40,9 @@ export const useQuotationsStore = defineStore("quotations", () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
+  // ✅ تتبع حالة تحميل PDF لكل عرض سعر بشكل منفصل
+  const pdfLoading = ref<string | null>(null);
+
   const fetchAll = async () => {
     loading.value = true;
     error.value = null;
@@ -71,7 +74,6 @@ export const useQuotationsStore = defineStore("quotations", () => {
     quotations.value = quotations.value.filter((q) => q.id !== id);
   };
 
-  // ✅ الموافقة وتحويل العرض لفاتورة
   const approve = async (id: string) => {
     const res = await api.patch<Quotation>(`/quotations/${id}/approve`, {});
     const idx = quotations.value.findIndex((q) => q.id === id);
@@ -79,23 +81,32 @@ export const useQuotationsStore = defineStore("quotations", () => {
     return res.data;
   };
 
-  // ✅ تحميل عرض السعر PDF
+  // ✅ تحميل عرض السعر PDF مع إدارة الحالة
   const downloadQuotationPdf = async (id: string) => {
-    const blob = await api.get<Blob>(`/quotations/${id}/pdf`, true, "blob");
-    handleFileDownload(blob, `quotation-${id}.pdf`);
+    pdfLoading.value = id;
+    try {
+      const blob = await api.get<Blob>(`/quotations/${id}/pdf`, true, "blob");
+      handleFileDownload(blob, `quotation-${id}.pdf`);
+    } finally {
+      pdfLoading.value = null;
+    }
   };
 
-  // ✅ تحميل الفاتورة PDF
+  // ✅ تحميل الفاتورة PDF مع إدارة الحالة
   const downloadInvoicePdf = async (id: string) => {
-    const blob = await api.get<Blob>(
-      `/quotations/${id}/invoice-pdf`,
-      true,
-      "blob",
-    );
-    handleFileDownload(blob, `invoice-${id}.pdf`);
+    pdfLoading.value = id;
+    try {
+      const blob = await api.get<Blob>(
+        `/quotations/${id}/invoice-pdf`,
+        true,
+        "blob",
+      );
+      handleFileDownload(blob, `invoice-${id}.pdf`);
+    } finally {
+      pdfLoading.value = null;
+    }
   };
 
-  // دالة مساعدة لتنزيل الملفات
   const handleFileDownload = (blob: Blob, fileName: string) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -113,6 +124,7 @@ export const useQuotationsStore = defineStore("quotations", () => {
     quotations,
     loading,
     error,
+    pdfLoading,
     fetchAll,
     create,
     update,

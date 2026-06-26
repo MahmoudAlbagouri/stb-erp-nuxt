@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <!-- ══ Page Header ═════════════════════════════════════════════════════ -->
+    <!-- ═ Page Header ═════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>عروض الأسعار والفواتير</h1>
@@ -63,23 +63,35 @@
             <td>{{ formatCurrency(q.grandTotal) }}</td>
             <td>{{ formatDate(q.createdAt) }}</td>
             <td class="actions-cell">
-              <!-- طباعة عرض السعر -->
+              <!-- ✅ طباعة عرض السعر مع حالة التحميل -->
               <button
                 class="btn btn--ghost btn--sm"
                 @click="store.downloadQuotationPdf(q.id)"
+                :disabled="store.pdfLoading === q.id"
                 title="طباعة عرض السعر"
               >
-                <FileText :size="14" />
+                <Loader
+                  v-if="store.pdfLoading === q.id"
+                  :size="14"
+                  class="animate-spin"
+                />
+                <FileText v-else :size="14" />
               </button>
 
-              <!-- طباعة الفاتورة (فقط إذا كان معتمداً) -->
+              <!-- ✅ طباعة الفاتورة مع حالة التحميل -->
               <button
                 v-if="q.status === 'approved'"
                 class="btn btn--ghost btn--sm"
                 @click="store.downloadInvoicePdf(q.id)"
+                :disabled="store.pdfLoading === q.id"
                 title="طباعة الفاتورة"
               >
-                <Receipt :size="14" />
+                <Loader
+                  v-if="store.pdfLoading === q.id"
+                  :size="14"
+                  class="animate-spin"
+                />
+                <Receipt v-else :size="14" />
               </button>
 
               <!-- الموافقة وتحويل لفاتورة -->
@@ -295,7 +307,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { useQuotationsStore } from "@/stores/quotations";
 import { useToast } from "../../composables/useToast";
 
@@ -306,6 +318,7 @@ import {
   CheckCircle,
   Trash2,
   X,
+  Loader, // ✅ تم إضافة أيقونة التحميل
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -313,7 +326,7 @@ definePageMeta({ middleware: "auth" });
 const store = useQuotationsStore();
 const toast = useToast();
 
-// ─── Modal State ───────────────────────────────────────────────────────────────
+// ─── Modal State ──────────────────────────────────────────────────────────────
 const showModal = ref(false);
 const submitting = ref(false);
 const editing = ref<any>(null);
@@ -338,7 +351,7 @@ const openCreate = () => {
   showModal.value = true;
 };
 
-// ─── Item Management ──────────────────────────────────────────────────────────
+// ── Item Management ──────────────────────────────────────────────────────────
 const addItem = () => {
   form.items.push({ description: "", qty: 1, unitPrice: 0 });
 };
@@ -414,7 +427,7 @@ const doDelete = async () => {
   }
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 const getStatusLabel = (s: string) =>
   ({
     draft: "مسودة",
@@ -521,5 +534,19 @@ onMounted(() => {
 
 .mt-4 {
   margin-top: $space-4 !important;
+}
+
+/* ✅ أنيميشن بسيط لأيقونة التحميل */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
