@@ -190,7 +190,7 @@
           </div>
 
           <!-- مؤشرات المستخدم والعقد -->
-          <div class="emp-card__badges">
+          <div class="emp-card__badges @click.stop">
             <span v-if="emp.user" class="mini-badge mini-badge--user">
               <ShieldCheck :size="11" /> مستخدم
             </span>
