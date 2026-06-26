@@ -2,7 +2,7 @@
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
-      <div v-if="modelValue" class="ob-overlay" @click.self="handleClose">
+      <div v-if="modelValue" class="ob-overlay">
         <div class="ob-panel">
           <!-- ══ Header ══════════════════════════════════════════════════════ -->
           <div class="ob-header">
@@ -1187,7 +1187,68 @@ const generatePassword = () => {
   showPassword.value = true;
 };
 
-// ── Submit ────────────────────────────────────────────────────────────────────
+// ── Close Modal & Reset Form ────────────────────────────────────────────────
+const handleClose = () => {
+  // إغلاق المودال بصرياً فوراً
+  emit("update:modelValue", false);
+
+  // تصفير البيانات بعد انتهاء الأنيميشن (300ms)
+  setTimeout(() => {
+    activeTab.value = "employee";
+    doneTabs.value.clear();
+    clearErrors();
+
+    // تصفير المتغيرات المؤقتة للرفع
+    tempNationalIdFile.value = "";
+    tempContractFiles.value = [];
+
+    Object.assign(form, {
+      withUser: false,
+      withContract: false,
+      withSalary: false,
+      roleMode: "none",
+      employee: {
+        fullName: "",
+        nationalityType: "" as
+          | "saudi"
+          | "non_saudi"
+          | "outside_sponsorship"
+          | "",
+        iqamaExpiryDate: "",
+        nationalId: "",
+        nationalIdCardPath: "",
+        phone: "",
+        jobTitle: "",
+        department: "",
+        status: "active" as "active" | "inactive" | "terminated",
+      },
+      user: {
+        username: "",
+        email: "",
+        password: "",
+        roleId: "",
+        roleName: "",
+        permissionIds: [] as string[],
+      },
+      contract: {
+        contractType: "",
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: "",
+        annualLeaveDays: 30,
+        notes: "",
+        attachmentPaths: [] as string[],
+      },
+      salary: {
+        basicSalary: 0,
+        housingAllowance: 0,
+        transportAllowance: 0,
+        otherAllowances: 0,
+      },
+    });
+  }, 300);
+};
+
+// ── Submit Onboarding ───────────────────────────────────────────────────────
 const handleSubmit = async () => {
   clearErrors();
   submitting.value = true;
@@ -1248,81 +1309,22 @@ const handleSubmit = async () => {
       };
     }
 
-    // ✅ استدعاء الـ onboard endpoint
     const { useApi } = await import("@/composables/useApi");
     const api = useApi();
     const res = await api.post<any>("/employees/onboard", payload);
 
-    // ✅ إضافة الموظف الجديد لـ store
     employeesStore.employees.unshift(res.data.employee);
-
     toast.success(`تم إنشاء ملف الموظف "${form.employee.fullName}" بنجاح ✅`);
     emit("created", res.data);
+
+    // ✅ الإغلاق المباشر هنا يضمن اختفاء الـ Overlay فور النجاح
     handleClose();
   } catch (e: any) {
     toast.error(e.message || "فشل في إنشاء الموظف");
   } finally {
+    // تصفير حالة الإرسال فقط دون التأثير على حالة المودال
     submitting.value = false;
   }
-};
-
-// ── Close ─────────────────────────────────────────────────────────────────────
-const handleClose = () => {
-  if (submitting.value) return;
-
-  // 1. إغلاق المودال فوراً
-  emit("update:modelValue", false);
-
-  // 2. تصفير البيانات بعد انتهاء الأنيميشن (300ms تتوافق مع مدة transition)
-  setTimeout(() => {
-    activeTab.value = "employee";
-    doneTabs.value.clear();
-    clearErrors();
-
-    // تصفير المتغيرات المؤقتة للرفع
-    tempNationalIdFile.value = "";
-    tempContractFiles.value = [];
-
-    Object.assign(form, {
-      withUser: false,
-      withContract: false,
-      withSalary: false,
-      roleMode: "none",
-      employee: {
-        fullName: "",
-        nationalityType: "",
-        iqamaExpiryDate: "",
-        nationalId: "",
-        nationalIdCardPath: "",
-        phone: "",
-        jobTitle: "",
-        department: "",
-        status: "active",
-      },
-      user: {
-        username: "",
-        email: "",
-        password: "",
-        roleId: "",
-        roleName: "",
-        permissionIds: [],
-      },
-      contract: {
-        contractType: "",
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: "",
-        annualLeaveDays: 30,
-        notes: "",
-        attachmentPaths: [],
-      },
-      salary: {
-        basicSalary: 0,
-        housingAllowance: 0,
-        transportAllowance: 0,
-        otherAllowances: 0,
-      },
-    });
-  }, 350); // زيادة بسيطة لضمان انتهاء الـ fade-out
 };
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
