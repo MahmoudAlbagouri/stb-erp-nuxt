@@ -1269,14 +1269,17 @@ const handleSubmit = async () => {
 // ── Close ─────────────────────────────────────────────────────────────────────
 const handleClose = () => {
   if (submitting.value) return;
+
+  // 1. إغلاق المودال فوراً
   emit("update:modelValue", false);
-  // reset
+
+  // 2. تصفير البيانات بعد انتهاء الأنيميشن (300ms تتوافق مع مدة transition)
   setTimeout(() => {
     activeTab.value = "employee";
     doneTabs.value.clear();
     clearErrors();
 
-    // تصفير المتغيرات المؤقتة
+    // تصفير المتغيرات المؤقتة للرفع
     tempNationalIdFile.value = "";
     tempContractFiles.value = [];
 
@@ -1319,9 +1322,8 @@ const handleClose = () => {
         otherAllowances: 0,
       },
     });
-  }, 300);
+  }, 350); // زيادة بسيطة لضمان انتهاء الـ fade-out
 };
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
   (n || 0).toLocaleString("ar-SA", { maximumFractionDigits: 0 });
