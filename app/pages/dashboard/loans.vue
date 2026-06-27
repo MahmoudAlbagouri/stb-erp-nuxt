@@ -124,14 +124,14 @@
                 <div class="actions-cell" v-if="loan.status === 'pending'">
                   <button
                     class="btn btn--success btn--sm"
-                    @click="approveLoan(loan.id)"
+                    @click="triggerApprove(loan)"
                     title="موافقة"
                   >
                     <Check :size="14" />
                   </button>
                   <button
                     class="btn btn--danger btn--sm"
-                    @click="rejectLoan(loan.id)"
+                    @click="triggerReject(loan)"
                     title="رفض"
                   >
                     <X :size="14" />
@@ -274,6 +274,26 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- ✅ Confirm Dialog for Approve -->
+    <ConfirmDialog
+      v-model="showApproveConfirm"
+      title="تأكيد الموافقة على القرض"
+      :message="`هل أنت متأكد من اعتماد قرض بقيمة ${formatCurrency(currentLoanTarget?.totalAmount || 0)} للموظف ${getEmployeeName(currentLoanTarget?.employeeId || '')}؟`"
+      confirm-text="اعتماد القرض"
+      :loading="actionLoading"
+      @confirm="executeApprove"
+    />
+
+    <!-- ✅ Confirm Dialog for Reject -->
+    <ConfirmDialog
+      v-model="showRejectConfirm"
+      title="تأكيد رفض القرض"
+      :message="`هل أنت متأكد من رفض طلب قرض الموظف ${getEmployeeName(currentLoanTarget?.employeeId || '')}؟ لا يمكن التراجع عن هذا الإجراء.`"
+      confirm-text="رفض الطلب"
+      :loading="actionLoading"
+      @confirm="executeReject"
+    />
   </div>
 </template>
 
@@ -282,6 +302,7 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useLoansStore } from "@/stores/loans";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
+import ConfirmDialog from "@/components/global/ConfirmDialog.vue"; // ✅ استيراد مكون التأكيد
 
 // ✅ استيراد أيقونات Lucide
 import {
@@ -303,6 +324,12 @@ const toast = useToast();
 // ─── State ──────────────────────────────────────────────────────────────────
 const showModal = ref(false);
 const submitting = ref(false);
+
+// ✅ حالات بوباب التأكيد للقروض
+const showApproveConfirm = ref(false);
+const showRejectConfirm = ref(false);
+const actionLoading = ref(false);
+const currentLoanTarget = ref<any | null>(null);
 
 const EMPTY_FORM = {
   totalAmount: 0,
@@ -346,28 +373,48 @@ const handleSubmit = async () => {
   }
 };
 
-const approveLoan = async (id: string) => {
-  if (!confirm("هل أنت متأكد من الموافقة على هذا القرض؟")) return;
+// ✅ دوال إدارة التأكيد بدلاً من alert
+const triggerApprove = (loan: any) => {
+  currentLoanTarget.value = loan;
+  showApproveConfirm.value = true;
+};
+
+const executeApprove = async () => {
+  if (!currentLoanTarget.value) return;
+  actionLoading.value = true;
   try {
-    await store.updateStatus(id, "approved");
-    toast.success("تمت الموافقة على القرض");
+    await store.updateStatus(currentLoanTarget.value.id, "approved");
+    toast.success("تمت الموافقة على القرض بنجاح");
+    showApproveConfirm.value = false;
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل في تنفيذ الموافقة");
+  } finally {
+    actionLoading.value = false;
   }
 };
 
-const rejectLoan = async (id: string) => {
-  if (!confirm("هل أنت متأكد من رفض هذا الطلب؟")) return;
+const triggerReject = (loan: any) => {
+  currentLoanTarget.value = loan;
+  showRejectConfirm.value = true;
+};
+
+const executeReject = async () => {
+  if (!currentLoanTarget.value) return;
+  actionLoading.value = true;
   try {
-    await store.updateStatus(id, "rejected");
-    toast.success("تم رفض الطلب");
+    await store.updateStatus(currentLoanTarget.value.id, "rejected");
+    toast.success("تم رفض طلب القرض");
+    showRejectConfirm.value = false;
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل في تنفيذ الرفض");
+  } finally {
+    actionLoading.value = false;
   }
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 const getEmployeeName = (id: string) => {
+  if (!id) return "-";
   const emp = employeesStore.employees.find((e) => e.id === id);
   return emp ? emp.fullName : "غير محدد";
 };
@@ -395,6 +442,7 @@ const formatCurrency = (val: number | string) => {
 };
 
 const truncateText = (text: string, limit: number) => {
+  if (!text) return "-";
   if (text.length <= limit) return text;
   return text.substring(0, limit) + "...";
 };
@@ -416,7 +464,6 @@ onMounted(() => {
   margin-bottom: $space-6;
 }
 
-// ✅ تخصيص ألوان أيقونات الإحصائيات
 .stat-card {
   &.stat-pending .stat-card__icon {
     background: rgba($stb-warning, 0.12);

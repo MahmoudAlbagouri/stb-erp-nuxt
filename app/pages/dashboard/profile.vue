@@ -12,7 +12,6 @@
         :disabled="store.loading"
       >
         <span v-if="store.loading" class="spinner spinner--sm" />
-        <!-- ✅ أيقونة التحديث بدلاً من الإيموجي -->
         <RefreshCw v-else :size="16" class="btn-icon" />
         <span>تحديث البيانات</span>
       </button>
@@ -24,8 +23,11 @@
     </div>
 
     <div v-else-if="store.data" class="profile-grid">
+      <!-- ... (الأقسام السابقة: البطاقة الشخصية، العقد، الراتب، الإجازات) تبقى كما هي ... -->
+
       <!-- 1. البطاقة الشخصية -->
       <div class="card profile-card--main">
+        <!-- ... محتوى البطاقة الشخصية ... -->
         <div class="profile-avatar-section">
           <div class="profile-avatar-lg">{{ store.avatarInitials }}</div>
           <div class="profile-info-main">
@@ -40,34 +42,35 @@
           </div>
         </div>
         <div class="profile-details-grid">
+          <!-- ... تفاصيل الموظف ... -->
           <div class="detail-item">
-            <span class="label">
-              <Hash :size="12" class="label-icon" /> كود الموظف
-            </span>
+            <span class="label"
+              ><Hash :size="12" class="label-icon" /> كود الموظف</span
+            >
             <span class="value">{{
               store.data.personal.employee?.employeeCode || "-"
             }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">
-              <Phone :size="12" class="label-icon" /> رقم الهاتف
-            </span>
+            <span class="label"
+              ><Phone :size="12" class="label-icon" /> رقم الهاتف</span
+            >
             <span class="value">{{
               store.data.personal.employee?.phone || "-"
             }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">
-              <Calendar :size="12" class="label-icon" /> تاريخ التعيين
-            </span>
+            <span class="label"
+              ><Calendar :size="12" class="label-icon" /> تاريخ التعيين</span
+            >
             <span class="value">{{
               formatDate(store.data.personal.employee?.createdAt)
             }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">
-              <Globe :size="12" class="label-icon" /> الجنسية
-            </span>
+            <span class="label"
+              ><Globe :size="12" class="label-icon" /> الجنسية</span
+            >
             <span class="value">{{ nationalityLabel }}</span>
           </div>
         </div>
@@ -102,7 +105,7 @@
         <div v-else class="empty-state--mini">لا يوجد عقد نشط</div>
       </div>
 
-      <!-- 3. الرصيد المالي والراتب -->
+      <!-- 3. الراتب والمديونية -->
       <div class="card">
         <div class="card__header">
           <h3 class="card__title">
@@ -129,7 +132,6 @@
           </div>
         </div>
         <div v-else class="empty-state--mini">لا يوجد راتب مسجل</div>
-
         <div class="debt-summary mt-4">
           <div class="debt-stat">
             <span class="label">إجمالي المديونية</span>
@@ -155,8 +157,9 @@
       <div class="card">
         <div class="card__header">
           <h3 class="card__title">
-            <CalendarDays :size="18" class="title-icon" />
-            رصيد الإجازات ({{ store.data.hr?.leaveBalance?.year || "-" }})
+            <CalendarDays :size="18" class="title-icon" /> رصيد الإجازات ({{
+              store.data.hr?.leaveBalance?.year || "-"
+            }})
           </h3>
         </div>
         <div v-if="store.data.hr?.leaveBalance" class="leave-circle-container">
@@ -193,7 +196,7 @@
         <div v-else class="empty-state--mini">لا يوجد رصيد مسجل لهذه السنة</div>
       </div>
 
-      <!-- 5. السلف والقروض النشطة -->
+      <!-- 5. المعاملات المالية النشطة -->
       <div class="card full-width">
         <div class="card__header">
           <h3 class="card__title">
@@ -207,19 +210,20 @@
             :class="{ active: activeTab === 'advances' }"
             @click="activeTab = 'advances'"
           >
-            <HandCoins :size="14" class="tab-icon" />
-            السلف ({{ store.pendingAdvancesCount }})
+            <HandCoins :size="14" class="tab-icon" /> السلف ({{
+              store.pendingAdvancesCount
+            }})
           </button>
           <button
             class="tab-btn"
             :class="{ active: activeTab === 'loans' }"
             @click="activeTab = 'loans'"
           >
-            <Landmark :size="14" class="tab-icon" />
-            القروض ({{ store.activeLoansCount }})
+            <Landmark :size="14" class="tab-icon" /> القروض ({{
+              store.activeLoansCount
+            }})
           </button>
         </div>
-
         <div class="table-responsive mt-4">
           <table class="data-table" v-if="activeTab === 'advances'">
             <thead>
@@ -246,7 +250,6 @@
               </tr>
             </tbody>
           </table>
-
           <table class="data-table" v-else>
             <thead>
               <tr>
@@ -274,6 +277,132 @@
           </table>
         </div>
       </div>
+
+      <!-- ✅ 6. سجل الإجازات (جديد) -->
+      <div class="card full-width">
+        <div class="card__header">
+          <h3 class="card__title">
+            <History :size="18" class="title-icon" /> سجل طلبات الإجازات
+          </h3>
+        </div>
+        <div class="table-responsive mt-2">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>النوع</th>
+                <th>من تاريخ</th>
+                <th>إلى تاريخ</th>
+                <th>المدة</th>
+                <th>الحالة</th>
+                <th>السبب</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="leave in store.leaveHistory" :key="leave.id">
+                <td>
+                  <span class="badge" :class="getLeaveTypeBadge(leave.type)">
+                    {{ getLeaveTypeLabel(leave.type) }}
+                  </span>
+                </td>
+                <td>{{ formatDate(leave.startDate) }}</td>
+                <td>{{ formatDate(leave.endDate) }}</td>
+                <td>{{ leave.durationDays }} يوم</td>
+                <td>
+                  <span class="badge" :class="getStatusBadge(leave.status)">
+                    {{ getStatusLabel(leave.status) }}
+                  </span>
+                </td>
+                <td class="text-muted text-sm">{{ leave.reason || "-" }}</td>
+              </tr>
+              <tr v-if="!store.leaveHistory.length">
+                <td colspan="6" class="text-center">لا يوجد سجل إجازات</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ✅ 7. المعاملات المرفوضة (جديد) -->
+      <div class="card full-width">
+        <div class="card__header">
+          <h3 class="card__title">
+            <XCircle :size="18" class="title-icon text-danger" /> المعاملات
+            المرفوضة
+          </h3>
+        </div>
+        <div class="tabs">
+          <button
+            class="tab-btn"
+            :class="{ active: rejectedTab === 'advances' }"
+            @click="rejectedTab = 'advances'"
+          >
+            <HandCoins :size="14" class="tab-icon" /> السلف المرفوضة ({{
+              store.rejectedAdvances.length
+            }})
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: rejectedTab === 'loans' }"
+            @click="rejectedTab = 'loans'"
+          >
+            <Landmark :size="14" class="tab-icon" /> القروض المرفوضة ({{
+              store.rejectedLoans.length
+            }})
+          </button>
+        </div>
+
+        <div class="table-responsive mt-4">
+          <!-- جدول السلف المرفوضة -->
+          <table class="data-table" v-if="rejectedTab === 'advances'">
+            <thead>
+              <tr>
+                <th>المبلغ المطلوب</th>
+                <th>تاريخ السداد المتوقع</th>
+                <th>تاريخ الرفض</th>
+                <th>السبب</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in store.rejectedAdvances" :key="item.id">
+                <td class="font-bold">{{ formatCurrency(item.amount) }}</td>
+                <td>{{ formatDate(item.repaymentDate) }}</td>
+                <td>{{ formatDate(item.rejectedAt) }}</td>
+                <td class="text-muted">{{ item.reason || "غير محدد" }}</td>
+              </tr>
+              <tr v-if="!store.rejectedAdvances.length">
+                <td colspan="4" class="text-center">لا توجد سلف مرفوضة</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- جدول القروض المرفوضة -->
+          <table class="data-table" v-else>
+            <thead>
+              <tr>
+                <th>مبلغ القرض</th>
+                <th>القسط الشهري</th>
+                <th>عدد الأقساط</th>
+                <th>تاريخ الرفض</th>
+                <th>السبب</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in store.rejectedLoans" :key="item.id">
+                <td class="font-bold">
+                  {{ formatCurrency(item.totalAmount) }}
+                </td>
+                <td>{{ formatCurrency(item.monthlyInstallment) }}</td>
+                <td>{{ item.installmentsCount }} قسط</td>
+                <td>{{ formatDate(item.rejectedAt) }}</td>
+                <td class="text-muted">{{ item.reason || "غير محدد" }}</td>
+              </tr>
+              <tr v-if="!store.rejectedLoans.length">
+                <td colspan="5" class="text-center">لا توجد قروض مرفوضة</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -285,7 +414,7 @@ import { ref, computed, onMounted } from "vue";
 import { useProfileStore } from "@/stores/profile";
 import { useToast } from "../../composables/useToast";
 
-// ✅ استيراد أيقونات Lucide
+// ✅ استيراد أيقونات Lucide الجديدة
 import {
   RefreshCw,
   Hash,
@@ -298,11 +427,15 @@ import {
   CreditCard,
   HandCoins,
   Landmark,
+  History,
+  XCircle,
 } from "lucide-vue-next";
 
 const store = useProfileStore();
 const toast = useToast();
+
 const activeTab = ref<"advances" | "loans">("advances");
+const rejectedTab = ref<"advances" | "loans">("advances"); // ✅ تبويب جديد للمرفوضات
 
 const nationalityLabel = computed(() => {
   const type = store.data?.personal.employee?.nationalityType;
@@ -318,6 +451,38 @@ const contractProgress = computed(() => {
   return Math.min(100, Math.max(0, ((365 - days) / 365) * 100));
 });
 
+// ✅ دوال مساعدة لتنسيق الحالات والأنواع
+const getLeaveTypeLabel = (type: string) => {
+  const types: Record<string, string> = {
+    annual: "سنوية",
+    unpaid: "بدون راتب",
+    other: "أخرى",
+  };
+  return types[type] || type;
+};
+
+const getLeaveTypeBadge = (type: string) => {
+  if (type === "annual") return "badge--success";
+  if (type === "unpaid") return "badge--warning";
+  return "badge--system";
+};
+
+const getStatusLabel = (status: string) => {
+  const statuses: Record<string, string> = {
+    approved: "موافق",
+    pending: "معلق",
+    rejected: "مرفوض",
+  };
+  return statuses[status] || status;
+};
+
+const getStatusBadge = (status: string) => {
+  if (status === "approved") return "badge--success";
+  if (status === "pending") return "badge--pending";
+  if (status === "rejected") return "badge--danger";
+  return "badge--system";
+};
+
 const refreshData = async () => {
   try {
     await store.refreshProfile();
@@ -329,6 +494,7 @@ const refreshData = async () => {
 
 const formatDate = (date?: string | null) =>
   date ? new Date(date).toLocaleDateString("ar-SA") : "-";
+
 const formatCurrency = (val?: number) =>
   val ? `${val.toLocaleString("ar-SA")} ر.س` : "0 ر.س";
 
@@ -340,6 +506,8 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
+/* ... (نفس الـ CSS السابق) ... */
 
 .profile-grid {
   display: grid;
@@ -404,7 +572,6 @@ onMounted(() => {
   font-size: $font-size-xs;
   color: $stb-text-muted;
   @include flex(row, center, flex-start, 4px);
-
   .label-icon {
     flex-shrink: 0;
     opacity: 0.7;
@@ -416,10 +583,8 @@ onMounted(() => {
   color: $stb-text-primary;
 }
 
-/* ✅ تنسيق أيقونات عناوين البطاقات */
 .card__title {
   @include flex(row, center, flex-start, $space-2);
-
   .title-icon {
     color: $stb-accent;
     flex-shrink: 0;
@@ -529,7 +694,6 @@ onMounted(() => {
   transition: all $transition-fast;
   border-radius: $radius-md;
   @include flex(row, center, center, $space-2);
-
   .tab-icon {
     flex-shrink: 0;
   }
@@ -543,7 +707,6 @@ onMounted(() => {
   background: $stb-surface-2;
 }
 
-/* ✅ أيقونة زر التحديث */
 .btn-icon {
   margin-left: $space-2;
 }

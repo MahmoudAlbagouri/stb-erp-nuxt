@@ -12,7 +12,7 @@
       </button>
     </div>
 
-    <!-- ═ Stats Cards ══════════════════════════════════════════════════════ -->
+    <!-- ═ Stats Cards ═════════════════════════════════════════════════════ -->
     <div class="grid-3 stats-row">
       <div class="stat-card stat-pending">
         <div class="stat-card__icon">
@@ -50,7 +50,7 @@
       <div class="spinner spinner--lg" />
     </div>
 
-    <!-- ══ Empty State ═════════════════════════════════════════════════════ -->
+    <!-- ══ Empty State ════════════════════════════════════════════════════ -->
     <div v-else-if="!store.advances.length" class="card empty-card">
       <div class="empty-state">
         <HandCoins :size="40" class="empty-icon" />
@@ -63,7 +63,7 @@
       </div>
     </div>
 
-    <!-- ══ Advances Table ══════════════════════════════════════════════════ -->
+    <!-- ══ Advances Table ═════════════════════════════════════════════════ -->
     <div v-else class="card table-card">
       <div class="table-responsive">
         <table class="data-table">
@@ -116,14 +116,14 @@
                 <div class="actions-cell" v-if="adv.status === 'pending'">
                   <button
                     class="btn btn--success btn--sm"
-                    @click="approveAdvance(adv.id)"
+                    @click="triggerApprove(adv)"
                     title="موافقة"
                   >
                     <Check :size="14" />
                   </button>
                   <button
                     class="btn btn--danger btn--sm"
-                    @click="rejectAdvance(adv.id)"
+                    @click="triggerReject(adv)"
                     title="رفض"
                   >
                     <X :size="14" />
@@ -223,6 +223,26 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- ✅ Confirm Dialog for Approve -->
+    <ConfirmDialog
+      v-model="showApproveConfirm"
+      title="تأكيد الموافقة على السلفة"
+      :message="`هل أنت متأكد من اعتماد سلفة بقيمة ${formatCurrency(currentAdvanceTarget?.amount || 0)} للموظف ${getEmployeeName(currentAdvanceTarget?.employeeId || '')}؟`"
+      confirm-text="اعتماد السلفة"
+      :loading="actionLoading"
+      @confirm="executeApprove"
+    />
+
+    <!-- ✅ Confirm Dialog for Reject -->
+    <ConfirmDialog
+      v-model="showRejectConfirm"
+      title="تأكيد رفض السلفة"
+      :message="`هل أنت متأكد من رفض طلب سلفة الموظف ${getEmployeeName(currentAdvanceTarget?.employeeId || '')}؟ لا يمكن التراجع عن هذا الإجراء.`"
+      confirm-text="رفض الطلب"
+      :loading="actionLoading"
+      @confirm="executeReject"
+    />
   </div>
 </template>
 
@@ -231,6 +251,7 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useAdvancesStore } from "@/stores/advances";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
+import ConfirmDialog from "@/components/global/ConfirmDialog.vue"; // ✅ استيراد مكون التأكيد
 
 // ✅ استيراد أيقونات Lucide
 import {
@@ -252,6 +273,12 @@ const toast = useToast();
 // ─── State ──────────────────────────────────────────────────────────────────
 const showModal = ref(false);
 const submitting = ref(false);
+
+// ✅ حالات بوباب التأكيد للسلف
+const showApproveConfirm = ref(false);
+const showRejectConfirm = ref(false);
+const actionLoading = ref(false);
+const currentAdvanceTarget = ref<any | null>(null);
 
 const EMPTY_FORM = {
   amount: 0,
@@ -294,28 +321,48 @@ const handleSubmit = async () => {
   }
 };
 
-const approveAdvance = async (id: string) => {
-  if (!confirm("هل أنت متأكد من الموافقة على هذه السلفة؟")) return;
+// ✅ دوال إدارة التأكيد بدلاً من alert
+const triggerApprove = (adv: any) => {
+  currentAdvanceTarget.value = adv;
+  showApproveConfirm.value = true;
+};
+
+const executeApprove = async () => {
+  if (!currentAdvanceTarget.value) return;
+  actionLoading.value = true;
   try {
-    await store.updateStatus(id, "approved");
-    toast.success("تمت الموافقة على السلفة");
+    await store.updateStatus(currentAdvanceTarget.value.id, "approved");
+    toast.success("تمت الموافقة على السلفة بنجاح");
+    showApproveConfirm.value = false;
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل في تنفيذ الموافقة");
+  } finally {
+    actionLoading.value = false;
   }
 };
 
-const rejectAdvance = async (id: string) => {
-  if (!confirm("هل أنت متأكد من رفض هذا الطلب؟")) return;
+const triggerReject = (adv: any) => {
+  currentAdvanceTarget.value = adv;
+  showRejectConfirm.value = true;
+};
+
+const executeReject = async () => {
+  if (!currentAdvanceTarget.value) return;
+  actionLoading.value = true;
   try {
-    await store.updateStatus(id, "rejected");
-    toast.success("تم رفض الطلب");
+    await store.updateStatus(currentAdvanceTarget.value.id, "rejected");
+    toast.success("تم رفض طلب السلفة");
+    showRejectConfirm.value = false;
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل في تنفيذ الرفض");
+  } finally {
+    actionLoading.value = false;
   }
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
 const getEmployeeName = (id: string) => {
+  if (!id) return "-";
   const emp = employeesStore.employees.find((e) => e.id === id);
   return emp ? emp.fullName : "غير محدد";
 };
@@ -343,6 +390,7 @@ const formatCurrency = (val: number | string) => {
 };
 
 const truncateText = (text: string, limit: number) => {
+  if (!text) return "-";
   if (text.length <= limit) return text;
   return text.substring(0, limit) + "...";
 };
@@ -364,7 +412,6 @@ onMounted(() => {
   margin-bottom: $space-6;
 }
 
-// ✅ تخصيص ألوان أيقونات الإحصائيات
 .stat-card {
   &.stat-pending .stat-card__icon {
     background: rgba($stb-warning, 0.12);

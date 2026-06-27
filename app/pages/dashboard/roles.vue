@@ -35,9 +35,9 @@
           <div class="role-card__icon">🛡</div>
           <div class="role-card__info">
             <h3>{{ role.displayNameAr || role.name }}</h3>
-            <span :class="`badge badge--${role.scope}`">{{
+            <!-- <span :class="`badge badge--${role.scope}`">{{
               role.scope === "system" ? "نظام" : "مستأجر"
-            }}</span>
+            }}</span> -->
           </div>
         </div>
         <div class="role-card__perms">
@@ -139,12 +139,12 @@
                       >
                         ({{ perm.name }})
                       </small>
-                      <span
+                      <!-- <span
                         :class="`badge badge--${perm.scope}`"
                         style="margin-right: auto; margin-left: 0"
                       >
                         {{ perm.scope === "system" ? "نظام" : "مستأجر" }}
-                      </span>
+                      </span> -->
                     </label>
                   </div>
                 </div>

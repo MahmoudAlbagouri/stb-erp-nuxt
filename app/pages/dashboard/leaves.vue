@@ -69,7 +69,6 @@
         <table class="data-table">
           <thead>
             <tr>
-              <!-- ✅ تمت إضافة عمود الموظف هنا -->
               <th>الموظف</th>
               <th>من تاريخ</th>
               <th>إلى تاريخ</th>
@@ -83,7 +82,6 @@
           </thead>
           <tbody>
             <tr v-for="req in store.requests" :key="req.id">
-              <!-- ✅ عرض اسم الموظف باستخدام الدالة المساعدة -->
               <td class="font-medium">
                 {{ getEmployeeName(req) }}
               </td>
@@ -107,14 +105,14 @@
                 <div class="actions-cell" v-if="req.status === 'pending'">
                   <button
                     class="btn btn--success btn--sm"
-                    @click="approveLeave(req.id)"
+                    @click="triggerApprove(req)"
                     title="موافقة"
                   >
                     <Check :size="14" />
                   </button>
                   <button
                     class="btn btn--danger btn--sm"
-                    @click="rejectLeave(req.id)"
+                    @click="triggerReject(req)"
                     title="رفض"
                   >
                     <X :size="14" />
@@ -221,6 +219,26 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- ✅ Confirm Dialog for Approve -->
+    <ConfirmDialog
+      v-model="showApproveConfirm"
+      title="تأكيد الموافقة"
+      :message="`هل أنت متأكد من الموافقة على إجازة ${currentActionTarget?.employee?.fullName || ''}؟`"
+      confirm-text="موافقة"
+      :loading="actionLoading"
+      @confirm="executeApprove"
+    />
+
+    <!-- ✅ Confirm Dialog for Reject -->
+    <ConfirmDialog
+      v-model="showRejectConfirm"
+      title="تأكيد الرفض"
+      :message="`هل أنت متأكد من رفض إجازة ${currentActionTarget?.employee?.fullName || ''}؟ لا يمكن التراجع عن هذا الإجراء.`"
+      confirm-text="رفض"
+      :loading="actionLoading"
+      @confirm="executeReject"
+    />
   </div>
 </template>
 
@@ -228,7 +246,8 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "../../composables/useToast";
-import type { CreateLeavePayload } from "@/types";
+import type { CreateLeavePayload, LeaveRequest } from "@/types";
+import ConfirmDialog from "@/components/global/ConfirmDialog.vue"; // ✅ استيراد مكون التأكيد
 
 // ✅ استيراد أيقونات Lucide
 import {
@@ -250,6 +269,12 @@ const toast = useToast();
 // ─── State ─────────────────────────────────────────────────────────────────
 const showCreateModal = ref(false);
 const submitting = ref(false);
+
+// ✅ حالات بوباب التأكيد
+const showApproveConfirm = ref(false);
+const showRejectConfirm = ref(false);
+const actionLoading = ref(false);
+const currentActionTarget = ref<LeaveRequest | null>(null);
 
 const leaveTypeOptions: { value: CreateLeavePayload["type"]; label: string }[] =
   [
@@ -277,15 +302,11 @@ const rejectedCount = computed(
 );
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-
-// ✅ دالة جديدة لاستخراج اسم الموظف بأمان من كائن employee
 const getEmployeeName = (req: any) => {
   if (req.employee) {
     return req.employee.fullName || req.employee.name || "غير محدد";
   }
-  // احتياط: إذا كان الاسم مخزناً مباشرة في الطلب
   if (req.employeeName) return req.employeeName;
-
   return "-";
 };
 
@@ -320,7 +341,7 @@ const calculateDays = (start: string, end: string) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
 
-// ─── Actions ───────────────────────────────────────────────────────────────
+// ─── Actions ──────────────────────────────────────────────────────────────
 const openCreateModal = () => {
   Object.assign(createForm, {
     startDate: "",
@@ -344,23 +365,42 @@ const handleCreateLeave = async () => {
   }
 };
 
-const approveLeave = async (id: string) => {
-  if (!confirm("هل أنت متأكد من الموافقة؟")) return;
+// ✅ دوال إدارة التأكيد بدلاً من alert
+const triggerApprove = (req: LeaveRequest) => {
+  currentActionTarget.value = req;
+  showApproveConfirm.value = true;
+};
+
+const executeApprove = async () => {
+  if (!currentActionTarget.value) return;
+  actionLoading.value = true;
   try {
-    await store.updateStatus(id, "approved");
-    toast.success("تمت الموافقة");
+    await store.updateStatus(currentActionTarget.value.id, "approved");
+    toast.success("تمت الموافقة على الإجازة بنجاح");
+    showApproveConfirm.value = false;
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل في تنفيذ الموافقة");
+  } finally {
+    actionLoading.value = false;
   }
 };
 
-const rejectLeave = async (id: string) => {
-  if (!confirm("هل أنت متأكد من الرفض؟")) return;
+const triggerReject = (req: LeaveRequest) => {
+  currentActionTarget.value = req;
+  showRejectConfirm.value = true;
+};
+
+const executeReject = async () => {
+  if (!currentActionTarget.value) return;
+  actionLoading.value = true;
   try {
-    await store.updateStatus(id, "rejected");
-    toast.success("تم الرفض");
+    await store.updateStatus(currentActionTarget.value.id, "rejected");
+    toast.success("تم رفض الإجازة");
+    showRejectConfirm.value = false;
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل في تنفيذ الرفض");
+  } finally {
+    actionLoading.value = false;
   }
 };
 
@@ -378,7 +418,6 @@ onMounted(() => {
   margin-bottom: $space-6;
 }
 
-// ✅ تخصيص ألوان أيقونات الإحصائيات
 .stat-card {
   &.stat-pending .stat-card__icon {
     background: rgba($stb-warning, 0.12);

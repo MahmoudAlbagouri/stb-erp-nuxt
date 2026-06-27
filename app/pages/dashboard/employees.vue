@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <!-- ══ Stats Bar ════════════════════════════════════════════════════════ -->
+    <!-- ══ Stats Bar ═══════════════════════════════════════════════════════ -->
     <div class="stats-bar">
       <div class="stat-pill">
         <Users :size="14" />
@@ -190,7 +190,7 @@
           </div>
 
           <!-- مؤشرات المستخدم والعقد -->
-          <div class="emp-card__badges @click.stop">
+          <div class="emp-card__badges" @click.stop>
             <span v-if="emp.user" class="mini-badge mini-badge--user">
               <ShieldCheck :size="11" /> مستخدم
             </span>
@@ -224,7 +224,7 @@
     <!-- ══ Onboarding Modal ══════════════════════════════════════════════════ -->
     <OnboardingModal v-model="showOnboarding" @created="onEmployeeCreated" />
 
-    <!-- ══ Edit Modal (الموظف البسيط — بدون onboarding) ══════════════════════ -->
+    <!-- ══ Edit Modal (الموظف البسيط — مع ربط المستخدم) ═════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -328,6 +328,45 @@
                   </select>
                 </div>
 
+                <!-- ✅ خانة ربط المستخدم الجديد -->
+                <div class="form-group full-width linked-user-section">
+                  <label>
+                    <LinkIcon :size="14" />
+                    ربط بحساب مستخدم موجود
+                  </label>
+
+                  <div class="linked-user-controls">
+                    <select
+                      v-model="editForm.userId"
+                      class="form-select"
+                      :class="{ 'has-value': editForm.userId }"
+                    >
+                      <option value="">-- اختر مستخدماً للربط --</option>
+                      <option
+                        v-for="u in availableUsers"
+                        :key="u.id"
+                        :value="u.id"
+                      >
+                        {{ u.username }} ({{ u.email }})
+                      </option>
+                    </select>
+
+                    <button
+                      v-if="editForm.userId"
+                      type="button"
+                      class="btn btn--danger btn--sm unlink-btn"
+                      @click="editForm.userId = null"
+                      title="إلغاء الربط"
+                    >
+                      <Unlink :size="14" />
+                    </button>
+                  </div>
+
+                  <small class="form-hint">
+                    يظهر هنا فقط المستخدمون الذين لا يرتبطون بموظف آخر حالياً.
+                  </small>
+                </div>
+
                 <div class="form-group full-width">
                   <label>صورة/ملف الهوية</label>
                   <StbUploader
@@ -381,8 +420,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
+import { useUsersStore } from "@/stores/users"; // ✅ استيراد ستور المستخدمين
 import { useToast } from "@/composables/useToast";
-import type { Employee } from "@/types";
+import type { Employee, User } from "@/types";
 import OnboardingModal from "@/components/employees/OnboardingModal.vue";
 
 import {
@@ -401,12 +441,14 @@ import {
   Trash2,
   X,
   ShieldCheck,
-  Plus,
+  Link as LinkIcon, // ✅ أيقونة الربط
+  Unlink, // ✅ أيقونة فك الربط
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useEmployeesStore();
+const usersStore = useUsersStore(); // ✅ تهيئة ستور المستخدمين
 const toast = useToast();
 
 // ─── Onboarding ───────────────────────────────────────────────────────────────
@@ -414,10 +456,9 @@ const showOnboarding = ref(false);
 
 const onEmployeeCreated = (result: any) => {
   toast.success(`✅ تم تأهيل الموظف "${result.employee.fullName}" بنجاح`);
-  // store already updated inside OnboardingModal
 };
 
-// ─── Export ───────────────────────────────────────────────────────────────────
+// ─── Export ──────────────────────────────────────────────────────────────────
 const exporting = ref<"excel" | "pdf" | null>(null);
 
 const handleExport = async (type: "excel" | "pdf") => {
@@ -456,7 +497,7 @@ const filtered = computed(() =>
 const countByStatus = (s: string) =>
   store.employees.filter((e: Employee) => e.status === s).length;
 
-// ─── Edit Modal ────────────────────────────────────────────────────────────────
+// ─── Edit Modal & User Linking ───────────────────────────────────────────────
 const showEditModal = ref(false);
 const updating = ref(false);
 const editingEmployee = ref<Employee | null>(null);
@@ -471,10 +512,36 @@ const editForm = reactive({
   jobTitle: "",
   department: "",
   status: "active" as "active" | "inactive" | "terminated",
+  userId: null as string | null, // ✅ حقل تخزين ID المستخدم للربط
 });
 
-const openEdit = (emp: Employee) => {
+/**
+ * ✅ حساب المستخدمين المتاحين للربط
+ * نستبعد المستخدمين المرتبطين بموظفين آخرين لتجنب التضارب
+ */
+const availableUsers = computed(() => {
+  // جلب IDs جميع الموظفين الذين لديهم مستخدم مرتبط حالياً
+  const assignedUserIds = new Set(
+    store.employees.filter((e) => e.user?.id).map((e) => e.user!.id),
+  );
+
+  // إذا كنا نعدل موظفاً لديه مستخدم مرتبط، نستبعده من القائمة المحظورة مؤقتاً
+  // لكي لا يختفي المستخدم الحالي من القائمة عند التعديل
+  if (editingEmployee.value?.user?.id) {
+    assignedUserIds.delete(editingEmployee.value.user.id);
+  }
+
+  return usersStore.users.filter((u: User) => !assignedUserIds.has(u.id));
+});
+
+const openEdit = async (emp: Employee) => {
   editingEmployee.value = emp;
+
+  // ✅ جلب المستخدمين قبل فتح المودال لضمان تحديث القائمة
+  if (usersStore.users.length === 0) {
+    await usersStore.fetchAll();
+  }
+
   Object.assign(editForm, {
     fullName: emp.fullName,
     nationalityType: emp.nationalityType,
@@ -487,6 +554,7 @@ const openEdit = (emp: Employee) => {
     jobTitle: emp.jobTitle ?? "",
     department: emp.department ?? "",
     status: emp.status,
+    userId: emp.user?.id ?? null, // ✅ تعيين المستخدم المرتبط حالياً
   });
   showEditModal.value = true;
 };
@@ -495,12 +563,24 @@ const handleUpdate = async () => {
   if (!editingEmployee.value) return;
   updating.value = true;
   try {
-    const payload: any = { ...editForm };
+    const payload: any = {
+      fullName: editForm.fullName,
+      nationalityType: editForm.nationalityType,
+      nationalId: editForm.nationalId || undefined,
+      nationalIdCardPath: editForm.nationalIdCardPath || undefined,
+      phone: editForm.phone || undefined,
+      jobTitle: editForm.jobTitle || undefined,
+      department: editForm.department || undefined,
+      status: editForm.status,
+      userId: editForm.userId || undefined, // ✅ إرسال userId للباك إند
+    };
+
     if (editForm.nationalityType !== "non_saudi") {
       payload.iqamaExpiryDate = null;
     }
+
     await store.update(editingEmployee.value.id, payload);
-    toast.success("تم تحديث بيانات الموظف");
+    toast.success("تم تحديث بيانات الموظف وربط الحساب بنجاح");
     showEditModal.value = false;
   } catch (e: any) {
     toast.error(e.message);
@@ -511,7 +591,6 @@ const handleUpdate = async () => {
 
 // ─── Detail ──────────────────────────────────────────────────────────────────
 const openDetail = (emp: Employee) => {
-  // يمكن فتح صفحة التفاصيل أو drawer
   navigateTo(`/employees/${emp.id}`);
 };
 
@@ -558,26 +637,28 @@ const isIqamaExpiringSoon = (date: string) => {
 };
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-onMounted(() => store.fetchAll());
+onMounted(() => {
+  store.fetchAll();
+  usersStore.fetchAll(); // ✅ جلب المستخدمين عند تحميل الصفحة
+});
 </script>
 
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ══ Header Actions ════════════════════════════════════════════════════════════
+// ... (نفس التنسيقات السابقة للكروت والفلاتر) ...
+
 .page-header__actions {
   display: flex;
   gap: $space-2;
   flex-wrap: wrap;
-
   @include respond-to("md") {
     width: 100%;
     justify-content: space-between;
   }
 }
 
-// ══ Stats Bar ════════════════════════════════════════════════════════════════
 .stats-bar {
   display: flex;
   gap: $space-3;
@@ -593,12 +674,10 @@ onMounted(() => store.fetchAll());
   border-radius: $radius-full;
   font-size: $font-size-xs;
   color: $stb-text-secondary;
-
   strong {
     color: $stb-text-primary;
     font-weight: 700;
   }
-
   &--active {
     border-color: rgba($stb-success, 0.3);
   }
@@ -615,7 +694,6 @@ onMounted(() => store.fetchAll());
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-
   &--active {
     background: $stb-success;
   }
@@ -627,28 +705,23 @@ onMounted(() => store.fetchAll());
   }
 }
 
-// ══ Filters ═══════════════════════════════════════════════════════════════════
 .filters-card {
   padding: $space-4 $space-5;
   margin-bottom: $space-5;
 }
-
 .filters-row {
   @include flex(row, center, flex-start, $space-3);
   width: 100%;
   flex-wrap: wrap;
-
   @include respond-to("md") {
     flex-direction: column;
     align-items: stretch;
   }
 }
-
 .search-bar {
   position: relative;
   flex: 1;
   min-width: 200px;
-
   .search-bar__icon {
     position: absolute;
     right: $space-3;
@@ -657,14 +730,12 @@ onMounted(() => store.fetchAll());
     color: $stb-text-muted;
     pointer-events: none;
   }
-
   input {
     width: 100%;
     padding-right: $space-8;
     padding-left: $space-8;
   }
 }
-
 .search-clear {
   position: absolute;
   left: $space-3;
@@ -678,28 +749,23 @@ onMounted(() => store.fetchAll());
   background: $stb-surface-3;
   color: $stb-text-muted;
   cursor: pointer;
-
   &:hover {
     background: $stb-danger;
     color: white;
   }
 }
-
 .status-select {
   width: 150px;
-
   @include respond-to("md") {
     width: 100%;
   }
 }
 
-// ══ Skeleton Loading ══════════════════════════════════════════════════════════
 .loading-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
-
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -710,37 +776,31 @@ onMounted(() => store.fetchAll());
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: $radius-md;
-
   &--avatar {
     width: 48px;
     height: 48px;
     border-radius: $radius-lg;
     flex-shrink: 0;
   }
-
   &--line {
     height: 14px;
     width: 70%;
     margin-bottom: $space-2;
   }
-
   &--line-sm {
     height: 11px;
     width: 40%;
   }
 }
-
 .skeleton-lines {
   flex: 1;
 }
-
 .emp-card--skeleton {
   @include flex(row, center, flex-start, $space-3);
   padding: $space-5;
   pointer-events: none;
   min-height: 80px;
 }
-
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
@@ -750,16 +810,13 @@ onMounted(() => store.fetchAll());
   }
 }
 
-// ══ Empty State ═══════════════════════════════════════════════════════════════
 .empty-wrapper {
   @include flex(row, center, center);
   min-height: 320px;
 }
-
 .empty-state {
   @include flex(column, center, center, $space-3);
   text-align: center;
-
   &__illustration {
     width: 80px;
     height: 80px;
@@ -771,13 +828,11 @@ onMounted(() => store.fetchAll());
     opacity: 0.5;
     margin-bottom: $space-2;
   }
-
   &__title {
     font-size: $font-size-lg;
     font-weight: 700;
     color: $stb-text-secondary;
   }
-
   &__text {
     font-size: $font-size-sm;
     color: $stb-text-muted;
@@ -785,13 +840,11 @@ onMounted(() => store.fetchAll());
   }
 }
 
-// ══ Employee Grid ══════════════════════════════════════════════════════════════
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
-
 .emp-card {
   @include glass-card;
   padding: $space-5;
@@ -800,16 +853,13 @@ onMounted(() => store.fetchAll());
   gap: $space-3;
   transition: all $transition-base;
   cursor: pointer;
-
   &:hover {
     transform: translateY(-2px);
     @include glow-border;
   }
-
   &__header {
     @include flex(row, center, flex-start, $space-3);
   }
-
   &__avatar {
     width: 48px;
     height: 48px;
@@ -822,8 +872,6 @@ onMounted(() => store.fetchAll());
     flex-shrink: 0;
     box-shadow: $shadow-glow;
     position: relative;
-
-    // مؤشر حالة صغير
     &::after {
       content: "";
       position: absolute;
@@ -834,7 +882,6 @@ onMounted(() => store.fetchAll());
       border-radius: 50%;
       border: 2px solid $stb-surface;
     }
-
     &[data-status="active"]::after {
       background: $stb-success;
     }
@@ -845,11 +892,9 @@ onMounted(() => store.fetchAll());
       background: $stb-danger;
     }
   }
-
   &__info {
     flex: 1;
     min-width: 0;
-
     h3 {
       font-size: $font-size-base;
       font-weight: 700;
@@ -857,27 +902,23 @@ onMounted(() => store.fetchAll());
       margin: 0 0 2px;
     }
   }
-
   &__code {
     font-size: $font-size-xs;
     color: $stb-accent;
     font-family: monospace;
     letter-spacing: 0.05em;
   }
-
   &__body {
     display: flex;
     flex-direction: column;
     gap: $space-2;
     flex: 1;
   }
-
   &__badges {
     @include flex(row, center, flex-start, $space-2);
     flex-wrap: wrap;
     margin-top: $space-1;
   }
-
   &__footer {
     @include flex(row, center, flex-end, $space-2);
     padding-top: $space-3;
@@ -885,102 +926,122 @@ onMounted(() => store.fetchAll());
     margin-top: auto;
   }
 }
-
 .emp-detail {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-xs;
   color: $stb-text-secondary;
-
   .detail-icon {
     flex-shrink: 0;
     color: $stb-text-muted;
   }
-
   &--primary {
     font-weight: 600;
     color: $stb-text-primary;
     font-size: $font-size-sm;
   }
 }
-
 .text-warning {
   color: $stb-warning !important;
   font-weight: 600;
 }
-
 .mini-badge {
   @include flex(row, center, center, 4px);
   font-size: 10px;
   padding: 2px 7px;
   border-radius: $radius-sm;
   font-weight: 600;
-
   &--user {
     background: rgba($stb-accent, 0.1);
     color: $stb-accent;
   }
-
   &--contract {
     background: rgba($stb-success, 0.1);
     color: $stb-success;
   }
-
   &--doc {
     background: rgba($stb-warning, 0.1);
     color: $stb-warning;
   }
 }
 
-// ══ Modal Form ════════════════════════════════════════════════════════════════
 .modal-lg {
   max-width: 680px;
 }
-
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
 }
-
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-4;
-
   @include respond-to("md") {
     grid-template-columns: 1fr;
   }
 }
-
 .full-width {
   grid-column: span 2;
-
   @include respond-to("md") {
     grid-column: span 1;
   }
 }
-
 .form-group {
   display: flex;
   flex-direction: column;
   gap: $space-1;
-
   label {
     font-size: $font-size-sm;
     font-weight: 600;
     color: $stb-text-secondary;
+    @include flex(row, center, flex-start, $space-2);
+    svg {
+      flex-shrink: 0;
+    }
   }
 }
-
 .modal__footer {
   @include flex(row, center, flex-end, $space-3);
   padding-top: $space-4;
   border-top: 1px solid $stb-border;
 }
-
-// ══ Utilities ════════════════════════════════════════════════════════════════
 .mt-4 {
   margin-top: $space-4 !important;
+}
+
+// ✅ تنسيقات خاصة بخانة ربط المستخدم
+.linked-user-section {
+  background: rgba($stb-accent, 0.03);
+  padding: $space-3;
+  border-radius: $radius-md;
+  border: 1px dashed $stb-border;
+
+  label {
+    margin-bottom: $space-2;
+    color: $stb-accent;
+  }
+}
+
+.linked-user-controls {
+  display: flex;
+  gap: $space-2;
+  align-items: center;
+
+  select {
+    flex: 1;
+  }
+
+  .unlink-btn {
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 $space-3;
+  }
+}
+
+.form-hint {
+  font-size: 11px;
+  color: $stb-text-muted;
+  margin-top: $space-1;
 }
 </style>
