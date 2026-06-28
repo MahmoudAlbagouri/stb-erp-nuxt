@@ -142,6 +142,15 @@
               <Landmark class="sidebar-nav__icon" />
               <span>القروض</span>
             </NuxtLink>
+            <!-- أضف هذا السطر داخل div.sidebar-submenu بعد رابط القروض -->
+            <NuxtLink
+              to="/dashboard/payroll"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <Calculator class="sidebar-nav__icon" />
+              <span>مسيرات الرواتب</span>
+            </NuxtLink>
             <NuxtLink
               v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
               to="/dashboard/quotations"
@@ -167,7 +176,7 @@
             profile.fullName || "جاري التحميل..."
           }}</span>
           <span class="sidebar-footer__role">{{
-            profile.data?.personal.user.role || "مستخدم"
+            profile.data?.personal.user.role || "مالك الشركة"
           }}</span>
         </div>
       </div>
@@ -202,6 +211,7 @@ import {
   Banknote,
   CalendarDays,
   Fingerprint,
+  Calculator,
   HandCoins,
   Landmark,
   LogOut,

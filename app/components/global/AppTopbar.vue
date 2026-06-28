@@ -18,7 +18,12 @@
 
     <div class="topbar-actions">
       <div class="topbar-badge">
-        <span v-if="auth.isSuperAdmin" class="badge badge--active">مدير</span>
+        <span v-if="auth.isSuperAdmin" class="badge badge--active"
+          >مالك الشركة</span
+        >
+        <span v-else-if="auth.isSystemAdmin" class="badge badge--active"
+          >مالك النظام</span
+        >
         <span v-else class="badge badge--tenant">مستخدم</span>
       </div>
     </div>
