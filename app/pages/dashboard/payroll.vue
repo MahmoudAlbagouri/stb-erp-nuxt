@@ -109,7 +109,7 @@
 
     <!-- ══ Filters ══════════════════════════════════════════════════════════ -->
     <div class="card filters-card">
-      <!-- <div class="filters-row">
+      <div class="filters-row">
         <select v-model.number="filterYear" class="form-select status-select">
           <option value="">كل السنوات</option>
           <option v-for="y in availableYears" :key="y" :value="y">
@@ -151,7 +151,7 @@
           <FileText v-else :size="15" />
           تصدير PDF
         </button>
-      </div> -->
+      </div>
     </div>
 
     <!-- ══ Loading ══════════════════════════════════════════════════════════ -->
