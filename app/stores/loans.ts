@@ -1,3 +1,4 @@
+// stores/loans.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
@@ -44,11 +45,18 @@ export const useLoansStore = defineStore("loans", () => {
     return res.data;
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    loans.value = [];
+    loading.value = false;
+  };
+
   return {
     loans,
     loading,
     fetchAll,
     createMyLoan,
     updateStatus,
+    reset, // ✅ تم التصدير
   };
 });

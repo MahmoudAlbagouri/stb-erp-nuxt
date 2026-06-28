@@ -47,5 +47,22 @@ export const useRolesStore = defineStore("roles", () => {
     roles.value = roles.value.filter((r) => r.id !== id);
   };
 
-  return { roles, loading, error, fetchAll, getById, create, update, remove };
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    roles.value = [];
+    loading.value = false;
+    error.value = null;
+  };
+
+  return {
+    roles,
+    loading,
+    error,
+    fetchAll,
+    getById,
+    create,
+    update,
+    remove,
+    reset, // ✅ تم التصدير
+  };
 });

@@ -11,6 +11,13 @@ export default defineNuxtRouteMiddleware((to) => {
     "/auth/forgot-password",
     "/auth/reset-password",
   ];
+  if (typeof window !== "undefined") {
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+  }
 
   const isPublicRoute = publicRoutes.includes(to.path);
 

@@ -248,7 +248,7 @@ onMounted(async () => {
 });
 
 const handleLogout = () => {
-  profile.clearProfile();
+  profile.reset();
   auth.logout();
 };
 </script>

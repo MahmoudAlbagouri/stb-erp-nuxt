@@ -10,7 +10,7 @@ export interface Payroll {
   totalNetSalary: string;
   paymentDate: string;
   generatedAt: string;
-  items?: any[]; // يمكن تعريف Type أكثر دقة لاحقاً
+  items?: any[];
 }
 
 export const usePayrollStore = defineStore("payroll", () => {
@@ -43,7 +43,6 @@ export const usePayrollStore = defineStore("payroll", () => {
   // توليد مسير جديد
   const generate = async (month: number, year: number) => {
     const res = await api.post<Payroll>(`/payroll/generate/${month}/${year}`);
-    // تحديث القائمة بإضافة المسير الجديد في الأعلى
     payrolls.value.unshift(res.data);
     return res.data;
   };
@@ -84,6 +83,13 @@ export const usePayrollStore = defineStore("payroll", () => {
     }
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    payrolls.value = [];
+    loading.value = false;
+    error.value = null;
+  };
+
   return {
     payrolls,
     loading,
@@ -91,5 +97,6 @@ export const usePayrollStore = defineStore("payroll", () => {
     fetchAll,
     generate,
     exportData,
+    reset, // ✅ تم التصدير
   };
 });

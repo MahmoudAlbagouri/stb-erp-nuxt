@@ -4,7 +4,6 @@ import { ref, computed } from "vue";
 import { useApi } from "../composables/useApi";
 import type { Employee } from "@/types";
 
-// ✅ تحديث الـ Interface ليشمل البيانات الجديدة
 export interface ProfileData {
   personal: {
     user: { id: string; email: string; username: string; role?: string };
@@ -22,7 +21,7 @@ export interface ProfileData {
       consumedDays: number;
       remaining: number;
       usagePercentage: number;
-      breakdown?: any; // اختياري
+      breakdown?: any;
     } | null;
     leaveHistory?: Array<{
       id: string;
@@ -33,7 +32,7 @@ export interface ProfileData {
       reason?: string;
       createdAt: string;
       durationDays: number;
-    }>; // ✅ إضافة سجل الإجازات
+    }>;
   };
   financial: {
     salary: {
@@ -70,14 +69,14 @@ export interface ProfileData {
       installmentsCount: number;
       reason?: string;
       rejectedAt: string;
-    }>; // ✅ إضافة القروض المرفوضة
+    }>;
     rejectedAdvances?: Array<{
       id: string;
       amount: number;
       reason?: string;
       repaymentDate: string;
       rejectedAt: string;
-    }>; // ✅ إضافة السلف المرفوضة
+    }>;
   };
 }
 
@@ -123,7 +122,6 @@ export const useProfileStore = defineStore("profile", () => {
     () => data.value?.financial?.stats?.summary?.activeLoansCount ?? 0,
   );
 
-  // ✅ Computed Properties للبيانات الجديدة
   const leaveHistory = computed(() => data.value?.hr?.leaveHistory ?? []);
   const rejectedLoans = computed(
     () => data.value?.financial?.rejectedLoans ?? [],
@@ -169,10 +167,13 @@ export const useProfileStore = defineStore("profile", () => {
   };
 
   const refreshProfile = async () => fetchProfile(true);
-  const clearProfile = () => {
+
+  // ✅ تحديث دالة clearProfile لتكون متوافقة مع نمط reset
+  const reset = () => {
     data.value = null;
     lastFetched.value = null;
     inFlightRequest = null;
+    loading.value = false;
   };
 
   return {
@@ -188,12 +189,11 @@ export const useProfileStore = defineStore("profile", () => {
     activeLoansCount,
     recentAdvances,
     recentLoans,
-    // ✅ إرجاع القيم الجديدة
     leaveHistory,
     rejectedLoans,
     rejectedAdvances,
     fetchProfile,
     refreshProfile,
-    clearProfile,
+    reset, // ✅ تم التصدير باسم reset للتوحيد
   };
 });

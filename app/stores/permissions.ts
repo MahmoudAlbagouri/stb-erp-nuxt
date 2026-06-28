@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { useApi } from "../composables/useApi";
 import { ref } from "vue";
 
-// تعريف النوع محلياً لضمان التطابق مع الـ API Response
 export interface Permission {
   id: string;
   name: string;
@@ -14,7 +13,7 @@ export interface Permission {
 
 export interface CreatePermissionPayload {
   name: string;
-  displayNameAr?: string; // اختياري حسب الحاجة
+  displayNameAr?: string;
 }
 
 export const usePermissionsStore = defineStore("permissions", () => {
@@ -28,9 +27,7 @@ export const usePermissionsStore = defineStore("permissions", () => {
     loading.value = true;
     error.value = null;
     try {
-      // تأكد أن المسار صحيح بناءً على إعدادات axios base URL
       const res = await api.get<{ data: Permission[] }>("/permissions");
-      // التعامل مع الـ response wrapper إذا كان موجوداً
       permissions.value = res.data.data || res.data;
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message;
@@ -70,6 +67,13 @@ export const usePermissionsStore = defineStore("permissions", () => {
     permissions.value = permissions.value.filter((p) => p.id !== id);
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    permissions.value = [];
+    loading.value = false;
+    error.value = null;
+  };
+
   return {
     permissions,
     loading,
@@ -79,5 +83,6 @@ export const usePermissionsStore = defineStore("permissions", () => {
     create,
     update,
     remove,
+    reset, // ✅ تم التصدير
   };
 });

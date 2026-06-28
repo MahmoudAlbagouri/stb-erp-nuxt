@@ -89,6 +89,13 @@ export const useEmployeesStore = defineStore("employees", () => {
     }
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    employees.value = [];
+    loading.value = false;
+    error.value = null;
+  };
+
   return {
     employees,
     loading,
@@ -99,5 +106,6 @@ export const useEmployeesStore = defineStore("employees", () => {
     update,
     remove,
     exportData,
+    reset, // ✅ تم التصدير
   };
 });

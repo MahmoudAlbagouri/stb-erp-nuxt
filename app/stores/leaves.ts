@@ -64,6 +64,13 @@ export const useLeavesStore = defineStore("leaves", () => {
     return res.data;
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    requests.value = [];
+    balances.value = [];
+    loading.value = false;
+  };
+
   return {
     requests,
     balances,
@@ -73,5 +80,6 @@ export const useLeavesStore = defineStore("leaves", () => {
     createAdminLeave,
     updateStatus,
     setBalance,
+    reset, // ✅ تم التصدير
   };
 });

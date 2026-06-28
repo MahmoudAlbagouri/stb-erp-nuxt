@@ -1,5 +1,7 @@
 // stores/auth.ts
 import { defineStore } from "pinia";
+import { useRouter, useCookie } from "nuxt/app";
+import { computed, ref } from "vue";
 import { useApi } from "../composables/useApi";
 import type {
   AuthTokens,
@@ -7,15 +9,28 @@ import type {
   RegisterPayload,
   DecodedToken,
 } from "@/types";
-import { useRouter, useCookie } from "nuxt/app";
-import { computed, ref } from "vue";
+
+// ✅ استيراد جميع الـ Stores التي تحتاج إلى تفريغ عند الخروج
+import { useUsersStore } from "./users";
+import { useEmployeesStore } from "./employees";
+import { usePayrollStore } from "./payroll";
+import { useAdvancesStore } from "./advances";
+import { useLoansStore } from "./loans";
+import { useLeavesStore } from "./leaves";
+import { useContractsStore } from "./contracts";
+import { useSalariesStore } from "./salaries";
+import { useQuotationsStore } from "./quotations";
+import { usePermissionsStore } from "./permissions";
+import { useRolesStore } from "./roles";
+import { useProfileStore } from "./profile";
+import { useAttendanceStore } from "./attendance";
+import { useUiStore } from "./ui";
 
 function decodeJwt<T>(token: string): T | null {
   try {
     const parts = token.split(".");
-    if (parts.length < 2 || !parts[1]) {
-      return null;
-    }
+    if (parts.length < 2 || !parts[1]) return null;
+
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const json = decodeURIComponent(
       atob(base64)
@@ -44,8 +59,16 @@ export const useAuthStore = defineStore("auth", () => {
 
   // --- Computed ---
   const isAuthenticated = computed(() => !!accessTokenCookie.value);
-  const isSuperAdmin = computed(() => user.value?.isSuperAdmin ?? false);
-  const isSystemAdmin = computed(() => user.value?.isSystemAdmin ?? false);
+
+  // ✅ التعديل الجذري: الاعتماد المباشر على التوكن المفكوك كمصدر وحيد للحقيقة
+  // هذا يضمن تحديث اللقب والصلاحيات فوراً عند تسجيل الدخول دون الحاجة لـ Refresh
+  const isSuperAdmin = computed(
+    () => decodedToken.value?.isSuperAdmin ?? false,
+  );
+  const isSystemAdmin = computed(
+    () => decodedToken.value?.isSystemAdmin ?? false,
+  );
+
   const role = computed(() => decodedToken.value?.role ?? null);
   const permissions = computed(() => decodedToken.value?.permissions ?? []);
   const employeeId = computed(() => decodedToken.value?.employeeId);
@@ -68,8 +91,10 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const persist = (data: AuthTokens) => {
-    user.value = data;
+    // ✅ تحديث التوكن المفكوك أولاً لضمان تزامن المتغيرات المحسوبة
     decodedToken.value = decodeJwt<DecodedToken>(data.accessToken);
+
+    user.value = data;
     accessTokenCookie.value = data.accessToken;
     refreshTokenCookie.value = data.refreshToken;
   };
@@ -80,6 +105,24 @@ export const useAuthStore = defineStore("auth", () => {
     accessTokenCookie.value = null;
     refreshTokenCookie.value = null;
   };
+
+  // ✅ قائمة مركزية بجميع المتاجر التي يجب تفريغها
+  const storesToReset = [
+    useUsersStore,
+    useEmployeesStore,
+    usePayrollStore,
+    useAdvancesStore,
+    useLoansStore,
+    useLeavesStore,
+    useContractsStore,
+    useSalariesStore,
+    useQuotationsStore,
+    usePermissionsStore,
+    useRolesStore,
+    useProfileStore,
+    useAttendanceStore,
+    useUiStore,
+  ];
 
   // --- Actions ---
   const login = async (payload: LoginPayload) => {
@@ -111,7 +154,6 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  // ✅ إضافة دالة طلب رمز الاستعادة
   const forgotPassword = async (email: string) => {
     loading.value = true;
     error.value = null;
@@ -125,7 +167,6 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  // ✅ تعديل دالة إعادة التعيين لتتوافق مع الـ DTO الجديد
   const resetPassword = async (
     email: string,
     code: string,
@@ -148,8 +189,20 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  // ✅ دالة تسجيل الخروج المطورة
   const logout = () => {
+    // 1. تفريغ جميع المتاجر تلقائياً
+    storesToReset.forEach((storeFn) => {
+      const store = storeFn();
+      if (typeof store.reset === "function") {
+        store.reset();
+      }
+    });
+
+    // 2. مسح التوكنز والبيانات الشخصية
     clearAuth();
+
+    // 3. التوجيه لصفحة الدخول
     router.push("/auth/login");
   };
 
@@ -168,7 +221,7 @@ export const useAuthStore = defineStore("auth", () => {
     login,
     register,
     logout,
-    forgotPassword, // ✅ تصدير الدوال الجديدة
+    forgotPassword,
     resetPassword,
   };
 });

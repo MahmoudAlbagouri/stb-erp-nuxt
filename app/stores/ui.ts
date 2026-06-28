@@ -20,5 +20,18 @@ export const useUiStore = defineStore("ui", () => {
     toasts.value = toasts.value.filter((t) => t.id !== id);
   };
 
-  return { sidebarOpen, toasts, toggleSidebar, addToast, removeToast };
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    toasts.value = [];
+    sidebarOpen.value = true; // إعادة تعيين القائمة للحالة الافتراضية
+  };
+
+  return {
+    sidebarOpen,
+    toasts,
+    toggleSidebar,
+    addToast,
+    removeToast,
+    reset, // ✅ تم التصدير
+  };
 });

@@ -77,6 +77,13 @@ export const useAttendanceStore = defineStore("attendance", () => {
     }
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    devices.value = [];
+    logs.value = [];
+    loading.value = false;
+  };
+
   return {
     devices,
     logs,
@@ -87,5 +94,6 @@ export const useAttendanceStore = defineStore("attendance", () => {
     deleteDevice,
     pushUserToDevice,
     fetchLogs,
+    reset, // ✅ تم التصدير
   };
 });

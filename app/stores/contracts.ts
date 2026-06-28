@@ -49,6 +49,12 @@ export const useContractsStore = defineStore("contracts", () => {
     contracts.value = contracts.value.filter((c) => c.id !== id);
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    contracts.value = [];
+    loading.value = false;
+  };
+
   return {
     contracts,
     loading,
@@ -56,5 +62,6 @@ export const useContractsStore = defineStore("contracts", () => {
     create,
     update,
     remove,
+    reset, // ✅ تم التصدير
   };
 });

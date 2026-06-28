@@ -1,3 +1,4 @@
+// stores/advances.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
@@ -56,6 +57,12 @@ export const useAdvancesStore = defineStore("advances", () => {
     return res.data;
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    advances.value = [];
+    loading.value = false;
+  };
+
   return {
     advances,
     loading,
@@ -63,5 +70,6 @@ export const useAdvancesStore = defineStore("advances", () => {
     createMyAdvance,
     createForEmployee,
     updateStatus,
+    reset, // ✅ تم التصدير
   };
 });

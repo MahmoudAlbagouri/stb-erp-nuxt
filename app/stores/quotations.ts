@@ -39,8 +39,6 @@ export const useQuotationsStore = defineStore("quotations", () => {
   const quotations = ref<Quotation[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-
-  // ✅ تتبع حالة تحميل PDF لكل عرض سعر بشكل منفصل
   const pdfLoading = ref<string | null>(null);
 
   const fetchAll = async () => {
@@ -81,7 +79,6 @@ export const useQuotationsStore = defineStore("quotations", () => {
     return res.data;
   };
 
-  // ✅ تحميل عرض السعر PDF مع إدارة الحالة
   const downloadQuotationPdf = async (id: string) => {
     pdfLoading.value = id;
     try {
@@ -92,7 +89,6 @@ export const useQuotationsStore = defineStore("quotations", () => {
     }
   };
 
-  // ✅ تحميل الفاتورة PDF مع إدارة الحالة
   const downloadInvoicePdf = async (id: string) => {
     pdfLoading.value = id;
     try {
@@ -120,6 +116,14 @@ export const useQuotationsStore = defineStore("quotations", () => {
     }, 100);
   };
 
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    quotations.value = [];
+    loading.value = false;
+    error.value = null;
+    pdfLoading.value = null;
+  };
+
   return {
     quotations,
     loading,
@@ -132,5 +136,6 @@ export const useQuotationsStore = defineStore("quotations", () => {
     approve,
     downloadQuotationPdf,
     downloadInvoicePdf,
+    reset, // ✅ تم التصدير
   };
 });

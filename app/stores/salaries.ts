@@ -10,7 +10,6 @@ export const useSalariesStore = defineStore("salaries", () => {
   const salaries = ref<Salary[]>([]);
   const loading = ref(false);
 
-  // جلب جميع الرواتب
   const fetchAll = async () => {
     loading.value = true;
     try {
@@ -23,18 +22,22 @@ export const useSalariesStore = defineStore("salaries", () => {
     }
   };
 
-  // تعيين راتب جديد لموظف
   const create = async (payload: CreateSalaryPayload) => {
     const res = await api.post<Salary>("/salaries", payload);
     await fetchAll();
     return res.data;
   };
 
-  // تحديث راتب موجود
   const update = async (id: string, payload: UpdateSalaryPayload) => {
     const res = await api.patch<Salary>(`/salaries/${id}`, payload);
     await fetchAll();
     return res.data;
+  };
+
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    salaries.value = [];
+    loading.value = false;
   };
 
   return {
@@ -43,5 +46,6 @@ export const useSalariesStore = defineStore("salaries", () => {
     fetchAll,
     create,
     update,
+    reset, // ✅ تم التصدير
   };
 });

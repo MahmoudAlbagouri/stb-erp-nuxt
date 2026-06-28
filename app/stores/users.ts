@@ -47,5 +47,22 @@ export const useUsersStore = defineStore("users", () => {
     users.value = users.value.filter((u) => u.id !== id);
   };
 
-  return { users, loading, error, fetchAll, getById, create, update, remove };
+  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const reset = () => {
+    users.value = [];
+    loading.value = false;
+    error.value = null;
+  };
+
+  return {
+    users,
+    loading,
+    error,
+    fetchAll,
+    getById,
+    create,
+    update,
+    remove,
+    reset, // ✅ تم التصدير
+  };
 });
