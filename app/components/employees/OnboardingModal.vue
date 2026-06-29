@@ -86,9 +86,7 @@
                     v-if="form.employee.nationalityType === 'non_saudi'"
                     class="form-group"
                   >
-                    <label class="form-label required"
-                      >تاريخ انتهاء الإقامة</label
-                    >
+                    <label class="form-label required">تاريخ انتهاء </label>
                     <input
                       v-model="form.employee.iqamaExpiryDate"
                       type="date"
@@ -102,7 +100,7 @@
                 </Transition>
 
                 <div class="form-group">
-                  <label class="form-label">رقم الهوية / الإقامة</label>
+                  <label class="form-label">رقم الهوية / </label>
                   <input
                     v-model="form.employee.nationalId"
                     type="text"
@@ -1136,7 +1134,7 @@ const validateCurrentTab = (): boolean => {
       form.employee.nationalityType === "non_saudi" &&
       !form.employee.iqamaExpiryDate
     ) {
-      errors.iqamaExpiryDate = "تاريخ انتهاء الإقامة مطلوب لغير السعوديين";
+      errors.iqamaExpiryDate = "تاريخ انتهاء  مطلوب لغير السعوديين";
       return false;
     }
   }

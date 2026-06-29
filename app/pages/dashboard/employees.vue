@@ -197,16 +197,16 @@
             <span v-if="emp.contract" class="mini-badge mini-badge--contract">
               <FileText :size="11" /> عقد
             </span>
-            <a
+
+            <!-- ✅ زر عرض الهوية (محدث) -->
+            <button
               v-if="emp.nationalIdCardPath"
-              :href="emp.nationalIdCardPath"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="mini-badge mini-badge--doc"
+              class="mini-badge mini-badge--doc view-id-btn"
+              @click="openIdViewer(emp)"
               title="عرض الهوية"
             >
-              <Paperclip :size="11" /> هوية
-            </a>
+              <Eye :size="11" /> هوية
+            </button>
           </div>
         </div>
 
@@ -272,7 +272,7 @@
                   v-if="editForm.nationalityType === 'non_saudi'"
                   class="form-group"
                 >
-                  <label>تاريخ انتهاء الإقامة *</label>
+                  <label>تاريخ انتهاء *</label>
                   <input
                     v-model="editForm.iqamaExpiryDate"
                     type="date"
@@ -405,6 +405,67 @@
       </Transition>
     </Teleport>
 
+    <!-- ══ ID Viewer Modal (نافذة عرض الهوية) ═══════════════════════════════ -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="showIdModal"
+          class="modal-overlay"
+          @click.self="showIdModal = false"
+        >
+          <div class="modal modal-md id-viewer-modal">
+            <div class="modal__header">
+              <h3>
+                <IdCard :size="20" class="modal-icon" />
+                صورة الهوية
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                @click="showIdModal = false"
+                aria-label="إغلاق"
+              >
+                <X :size="20" />
+              </button>
+            </div>
+
+            <div class="modal__body id-preview-container">
+              <div v-if="currentIdUrl" class="id-image-wrapper">
+                <img
+                  :src="currentIdUrl"
+                  alt="صورة الهوية"
+                  class="id-full-img"
+                />
+
+                <div class="id-actions-overlay">
+                  <a
+                    :href="currentIdUrl"
+                    target="_blank"
+                    class="btn btn--primary"
+                  >
+                    <ExternalLink :size="16" />
+                    فتح في تبويب جديد
+                  </a>
+                  <a :href="currentIdUrl" download class="btn btn--outline">
+                    <Download :size="16" />
+                    تحميل الصورة
+                  </a>
+                </div>
+              </div>
+              <div v-else class="empty-state-mini">
+                <p>لا توجد صورة متاحة</p>
+              </div>
+            </div>
+
+            <div class="modal__footer">
+              <button class="btn btn--ghost" @click="showIdModal = false">
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- ══ Confirm Delete ════════════════════════════════════════════════════ -->
     <ConfirmDialog
       v-model="showConfirm"
@@ -443,6 +504,9 @@ import {
   ShieldCheck,
   Link as LinkIcon, // ✅ أيقونة الربط
   Unlink, // ✅ أيقونة فك الربط
+  Eye, // ✅ أيقونة المعاينة
+  ExternalLink, // ✅ أيقونة الرابط الخارجي
+  Download, // ✅ أيقونة التحميل
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -496,6 +560,17 @@ const filtered = computed(() =>
 
 const countByStatus = (s: string) =>
   store.employees.filter((e: Employee) => e.status === s).length;
+
+// ─── ID Viewer Logic ────────────────────────────────────────────────────────
+const showIdModal = ref(false);
+const currentIdUrl = ref<string>("");
+
+const openIdViewer = (emp: Employee) => {
+  if (emp.nationalIdCardPath) {
+    currentIdUrl.value = emp.nationalIdCardPath;
+    showIdModal.value = true;
+  }
+};
 
 // ─── Edit Modal & User Linking ───────────────────────────────────────────────
 const showEditModal = ref(false);
@@ -646,8 +721,6 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
-
-// ... (نفس التنسيقات السابقة للكروت والفلاتر) ...
 
 .page-header__actions {
   display: flex;
@@ -950,6 +1023,8 @@ onMounted(() => {
   padding: 2px 7px;
   border-radius: $radius-sm;
   font-weight: 600;
+  cursor: default;
+
   &--user {
     background: rgba($stb-accent, 0.1);
     color: $stb-accent;
@@ -961,6 +1036,14 @@ onMounted(() => {
   &--doc {
     background: rgba($stb-warning, 0.1);
     color: $stb-warning;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba($stb-warning, 0.2);
+      transform: translateY(-1px);
+    }
   }
 }
 
@@ -1043,5 +1126,61 @@ onMounted(() => {
   font-size: 11px;
   color: $stb-text-muted;
   margin-top: $space-1;
+}
+
+/* --- ID Viewer Styles --- */
+.id-viewer-modal {
+  max-width: 900px;
+}
+
+.id-preview-container {
+  padding: 0;
+  background: $stb-dark;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.id-image-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  .id-full-img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: $radius-sm;
+  }
+
+  .id-actions-overlay {
+    position: absolute;
+    bottom: $space-4;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: $space-2;
+    background: rgba($stb-dark, 0.8);
+    padding: $space-2 $space-3;
+    border-radius: $radius-full;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+
+    a {
+      font-size: $font-size-xs;
+    }
+  }
+
+  &:hover .id-actions-overlay {
+    opacity: 1;
+  }
+}
+
+.empty-state-mini {
+  color: $stb-text-muted;
+  text-align: center;
 }
 </style>

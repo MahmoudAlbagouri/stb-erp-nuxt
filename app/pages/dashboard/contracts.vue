@@ -76,20 +76,28 @@
                 </span>
                 <span v-else class="text-muted">-</span>
               </td>
+
+              <!-- ✅ خانة المرفقات التفاعلية -->
               <td>
-                <!-- ✅ تم إصلاح المشكلة هنا باستخدام attachmentPaths -->
-                <span
+                <div
                   v-if="
                     contract.attachmentPaths &&
                     contract.attachmentPaths.length > 0
                   "
-                  class="badge badge--outline"
+                  class="attachments-cell"
                 >
-                  <Paperclip :size="12" />
-                  {{ contract.attachmentPaths.length }}
-                </span>
+                  <button
+                    class="btn btn--sm btn--ghost attachments-btn"
+                    @click="openAttachmentsViewer(contract)"
+                    title="عرض المرفقات"
+                  >
+                    <Paperclip :size="14" />
+                    <span>{{ contract.attachmentPaths.length }}</span>
+                  </button>
+                </div>
                 <span v-else class="text-muted">-</span>
               </td>
+
               <td>
                 <button
                   class="btn btn--danger btn--sm"
@@ -198,10 +206,9 @@
                   />
                 </div>
 
-                <!-- ✅ حقل رفع المرفقات (تم إصلاح مشكلة النوع والقيمة الوهمية) -->
+                <!-- حقل رفع المرفقات -->
                 <div class="form-group full-width">
                   <label>مرفقات العقد</label>
-                  <!-- نستخدم computed property لتجنب تمرير [] مباشرة -->
                   <StbUploader
                     :model-value="uploaderModelValue"
                     @update:model-value="handleUploaderUpdate"
@@ -251,6 +258,85 @@
       </Transition>
     </Teleport>
 
+    <!-- ══ Attachments Viewer Modal ═══════════════════════════════════════ -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="showAttachmentsModal"
+          class="modal-overlay"
+          @click.self="showAttachmentsModal = false"
+        >
+          <div class="modal modal-md attachments-modal">
+            <div class="modal__header">
+              <h3>
+                <Paperclip :size="20" class="modal-icon" />
+                مرفقات العقد
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                @click="showAttachmentsModal = false"
+                aria-label="إغلاق"
+              >
+                <X :size="20" />
+              </button>
+            </div>
+
+            <div class="modal__body attachments-grid">
+              <div
+                v-for="(url, index) in currentContractAttachments"
+                :key="index"
+                class="attachment-item"
+              >
+                <!-- معاينة الصور -->
+                <div v-if="isImage(url)" class="img-preview">
+                  <img :src="url" alt="مرفق" />
+                  <div class="overlay-actions">
+                    <a
+                      :href="url"
+                      target="_blank"
+                      class="btn btn--sm btn--primary"
+                    >
+                      <ExternalLink :size="14" />
+                      فتح
+                    </a>
+                    <a :href="url" download class="btn btn--sm btn--outline">
+                      <Download :size="14" />
+                      تحميل
+                    </a>
+                  </div>
+                </div>
+
+                <!-- معاينة ملفات PDF وغيرها -->
+                <div v-else class="file-preview">
+                  <FileText :size="32" class="file-icon" />
+                  <span class="file-name">{{ getFileName(url) }}</span>
+                  <div class="file-actions">
+                    <a
+                      :href="url"
+                      target="_blank"
+                      class="btn btn--sm btn--primary"
+                    >
+                      <ExternalLink :size="14" />
+                      فتح
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal__footer">
+              <button
+                class="btn btn--ghost"
+                @click="showAttachmentsModal = false"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- ══ Confirm Delete ═══════════════════════════════════════════════════ -->
     <ConfirmDialog
       v-model="showConfirm"
@@ -270,8 +356,17 @@ import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
 import type { Contract, CreateContractPayload } from "@/types";
 
-// ✅ استيراد أيقونات Lucide ومكون الرفع
-import { Plus, FileSignature, Trash2, X, Paperclip } from "lucide-vue-next";
+// ✅ استيراد أيقونات Lucide
+import {
+  Plus,
+  FileSignature,
+  Trash2,
+  X,
+  Paperclip,
+  ExternalLink,
+  Download,
+  FileText,
+} from "lucide-vue-next";
 import StbUploader from "@/components/global/StbUploader.vue";
 
 definePageMeta({ middleware: "auth" });
@@ -286,6 +381,10 @@ const submitting = ref(false);
 const showConfirm = ref(false);
 const deleting = ref(false);
 const deleteTarget = ref<Contract | null>(null);
+
+// State for Attachments Viewer
+const showAttachmentsModal = ref(false);
+const currentContractAttachments = ref<string[]>([]);
 
 // متغير مؤقت لتخزين روابط المرفقات القادمة من الـ Uploader
 const tempAttachments = ref<string[]>([]);
@@ -307,7 +406,6 @@ const EMPTY_FORM: ExtendedCreatePayload = {
 const form = reactive<ExtendedCreatePayload>({ ...EMPTY_FORM });
 
 // ✅ Computed Property لحل مشكلة النوع والقيمة الوهمية
-// يعيد undefined إذا كانت المصفوفة فارغة، مما يمنع ظهور "يوجد ملف مرفق"
 const uploaderModelValue = computed(() => {
   return tempAttachments.value.length > 0
     ? tempAttachments.value.join(",")
@@ -319,7 +417,6 @@ const handleUploaderUpdate = (val: string) => {
   if (!val) {
     tempAttachments.value = [];
   } else {
-    // تحويل النص المفصول بفواصل إلى مصفوفة
     tempAttachments.value = val.split(",").filter(Boolean);
   }
 };
@@ -327,16 +424,14 @@ const handleUploaderUpdate = (val: string) => {
 // ── Actions ───────────────────────────────────────────────────────────────
 const openCreateModal = () => {
   Object.assign(form, EMPTY_FORM);
-  tempAttachments.value = []; // تصفير المرفقات المؤقتة
+  tempAttachments.value = [];
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    // تحديث الفورم بالمرفقات قبل الإرسال للتأكد
     form.attachmentPaths = tempAttachments.value;
-
     await store.create(form);
     toast.success("تم إضافة العقد بنجاح");
     showModal.value = false;
@@ -364,6 +459,22 @@ const doDelete = async () => {
   } finally {
     deleting.value = false;
   }
+};
+
+// ── Attachments Logic ──────────────────────────────────────────────────────
+const openAttachmentsViewer = (contract: Contract) => {
+  if (contract.attachmentPaths) {
+    currentContractAttachments.value = contract.attachmentPaths;
+    showAttachmentsModal.value = true;
+  }
+};
+
+const isImage = (url: string) => {
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+};
+
+const getFileName = (url: string) => {
+  return url.split("/").pop() || "ملف";
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -464,5 +575,109 @@ onMounted(() => {
 .modal-icon {
   color: $stb-accent;
   margin-left: $space-2;
+}
+
+/* --- Attachments Styles --- */
+.attachments-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.attachments-btn {
+  gap: 6px;
+  font-weight: 500;
+
+  &:hover {
+    background-color: rgba($stb-primary, 0.1);
+    color: $stb-primary;
+  }
+}
+
+.attachments-modal {
+  max-width: 800px;
+}
+
+.attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: $space-4;
+  padding: $space-4;
+}
+
+.attachment-item {
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  overflow: hidden;
+  transition: transform 0.2s;
+  background: $stb-surface;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    border-color: $stb-border-light;
+  }
+}
+
+.img-preview {
+  position: relative;
+  height: 150px;
+  background: #f8f9fa;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .overlay-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba($stb-dark, 0.85);
+    padding: $space-2;
+    display: flex;
+    justify-content: space-around;
+    opacity: 0;
+    transition: opacity 0.2s;
+
+    a {
+      color: white !important;
+      &:hover {
+        color: $stb-accent !important;
+      }
+    }
+  }
+
+  &:hover .overlay-actions {
+    opacity: 1;
+  }
+}
+
+.file-preview {
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  padding: $space-3;
+  background: $stb-surface-2;
+
+  .file-icon {
+    color: $stb-text-muted;
+  }
+
+  .file-name {
+    font-size: $font-size-xs;
+    text-align: center;
+    word-break: break-all;
+    color: $stb-text-secondary;
+    padding: 0 $space-2;
+  }
+
+  .file-actions {
+    margin-top: auto;
+  }
 }
 </style>

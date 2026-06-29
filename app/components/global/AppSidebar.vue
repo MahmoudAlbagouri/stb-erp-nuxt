@@ -152,6 +152,14 @@
               <span>مسيرات الرواتب</span>
             </NuxtLink>
             <NuxtLink
+              to="/dashboard/settlements"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <FileCheck class="sidebar-nav__icon" />
+              <span>مستحقات نهاية الخدمة</span>
+            </NuxtLink>
+            <NuxtLink
               v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
               to="/dashboard/quotations"
               class="sidebar-nav__item sidebar-nav__item--sub"
@@ -215,6 +223,7 @@ import {
   HandCoins,
   Landmark,
   LogOut,
+  FileCheck,
 } from "lucide-vue-next";
 
 const ui = useUiStore();

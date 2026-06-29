@@ -63,13 +63,13 @@ export interface User {
   tenant?: Tenant;
 }
 
-// ✅ تحديث واجهة Employee لتشمل الجنسية والإقامة وحذف تاريخ التعيين
+// ✅ تحديث واجهة Employee لتشمل الجنسية و وحذف تاريخ التعيين
 export interface Employee {
   id: string;
   fullName: string;
   employeeCode: string;
 
-  // حقول الجنسية والإقامة الجديدة
+  // حقول الجنسية و الجديدة
   nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
   iqamaExpiryDate?: string | null;
 
@@ -402,4 +402,42 @@ export interface Toast {
   id: string;
   message: string;
   type: ToastType;
+}
+
+// ─── أضف هذا في نهاية ملف types/index.ts ─────────────────────────────────
+
+export interface SettlementPreview {
+  employeeId: string;
+  year: number;
+  unusedLeaveDays: number;
+  dailyRate: number;
+  totalAmount: number;
+}
+
+export interface ConfirmSettlementPayload {
+  employeeId: string;
+  unusedLeaveDays: number;
+  dailyRate: number;
+  totalAmount: number;
+  settlementDate: string;
+  notes?: string;
+}
+
+export interface Settlement {
+  id: string;
+  employeeId: string;
+  employee?: {
+    id: string;
+    fullName: string;
+    employeeCode: string;
+    jobTitle?: string;
+    department?: string;
+  };
+  unusedLeaveDays: number;
+  dailyRate: number;
+  totalAmount: number;
+  settlementDate: string;
+  notes?: string;
+  tenantId: string;
+  createdAt: string;
 }
