@@ -30,7 +30,7 @@
 
         <button class="btn btn--primary" @click="showOnboarding = true">
           <UserPlus :size="18" />
-          <span>تأهيل موظف</span>
+          <span>إضافة موظف</span>
         </button>
       </div>
     </div>
@@ -125,7 +125,7 @@
           @click="showOnboarding = true"
         >
           <UserPlus :size="16" />
-          تأهيل موظف جديد
+          إضافة موظف جديد
         </button>
       </div>
     </div>
@@ -288,6 +288,13 @@
                     type="text"
                     class="form-input"
                     placeholder="1xxxxxxxxx"
+                    maxlength="10"
+                    @input="
+                      editForm.nationalId = editForm.nationalId.replace(
+                        /[^0-9]/g,
+                        '',
+                      )
+                    "
                   />
                 </div>
 
@@ -308,7 +315,6 @@
                     class="form-input"
                   />
                 </div>
-
                 <div class="form-group">
                   <label>رقم الهاتف</label>
                   <input
@@ -316,6 +322,10 @@
                     type="tel"
                     class="form-input"
                     dir="ltr"
+                    maxlength="10"
+                    @input="
+                      editForm.phone = editForm.phone.replace(/[^0-9]/g, '')
+                    "
                   />
                 </div>
 
@@ -519,7 +529,7 @@ const toast = useToast();
 const showOnboarding = ref(false);
 
 const onEmployeeCreated = (result: any) => {
-  toast.success(`✅ تم تأهيل الموظف "${result.employee.fullName}" بنجاح`);
+  toast.success(`✅ تم إضافة الموظف "${result.employee.fullName}" بنجاح`);
 };
 
 // ─── Export ──────────────────────────────────────────────────────────────────
@@ -1093,7 +1103,7 @@ onMounted(() => {
   margin-top: $space-4 !important;
 }
 
-// ✅ تنسيقات خاصة بخانة ربط المستخدم
+/* ✅ تنسيقات خاصة بخانة ربط المستخدم */ /* تم التصحيح هنا */
 .linked-user-section {
   background: rgba($stb-accent, 0.03);
   padding: $space-3;

@@ -157,7 +157,7 @@
               active-class="is-active"
             >
               <FileCheck class="sidebar-nav__icon" />
-              <span>مستحقات نهاية الخدمة</span>
+              <span>مستحقات بدل الإجازة</span>
             </NuxtLink>
             <NuxtLink
               v-if="(profile.data?.personal.user as any)?.isSystemAdmin"

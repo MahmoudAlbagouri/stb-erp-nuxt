@@ -140,7 +140,7 @@
             }}</span>
           </div>
           <div class="debt-stat">
-            <span class="label">نسبة الدين للراتب</span>
+            <span class="label">نسبة المديوينة الى الراتب</span>
             <span
               class="value"
               :class="

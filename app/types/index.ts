@@ -1,5 +1,5 @@
 // ============================================
-// STB ERP - Type Definitions (Updated)
+// STB ERP - Type Definitions (Updated for New Logic)
 // ============================================
 
 export interface ApiResponse<T> {
@@ -63,13 +63,13 @@ export interface User {
   tenant?: Tenant;
 }
 
-// ✅ تحديث واجهة Employee لتشمل الجنسية و وحذف تاريخ التعيين
+// ✅ تحديث واجهة Employee لتشمل الجنسية وحذف تاريخ التعيين
 export interface Employee {
   id: string;
   fullName: string;
   employeeCode: string;
 
-  // حقول الجنسية و الجديدة
+  // حقول الجنسية والجواز/الإقامة
   nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
   iqamaExpiryDate?: string | null;
 
@@ -78,8 +78,6 @@ export interface Employee {
   phone: string | null;
   jobTitle: string | null;
   department: string | null;
-
-  // ❌ تم حذف hireDate نهائياً
 
   status: "active" | "inactive" | "terminated";
   tenantId: string;
@@ -195,12 +193,15 @@ export interface LeaveRequest {
   employee?: Employee;
 }
 
+// ✅ تحديث LeaveBalance ليشمل الحقول الجديدة (المرتحل وتاريخ البدء)
 export interface LeaveBalance {
   id: string;
   employeeId: string;
   year: number;
   totalAllowance: number;
   consumedDays: number;
+  carriedOverDays?: number; // رصيد مرحل من سنوات سابقة
+  accrualStartDate?: string; // تاريخ بدء دورة الاستحقاق الحالية
   tenantId: string;
 }
 
@@ -218,7 +219,6 @@ export interface SetBalancePayload {
 }
 
 // --- Contracts ---
-// --- Contracts ---
 export type ContractType = "دائم" | "جزئي" | "مرن" | "عن بعد" | "أخرى";
 
 export interface Contract {
@@ -229,10 +229,7 @@ export interface Contract {
   endDate?: string | null;
   annualLeaveDays: number;
   notes?: string | null;
-
-  // ✅ تم التصحيح من attachments إلى attachmentPaths ليتطابق مع الـ Entity والـ DTO
   attachmentPaths?: string[] | null;
-
   tenantId: string;
   createdAt: string;
   updatedAt: string;
@@ -257,14 +254,15 @@ export interface UpdateContractPayload {
   notes?: string;
   attachmentPaths?: string[];
 }
+
 // --- Advances ---
 export type AdvanceStatus = "pending" | "approved" | "rejected" | "paid";
 
 export interface Advance {
   id: string;
   amount: number;
-  numberOfInstallments?: number; // اختياري لأننا ألغينا التقسيط في السلف
-  repaymentDate?: string; // تاريخ السداد الجديد
+  numberOfInstallments?: number;
+  repaymentDate?: string;
   reason?: string | null;
   status: AdvanceStatus;
   employeeId: string;
@@ -287,7 +285,7 @@ export interface Loan {
   totalAmount: number;
   installmentsCount: number;
   monthlyInstallment: number;
-  startDate?: string; // تاريخ بداية السداد للقرض
+  startDate?: string;
   reason?: string | null;
   status: LoanStatus;
   employeeId: string;
@@ -404,22 +402,29 @@ export interface Toast {
   type: ToastType;
 }
 
-// ─── أضف هذا في نهاية ملف types/index.ts ─────────────────────────────────
+// ============================================
+// Settlements (Updated for Partial/Full Logic)
+// ============================================
+
+export enum SettlementType {
+  FULL = "FULL",
+  PARTIAL = "PARTIAL",
+}
 
 export interface SettlementPreview {
   employeeId: string;
   year: number;
-  unusedLeaveDays: number;
+  serviceDays: number;
+  availableDays: number; // الرصيد المتاح الفعلي للحساب
   dailyRate: number;
-  totalAmount: number;
+  totalAmountIfFull: number; // المبلغ لو كانت تسوية كاملة
 }
 
 export interface ConfirmSettlementPayload {
   employeeId: string;
-  unusedLeaveDays: number;
-  dailyRate: number;
-  totalAmount: number;
   settlementDate: string;
+  settlementType: SettlementType; // تحديد نوع التسوية
+  daysToSettle?: number; // مطلوب فقط في حالة PARTIAL
   notes?: string;
 }
 

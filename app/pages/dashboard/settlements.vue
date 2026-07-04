@@ -3,13 +3,37 @@
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
-        <h1>تسوية مستحقات نهاية الخدمة</h1>
+        <h1>تسوية مستحقات بدل الإجازة</h1>
         <p>احتساب وأرشفة مستحقات الإجازات غير المستخدمة عند إنهاء الخدمة</p>
       </div>
-      <button class="btn btn--primary" @click="openCalculatorModal">
-        <Calculator :size="18" />
-        <span>احتساب تسوية</span>
-      </button>
+
+      <!-- ✅ أزرار التصدير والعمليات -->
+      <div class="page-header__actions">
+        <button
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <FileSpreadsheet v-else :size="18" />
+          <span>Excel</span>
+        </button>
+
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <FileText v-else :size="18" />
+          <span>PDF</span>
+        </button>
+
+        <button class="btn btn--primary" @click="openCalculatorModal">
+          <Calculator :size="18" />
+          <span>احتساب تسوية</span>
+        </button>
+      </div>
     </div>
 
     <!-- ══ Stats Cards ═════════════════════════════════════════════════════ -->
@@ -58,7 +82,7 @@
         </div>
         <div class="empty-state__title">لا توجد تسويات مؤرشفة</div>
         <div class="empty-state__text">
-          ابدأ باحتساب مستحقات نهاية الخدمة لأحد الموظفين
+          ابدأ باحتساب مستحقات بدل الإجازة لأحد الموظفين
         </div>
         <button class="btn btn--primary mt-4" @click="openCalculatorModal">
           <Calculator :size="16" />
@@ -76,7 +100,7 @@
               <th>الموظف</th>
               <th>تاريخ التسوية</th>
               <th>الأيام غير المستخدمة</th>
-              <th>أجر اليوم</th>
+              <!-- <th>أجر اليوم</th> -->
               <th>إجمالي المستحق</th>
               <th>ملاحظات</th>
               <th>تاريخ الأرشفة</th>
@@ -110,7 +134,7 @@
                   {{ s.unusedLeaveDays }} يوم
                 </span>
               </td>
-              <td class="text-accent">{{ formatCurrency(s.dailyRate) }}</td>
+              <!-- <td class="text-accent">{{ formatCurrency(s.dailyRate) }}</td> -->
               <td class="total-cell">{{ formatCurrency(s.totalAmount) }}</td>
               <td class="notes-cell">{{ s.notes || "—" }}</td>
               <td>{{ formatDate(s.createdAt) }}</td>
@@ -134,7 +158,7 @@
             <div class="modal__header">
               <h3>
                 <Calculator :size="20" class="modal-icon" />
-                احتساب مستحقات نهاية الخدمة
+                احتساب مستحقات بدل الإجازة
               </h3>
               <button class="btn btn--icon btn--ghost" @click="closeAll">
                 <X :size="20" />
@@ -142,7 +166,6 @@
             </div>
 
             <div class="modal-form">
-              <!-- اختيار الموظف -->
               <div class="form-group">
                 <label>الموظف *</label>
                 <select
@@ -164,7 +187,6 @@
                 </select>
               </div>
 
-              <!-- إشعار تحذيري -->
               <div class="info-banner">
                 <Info :size="16" />
                 <p>
@@ -196,7 +218,7 @@
     </Teleport>
 
     <!-- ══════════════════════════════════════════════════════════════════════
-         STEP 2 — Modal: عرض نتائج الحساب والتأكيد
+         STEP 2 — Modal: عرض نتائج الحساب والتأكيد (مع دعم التسوية الجزئية)
     ════════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
@@ -242,10 +264,10 @@
                 <div class="calc-row">
                   <span class="calc-label">
                     <CalendarOff :size="15" />
-                    الأيام غير المستخدمة
+                    الرصيد المتاح فعلياً
                   </span>
                   <span class="calc-value"
-                    >{{ preview.unusedLeaveDays }} يوم</span
+                    >{{ preview.availableDays.toFixed(2) }} يوم</span
                   >
                 </div>
                 <div class="calc-row">
@@ -257,20 +279,56 @@
                     {{ formatCurrency(preview.dailyRate) }}
                   </span>
                 </div>
-                <div class="calc-row calc-row--formula">
-                  <span class="calc-label">المعادلة</span>
-                  <span class="calc-formula">
-                    {{ preview.unusedLeaveDays }} يوم ×
-                    {{ formatCurrency(preview.dailyRate) }}
-                  </span>
+
+                <!-- خيار التسوية الجزئية -->
+                <div class="form-group full-width mt-4">
+                  <label>نوع التسوية</label>
+                  <div class="radio-group">
+                    <label class="radio-label">
+                      <input
+                        type="radio"
+                        v-model="confirmForm.settlementType"
+                        :value="SettlementType.FULL"
+                      />
+                      تسوية كاملة (نهاية خدمة)
+                    </label>
+                    <label class="radio-label">
+                      <input
+                        type="radio"
+                        v-model="confirmForm.settlementType"
+                        :value="SettlementType.PARTIAL"
+                      />
+                      تسوية جزئية (صرف جزء من الرصيد)
+                    </label>
+                  </div>
                 </div>
+
+                <div
+                  v-if="confirmForm.settlementType === SettlementType.PARTIAL"
+                  class="form-group full-width"
+                >
+                  <label>عدد الأيام المراد صرفها *</label>
+                  <input
+                    type="number"
+                    v-model.number="confirmForm.daysToSettle"
+                    class="form-input"
+                    :max="Math.ceil(preview.availableDays)"
+                    min="1"
+                    placeholder="أدخل عدد الأيام"
+                  />
+                  <small class="text-muted"
+                    >الحد الأقصى:
+                    {{ Math.ceil(preview.availableDays) }} يوم</small
+                  >
+                </div>
+
                 <div class="calc-row calc-row--total">
                   <span class="calc-label">
                     <Wallet :size="15" />
-                    إجمالي المستحق
+                    إجمالي المستحق للصرف
                   </span>
                   <span class="calc-total">{{
-                    formatCurrency(preview.totalAmount)
+                    formatCurrency(calculateTotalAmount())
                   }}</span>
                 </div>
               </div>
@@ -301,7 +359,7 @@
               <div class="warning-banner">
                 <AlertTriangle :size="16" />
                 <p>
-                  بعد التأكيد سيتم <strong>تصفير رصيد إجازات الموظف</strong>
+                  بعد التأكيد سيتم <strong>خصم الرصيد المحدد</strong>
                   ولا يمكن التراجع عن هذا الإجراء.
                 </p>
               </div>
@@ -319,7 +377,7 @@
                 </button>
                 <button
                   class="btn btn--primary"
-                  :disabled="!confirmForm.settlementDate || confirming"
+                  :disabled="!isFormValid || confirming"
                   @click="handleConfirm"
                 >
                   <span v-if="confirming" class="spinner spinner--sm" />
@@ -342,8 +400,9 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useSettlementsStore } from "@/stores/settlements";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "@/composables/useToast";
-import type { SettlementPreview } from "@/types";
+import { SettlementType, type SettlementPreview } from "@/types";
 
+// ✅ استيراد الأيقونات الجديدة للتصدير
 import {
   Calculator,
   Wallet,
@@ -358,6 +417,8 @@ import {
   AlertTriangle,
   Check,
   ChevronRight,
+  FileSpreadsheet, // Excel Icon
+  FileText, // PDF Icon
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -365,6 +426,21 @@ definePageMeta({ middleware: "auth" });
 const store = useSettlementsStore();
 const employeesStore = useEmployeesStore();
 const toast = useToast();
+
+// ─── Export State ───────────────────────────────────────────────────────────
+const exporting = ref<"excel" | "pdf" | null>(null);
+
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportData(type);
+    toast.success(`تم تصدير تقرير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
+  } finally {
+    exporting.value = null;
+  }
+};
 
 // ─── UI State ────────────────────────────────────────────────────────────────
 const showCalculatorModal = ref(false);
@@ -376,9 +452,11 @@ const confirming = ref(false);
 const confirmForm = reactive({
   settlementDate: new Date().toISOString().split("T")[0],
   notes: "",
+  settlementType: SettlementType.FULL,
+  daysToSettle: undefined as number | undefined,
 });
 
-// ─── Computed ────────────────────────────────────────────────────────────────
+// ─── Computed ───────────────────────────────────────────────────────────────
 const totalSettled = computed(() =>
   store.settlements.reduce((sum, s) => sum + Number(s.totalAmount), 0),
 );
@@ -387,20 +465,46 @@ const totalUnusedDays = computed(() =>
   store.settlements.reduce((sum, s) => sum + s.unusedLeaveDays, 0),
 );
 
-/** الموظفون النشطون مع علامة إذا كان لديهم تسوية مسبقة */
 const activeEmployees = computed(() => {
-  const settledIds = new Set(store.settlements.map((s) => s.employeeId));
+  // تجميع إجمالي الأيام التي تم تسويتها لكل موظف
+  const settledDaysMap = new Map<string, number>();
+  store.settlements.forEach((s) => {
+    const current = settledDaysMap.get(s.employeeId) || 0;
+    settledDaysMap.set(s.employeeId, current + s.unusedLeaveDays);
+  });
+
   return employeesStore.employees
     .filter((e) => e.status === "active" || e.status === "terminated")
-    .map((e) => ({
-      ...e,
-      alreadySettled: settledIds.has(e.id),
-    }));
-});
+    .map((e) => {
+      // هنا نفترض أن الـ Backend يرسل الرصيد الحالي في كائن الموظف
+      // أو يمكنك حسابها بناءً على العقود والإجازات إذا لم تكن متوفرة
+      // للتبسيط الآن، سنسمح للجميع بالظهور وسيعتمد التحقق على الرصيد الفعلي عند الاحتساب
+      const totalSettledForEmp = settledDaysMap.get(e.id) || 0;
 
+      // ملاحظة: لتحديد "alreadySettled" بدقة، يفضل الاعتماد على الرصيد المتاح
+      // لكن بما أننا لا نجلب الرصيد هنا، سنعتمد على منطق بسيط:
+      // إذا كان الموظف "terminated" ولديه تسويات، نفترض أنه انتهى إلا إذا كان الرصيد > 0
+      // الأفضل هو إزالة خاصية alreadySettled من الـ select والاعتماد على رسالة خطأ عند الاحتساب
+      // أو جلب الرصيد ديناميكياً.
+
+      // الحل العملي للفرونت إند حالياً: السماح بالاختيار والتحقق عند الضغط على "احتساب"
+      return {
+        ...e,
+        alreadySettled: false, // ✅ تم إلغاء المنع المطلق
+      };
+    });
+});
 const selectedEmployee = computed(() =>
   employeesStore.employees.find((e) => e.id === selectedEmployeeId.value),
 );
+
+const isFormValid = computed(() => {
+  if (!confirmForm.settlementDate) return false;
+  if (confirmForm.settlementType === SettlementType.PARTIAL) {
+    return !!confirmForm.daysToSettle && confirmForm.daysToSettle > 0;
+  }
+  return true;
+});
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 const openCalculatorModal = () => {
@@ -414,15 +518,20 @@ const closeAll = () => {
   showPreviewModal.value = false;
   preview.value = null;
   selectedEmployeeId.value = "";
+  confirmForm.settlementType = SettlementType.FULL;
+  confirmForm.daysToSettle = undefined;
 };
 
 const runCalculation = async () => {
   if (!selectedEmployeeId.value) return;
   try {
     preview.value = await store.calculate(selectedEmployeeId.value);
-    // إعادة ضبط نموذج التأكيد
+    // Reset form
     confirmForm.settlementDate = new Date().toISOString().split("T")[0];
     confirmForm.notes = "";
+    confirmForm.settlementType = SettlementType.FULL;
+    confirmForm.daysToSettle = undefined;
+
     showCalculatorModal.value = false;
     showPreviewModal.value = true;
   } catch (e: any) {
@@ -430,16 +539,44 @@ const runCalculation = async () => {
   }
 };
 
+const calculateTotalAmount = () => {
+  if (!preview.value) return 0;
+
+  let days = 0;
+  if (confirmForm.settlementType === SettlementType.FULL) {
+    days = Math.ceil(preview.value.availableDays);
+  } else {
+    days = confirmForm.daysToSettle || 0;
+  }
+
+  return days * preview.value.dailyRate;
+};
+
 const handleConfirm = async () => {
   if (!preview.value || !confirmForm.settlementDate) return;
+
+  // Validation for partial
+  if (confirmForm.settlementType === SettlementType.PARTIAL) {
+    if (!confirmForm.daysToSettle || confirmForm.daysToSettle <= 0) {
+      toast.error("يرجى إدخال عدد أيام صحيح للتسوية الجزئية");
+      return;
+    }
+    if (confirmForm.daysToSettle > Math.ceil(preview.value.availableDays)) {
+      toast.error("عدد الأيام يتجاوز الرصيد المتاح");
+      return;
+    }
+  }
+
   confirming.value = true;
   try {
     await store.confirm({
       employeeId: preview.value.employeeId,
-      unusedLeaveDays: preview.value.unusedLeaveDays,
-      dailyRate: preview.value.dailyRate,
-      totalAmount: preview.value.totalAmount,
       settlementDate: confirmForm.settlementDate,
+      settlementType: confirmForm.settlementType,
+      daysToSettle:
+        confirmForm.settlementType === SettlementType.PARTIAL
+          ? confirmForm.daysToSettle
+          : undefined,
       notes: confirmForm.notes || undefined,
     });
     toast.success(
@@ -453,7 +590,7 @@ const handleConfirm = async () => {
   }
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 const formatCurrency = (val: number | string | null | undefined) => {
   const n = Number(val) || 0;
   return new Intl.NumberFormat("ar-SA", {
@@ -466,7 +603,7 @@ const formatCurrency = (val: number | string | null | undefined) => {
 const formatDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("ar-SA") : "—";
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ─── Init ────────────────────────────────────────────────────────────────────
 onMounted(() => {
   store.fetchAll();
   if (!employeesStore.employees.length) employeesStore.fetchAll();
@@ -477,11 +614,20 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ══ Stats ════════════════════════════════════════════════════════════════════
+// ✅ تنسيق أزرار الهيدر مثل صفحة الموظفين
+.page-header__actions {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+  @include respond-to("md") {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 .stats-row {
   margin-bottom: $space-6;
 }
-
 .stat-card {
   &.stat-total .stat-card__icon {
     background: rgba($stb-success, 0.12);
@@ -496,17 +642,12 @@ onMounted(() => {
     color: $stb-warning;
   }
 }
-
-// ══ Empty ════════════════════════════════════════════════════════════════════
 .empty-card .empty-state {
   padding: $space-16 $space-8;
 }
-
 .mt-4 {
   margin-top: $space-4 !important;
 }
-
-// ══ Table ════════════════════════════════════════════════════════════════════
 .table-card {
   padding: 0;
   overflow: hidden;
@@ -559,13 +700,11 @@ onMounted(() => {
   font-weight: 700;
   border: 1px solid rgba($stb-warning, 0.25);
 }
-
 .total-cell {
   font-weight: 800;
   color: $stb-success;
   font-size: $font-size-base;
 }
-
 .notes-cell {
   max-width: 180px;
   @include truncate;
@@ -573,26 +712,22 @@ onMounted(() => {
   color: $stb-text-muted;
 }
 
-// ══ Modals ════════════════════════════════════════════════════════════════════
 .modal-md {
   max-width: 520px;
 }
 .modal-preview {
   max-width: 600px;
 }
-
 .modal-icon {
   color: $stb-accent;
   margin-left: $space-2;
 }
-
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: $space-5;
   padding: $space-5;
 }
-
 .form-group {
   display: flex;
   flex-direction: column;
@@ -603,7 +738,6 @@ onMounted(() => {
     color: $stb-text-secondary;
   }
 }
-
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -612,8 +746,13 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 }
+.full-width {
+  grid-column: span 2;
+  @include respond-to("md") {
+    grid-column: span 1;
+  }
+}
 
-// ── Info Banner ──────────────────────────────────────────────────────────────
 .info-banner {
   @include flex(row, flex-start, flex-start, $space-3);
   padding: $space-3 $space-4;
@@ -623,7 +762,6 @@ onMounted(() => {
   color: $stb-info;
   font-size: $font-size-xs;
   line-height: 1.7;
-
   svg {
     flex-shrink: 0;
     margin-top: 2px;
@@ -634,7 +772,6 @@ onMounted(() => {
   strong {
     color: $stb-text-primary;
   }
-
   .formula {
     display: inline-block;
     margin-top: $space-1;
@@ -648,7 +785,6 @@ onMounted(() => {
   }
 }
 
-// ── Warning Banner ───────────────────────────────────────────────────────────
 .warning-banner {
   @include flex(row, flex-start, flex-start, $space-3);
   padding: $space-3 $space-4;
@@ -658,7 +794,6 @@ onMounted(() => {
   color: $stb-danger;
   font-size: $font-size-xs;
   line-height: 1.7;
-
   svg {
     flex-shrink: 0;
     margin-top: 2px;
@@ -671,7 +806,6 @@ onMounted(() => {
   }
 }
 
-// ── Employee Preview Card ────────────────────────────────────────────────────
 .employee-preview-card {
   @include flex(row, center, flex-start, $space-4);
   padding: $space-4;
@@ -679,7 +813,6 @@ onMounted(() => {
   border: 1px solid rgba($stb-primary-light, 0.2);
   border-radius: $radius-lg;
 }
-
 .ep-avatar {
   width: 48px;
   height: 48px;
@@ -692,7 +825,6 @@ onMounted(() => {
   flex-shrink: 0;
   box-shadow: $shadow-glow;
 }
-
 .ep-info {
   flex: 1;
   min-width: 0;
@@ -709,7 +841,6 @@ onMounted(() => {
   font-size: $font-size-xs;
   color: $stb-text-muted;
 }
-
 .ep-year {
   @include flex(row, center, center, $space-1);
   padding: $space-1 $space-3;
@@ -722,64 +853,63 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-// ── Calc Breakdown ───────────────────────────────────────────────────────────
 .calc-breakdown {
   background: $stb-surface;
   border: 1px solid $stb-border;
   border-radius: $radius-lg;
   overflow: hidden;
 }
-
 .calc-row {
   @include flex(row, center, space-between, $space-3);
   padding: $space-3 $space-5;
   border-bottom: 1px solid rgba($stb-border, 0.6);
-
   &:last-child {
     border-bottom: none;
   }
-
-  &--formula {
-    background: rgba($stb-surface-2, 0.5);
-    font-size: $font-size-xs;
-  }
-
   &--total {
     background: rgba($stb-success, 0.05);
     border-top: 1px solid rgba($stb-success, 0.2) !important;
     padding: $space-4 $space-5;
   }
 }
-
 .calc-label {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-sm;
   color: $stb-text-secondary;
   font-weight: 500;
 }
-
 .calc-value {
   font-size: $font-size-sm;
   font-weight: 700;
   color: $stb-text-primary;
 }
-
-.calc-formula {
-  font-size: $font-size-xs;
-  color: $stb-text-muted;
-  font-family: monospace;
-  direction: ltr;
-  text-align: left;
-}
-
 .calc-total {
   font-size: $font-size-xl;
   font-weight: 800;
   color: $stb-success;
   text-shadow: 0 0 20px rgba($stb-success, 0.3);
 }
-
 .text-accent {
   color: $stb-accent !important;
+}
+
+.radio-group {
+  display: flex;
+  gap: $space-4;
+  margin-top: $space-2;
+}
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  color: $stb-text-primary;
+}
+.text-muted {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+  margin-top: $space-1;
+  display: block;
 }
 </style>

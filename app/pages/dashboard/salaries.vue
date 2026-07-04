@@ -3,12 +3,12 @@
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
-        <h1>إدارة الرواتب</h1>
-        <p>تعيين وتحديث هياكل الرواتب والبدلات للموظفين</p>
+        <h1>إدارة الأجور</h1>
+        <p>تعيين وتحديث هياكل الأجور والبدلات للموظفين</p>
       </div>
       <button class="btn btn--primary" @click="openCreateModal">
         <Plus :size="18" />
-        <span>تعيين راتب جديد</span>
+        <span>تعيين الأجر جديد</span>
       </button>
     </div>
 
@@ -40,7 +40,7 @@
         </div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ avgSalary }} ر.س</div>
-          <div class="stat-card__label">متوسط الراتب</div>
+          <div class="stat-card__label">متوسط الأجر</div>
         </div>
       </div>
     </div>
@@ -55,10 +55,10 @@
       <div class="empty-state">
         <Wallet :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد بيانات رواتب</div>
-        <div class="empty-state__text">قم بتعيين الرواتب للموظفين للبدء</div>
+        <div class="empty-state__text">قم بتعيين الأجور للموظفين للبدء</div>
         <button class="btn btn--primary mt-4" @click="openCreateModal">
           <Plus :size="16" />
-          تعيين راتب
+          تعيين أجر
         </button>
       </div>
     </div>
@@ -70,11 +70,11 @@
           <thead>
             <tr>
               <th>الموظف</th>
-              <th>الراتب الأساسي</th>
+              <th>الأجر الأساسي</th>
               <th>بدل السكن</th>
               <th>بدل النقل</th>
               <th>بدلات أخرى</th>
-              <th>إجمالي الراتب</th>
+              <th>إجمالي الأجر</th>
               <th>الإجراءات</th>
             </tr>
           </thead>
@@ -99,7 +99,7 @@
                 <button
                   class="btn btn--accent btn--sm"
                   @click="openEditModal(sal)"
-                  title="تعديل الراتب"
+                  title="تعديل الأجر"
                 >
                   <Pencil :size="14" />
                   تعديل
@@ -123,7 +123,7 @@
             <div class="modal__header">
               <h3>
                 <Wallet :size="20" class="modal-icon" />
-                {{ isEditing ? "تعديل هيكل الراتب" : "تعيين راتب جديد" }}
+                {{ isEditing ? "تعديل هيكل الأجر" : "تعيين أجر جديد" }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -155,9 +155,9 @@
                   </select>
                 </div>
 
-                <!-- الراتب الأساسي -->
+                <!-- الأجر الأساسي -->
                 <div class="form-group">
-                  <label>الراتب الأساسي *</label>
+                  <label>الأجر الأساسي *</label>
                   <input
                     v-model.number="form.basicSalary"
                     type="number"
@@ -211,7 +211,7 @@
                 <!-- ملخص سريع -->
                 <div class="summary-card full-width">
                   <div class="summary-content">
-                    <span class="summary-label">إجمالي الراتب:</span>
+                    <span class="summary-label">إجمالي الأجر:</span>
                     <span class="summary-value">
                       {{ formatCurrency(calculateTotal) }}
                     </span>
@@ -234,7 +234,7 @@
                 >
                   <span v-if="submitting" class="spinner spinner--sm" />
                   <span v-else>{{
-                    isEditing ? "حفظ التغييرات" : "تعيين الراتب"
+                    isEditing ? "حفظ التغييرات" : "تعيين الأجر"
                   }}</span>
                 </button>
               </div>
@@ -348,14 +348,14 @@ const handleSubmit = async () => {
         otherAllowances: form.otherAllowances,
       };
       await store.update(editingId.value, payload);
-      toast.success("تم تحديث الراتب بنجاح");
+      toast.success("تم تحديث الأجر بنجاح");
     } else {
       if (!form.employeeId) {
         toast.error("يرجى اختيار الموظف");
         return;
       }
       await store.create(form as CreateSalaryPayload);
-      toast.success("تم تعيين الراتب بنجاح");
+      toast.success("تم تعيين الأجر بنجاح");
     }
     showModal.value = false;
   } catch (e: any) {

@@ -5,7 +5,7 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>مسيرات الرواتب</h1>
-        <p>إدارة وتوليد وتصدير كشوف الرواتب الشهرية</p>
+        <p>إدارة وإنشاء وتصدير كشوف الرواتب الشهرية</p>
       </div>
       <div class="page-header__actions">
         <!-- <button
@@ -28,7 +28,7 @@
         </button> -->
         <button class="btn btn--primary" @click="showGenerateModal = true">
           <CalendarPlus :size="16" />
-          توليد مسير جديد
+          إنشاء مسير جديد
         </button>
       </div>
     </div>
@@ -173,7 +173,7 @@
           {{
             filterYear
               ? "لا توجد نتائج للفترة المحددة"
-              : "ابدأ بتوليد أول مسير رواتب للشركة"
+              : "ابدأ بإنشاء أول مسير رواتب للشركة"
           }}
         </div>
         <button
@@ -182,7 +182,7 @@
           @click="showGenerateModal = true"
         >
           <CalendarPlus :size="15" />
-          توليد مسير جديد
+          إنشاء مسير جديد
         </button>
       </div>
     </div>
@@ -203,7 +203,7 @@
           <div class="payroll-card__meta">
             <h3>{{ getMonthName(payroll.month) }} {{ payroll.year }}</h3>
             <span class="payroll-card__sub"
-              >تم التوليد: {{ formatDate(payroll.generatedAt) }}</span
+              >تم الإنشاء: {{ formatDate(payroll.generatedAt) }}</span
             >
           </div>
           <span
@@ -301,7 +301,7 @@
         >
           <div class="modal">
             <div class="modal__header">
-              <h3>توليد مسير رواتب جديد</h3>
+              <h3>إنشاء مسير رواتب جديد</h3>
               <button
                 class="btn btn--icon btn--ghost"
                 @click="showGenerateModal = false"
@@ -363,7 +363,7 @@
                   :disabled="generating"
                 >
                   <span v-if="generating" class="spinner" />
-                  <span v-else>تأكيد التوليد</span>
+                  <span v-else>تأكيد الإنشاء</span>
                 </button>
               </div>
             </form>
@@ -501,7 +501,7 @@ const handleGenerate = async () => {
   generating.value = true;
   try {
     await store.generate(genForm.month, genForm.year);
-    toast.success("تم توليد مسير الرواتب بنجاح");
+    toast.success("تم إنشاء مسير الرواتب بنجاح");
     showGenerateModal.value = false;
   } catch (e: any) {
     toast.error(e.message);

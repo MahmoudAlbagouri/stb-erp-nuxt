@@ -247,9 +247,8 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "../../composables/useToast";
 import type { CreateLeavePayload, LeaveRequest } from "@/types";
-import ConfirmDialog from "@/components/global/ConfirmDialog.vue"; // ✅ استيراد مكون التأكيد
+import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
-// ✅ استيراد أيقونات Lucide
 import {
   Plus,
   Hourglass,
@@ -266,11 +265,9 @@ definePageMeta({ middleware: "auth" });
 const store = useLeavesStore();
 const toast = useToast();
 
-// ─── State ─────────────────────────────────────────────────────────────────
 const showCreateModal = ref(false);
 const submitting = ref(false);
 
-// ✅ حالات بوباب التأكيد
 const showApproveConfirm = ref(false);
 const showRejectConfirm = ref(false);
 const actionLoading = ref(false);
@@ -290,7 +287,6 @@ const createForm = reactive<CreateLeavePayload>({
   reason: "",
 });
 
-// ─── Computed Stats ────────────────────────────────────────────────────────
 const pendingCount = computed(
   () => store.requests.filter((r) => r.status === "pending").length,
 );
@@ -301,7 +297,6 @@ const rejectedCount = computed(
   () => store.requests.filter((r) => r.status === "rejected").length,
 );
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
 const getEmployeeName = (req: any) => {
   if (req.employee) {
     return req.employee.fullName || req.employee.name || "غير محدد";
@@ -341,7 +336,6 @@ const calculateDays = (start: string, end: string) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
 
-// ─── Actions ──────────────────────────────────────────────────────────────
 const openCreateModal = () => {
   Object.assign(createForm, {
     startDate: "",
@@ -365,7 +359,6 @@ const handleCreateLeave = async () => {
   }
 };
 
-// ✅ دوال إدارة التأكيد بدلاً من alert
 const triggerApprove = (req: LeaveRequest) => {
   currentActionTarget.value = req;
   showApproveConfirm.value = true;
@@ -404,7 +397,6 @@ const executeReject = async () => {
   }
 };
 
-// ─── Init ─────────────────────────────────────────────────────────────────
 onMounted(() => {
   store.fetchAll();
 });
@@ -417,7 +409,6 @@ onMounted(() => {
 .stats-row {
   margin-bottom: $space-6;
 }
-
 .stat-card {
   &.stat-pending .stat-card__icon {
     background: rgba($stb-warning, 0.12);
@@ -432,67 +423,53 @@ onMounted(() => {
     color: $stb-danger;
   }
 }
-
-.empty-card {
-  .empty-state {
-    padding: $space-10 $space-4;
-  }
-  .empty-icon {
-    color: $stb-text-muted;
-    opacity: 0.4;
-    margin-bottom: $space-3;
-  }
+.empty-card .empty-state {
+  padding: $space-10 $space-4;
 }
-
+.empty-icon {
+  color: $stb-text-muted;
+  opacity: 0.4;
+  margin-bottom: $space-3;
+}
 .table-card {
   padding: 0;
   overflow: hidden;
 }
-
 .table-responsive {
   overflow-x: auto;
   @include scrollbar;
 }
-
 .actions-cell {
   @include flex(row, center, flex-start, $space-2);
 }
-
 .modal-md {
   max-width: 560px;
 }
-
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: $space-4;
 }
-
 .full-width {
   grid-column: span 2;
   @include respond-to("md") {
     grid-column: span 1;
   }
 }
-
 .textarea-resize {
   resize: vertical;
   min-height: 80px;
 }
-
 .mt-4 {
   margin-top: $space-4 !important;
 }
-
 .modal-icon {
   color: $stb-accent;
   margin-left: $space-2;
 }
-
 .data-table td div {
   line-height: 1.4;
 }
-
 .font-medium {
   font-weight: 600;
 }

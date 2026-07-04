@@ -1,4 +1,3 @@
-// stores/leaves.ts
 import { defineStore } from "pinia";
 import { useApi } from "../composables/useApi";
 import type {
@@ -16,7 +15,6 @@ export const useLeavesStore = defineStore("leaves", () => {
   const balances = ref<LeaveBalance[]>([]);
   const loading = ref(false);
 
-  // جلب جميع طلبات الإجازة
   const fetchAll = async () => {
     loading.value = true;
     try {
@@ -29,14 +27,12 @@ export const useLeavesStore = defineStore("leaves", () => {
     }
   };
 
-  // تقديم إجازة جديدة (للموظف الحالي)
   const createMyLeave = async (payload: CreateLeavePayload) => {
     const res = await api.post<LeaveRequest>("/leaves/my-leaves", payload);
-    await fetchAll(); // تحديث القائمة
+    await fetchAll();
     return res.data;
   };
 
-  // تقديم إجازة لموظف آخر (للأدمن)
   const createAdminLeave = async (
     employeeId: string,
     payload: CreateLeavePayload,
@@ -49,7 +45,6 @@ export const useLeavesStore = defineStore("leaves", () => {
     return res.data;
   };
 
-  // تحديث حالة الطلب (موافقة/رفض)
   const updateStatus = async (id: string, status: "approved" | "rejected") => {
     const res = await api.patch<LeaveRequest>(`/leaves/${id}/status`, {
       status,
@@ -58,13 +53,21 @@ export const useLeavesStore = defineStore("leaves", () => {
     return res.data;
   };
 
-  // تعيين رصيد الإجازات
   const setBalance = async (payload: SetBalancePayload) => {
     const res = await api.post<LeaveBalance>("/leaves/balance", payload);
     return res.data;
   };
 
-  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  const getAccrualDetails = async (employeeId: string) => {
+    try {
+      const res = await api.get(`/leaves/accrual/${employeeId}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch accrual details:", error);
+      return null;
+    }
+  };
+
   const reset = () => {
     requests.value = [];
     balances.value = [];
@@ -80,6 +83,7 @@ export const useLeavesStore = defineStore("leaves", () => {
     createAdminLeave,
     updateStatus,
     setBalance,
-    reset, // ✅ تم التصدير
+    getAccrualDetails,
+    reset,
   };
 });

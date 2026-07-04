@@ -9,7 +9,7 @@
             <div class="ob-header__title">
               <UserPlus :size="22" class="ob-header__icon" />
               <div>
-                <h2>تأهيل موظف جديد</h2>
+                <h2>إضافة موظف جديد</h2>
                 <p>أكمل الخطوات لإنشاء ملف الموظف الكامل</p>
               </div>
             </div>
@@ -86,7 +86,9 @@
                     v-if="form.employee.nationalityType === 'non_saudi'"
                     class="form-group"
                   >
-                    <label class="form-label required">تاريخ انتهاء </label>
+                    <label class="form-label required"
+                      >تاريخ انتهاء الهوية</label
+                    >
                     <input
                       v-model="form.employee.iqamaExpiryDate"
                       type="date"
@@ -100,17 +102,25 @@
                 </Transition>
 
                 <div class="form-group">
-                  <label class="form-label">رقم الهوية / </label>
+                  <label class="form-label">رقم الهوية</label>
                   <input
                     v-model="form.employee.nationalId"
                     type="text"
                     class="form-input"
+                    :class="{ 'form-input--error': errors.nationalId }"
                     placeholder="1xxxxxxxxx"
-                    maxlength="20"
+                    maxlength="10"
+                    @input="
+                      form.employee.nationalId =
+                        form.employee.nationalId.replace(/[^0-9]/g, '')
+                    "
                   />
+                  <span v-if="errors.nationalId" class="form-error">{{
+                    errors.nationalId
+                  }}</span>
                 </div>
 
-                <!-- ✅ حقل رفع صورة الهوية (تم إصلاح مشكلة النوع) -->
+                <!-- ✅ حقل رفع صورة الهوية -->
                 <div class="form-group form-group--full">
                   <label class="form-label">صورة/ملف الهوية</label>
                   <StbUploader
@@ -154,9 +164,20 @@
                     v-model="form.employee.phone"
                     type="tel"
                     class="form-input"
+                    :class="{ 'form-input--error': errors.phone }"
                     placeholder="05xxxxxxxx"
                     dir="ltr"
+                    maxlength="10"
+                    @input="
+                      form.employee.phone = form.employee.phone.replace(
+                        /[^0-9]/g,
+                        '',
+                      )
+                    "
                   />
+                  <span v-if="errors.phone" class="form-error">{{
+                    errors.phone
+                  }}</span>
                 </div>
 
                 <div class="form-group">
@@ -482,6 +503,18 @@
                     </select>
                   </div>
 
+                  <!-- ✅ حقل مدة العقد الجديد -->
+                  <div class="form-group">
+                    <label class="form-label">مدة العقد (بالسنوات)</label>
+                    <input
+                      v-model.number="form.contract.contractDurationYears"
+                      type="number"
+                      min="1"
+                      class="form-input"
+                      placeholder="مثال: 2"
+                    />
+                  </div>
+
                   <div class="form-group">
                     <label class="form-label required">تاريخ بداية العقد</label>
                     <input
@@ -542,7 +575,7 @@
                     </div>
                   </div>
 
-                  <!-- ✅ حقل رفع مرفق العقد (تم إصلاح مشكلة النوع) -->
+                  <!-- ✅ حقل رفع مرفق العقد -->
                   <div class="form-group form-group--full">
                     <label class="form-label">مرفق العقد</label>
                     <StbUploader
@@ -804,6 +837,14 @@
                       <strong>{{ form.contract.contractType }}</strong>
                     </div>
                     <div class="review-row">
+                      <span>المدة</span>
+                      <strong>{{
+                        form.contract.contractDurationYears
+                          ? form.contract.contractDurationYears + " سنوات"
+                          : "غير محدد"
+                      }}</strong>
+                    </div>
+                    <div class="review-row">
                       <span>تاريخ البداية</span>
                       <strong>{{ form.contract.startDate }}</strong>
                     </div>
@@ -1016,6 +1057,7 @@ const form = reactive({
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
     annualLeaveDays: 30,
+    contractDurationYears: 1, // ✅ القيمة الافتراضية
     notes: "",
     attachmentPaths: [] as string[],
   },
@@ -1057,7 +1099,7 @@ const handleContractFilesUpdate = (val: string) => {
   }
 };
 
-// Watchers إضافية للربط المباشر (اختياري، لكن الـ handlers أعلاه تكفي)
+// Watchers إضافية للربط المباشر
 watch(tempNationalIdFile, (val) => {
   form.employee.nationalIdCardPath = val;
 });
@@ -1134,7 +1176,7 @@ const validateCurrentTab = (): boolean => {
       form.employee.nationalityType === "non_saudi" &&
       !form.employee.iqamaExpiryDate
     ) {
-      errors.iqamaExpiryDate = "تاريخ انتهاء  مطلوب لغير السعوديين";
+      errors.iqamaExpiryDate = "تاريخ انتهاء الهوية مطلوب لغير السعوديين";
       return false;
     }
   }
@@ -1233,6 +1275,7 @@ const handleClose = () => {
         startDate: new Date().toISOString().split("T")[0],
         endDate: "",
         annualLeaveDays: 30,
+        contractDurationYears: 1, // ✅ إعادة التعيين للافتراضي
         notes: "",
         attachmentPaths: [] as string[],
       },
@@ -1293,6 +1336,7 @@ const handleSubmit = async () => {
         startDate: form.contract.startDate,
         endDate: form.contract.endDate || undefined,
         annualLeaveDays: form.contract.annualLeaveDays,
+        contractDurationYears: form.contract.contractDurationYears, // ✅ إرسال المدة
         notes: form.contract.notes || undefined,
         attachmentPaths: form.contract.attachmentPaths,
       };

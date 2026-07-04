@@ -21,11 +21,11 @@
             placeholder="بحث بالاسم التقني أو الوصف العربي..."
           />
         </div>
-        <select v-model="scopeFilter" class="form-select" style="width: 160px">
+        <!-- <select v-model="scopeFilter" class="form-select" style="width: 160px">
           <option value="">كل النطاقات</option>
           <option value="system">نظام (System)</option>
           <option value="tenant">مؤسسة (Tenant)</option>
-        </select>
+        </select> -->
       </div>
     </div>
 

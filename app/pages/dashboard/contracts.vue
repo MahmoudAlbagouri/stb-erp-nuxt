@@ -43,13 +43,14 @@
               <th>تاريخ البداية</th>
               <th>تاريخ النهاية</th>
               <th>الإجازة السنوية</th>
+              <th>مدة العقد</th>
               <th>ملاحظات</th>
               <th>المرفقات</th>
               <th>الإجراءات</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="contract in store.contracts" :key="contract.id">
+            <tr v-for="contract in contractList" :key="contract.id">
               <td>
                 <div class="employee-cell">
                   <span class="employee-name">{{
@@ -70,6 +71,15 @@
                 {{ contract.endDate ? formatDate(contract.endDate) : "مفتوح" }}
               </td>
               <td>{{ contract.annualLeaveDays }} يوم</td>
+              <td>
+                <span
+                  v-if="contract.contractDurationYears"
+                  class="badge badge--neutral"
+                >
+                  {{ contract.contractDurationYears }} سنة
+                </span>
+                <span v-else class="text-muted">-</span>
+              </td>
               <td>
                 <span v-if="contract.notes" class="notes-text">
                   {{ truncateText(contract.notes, 30) }}
@@ -182,6 +192,17 @@
                     class="form-input"
                     required
                     min="0"
+                  />
+                </div>
+
+                <!-- ✅ مدة العقد (جديد) -->
+                <div class="form-group">
+                  <label>مدة العقد (بالسنوات)</label>
+                  <input
+                    v-model.number="form.contractDurationYears"
+                    type="number"
+                    class="form-input"
+                    min="1"
                   />
                 </div>
 
@@ -371,9 +392,17 @@ import StbUploader from "@/components/global/StbUploader.vue";
 
 definePageMeta({ middleware: "auth" });
 
+type ContractWithExtras = Contract & {
+  attachmentPaths?: string[];
+  contractDurationYears?: number;
+};
+
 const store = useContractsStore();
 const employeesStore = useEmployeesStore();
 const toast = useToast();
+const contractList = computed<ContractWithExtras[]>(
+  () => store.contracts as ContractWithExtras[],
+);
 
 // ─── State ──────────────────────────────────────────────────────────────────
 const showModal = ref(false);
@@ -391,6 +420,7 @@ const tempAttachments = ref<string[]>([]);
 
 interface ExtendedCreatePayload extends CreateContractPayload {
   attachmentPaths?: string[];
+  contractDurationYears?: number; // ✅ إضافة الحقل الجديد
 }
 
 const EMPTY_FORM: ExtendedCreatePayload = {
@@ -399,6 +429,7 @@ const EMPTY_FORM: ExtendedCreatePayload = {
   startDate: new Date().toISOString().split("T")[0] as string,
   endDate: "",
   annualLeaveDays: 30,
+  contractDurationYears: 1, // ✅ قيمة افتراضية
   notes: "",
   attachmentPaths: [],
 };

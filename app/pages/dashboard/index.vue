@@ -11,7 +11,6 @@
               {{ currentDate }}
             </p>
             <span class="time-badge">
-              <!-- ✅ أيقونة الساعة من Lucide -->
               <Clock :size="14" />
               {{ saudiTime }}
             </span>
@@ -24,15 +23,15 @@
       </div>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="grid-3 stats-grid">
+    <!-- Stats Grid (Updated to grid-4 or flexible grid) -->
+    <!-- Note: Changed grid-3 to a responsive grid that handles more items -->
+    <div class="stats-grid-responsive">
       <!-- Stat 1: Users -->
       <div class="stat-card" :style="`--accent-color: ${stats[0].color}`">
         <div
           class="stat-card__icon"
           :style="`background: rgba(${stats[0].colorRgb}, 0.12); color: ${stats[0].color}`"
         >
-          <!-- ✅ استخدام مكون الأيقونة مباشرة -->
           <component :is="stats[0].icon" :size="24" />
         </div>
         <div class="stat-card__info">
@@ -61,7 +60,58 @@
         </div>
       </div>
 
-      <!-- Stat 3: Merged Pending Approvals -->
+      <!-- Stat 3: Total Payroll -->
+      <div class="stat-card" :style="`--accent-color: ${stats[2].color}`">
+        <div
+          class="stat-card__icon"
+          :style="`background: rgba(${stats[2].colorRgb}, 0.12); color: ${stats[2].color}`"
+        >
+          <component :is="stats[2].icon" :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value value-sm">
+            <span v-if="!loading">{{ stats[2].value }}</span>
+            <span v-else class="spinner spinner--sm"></span>
+          </div>
+          <div class="stat-card__label">{{ stats[2].label }}</div>
+        </div>
+      </div>
+
+      <!-- Stat 4: Avg Salary -->
+      <div class="stat-card" :style="`--accent-color: ${stats[3].color}`">
+        <div
+          class="stat-card__icon"
+          :style="`background: rgba(${stats[3].colorRgb}, 0.12); color: ${stats[3].color}`"
+        >
+          <component :is="stats[3].icon" :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value value-sm">
+            <span v-if="!loading">{{ stats[3].value }}</span>
+            <span v-else class="spinner spinner--sm"></span>
+          </div>
+          <div class="stat-card__label">{{ stats[3].label }}</div>
+        </div>
+      </div>
+
+      <!-- Stat 5: Total Settlements Amount -->
+      <div class="stat-card" :style="`--accent-color: ${stats[4].color}`">
+        <div
+          class="stat-card__icon"
+          :style="`background: rgba(${stats[4].colorRgb}, 0.12); color: ${stats[4].color}`"
+        >
+          <component :is="stats[4].icon" :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value value-sm">
+            <span v-if="!loading">{{ stats[4].value }}</span>
+            <span v-else class="spinner spinner--sm"></span>
+          </div>
+          <div class="stat-card__label">{{ stats[4].label }}</div>
+        </div>
+      </div>
+
+      <!-- Stat 6: Merged Pending Approvals -->
       <div
         class="stat-card stat-card--merged"
         :style="`--accent-color: #f59e0b`"
@@ -71,7 +121,6 @@
             class="stat-card__icon"
             style="background: rgba(245, 158, 11, 0.12); color: #f59e0b"
           >
-            <!-- ✅ أيقونة الموافقات -->
             <ClipboardList :size="24" />
           </div>
           <div class="stat-card__info">
@@ -109,7 +158,6 @@
         <h2 class="card__title">أحدث المستخدمين المسجلين</h2>
         <NuxtLink to="/dashboard/users" class="btn btn--ghost btn--sm">
           عرض الكل
-          <!-- ✅ أيقونة السهم -->
           <ArrowLeft :size="16" />
         </NuxtLink>
       </div>
@@ -163,7 +211,6 @@
             <tr v-if="!usersStore.users.length">
               <td colspan="4">
                 <div class="empty-state">
-                  <!-- ✅ أيقونة المستخدم الفارغ -->
                   <UserX :size="32" class="empty-icon" />
                   <div class="empty-state__title">لا يوجد مستخدمون بعد</div>
                 </div>
@@ -183,9 +230,13 @@ import { useLeavesStore } from "@/stores/leaves";
 import { useAdvancesStore } from "@/stores/advances";
 import { useLoansStore } from "@/stores/loans";
 import { useProfileStore } from "@/stores/profile";
+// ✅ Import new stores
+import { useSalariesStore } from "@/stores/salaries";
+import { useSettlementsStore } from "@/stores/settlements";
+
 import { computed, onMounted, ref, onUnmounted, type Component } from "vue";
 
-// ✅ استيراد جميع الأيقونات المستخدمة
+// ✅ Import all used icons including new ones
 import {
   Clock,
   Users,
@@ -196,15 +247,21 @@ import {
   Landmark,
   ArrowLeft,
   UserX,
+  // New Icons for Salaries & Settlements
+  Banknote,
+  TrendingUp,
+  Wallet,
 } from "lucide-vue-next";
 
 type StatItem = {
-  icon: Component; // ✅ تغيير النوع إلى Component بدلاً من string
+  icon: Component;
   label: string;
-  value: number;
+  value: string | number; // Allow string for formatted currency
   color: string;
   colorRgb: string;
 };
+
+type StatsTuple = [StatItem, StatItem, StatItem, StatItem, StatItem];
 
 definePageMeta({ middleware: "auth" });
 
@@ -214,6 +271,9 @@ const leavesStore = useLeavesStore();
 const advancesStore = useAdvancesStore();
 const loansStore = useLoansStore();
 const profileStore = useProfileStore();
+// ✅ Initialize new stores
+const salariesStore = useSalariesStore();
+const settlementsStore = useSettlementsStore();
 
 const loading = ref(true);
 const saudiTime = ref("");
@@ -241,12 +301,16 @@ onMounted(async () => {
   updateSaudiTime();
   timeInterval = setInterval(updateSaudiTime, 1000);
   await profileStore.fetchProfile();
+
+  // ✅ Fetch data from all stores in parallel
   await Promise.all([
     usersStore.fetchAll(),
     employeesStore.fetchAll(),
     leavesStore.fetchAll(),
     advancesStore.fetchAll(),
     loansStore.fetchAll(),
+    salariesStore.fetchAll(),
+    settlementsStore.fetchAll(),
   ]);
   loading.value = false;
 });
@@ -287,8 +351,41 @@ const welcomeMessage = computed(() => {
   return `مرحباً، ${displayName} 👋<br><span class="text-accent">أهلاً بك في نظام STB HR</span><br>نتمنى لك يوماً سعيداً ومثمراً.`;
 });
 
-// ✅ تحديث مصفوفة الإحصائيات لاستخدام مكونات الأيقونات
-const stats = computed<readonly [StatItem, StatItem]>(() => [
+// Helper for currency formatting
+const formatCurrency = (val: number) => {
+  return new Intl.NumberFormat("ar-SA", {
+    style: "currency",
+    currency: "SAR",
+    maximumFractionDigits: 0,
+  }).format(val);
+};
+
+// Computed values for Salaries and Settlements
+const totalPayrollValue = computed(() => {
+  return salariesStore.salaries.reduce(
+    (sum, s) => sum + Number(s.totalSalary),
+    0,
+  );
+});
+
+const avgSalaryValue = computed(() => {
+  if (!salariesStore.salaries.length) return 0;
+  const total = salariesStore.salaries.reduce(
+    (sum, s) => sum + Number(s.totalSalary),
+    0,
+  );
+  return Math.round(total / salariesStore.salaries.length);
+});
+
+const totalSettlementsValue = computed(() => {
+  return settlementsStore.settlements.reduce(
+    (sum, s) => sum + Number(s.totalAmount),
+    0,
+  );
+});
+
+// ✅ Updated Stats Array with 6 items
+const stats = computed<StatsTuple>(() => [
   {
     icon: Users,
     label: "المستخدمون",
@@ -302,6 +399,27 @@ const stats = computed<readonly [StatItem, StatItem]>(() => [
     value: employeesStore.employees.length,
     color: "#10b981",
     colorRgb: "16,185,129",
+  },
+  {
+    icon: Banknote,
+    label: "إجمالي الرواتب",
+    value: formatCurrency(totalPayrollValue.value),
+    color: "#8b5cf6", // Violet
+    colorRgb: "139,92,246",
+  },
+  {
+    icon: TrendingUp,
+    label: "متوسط الراتب",
+    value: formatCurrency(avgSalaryValue.value),
+    color: "#f59e0b", // Amber
+    colorRgb: "245,158,11",
+  },
+  {
+    icon: Wallet,
+    label: "إجمالي التسويات",
+    value: formatCurrency(totalSettlementsValue.value),
+    color: "#ef4444", // Red
+    colorRgb: "239,68,68",
   },
 ]);
 
@@ -413,6 +531,61 @@ const statusLabel = (s: string) =>
   box-shadow: 0 2px 8px rgba($stb-primary-dark, 0.3);
 }
 
+/* ✅ Updated Grid System for Stats */
+.stats-grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: $space-4;
+  margin-bottom: $space-6;
+}
+
+.stat-card {
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-lg;
+  padding: $space-4;
+  @include flex(row, center, flex-start, $space-4);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    border-color: var(--accent-color);
+  }
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-md;
+    @include flex(row, center, center);
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__value {
+    font-size: $font-size-xl;
+    font-weight: 800;
+    color: $stb-text-primary;
+    line-height: 1.2;
+
+    &.value-sm {
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    color: $stb-text-secondary;
+    margin-top: 2px;
+  }
+}
+
 .stat-card--merged {
   display: grid !important;
   grid-template-columns: auto 1fr;
@@ -449,7 +622,6 @@ const statusLabel = (s: string) =>
       color: $stb-text-secondary;
       padding: 0 $space-1;
 
-      /* ✅ تنسيق الأيقونات الصغيرة داخل القائمة */
       .item-icon {
         vertical-align: middle;
         margin-left: 4px;
