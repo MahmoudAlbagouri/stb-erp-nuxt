@@ -23,8 +23,7 @@
       </div>
     </div>
 
-    <!-- Stats Grid (Updated to grid-4 or flexible grid) -->
-    <!-- Note: Changed grid-3 to a responsive grid that handles more items -->
+    <!-- Stats Grid (تم تحديث الشبكة لتكون متجاوبة مع العدد الجديد) -->
     <div class="stats-grid-responsive">
       <!-- Stat 1: Users -->
       <div class="stat-card" :style="`--accent-color: ${stats[0].color}`">
@@ -60,7 +59,7 @@
         </div>
       </div>
 
-      <!-- Stat 3: Total Payroll -->
+      <!-- Stat 3: Total Payroll (جديد) -->
       <div class="stat-card" :style="`--accent-color: ${stats[2].color}`">
         <div
           class="stat-card__icon"
@@ -77,7 +76,7 @@
         </div>
       </div>
 
-      <!-- Stat 4: Avg Salary -->
+      <!-- Stat 4: Avg Salary (جديد) -->
       <div class="stat-card" :style="`--accent-color: ${stats[3].color}`">
         <div
           class="stat-card__icon"
@@ -94,7 +93,7 @@
         </div>
       </div>
 
-      <!-- Stat 5: Total Settlements Amount -->
+      <!-- Stat 5: Total Settlements (جديد) -->
       <div class="stat-card" :style="`--accent-color: ${stats[4].color}`">
         <div
           class="stat-card__icon"
@@ -230,13 +229,13 @@ import { useLeavesStore } from "@/stores/leaves";
 import { useAdvancesStore } from "@/stores/advances";
 import { useLoansStore } from "@/stores/loans";
 import { useProfileStore } from "@/stores/profile";
-// ✅ Import new stores
+// ✅ استيراد Stores الرواتب والتسويات الجديدة
 import { useSalariesStore } from "@/stores/salaries";
 import { useSettlementsStore } from "@/stores/settlements";
 
 import { computed, onMounted, ref, onUnmounted, type Component } from "vue";
 
-// ✅ Import all used icons including new ones
+// ✅ استيراد الأيقونات الجديدة
 import {
   Clock,
   Users,
@@ -247,7 +246,6 @@ import {
   Landmark,
   ArrowLeft,
   UserX,
-  // New Icons for Salaries & Settlements
   Banknote,
   TrendingUp,
   Wallet,
@@ -256,12 +254,10 @@ import {
 type StatItem = {
   icon: Component;
   label: string;
-  value: string | number; // Allow string for formatted currency
+  value: string | number; // السماح بالنصوص للقيم المالية
   color: string;
   colorRgb: string;
 };
-
-type StatsTuple = [StatItem, StatItem, StatItem, StatItem, StatItem];
 
 definePageMeta({ middleware: "auth" });
 
@@ -271,7 +267,7 @@ const leavesStore = useLeavesStore();
 const advancesStore = useAdvancesStore();
 const loansStore = useLoansStore();
 const profileStore = useProfileStore();
-// ✅ Initialize new stores
+// ✅ تهيئة المتغيرات الجديدة (هذا هو سبب المشكلة السابقة)
 const salariesStore = useSalariesStore();
 const settlementsStore = useSettlementsStore();
 
@@ -302,8 +298,8 @@ onMounted(async () => {
   timeInterval = setInterval(updateSaudiTime, 1000);
   await profileStore.fetchProfile();
 
-  // ✅ Fetch data from all stores in parallel
-  await Promise.all([
+  // ✅ استخدام allSettled لضمان عدم توقف الصفحة إذا فشل جلب الرواتب بسبب الصلاحيات
+  await Promise.allSettled([
     usersStore.fetchAll(),
     employeesStore.fetchAll(),
     leavesStore.fetchAll(),
@@ -312,6 +308,8 @@ onMounted(async () => {
     salariesStore.fetchAll(),
     settlementsStore.fetchAll(),
   ]);
+
+  // ✅ التأكد من إخفاء التحميل بغض النظر عن نجاح أو فشل الطلبات
   loading.value = false;
 });
 
@@ -340,7 +338,7 @@ const welcomeMessage = computed(() => {
   const username = user.username || "شريكنا";
 
   if (user.isSuperAdmin) {
-    return `مرحباً شريكنا ${username} 👋<br><span class="text-accent">أهلاً بك في STB HR</span><br>نتمنى لك يومًا مثمرًا وإدارة ناجحة لمواردك البشرية.`;
+    return `مرحباً شريكنا ${username} <br><span class="text-accent">أهلاً بك في STB HR</span><br>نتمنى لك يومًا مثمرًا وإدارة ناجحة لمواردك البشرية.`;
   }
 
   if (user.isSystemAdmin) {
@@ -351,7 +349,7 @@ const welcomeMessage = computed(() => {
   return `مرحباً، ${displayName} 👋<br><span class="text-accent">أهلاً بك في نظام STB HR</span><br>نتمنى لك يوماً سعيداً ومثمراً.`;
 });
 
-// Helper for currency formatting
+// دالة مساعدة لتنسيق العملة
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat("ar-SA", {
     style: "currency",
@@ -360,7 +358,7 @@ const formatCurrency = (val: number) => {
   }).format(val);
 };
 
-// Computed values for Salaries and Settlements
+// حساب القيم الإجمالية للرواتب والتسويات
 const totalPayrollValue = computed(() => {
   return salariesStore.salaries.reduce(
     (sum, s) => sum + Number(s.totalSalary),
@@ -384,44 +382,46 @@ const totalSettlementsValue = computed(() => {
   );
 });
 
-// ✅ Updated Stats Array with 6 items
-const stats = computed<StatsTuple>(() => [
-  {
-    icon: Users,
-    label: "المستخدمون",
-    value: usersStore.users.length,
-    color: "#00aaff",
-    colorRgb: "0,170,255",
-  },
-  {
-    icon: UserCog,
-    label: "الموظفون",
-    value: employeesStore.employees.length,
-    color: "#10b981",
-    colorRgb: "16,185,129",
-  },
-  {
-    icon: Banknote,
-    label: "إجمالي الرواتب",
-    value: formatCurrency(totalPayrollValue.value),
-    color: "#8b5cf6", // Violet
-    colorRgb: "139,92,246",
-  },
-  {
-    icon: TrendingUp,
-    label: "متوسط الراتب",
-    value: formatCurrency(avgSalaryValue.value),
-    color: "#f59e0b", // Amber
-    colorRgb: "245,158,11",
-  },
-  {
-    icon: Wallet,
-    label: "إجمالي التسويات",
-    value: formatCurrency(totalSettlementsValue.value),
-    color: "#ef4444", // Red
-    colorRgb: "239,68,68",
-  },
-]);
+// ✅ مصفوفة الإحصائيات المحدثة
+const stats = computed<[StatItem, StatItem, StatItem, StatItem, StatItem]>(
+  () => [
+    {
+      icon: Users,
+      label: "المستخدمون",
+      value: usersStore.users.length,
+      color: "#00aaff",
+      colorRgb: "0,170,255",
+    },
+    {
+      icon: UserCog,
+      label: "الموظفون",
+      value: employeesStore.employees.length,
+      color: "#10b981",
+      colorRgb: "16,185,129",
+    },
+    {
+      icon: Banknote,
+      label: "إجمالي الرواتب",
+      value: formatCurrency(totalPayrollValue.value),
+      color: "#8b5cf6",
+      colorRgb: "139,92,246",
+    },
+    {
+      icon: TrendingUp,
+      label: "متوسط الراتب",
+      value: formatCurrency(avgSalaryValue.value),
+      color: "#f59e0b",
+      colorRgb: "245,158,11",
+    },
+    {
+      icon: Wallet,
+      label: "إجمالي التسويات",
+      value: formatCurrency(totalSettlementsValue.value),
+      color: "#ef4444",
+      colorRgb: "239,68,68",
+    },
+  ],
+);
 
 const statusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", suspended: "موقوف" })[s] ?? s;
@@ -531,7 +531,7 @@ const statusLabel = (s: string) =>
   box-shadow: 0 2px 8px rgba($stb-primary-dark, 0.3);
 }
 
-/* ✅ Updated Grid System for Stats */
+/* ✅ شبكة متجاوبة لاستيعاب البطاقات الإضافية */
 .stats-grid-responsive {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -575,7 +575,7 @@ const statusLabel = (s: string) =>
     line-height: 1.2;
 
     &.value-sm {
-      font-size: $font-size-lg;
+      font-size: $font-size-lg; /* تصغير الخط قليلاً للأرقام الطويلة */
     }
   }
 

@@ -190,13 +190,10 @@
               <div class="info-banner">
                 <Info :size="16" />
                 <p>
-                  سيتم احتساب البدل بناءً على
-                  <strong>الراتب الفعلي المسجّل</strong> ورصيد الإجازات المتبقي
-                  للسنة الحالية. المعادلة:
-                  <span class="formula">أجر اليوم = الراتب الكلي ÷ 30</span>
+                  يتم احتساب البدل المالي بناءً على البيانات المسجلة واللوائح
+                  المعتمدة في النظام.
                 </p>
               </div>
-
               <div class="modal__footer">
                 <button class="btn btn--ghost" @click="closeAll">إلغاء</button>
                 <button
