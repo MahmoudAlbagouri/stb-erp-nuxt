@@ -44,7 +44,7 @@
         </div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ formatCurrency(totalSettled) }}</div>
-          <div class="stat-card__label">إجمالي المبالغ المسوّاة</div>
+          <div class="stat-card__label">إجمالي مبالغ التسويات</div>
         </div>
       </div>
 
@@ -54,7 +54,7 @@
         </div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ store.settlements.length }}</div>
-          <div class="stat-card__label">إجمالي التسويات المؤرشفة</div>
+          <div class="stat-card__label">إجمالي عدد التسويات</div>
         </div>
       </div>
 
