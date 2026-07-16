@@ -27,6 +27,15 @@
         </NuxtLink>
 
         <NuxtLink
+          to="/dashboard/subscription"
+          class="sidebar-nav__item"
+          active-class="is-active"
+        >
+          <CreditCard class="sidebar-nav__icon" />
+          <span>اشتراكي الحالي</span>
+        </NuxtLink>
+
+        <NuxtLink
           to="/dashboard/profile"
           class="sidebar-nav__item"
           active-class="is-active"
@@ -36,7 +45,7 @@
         </NuxtLink>
       </div>
 
-      <!-- إدارة النظام -->
+      <!-- ✅ إدارة النظام (خاص بـ System Admin فقط) -->
       <div class="sidebar-section">
         <span class="sidebar-section__title">إدارة النظام</span>
 
@@ -65,6 +74,46 @@
         >
           <KeyRound class="sidebar-nav__icon" />
           <span>الصلاحيات</span>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/dashboard/companies"
+          class="sidebar-nav__item"
+          active-class="is-active"
+          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+        >
+          <Building2 class="sidebar-nav__icon" />
+          <span>الشركات</span>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/dashboard/plans"
+          class="sidebar-nav__item"
+          active-class="is-active"
+          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+        >
+          <Layers class="sidebar-nav__icon" />
+          <span>الخطط والاشتراكات</span>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/dashboard/admin/subscriptions"
+          class="sidebar-nav__item"
+          active-class="is-active"
+          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+        >
+          <RefreshCw class="sidebar-nav__icon" />
+          <span>إدارة التجديدات</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+          to="/dashboard/quotations"
+          class="sidebar-nav__item"
+          active-class="is-active"
+        >
+          <FileText class="sidebar-nav__icon" />
+          <span>عروض الأسعار والفواتير</span>
         </NuxtLink>
       </div>
 
@@ -142,7 +191,45 @@
               <Landmark class="sidebar-nav__icon" />
               <span>القروض</span>
             </NuxtLink>
-            <!-- أضف هذا السطر داخل div.sidebar-submenu بعد رابط القروض -->
+
+            <NuxtLink
+              to="/dashboard/bonuses"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <Gift class="sidebar-nav__icon" />
+              <span>المكافآت</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/dashboard/deductions"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <MinusCircle class="sidebar-nav__icon" />
+              <span>الخصومات</span>
+            </NuxtLink>
+
+            <!-- ✅ رابط طلبات الاستقالة الجديد -->
+            <NuxtLink
+              to="/dashboard/resignations"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <FilePlus class="sidebar-nav__icon" />
+              <span>طلبات الاستقالة</span>
+            </NuxtLink>
+
+            <!-- ✅ رابط نهاية الخدمة الجديد -->
+            <NuxtLink
+              to="/dashboard/eos"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <FileCheck class="sidebar-nav__icon" />
+              <span>نهاية الخدمة</span>
+            </NuxtLink>
+
             <NuxtLink
               to="/dashboard/payroll"
               class="sidebar-nav__item sidebar-nav__item--sub"
@@ -151,22 +238,14 @@
               <Calculator class="sidebar-nav__icon" />
               <span>مسيرات الرواتب</span>
             </NuxtLink>
+
             <NuxtLink
               to="/dashboard/settlements"
               class="sidebar-nav__item sidebar-nav__item--sub"
               active-class="is-active"
             >
-              <FileCheck class="sidebar-nav__icon" />
-              <span>مستحقات بدل الإجازة</span>
-            </NuxtLink>
-            <NuxtLink
-              v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
-              to="/dashboard/quotations"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <FileText class="sidebar-nav__icon" />
-              <span>عروض الأسعار والفواتير</span>
+              <Receipt class="sidebar-nav__icon" />
+              <span>تسويات الإجازات</span>
             </NuxtLink>
           </div>
         </Transition>
@@ -223,7 +302,15 @@ import {
   HandCoins,
   Landmark,
   LogOut,
-  FileCheck,
+  Building2,
+  CreditCard,
+  Layers,
+  RefreshCw,
+  Gift,
+  MinusCircle,
+  FilePlus, // ✅ أيقونة طلبات الاستقالة
+  FileCheck, // ✅ أيقونة نهاية الخدمة
+  Receipt, // ✅ أيقونة تسويات الإجازات
 } from "lucide-vue-next";
 
 const ui = useUiStore();
@@ -242,6 +329,7 @@ onMounted(async () => {
     await profile.fetchProfile();
   }
 
+  // ✅ قائمة مسارات الموارد البشرية لتشغيل الفتح التلقائي للقائمة
   const hrRoutes = [
     "/dashboard/employees",
     "/dashboard/contracts",
@@ -249,6 +337,13 @@ onMounted(async () => {
     "/dashboard/advances",
     "/dashboard/loans",
     "/dashboard/leaves",
+    "/dashboard/payroll",
+    "/dashboard/settlements",
+    "/dashboard/attendance",
+    "/dashboard/bonuses",
+    "/dashboard/deductions",
+    "/dashboard/resignations", // ✅ إضافة مسار طلبات الاستقالة
+    "/dashboard/eos", // ✅ إضافة مسار نهاية الخدمة
   ];
 
   if (hrRoutes.includes(route.path)) {

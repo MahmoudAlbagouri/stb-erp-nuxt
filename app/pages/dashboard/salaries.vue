@@ -20,7 +20,7 @@
         </div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ totalPayroll }} ر.س</div>
-          <div class="stat-card__label">إجمالي كشوف المرتبات</div>
+          <div class="stat-card__label">إجمالي  الرواتب</div>
         </div>
       </div>
 
