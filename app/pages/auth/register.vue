@@ -21,7 +21,7 @@
         <div class="input-wrapper">
           <Briefcase :size="18" class="input-icon" />
           <input
-            v-model="form.companyName"
+            v-model="form.company_name"
             type="text"
             class="form-input with-icon"
             placeholder="شركة المستقبل التقنية"
@@ -153,7 +153,7 @@ definePageMeta({ layout: "auth", middleware: "auth" });
 const auth = useAuthStore();
 const showPass = ref(false); // ✅ حالة إظهار/إخفاء الباسورد
 const form = reactive({
-  companyName: "",
+  company_name: "",
   phone: "",
   address: "",
   username: "",
