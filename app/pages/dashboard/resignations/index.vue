@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <!-- ══ Filters ══════════════════════════════════════════════════════════ -->
+    <!-- ══ Filters ════════════════════════════════════════════════════════ -->
     <div class="card filters-card" v-if="isManager">
       <div class="filters-row">
         <select v-model="filterStatus" class="form-select status-select">
@@ -76,7 +76,7 @@
       </div>
     </div>
 
-    <!-- ══ Requests Grid ════════════════════════════════════════════════════ -->
+    <!-- ═ Requests Grid ═══════════════════════════════════════════════════ -->
     <div v-else class="emp-grid">
       <div v-for="req in filteredRequests" :key="req.id" class="res-card">
         <div class="res-card__header">
@@ -166,16 +166,21 @@
               </button>
             </div>
             <form @submit.prevent="handleCreate" class="modal-form">
+              <!-- ✅ استخدام VueDatePicker مع تعريف اللغة بشكل صحيح -->
               <div class="form-group">
                 <label>آخر يوم عمل مقترح *</label>
-                <input
+                <VueDatePicker
                   v-model="createForm.lastWorkingDay"
-                  type="date"
-                  class="form-input"
-                  required
-                  :min="todayStr"
+                  :min-date="new Date()"
+                  format="dd/MM/yyyy"
+                  :locale="arLocale"
+                  text-input
+                  auto-apply
+                  placeholder="اختر تاريخ آخر يوم عمل"
+                  class="custom-date-picker"
                 />
               </div>
+
               <div class="form-group">
                 <label>سبب الاستقالة *</label>
                 <textarea
@@ -216,7 +221,7 @@
       </Transition>
     </Teleport>
 
-    <!-- ══ Decision Modal (For Manager) ════════════════════════════════════ -->
+    <!-- ═ Decision Modal (For Manager) ════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -302,6 +307,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from "vue";
+// ✅ استيراد مكون التقويم وتنسيقاته
+import { VueDatePicker } from "@vuepic/vue-datepicker";
+import "@vuepic/vue-datepicker/dist/main.css";
+
 import { useResignationStore, ResignationStatus } from "@/stores/resignations";
 import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/composables/useToast";
@@ -327,7 +336,50 @@ const store = useResignationStore();
 const auth = useAuthStore();
 const toast = useToast();
 
-// تحديد هل المستخدم مدير أم موظف عادي (يمكن تعديل المنطق حسب نظام الصلاحيات لديك)
+// ✅ تعريف كائن اللغة العربية لتجنب خطأ TypeScript
+const arLocale = {
+  months: [
+    "يناير",
+    "فبراير",
+    "مارس",
+    "أبريل",
+    "مايو",
+    "يونيو",
+    "يوليو",
+    "أغسطس",
+    "سبتمبر",
+    "أكتوبر",
+    "نوفمبر",
+    "ديسمبر",
+  ],
+  monthsShort: [
+    "ينا",
+    "فبر",
+    "مار",
+    "أبر",
+    "ماي",
+    "يون",
+    "يول",
+    "أغس",
+    "سبت",
+    "أكت",
+    "نوف",
+    "ديس",
+  ],
+  weekdays: [
+    "الأحد",
+    "الإثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ],
+  weekdaysShort: ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"],
+  weekStart: 6, // بداية الأسبوع من السبت (مناسب للتقويم العربي)
+};
+
+// تحديد هل المستخدم مدير أم موظف عادي
 const isManager = computed(
   () => auth.user?.isSystemAdmin || auth.user?.isSuperAdmin,
 );
@@ -340,16 +392,14 @@ const filterStatus = ref("");
 const currentRequestId = ref<string | null>(null);
 const decisionType = ref<"approved" | "rejected">("approved");
 
-const createForm = reactive({
-  lastWorkingDay: "",
+// ✅ تغيير نوع الحقل ليكون كائن Date بدلاً من String
+const createForm = reactive<{ lastWorkingDay: Date | null; reason: string }>({
+  lastWorkingDay: null,
   reason: "",
 });
 
-const decisionForm = reactive({
-  notes: "",
-});
+const decisionForm = reactive({ notes: "" });
 
-const todayStr = new Date().toISOString().split("T")[0];
 const todayLabel = new Date().toLocaleDateString("ar-SA");
 
 const StatusLabels: Record<string, string> = {
@@ -361,11 +411,9 @@ const StatusLabels: Record<string, string> = {
 
 const filteredRequests = computed(() => {
   let reqs = store.requests;
-  // إذا كان موظفاً عادياً، نعرض فقط طلباته
   if (!isManager.value && auth.user?.userId) {
     reqs = reqs.filter((r) => r.employeeId === auth.user!.userId);
   }
-  // تطبيق الفلتر
   if (filterStatus.value) {
     reqs = reqs.filter((r) => r.status === filterStatus.value);
   }
@@ -378,7 +426,7 @@ const pendingCount = computed(
 );
 
 const openModal = () => {
-  createForm.lastWorkingDay = "";
+  createForm.lastWorkingDay = null; // تصفير التاريخ
   createForm.reason = "";
   showCreateModal.value = true;
 };
@@ -402,9 +450,20 @@ const closeModals = () => {
 };
 
 const handleCreate = async () => {
+  if (!createForm.lastWorkingDay) {
+    toast.error("يرجى اختيار تاريخ آخر يوم عمل");
+    return;
+  }
+
   submitting.value = true;
   try {
-    await store.create(createForm);
+    // تحويل كائن التاريخ إلى نص ISO قبل الإرسال للباك إند
+    const payload = {
+      ...createForm,
+      lastWorkingDay: createForm.lastWorkingDay.toISOString().split("T")[0],
+    };
+
+    await store.create(payload);
     toast.success("تم تقديم طلب الاستقالة بنجاح");
     closeModals();
   } catch (e: any) {
@@ -753,5 +812,68 @@ onMounted(() => {
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
+}
+
+/* ✅ تنسيقات مخصصة لمطابقة تصميم الـ Dark Theme الخاص بك */
+.custom-date-picker {
+  width: 100%;
+
+  /* مطابقة ألوان المدخلات مع التصميم الحالي */
+  :deep(.dp__main) {
+    font-family: $font-family;
+    direction: rtl;
+  }
+
+  :deep(.dp__input) {
+    background: $stb-surface !important;
+    border: 1px solid $stb-border !important;
+    color: $stb-text-primary !important;
+    border-radius: $radius-md !important;
+    padding: $space-3 $space-4 !important;
+    font-size: $font-size-sm !important;
+    transition: all $transition-base !important;
+    text-align: right !important;
+
+    &::placeholder {
+      color: $stb-text-muted !important;
+    }
+
+    &:focus {
+      border-color: $stb-accent !important;
+      box-shadow: 0 0 0 3px rgba($stb-accent, 0.1) !important;
+    }
+  }
+
+  /* تلوين أيقونة التقويم لتناسب الثيم الداكن */
+  :deep(.dp__input_icon) {
+    color: $stb-accent !important;
+    opacity: 0.8;
+  }
+
+  /* تنسيق القائمة المنسدلة للتقويم */
+  :deep(.dp__menu) {
+    background: $stb-surface-2 !important;
+    border: 1px solid $stb-border !important;
+    border-radius: $radius-lg !important;
+    box-shadow: $shadow-lg !important;
+    color: $stb-text-primary !important;
+  }
+
+  :deep(.dp__calendar_header),
+  :deep(.dp__cell_inner) {
+    color: $stb-text-secondary !important;
+  }
+
+  :deep(.dp__active_date),
+  :deep(.dp__range_start),
+  :deep(.dp__range_end) {
+    background: $gradient-primary !important;
+    color: #fff !important;
+  }
+
+  :deep(.dp__today) {
+    border: 1px solid $stb-accent !important;
+    color: $stb-accent !important;
+  }
 }
 </style>
