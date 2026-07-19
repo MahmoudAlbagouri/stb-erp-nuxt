@@ -699,3 +699,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1); /* لجعل الأيقونة تظهر بشكل جيد على الخلفية الداكنة */
   cursor: pointer;
 }
+input[type="date"] {
+  direction: rtl;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  display: flex;
+  flex-direction: row-reverse; /* لقلب ترتيب الحقول يدوياً */
+  justify-content: flex-end;
+}
+
+/* إجبار المتصفح على عدم تجاوز تنسيقك */
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  text-align: center;
+}
