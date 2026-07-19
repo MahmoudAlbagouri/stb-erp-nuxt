@@ -44,7 +44,9 @@
               <th>تاريخ النهاية</th>
               <th>الإجازة السنوية</th>
               <th>مدة العقد</th>
-              <th>ملاحظات</th>
+              <th>التأمين</th>
+              <th>التذكرة</th>
+              <th>فترة التجربة</th>
               <th>المرفقات</th>
               <th>الإجراءات</th>
             </tr>
@@ -80,9 +82,42 @@
                 </span>
                 <span v-else class="text-muted">-</span>
               </td>
+
+              <!-- ✅ عرض التأمين الطبي -->
               <td>
-                <span v-if="contract.notes" class="notes-text">
-                  {{ truncateText(contract.notes, 30) }}
+                <span
+                  v-if="
+                    contract.medicalInsurance &&
+                    contract.medicalInsurance !== 'بدون'
+                  "
+                  class="badge badge--success"
+                >
+                  {{ contract.medicalInsurance }}
+                </span>
+                <span v-else class="text-muted">-</span>
+              </td>
+
+              <!-- ✅ عرض التذكرة -->
+              <td>
+                <span
+                  v-if="contract.ticketType && contract.ticketType !== 'بدون'"
+                  class="badge badge--info"
+                >
+                  {{ contract.ticketType }}
+                </span>
+                <span v-else class="text-muted">-</span>
+              </td>
+
+              <!-- ✅ عرض فترة التجربة -->
+              <td>
+                <span
+                  v-if="
+                    contract.probationPeriod &&
+                    contract.probationPeriod !== 'بدون'
+                  "
+                  class="badge badge--warning"
+                >
+                  {{ contract.probationPeriod }}
                 </span>
                 <span v-else class="text-muted">-</span>
               </td>
@@ -155,6 +190,7 @@
                     v-model="form.employeeId"
                     class="form-select"
                     required
+                    @change="onEmployeeChange"
                   >
                     <option value="" disabled>اختر الموظف...</option>
                     <option
@@ -195,7 +231,7 @@
                   />
                 </div>
 
-                <!-- ✅ مدة العقد (جديد) -->
+                <!-- مدة العقد -->
                 <div class="form-group">
                   <label>مدة العقد (بالسنوات)</label>
                   <input
@@ -225,6 +261,58 @@
                     type="date"
                     class="form-input"
                   />
+                </div>
+
+                <!-- ✅ التأمين الطبي -->
+                <div class="form-group">
+                  <label>التأمين الطبي</label>
+                  <select v-model="form.medicalInsurance" class="form-select">
+                    <option value="بدون">بدون</option>
+                    <option value="فردي">فردي</option>
+                    <option value="عائلي">عائلي</option>
+                  </select>
+                </div>
+
+                <!-- ✅ الجنسية (تظهر فقط لغير السعوديين) -->
+                <div
+                  v-if="selectedEmployeeNationality === 'non_saudi'"
+                  class="form-group"
+                >
+                  <label class="form-label required">الجنسية</label>
+                  <select
+                    v-model="form.nationality"
+                    class="form-select"
+                    required
+                  >
+                    <option value="" disabled>اختر الجنسية...</option>
+                    <option
+                      v-for="nat in NATIONALITIES"
+                      :key="nat"
+                      :value="nat"
+                    >
+                      {{ nat }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- ✅ نوع تذكرة الطيران -->
+                <div class="form-group">
+                  <label>تذكرة طيران</label>
+                  <select v-model="form.ticketType" class="form-select">
+                    <option value="بدون">بدون</option>
+                    <option value="ذهاب فقط">ذهاب فقط</option>
+                    <option value="ذهاب وعودة">ذهاب وعودة</option>
+                  </select>
+                </div>
+
+                <!-- ✅ فترة التجربة -->
+                <div class="form-group">
+                  <label>فترة التجربة</label>
+                  <select v-model="form.probationPeriod" class="form-select">
+                    <option value="بدون">بدون</option>
+                    <option value="3 شهور">3 شهور</option>
+                    <option value="6 شهور">6 شهور</option>
+                  </select>
                 </div>
 
                 <!-- حقل رفع المرفقات -->
@@ -392,9 +480,31 @@ import StbUploader from "@/components/global/StbUploader.vue";
 
 definePageMeta({ middleware: "auth" });
 
+// ✅ قائمة الجنسيات
+const NATIONALITIES = [
+  "مصري",
+  "يمني",
+  "سوداني",
+  "باكستاني",
+  "هندي",
+  "بنغلاديشي",
+  "فلبيني",
+  "إندونيسي",
+  "نيبالي",
+  "سريلانكي",
+  "أردني",
+  "سوري",
+  "لبناني",
+  "أخرى",
+];
+
 type ContractWithExtras = Contract & {
   attachmentPaths?: string[];
   contractDurationYears?: number;
+  ticketType?: string;
+  probationPeriod?: string;
+  medicalInsurance?: string;
+  nationality?: string;
 };
 
 const store = useContractsStore();
@@ -418,9 +528,14 @@ const currentContractAttachments = ref<string[]>([]);
 // متغير مؤقت لتخزين روابط المرفقات القادمة من الـ Uploader
 const tempAttachments = ref<string[]>([]);
 
+// متغير لتتبع جنسية الموظف المختار
+const selectedEmployeeNationality = ref<string>("");
+
 interface ExtendedCreatePayload extends CreateContractPayload {
   attachmentPaths?: string[];
-  contractDurationYears?: number; // ✅ إضافة الحقل الجديد
+  contractDurationYears?: number;
+  medicalInsurance?: string;
+  nationality?: string;
 }
 
 const EMPTY_FORM: ExtendedCreatePayload = {
@@ -429,7 +544,11 @@ const EMPTY_FORM: ExtendedCreatePayload = {
   startDate: new Date().toISOString().split("T")[0] as string,
   endDate: "",
   annualLeaveDays: 30,
-  contractDurationYears: 1, // ✅ قيمة افتراضية
+  contractDurationYears: 1,
+  ticketType: "بدون",
+  probationPeriod: "بدون",
+  medicalInsurance: "بدون", // ✅ القيمة الافتراضية
+  nationality: "", // ✅ القيمة الافتراضية
   notes: "",
   attachmentPaths: [],
 };
@@ -452,10 +571,26 @@ const handleUploaderUpdate = (val: string) => {
   }
 };
 
+// دالة لتحديث جنسية الموظف عند الاختيار
+const onEmployeeChange = () => {
+  const emp = employeesStore.employees.find((e) => e.id === form.employeeId);
+  if (emp) {
+    selectedEmployeeNationality.value = emp.nationalityType;
+    // إذا لم يكن غير سعودي، نصفر الجنسية في العقد
+    if (emp.nationalityType !== "non_saudi") {
+      form.nationality = "";
+    }
+  } else {
+    selectedEmployeeNationality.value = "";
+    form.nationality = "";
+  }
+};
+
 // ── Actions ───────────────────────────────────────────────────────────────
 const openCreateModal = () => {
   Object.assign(form, EMPTY_FORM);
   tempAttachments.value = [];
+  selectedEmployeeNationality.value = "";
   showModal.value = true;
 };
 
@@ -463,7 +598,12 @@ const handleSubmit = async () => {
   submitting.value = true;
   try {
     form.attachmentPaths = tempAttachments.value;
-    await store.create(form);
+
+    // تنظيف البيانات قبل الإرسال
+    const payload = { ...form };
+    if (payload.nationality === "") delete payload.nationality;
+
+    await store.create(payload);
     toast.success("تم إضافة العقد بنجاح");
     showModal.value = false;
   } catch (e: any) {

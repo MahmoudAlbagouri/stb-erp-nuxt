@@ -267,7 +267,7 @@
                     >{{ preview.availableDays.toFixed(2) }} يوم</span
                   >
                 </div>
-                <div class="calc-row">
+                <!-- <div class="calc-row">
                   <span class="calc-label">
                     <Banknote :size="15" />
                     أجر اليوم الواحد
@@ -275,7 +275,7 @@
                   <span class="calc-value text-accent">
                     {{ formatCurrency(preview.dailyRate) }}
                   </span>
-                </div>
+                </div> -->
 
                 <!-- خيار التسوية الجزئية -->
                 <div class="form-group full-width mt-4">
@@ -287,7 +287,7 @@
                         v-model="confirmForm.settlementType"
                         :value="SettlementType.FULL"
                       />
-                      تسوية كاملة (نهاية خدمة)
+                      تسوية كاملة (صرف كامل الرصيد)
                     </label>
                     <label class="radio-label">
                       <input

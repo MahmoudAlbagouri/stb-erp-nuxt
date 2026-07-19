@@ -19,7 +19,6 @@ export const useEmployeesStore = defineStore("employees", () => {
     loading.value = true;
     error.value = null;
     try {
-      // الآن TypeScript يعرف أن res هو ApiResponse<Employee[]>
       const res = await api.get<Employee[]>("/employees");
       employees.value = res.data;
     } catch (e: any) {
@@ -58,7 +57,6 @@ export const useEmployeesStore = defineStore("employees", () => {
 
   const exportData = async (type: "excel" | "pdf") => {
     try {
-      // هنا TypeScript يعرف أن النتيجة Blob مباشرة
       const blob = await api.get<Blob>(
         `/employees/export/${type}`,
         true,
@@ -106,6 +104,6 @@ export const useEmployeesStore = defineStore("employees", () => {
     update,
     remove,
     exportData,
-    reset, // ✅ تم التصدير
+    reset,
   };
 });

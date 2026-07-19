@@ -63,7 +63,16 @@ export interface User {
   tenant?: Tenant;
 }
 
-// ✅ تحديث واجهة Employee لتشمل الجنسية وحذف تاريخ التعيين
+// ✅ تعريف واجهة المؤهل التعليمي
+export interface Education {
+  id?: string; // معرف المؤهل (للتحديث والحذف)
+  degree: string; // درجة الشهادة
+  certificateNumber?: string; // رقم الشهادة
+  expiryDate?: string | null; // تاريخ الانتهاء
+  attachmentPath?: string; // مسار المرفق
+}
+
+// ✅ تحديث واجهة Employee لتشمل الجنسية والمؤهلات
 export interface Employee {
   id: string;
   fullName: string;
@@ -85,8 +94,12 @@ export interface Employee {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+
   user?: User | null;
   contract?: any;
+
+  // ✅ إضافة مصفوفة المؤهلات
+  educations?: Education[];
 }
 
 // --- Auth ---
@@ -150,7 +163,7 @@ export interface CreatePermissionPayload {
   scope?: "system" | "tenant";
 }
 
-// ✅ تحديث بايلودات الموظفين لتتوافق مع الواجهة الجديدة
+// ✅ تحديث بايلودات الموظفين لتتوافق مع الواجهة الجديدة وتشمل المؤهلات
 export interface CreateEmployeePayload {
   fullName: string;
   employeeCode?: string;
@@ -163,6 +176,9 @@ export interface CreateEmployeePayload {
   department?: string;
   status?: "active" | "inactive" | "terminated";
   userId?: string;
+
+  // ✅ إضافة المؤهلات عند الإنشاء
+  educations?: Education[];
 }
 
 export interface UpdateEmployeePayload {
@@ -177,6 +193,9 @@ export interface UpdateEmployeePayload {
   department?: string;
   status?: "active" | "inactive" | "terminated";
   userId?: string;
+
+  // ✅ إضافة المؤهلات عند التحديث
+  educations?: Education[];
 }
 
 // --- Leaves ---
@@ -221,6 +240,10 @@ export interface SetBalancePayload {
 // --- Contracts ---
 export type ContractType = "دائم" | "جزئي" | "مرن" | "عن بعد" | "أخرى";
 
+// ✅ تعريف أنواع التذكرة وفترة التجربة للـ Frontend
+export type TicketType = "بدون" | "ذهاب فقط" | "ذهاب وعودة";
+export type ProbationPeriod = "بدون" | "3 شهور" | "6 شهور";
+
 export interface Contract {
   id: string;
   employeeId: string;
@@ -228,6 +251,12 @@ export interface Contract {
   startDate: string;
   endDate?: string | null;
   annualLeaveDays: number;
+
+  // ✅ الحقول الجديدة
+  contractDurationYears?: number | null;
+  ticketType?: TicketType | null;
+  probationPeriod?: ProbationPeriod | null;
+
   notes?: string | null;
   attachmentPaths?: string[] | null;
   tenantId: string;
@@ -242,6 +271,12 @@ export interface CreateContractPayload {
   startDate: string;
   endDate?: string;
   annualLeaveDays: number;
+
+  // ✅ الحقول الجديدة
+  contractDurationYears?: number;
+  ticketType?: TicketType;
+  probationPeriod?: ProbationPeriod;
+
   notes?: string;
   attachmentPaths?: string[];
 }
@@ -251,6 +286,12 @@ export interface UpdateContractPayload {
   startDate?: string;
   endDate?: string;
   annualLeaveDays?: number;
+
+  // ✅ الحقول الجديدة
+  contractDurationYears?: number;
+  ticketType?: TicketType;
+  probationPeriod?: ProbationPeriod;
+
   notes?: string;
   attachmentPaths?: string[];
 }

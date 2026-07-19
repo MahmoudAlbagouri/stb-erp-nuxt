@@ -189,6 +189,114 @@
                   </select>
                 </div>
               </div>
+
+              <!-- ✅ قسم المؤهلات التعليمية (بنفس تصميم الـ Edit Modal) -->
+              <div class="education-toggle-section mt-4">
+                <div class="toggle-card">
+                  <div class="toggle-card__info">
+                    <GraduationCap :size="20" class="toggle-card__icon" />
+                    <div>
+                      <strong>المؤهلات العلمية</strong>
+                      <p>إضافة وتعديل درجات الشهادات</p>
+                    </div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input v-model="showEducationForm" type="checkbox" />
+                    <span class="toggle-switch__track"></span>
+                  </label>
+                </div>
+
+                <Transition name="slide-down">
+                  <div v-if="showEducationForm" class="mt-4">
+                    <!-- زر إضافة مؤهل جديد -->
+                    <div class="add-edu-header">
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--outline btn--dashed"
+                        @click="addEducationRow"
+                      >
+                        <Plus :size="14" /> إضافة مؤهل جديد
+                      </button>
+                    </div>
+
+                    <!-- قائمة المؤهلات -->
+                    <div
+                      v-for="(edu, index) in form.educations"
+                      :key="index"
+                      class="education-item-card"
+                    >
+                      <div class="edu-item-header">
+                        <span class="edu-index">#{{ index + 1 }}</span>
+                        <button
+                          type="button"
+                          class="btn btn--icon btn--danger btn--sm"
+                          @click="removeEducationRow(index)"
+                          title="حذف"
+                        >
+                          <Trash2 :size="16" />
+                        </button>
+                      </div>
+
+                      <div class="edu-item-fields">
+                        <div class="form-group">
+                          <label class="form-label">درجة الشهادة</label>
+                          <input
+                            v-model="edu.degree"
+                            type="text"
+                            class="form-input"
+                            placeholder="مثال: بكالوريوس هندسة"
+                          />
+                        </div>
+
+                        <div class="form-group">
+                          <label class="form-label">رقم الشهادة</label>
+                          <input
+                            v-model="edu.certificateNumber"
+                            type="text"
+                            class="form-input"
+                            placeholder="رقم الوثيقة"
+                          />
+                        </div>
+
+                        <div class="form-group">
+                          <label class="form-label"
+                            >تاريخ الانتهاء (اختياري)</label
+                          >
+                          <input
+                            v-model="edu.expiryDate"
+                            type="date"
+                            class="form-input"
+                          />
+                        </div>
+
+                        <div class="form-group form-group--full">
+                          <label class="form-label">مرفق الشهادة</label>
+                          <StbUploader
+                            :model-value="edu.attachmentPath"
+                            @update:model-value="
+                              (val) => (edu.attachmentPath = val || '')
+                            "
+                            endpoint="/media/upload/employee"
+                            field-name="files"
+                            accept=".pdf,.doc,.docx,image/*"
+                            :max-size="5 * 1024 * 1024"
+                            idle-title="ارفع صورة أو ملف PDF"
+                            hint="PDF / Images — بحد أقصى 5 MB"
+                            @error="toast.error"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-if="form.educations.length === 0" class="empty-mini">
+                      <span
+                        >لا توجد مؤهلات مضافة. اضغط "إضافة مؤهل جديد"
+                        للبدء.</span
+                      >
+                    </div>
+                  </div>
+                </Transition>
+              </div>
             </div>
 
             <!-- ── تاب 2: حساب المستخدم ────────────────────────────────── -->
@@ -331,7 +439,6 @@
                             class="form-select"
                           >
                             <option value="" disabled>اختر الدور...</option>
-                            <!-- ✅ تم إضافة displayNameAr هنا -->
                             <option
                               v-for="role in rolesStore.roles"
                               :key="role.id"
@@ -359,7 +466,6 @@
                                 class="perm-tag"
                                 :title="p.name"
                               >
-                                <!-- ✅ عرض الاسم العربي للصلاحيات -->
                                 {{ p.displayNameAr || p.name }}
                               </span>
                               <span
@@ -415,7 +521,6 @@
                               />
                             </div>
 
-                            <!-- ✅ تحسين عرض الصلاحيات (عربي + تقني) -->
                             <div class="perm-grid">
                               <label
                                 v-for="perm in filteredPermissions"
@@ -503,7 +608,6 @@
                     </select>
                   </div>
 
-                  <!-- ✅ حقل مدة العقد الجديد -->
                   <div class="form-group">
                     <label class="form-label">مدة العقد (بالسنوات)</label>
                     <input
@@ -575,7 +679,65 @@
                     </div>
                   </div>
 
-                  <!-- ✅ حقل رفع مرفق العقد -->
+                  <!-- ✅ التأمين الطبي -->
+                  <div class="form-group">
+                    <label class="form-label">التأمين الطبي</label>
+                    <select
+                      v-model="form.contract.medicalInsurance"
+                      class="form-select"
+                    >
+                      <option value="بدون">بدون</option>
+                      <option value="فردي">فردي</option>
+                      <option value="عائلي">عائلي</option>
+                    </select>
+                  </div>
+
+                  <!-- ✅ الجنسية (تظهر فقط لغير السعوديين) -->
+                  <div
+                    v-if="form.employee.nationalityType === 'non_saudi'"
+                    class="form-group"
+                  >
+                    <label class="form-label required">الجنسية</label>
+                    <select
+                      v-model="form.contract.nationality"
+                      class="form-select"
+                      required
+                    >
+                      <option value="" disabled>اختر الجنسية...</option>
+                      <option
+                        v-for="nat in NATIONALITIES"
+                        :key="nat"
+                        :value="nat"
+                      >
+                        {{ nat }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">تذكرة طيران</label>
+                    <select
+                      v-model="form.contract.ticketType"
+                      class="form-select"
+                    >
+                      <option value="بدون">بدون</option>
+                      <option value="ذهاب فقط">ذهاب فقط</option>
+                      <option value="ذهاب وعودة">ذهاب وعودة</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">فترة التجربة</label>
+                    <select
+                      v-model="form.contract.probationPeriod"
+                      class="form-select"
+                    >
+                      <option value="بدون">بدون</option>
+                      <option value="3 شهور">3 شهور</option>
+                      <option value="6 شهور">6 شهور</option>
+                    </select>
+                  </div>
+
                   <div class="form-group form-group--full">
                     <label class="form-label">مرفق العقد</label>
                     <StbUploader
@@ -779,10 +941,32 @@
                       <span>المسمى</span>
                       <strong>{{ form.employee.jobTitle }}</strong>
                     </div>
-                    <div v-if="form.employee.department" class="review-row">
-                      <span>القسم</span>
-                      <strong>{{ form.employee.department }}</strong>
+                  </div>
+                </div>
+
+                <!-- المؤهلات -->
+                <div class="review-card">
+                  <div class="review-card__header">
+                    <GraduationCap :size="16" />
+                    <span>المؤهلات</span>
+                    <button class="review-edit-btn" @click="goTo('employee')">
+                      <Pencil :size="13" /> تعديل
+                    </button>
+                  </div>
+                  <div v-if="form.educations.length > 0" class="review-rows">
+                    <div
+                      v-for="(edu, idx) in form.educations"
+                      :key="idx"
+                      class="review-row"
+                    >
+                      <span>#{{ idx + 1 }} {{ edu.degree }}</span>
+                      <strong v-if="edu.certificateNumber">{{
+                        edu.certificateNumber
+                      }}</strong>
                     </div>
+                  </div>
+                  <div v-else class="review-skip">
+                    <span>لا توجد مؤهلات</span>
                   </div>
                 </div>
 
@@ -803,18 +987,6 @@
                     <div class="review-row">
                       <span>البريد</span>
                       <strong>{{ form.user.email }}</strong>
-                    </div>
-                    <div class="review-row">
-                      <span>الدور</span>
-                      <strong>{{
-                        form.roleMode === "existing"
-                          ? (rolesStore.roles.find(
-                              (r) => r.id === form.user.roleId,
-                            )?.name ?? "—")
-                          : form.roleMode === "new"
-                            ? form.user.roleName || "—"
-                            : "بدون دور"
-                      }}</strong>
                     </div>
                   </div>
                   <div v-else class="review-skip">
@@ -845,12 +1017,27 @@
                       }}</strong>
                     </div>
                     <div class="review-row">
-                      <span>تاريخ البداية</span>
-                      <strong>{{ form.contract.startDate }}</strong>
+                      <span>التأمين</span>
+                      <strong>{{
+                        form.contract.medicalInsurance || "بدون"
+                      }}</strong>
+                    </div>
+                    <div
+                      v-if="form.employee.nationalityType === 'non_saudi'"
+                      class="review-row"
+                    >
+                      <span>الجنسية</span>
+                      <strong>{{ form.contract.nationality || "—" }}</strong>
                     </div>
                     <div class="review-row">
-                      <span>أيام الإجازة</span>
-                      <strong>{{ form.contract.annualLeaveDays }} يوم</strong>
+                      <span>التذكرة</span>
+                      <strong>{{ form.contract.ticketType || "بدون" }}</strong>
+                    </div>
+                    <div class="review-row">
+                      <span>فترة التجربة</span>
+                      <strong>{{
+                        form.contract.probationPeriod || "بدون"
+                      }}</strong>
                     </div>
                   </div>
                   <div v-else class="review-skip">
@@ -962,6 +1149,8 @@ import {
   UserX,
   FileX,
   WalletCards,
+  GraduationCap,
+  Trash2,
 } from "lucide-vue-next";
 
 // استيراد مكون الرفع
@@ -971,6 +1160,7 @@ import { useEmployeesStore } from "@/stores/employees";
 import { useRolesStore } from "@/stores/roles";
 import { usePermissionsStore } from "@/stores/permissions";
 import { useToast } from "@/composables/useToast";
+import type { Education } from "@/types";
 
 // ── Props / Emits ────────────────────────────────────────────────────────────
 const props = defineProps<{ modelValue: boolean }>();
@@ -983,6 +1173,24 @@ const employeesStore = useEmployeesStore();
 const rolesStore = useRolesStore();
 const permissionsStore = usePermissionsStore();
 const toast = useToast();
+
+// ✅ قائمة الجنسيات
+const NATIONALITIES = [
+  "مصري",
+  "يمني",
+  "سوداني",
+  "باكستاني",
+  "هندي",
+  "بنغلاديشي",
+  "فلبيني",
+  "إندونيسي",
+  "نيبالي",
+  "سريلانكي",
+  "أردني",
+  "سوري",
+  "لبناني",
+  "أخرى",
+];
 
 // ── Tabs ────────────────────────────────────────────────────────────────────
 type TabKey = "employee" | "user" | "contract" | "salary" | "review";
@@ -1014,13 +1222,17 @@ const nextTab = () => {
   const idx = tabOrder.indexOf(activeTab.value);
   if (validateCurrentTab()) {
     doneTabs.value.add(activeTab.value);
-    if (idx < tabOrder.length - 1) activeTab.value = tabOrder[idx + 1];
+    const nextKey = tabOrder[idx + 1];
+    if (nextKey) activeTab.value = nextKey;
   }
 };
 
 const prevTab = () => {
   const idx = tabOrder.indexOf(activeTab.value);
-  if (idx > 0) activeTab.value = tabOrder[idx - 1];
+  if (idx > 0) {
+    const prevKey = tabOrder[idx - 1];
+    if (prevKey) activeTab.value = prevKey;
+  }
 };
 
 // ── Form State ────────────────────────────────────────────────────────────────
@@ -1057,7 +1269,11 @@ const form = reactive({
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
     annualLeaveDays: 30,
-    contractDurationYears: 1, // ✅ القيمة الافتراضية
+    contractDurationYears: 1,
+    ticketType: "بدون" as string,
+    probationPeriod: "بدون" as string,
+    medicalInsurance: "بدون" as string, // ✅ القيمة الافتراضية
+    nationality: "" as string, // ✅ الجنسية
     notes: "",
     attachmentPaths: [] as string[],
   },
@@ -1068,7 +1284,12 @@ const form = reactive({
     transportAllowance: 0,
     otherAllowances: 0,
   },
+
+  // ✅ مصفوفة المؤهلات لدعم أكثر من مؤهل
+  educations: [] as Education[],
 });
+
+const showEducationForm = ref(false); // ✅ Toggle لإظهار قسم المؤهلات
 
 const errors = reactive<Record<string, string>>({});
 const submitting = ref(false);
@@ -1079,7 +1300,7 @@ const permSearch = ref("");
 const tempNationalIdFile = ref<string>("");
 const tempContractFiles = ref<string[]>([]);
 
-// ✅ Computed Properties لحل مشكلة نوع الـ Uploader (string vs string[])
+// ✅ Computed Properties لحل مشكلة نوع الـ Uploader
 const nationalIdModelValue = computed(() => {
   return tempNationalIdFile.value || undefined;
 });
@@ -1138,7 +1359,6 @@ watch(
   () => props.modelValue,
   (v) => {
     if (v) {
-      // جلب البيانات عند فتح المودال
       rolesStore.fetchAll();
       permissionsStore.fetchAll();
     }
@@ -1205,6 +1425,13 @@ const validateCurrentTab = (): boolean => {
       errors.startDate = "تاريخ بداية العقد مطلوب";
       return false;
     }
+    // ✅ التحقق من الجنسية إذا كان غير سعودي
+    if (
+      form.employee.nationalityType === "non_saudi" &&
+      !form.contract.nationality
+    ) {
+      // يمكن إضافة خطأ هنا إذا أردت إجبارية الجنسية في العقد
+    }
   }
 
   if (activeTab.value === "salary" && form.withSalary) {
@@ -1227,18 +1454,30 @@ const generatePassword = () => {
   showPassword.value = true;
 };
 
+// ── Education Handlers ────────────────────────────────────────────────────────
+const addEducationRow = () => {
+  form.educations.push({
+    degree: "",
+    certificateNumber: "",
+    expiryDate: "",
+    attachmentPath: "",
+  });
+};
+
+const removeEducationRow = (index: number) => {
+  form.educations.splice(index, 1);
+};
+
 // ── Close Modal & Reset Form ────────────────────────────────────────────────
 const handleClose = () => {
-  // إغلاق المودال بصرياً فوراً
   emit("update:modelValue", false);
 
-  // تصفير البيانات بعد انتهاء الأنيميشن (300ms)
   setTimeout(() => {
     activeTab.value = "employee";
     doneTabs.value.clear();
     clearErrors();
+    showEducationForm.value = false; // ✅ إعادة تعيين التوجل
 
-    // تصفير المتغيرات المؤقتة للرفع
     tempNationalIdFile.value = "";
     tempContractFiles.value = [];
 
@@ -1275,7 +1514,11 @@ const handleClose = () => {
         startDate: new Date().toISOString().split("T")[0],
         endDate: "",
         annualLeaveDays: 30,
-        contractDurationYears: 1, // ✅ إعادة التعيين للافتراضي
+        contractDurationYears: 1,
+        ticketType: "بدون",
+        probationPeriod: "بدون",
+        medicalInsurance: "بدون", // ✅ إعادة التعيين
+        nationality: "", // ✅ إعادة التعيين
         notes: "",
         attachmentPaths: [] as string[],
       },
@@ -1285,6 +1528,7 @@ const handleClose = () => {
         transportAllowance: 0,
         otherAllowances: 0,
       },
+      educations: [], // ✅ تصفير المؤهلات
     });
   }, 300);
 };
@@ -1313,6 +1557,18 @@ const handleSubmit = async () => {
       payload.iqamaExpiryDate = form.employee.iqamaExpiryDate;
     }
 
+    // ✅ إضافة جميع المؤهلات المدخلة
+    if (form.educations.length > 0) {
+      payload.educations = form.educations
+        .filter((edu) => edu.degree) // إرسال فقط المؤهلات التي لها درجة
+        .map((edu) => ({
+          degree: edu.degree,
+          certificateNumber: edu.certificateNumber || undefined,
+          expiryDate: edu.expiryDate || undefined,
+          attachmentPath: edu.attachmentPath || undefined,
+        }));
+    }
+
     if (form.withUser) {
       payload.user = {
         username: form.user.username,
@@ -1336,7 +1592,14 @@ const handleSubmit = async () => {
         startDate: form.contract.startDate,
         endDate: form.contract.endDate || undefined,
         annualLeaveDays: form.contract.annualLeaveDays,
-        contractDurationYears: form.contract.contractDurationYears, // ✅ إرسال المدة
+        contractDurationYears: form.contract.contractDurationYears,
+        ticketType: form.contract.ticketType,
+        probationPeriod: form.contract.probationPeriod,
+
+        // ✅ إضافة الحقول الجديدة
+        medicalInsurance: form.contract.medicalInsurance,
+        nationality: form.contract.nationality || undefined,
+
         notes: form.contract.notes || undefined,
         attachmentPaths: form.contract.attachmentPaths,
       };
@@ -1359,15 +1622,14 @@ const handleSubmit = async () => {
     toast.success(`تم إنشاء ملف الموظف "${form.employee.fullName}" بنجاح ✅`);
     emit("created", res.data);
 
-    // ✅ الإغلاق المباشر هنا يضمن اختفاء الـ Overlay فور النجاح
     handleClose();
   } catch (e: any) {
     toast.error(e.message || "فشل في إنشاء الموظف");
   } finally {
-    // تصفير حالة الإرسال فقط دون التأثير على حالة المودال
     submitting.value = false;
   }
 };
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
   (n || 0).toLocaleString("ar-SA", { maximumFractionDigits: 0 });
@@ -1807,12 +2069,12 @@ const nationalityLabel = (type: string) => {
   cursor: pointer;
   transition: all $transition-fast;
   color: $stb-text-secondary;
-  align-items: flex-start; // لمحاذاة المحتوى مع الـ checkbox من الأعلى
+  align-items: flex-start;
 
   input {
     accent-color: $stb-accent;
     flex-shrink: 0;
-    margin-top: 3px; // محاذاة بصرية مع النص
+    margin-top: 3px;
   }
 
   &--checked {
@@ -1826,7 +2088,6 @@ const nationalityLabel = (type: string) => {
   }
 }
 
-// ✅ تنسيقات جديدة لعرض الصلاحيات (عربي + تقني)
 .perm-label-content {
   display: flex;
   flex-direction: column;
@@ -1872,7 +2133,7 @@ const nationalityLabel = (type: string) => {
     transition: all $transition-fast;
 
     &:first-child {
-      border-radius: 0 $radius-md $radius-md 0; // RTL
+      border-radius: 0 $radius-md $radius-md 0;
     }
 
     &:last-child {
@@ -2215,5 +2476,143 @@ const nationalityLabel = (type: string) => {
     outline: none;
     border-color: $stb-accent;
   }
+}
+
+/* --- Education Section Styles (Matching Edit Page) --- */
+.education-toggle-section {
+  .toggle-card {
+    @include flex(row, center, space-between);
+    padding: $space-4;
+    background: $stb-surface-2;
+    border: 1px solid $stb-border;
+    border-radius: $radius-lg;
+
+    &__info {
+      @include flex(row, center, flex-start, $space-3);
+
+      strong {
+        display: block;
+        font-size: $font-size-sm;
+        font-weight: 700;
+      }
+
+      p {
+        font-size: $font-size-xs;
+        color: $stb-text-muted;
+        margin: 0;
+      }
+    }
+
+    &__icon {
+      color: $stb-accent;
+      flex-shrink: 0;
+    }
+  }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+
+    input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    &__track {
+      position: absolute;
+      inset: 0;
+      background: $stb-surface-3;
+      border-radius: 24px;
+      border: 1px solid $stb-border;
+      transition: all $transition-base;
+
+      &::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: $stb-text-muted;
+        top: 2px;
+        right: 2px; // RTL
+        transition: all $transition-base;
+      }
+    }
+
+    input:checked + .toggle-switch__track {
+      background: $stb-accent;
+      border-color: $stb-accent;
+
+      &::before {
+        background: #fff;
+        right: calc(100% - 20px);
+      }
+    }
+  }
+}
+
+.add-edu-header {
+  margin-bottom: $space-3;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn--dashed {
+  border-style: dashed;
+  border-color: $stb-border;
+  color: $stb-text-secondary;
+
+  &:hover {
+    border-color: $stb-accent;
+    color: $stb-accent;
+    background: rgba($stb-accent, 0.05);
+  }
+}
+
+.education-item-card {
+  background: $stb-surface-2;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  padding: $space-4;
+  margin-bottom: $space-3;
+  position: relative;
+
+  .edu-item-header {
+    @include flex(row, center, space-between);
+    margin-bottom: $space-3;
+    padding-bottom: $space-2;
+    border-bottom: 1px solid $stb-border;
+
+    .edu-index {
+      font-size: $font-size-sm;
+      font-weight: 700;
+      color: $stb-accent;
+    }
+  }
+
+  .edu-item-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-3;
+
+    @include respond-to("md") {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.empty-mini {
+  text-align: center;
+  padding: $space-4;
+  color: $stb-text-muted;
+  font-size: $font-size-sm;
+  background: rgba($stb-surface-3, 0.5);
+  border-radius: $radius-md;
+  border: 1px dashed $stb-border;
 }
 </style>

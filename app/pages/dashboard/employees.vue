@@ -189,7 +189,7 @@
             <span dir="ltr">{{ emp.phone }}</span>
           </div>
 
-          <!-- مؤشرات المستخدم والعقد -->
+          <!-- مؤشرات المستخدم والعقد والمؤهلات -->
           <div class="emp-card__badges" @click.stop>
             <span v-if="emp.user" class="mini-badge mini-badge--user">
               <ShieldCheck :size="11" /> مستخدم
@@ -198,7 +198,14 @@
               <FileText :size="11" /> عقد
             </span>
 
-            <!-- ✅ زر عرض الهوية (محدث) -->
+            <!-- ✅ مؤشر المؤهلات -->
+            <span
+              v-if="emp.educations && emp.educations.length > 0"
+              class="mini-badge mini-badge--edu"
+            >
+              <GraduationCap :size="11" /> مؤهل
+            </span>
+
             <button
               v-if="emp.nationalIdCardPath"
               class="mini-badge mini-badge--doc view-id-btn"
@@ -224,7 +231,7 @@
     <!-- ══ Onboarding Modal ══════════════════════════════════════════════════ -->
     <OnboardingModal v-model="showOnboarding" @created="onEmployeeCreated" />
 
-    <!-- ══ Edit Modal (الموظف البسيط — مع ربط المستخدم) ═════════════════════ -->
+    <!-- ══ Edit Modal (تصميم المؤهلات مثل الـ Onboarding) ═════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -390,6 +397,117 @@
                     @error="toast.error"
                   />
                 </div>
+
+                <!-- ✅ قسم المؤهلات التعليمية (بنفس تصميم الـ Onboarding) -->
+                <div class="form-group full-width education-toggle-section">
+                  <div class="toggle-card">
+                    <div class="toggle-card__info">
+                      <GraduationCap :size="20" class="toggle-card__icon" />
+                      <div>
+                        <strong>المؤهلات العلمية</strong>
+                        <p>إضافة وتعديل درجات الشهادات</p>
+                      </div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input v-model="showEducationForm" type="checkbox" />
+                      <span class="toggle-switch__track"></span>
+                    </label>
+                  </div>
+
+                  <Transition name="slide-down">
+                    <div v-if="showEducationForm" class="mt-4">
+                      <!-- زر إضافة مؤهل جديد -->
+                      <div class="add-edu-header">
+                        <button
+                          type="button"
+                          class="btn btn--sm btn--outline btn--dashed"
+                          @click="addEducationRow"
+                        >
+                          <Plus :size="14" /> إضافة مؤهل جديد
+                        </button>
+                      </div>
+
+                      <!-- قائمة المؤهلات -->
+                      <div
+                        v-for="(edu, index) in editForm.educations"
+                        :key="index"
+                        class="education-item-card"
+                      >
+                        <div class="edu-item-header">
+                          <span class="edu-index">#{{ index + 1 }}</span>
+                          <button
+                            type="button"
+                            class="btn btn--icon btn--danger btn--sm"
+                            @click="removeEducationRow(index)"
+                            title="حذف"
+                          >
+                            <Trash2 :size="16" />
+                          </button>
+                        </div>
+
+                        <div class="edu-item-fields">
+                          <div class="form-group">
+                            <label class="form-label">درجة الشهادة</label>
+                            <input
+                              v-model="edu.degree"
+                              type="text"
+                              class="form-input"
+                              placeholder="مثال: بكالوريوس هندسة"
+                            />
+                          </div>
+
+                          <div class="form-group">
+                            <label class="form-label">رقم الشهادة</label>
+                            <input
+                              v-model="edu.certificateNumber"
+                              type="text"
+                              class="form-input"
+                              placeholder="رقم الوثيقة"
+                            />
+                          </div>
+
+                          <div class="form-group">
+                            <label class="form-label"
+                              >تاريخ الانتهاء (اختياري)</label
+                            >
+                            <input
+                              v-model="edu.expiryDate"
+                              type="date"
+                              class="form-input"
+                            />
+                          </div>
+
+                          <div class="form-group form-group--full">
+                            <label class="form-label">مرفق الشهادة</label>
+                            <StbUploader
+                              :model-value="edu.attachmentPath"
+                              @update:model-value="
+                                (val) => (edu.attachmentPath = val || '')
+                              "
+                              endpoint="/media/upload/employee"
+                              field-name="files"
+                              accept=".pdf,.doc,.docx,image/*"
+                              :max-size="5 * 1024 * 1024"
+                              idle-title="ارفع صورة أو ملف PDF"
+                              hint="PDF / Images — بحد أقصى 5 MB"
+                              @error="toast.error"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        v-if="editForm.educations.length === 0"
+                        class="empty-mini"
+                      >
+                        <span
+                          >لا توجد مؤهلات مضافة. اضغط "إضافة مؤهل جديد"
+                          للبدء.</span
+                        >
+                      </div>
+                    </div>
+                  </Transition>
+                </div>
               </div>
 
               <div class="modal__footer">
@@ -491,9 +609,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
-import { useUsersStore } from "@/stores/users"; // ✅ استيراد ستور المستخدمين
+import { useUsersStore } from "@/stores/users";
 import { useToast } from "@/composables/useToast";
-import type { Employee, User } from "@/types";
+import type { Employee, User, Education } from "@/types";
 import OnboardingModal from "@/components/employees/OnboardingModal.vue";
 
 import {
@@ -512,17 +630,19 @@ import {
   Trash2,
   X,
   ShieldCheck,
-  Link as LinkIcon, // ✅ أيقونة الربط
-  Unlink, // ✅ أيقونة فك الربط
-  Eye, // ✅ أيقونة المعاينة
-  ExternalLink, // ✅ أيقونة الرابط الخارجي
-  Download, // ✅ أيقونة التحميل
+  Link as LinkIcon,
+  Unlink,
+  Eye,
+  ExternalLink,
+  Download,
+  GraduationCap, // ✅ أيقونة المؤهلات
+  Plus, // ✅ أيقونة الإضافة
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useEmployeesStore();
-const usersStore = useUsersStore(); // ✅ تهيئة ستور المستخدمين
+const usersStore = useUsersStore();
 const toast = useToast();
 
 // ─── Onboarding ───────────────────────────────────────────────────────────────
@@ -586,32 +706,45 @@ const openIdViewer = (emp: Employee) => {
 const showEditModal = ref(false);
 const updating = ref(false);
 const editingEmployee = ref<Employee | null>(null);
+const showEducationForm = ref(false); // ✅ Toggle لإظهار قسم المؤهلات
 
-const editForm = reactive({
+// تعريف هيكل النموذج للتعديل
+interface EditFormType {
+  fullName: string;
+  nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
+  iqamaExpiryDate: string;
+  nationalId: string;
+  nationalIdCardPath: string;
+  phone: string;
+  jobTitle: string;
+  department: string;
+  status: "active" | "inactive" | "terminated";
+  userId: string | null;
+  educations: Education[]; // ✅ مصفوفة المؤهلات
+}
+
+const editForm = reactive<EditFormType>({
   fullName: "",
-  nationalityType: "" as "saudi" | "non_saudi" | "outside_sponsorship",
+  nationalityType: "saudi",
   iqamaExpiryDate: "",
   nationalId: "",
   nationalIdCardPath: "",
   phone: "",
   jobTitle: "",
   department: "",
-  status: "active" as "active" | "inactive" | "terminated",
-  userId: null as string | null, // ✅ حقل تخزين ID المستخدم للربط
+  status: "active",
+  userId: null,
+  educations: [],
 });
 
 /**
  * ✅ حساب المستخدمين المتاحين للربط
- * نستبعد المستخدمين المرتبطين بموظفين آخرين لتجنب التضارب
  */
 const availableUsers = computed(() => {
-  // جلب IDs جميع الموظفين الذين لديهم مستخدم مرتبط حالياً
   const assignedUserIds = new Set(
     store.employees.filter((e) => e.user?.id).map((e) => e.user!.id),
   );
 
-  // إذا كنا نعدل موظفاً لديه مستخدم مرتبط، نستبعده من القائمة المحظورة مؤقتاً
-  // لكي لا يختفي المستخدم الحالي من القائمة عند التعديل
   if (editingEmployee.value?.user?.id) {
     assignedUserIds.delete(editingEmployee.value.user.id);
   }
@@ -619,14 +752,29 @@ const availableUsers = computed(() => {
   return usersStore.users.filter((u: User) => !assignedUserIds.has(u.id));
 });
 
+// دالة إضافة صف مؤهل جديد
+const addEducationRow = () => {
+  editForm.educations.push({
+    degree: "",
+    certificateNumber: "",
+    expiryDate: "",
+    attachmentPath: "",
+  });
+};
+
+// دالة حذف صف مؤهل
+const removeEducationRow = (index: number) => {
+  editForm.educations.splice(index, 1);
+};
+
 const openEdit = async (emp: Employee) => {
   editingEmployee.value = emp;
 
-  // ✅ جلب المستخدمين قبل فتح المودال لضمان تحديث القائمة
   if (usersStore.users.length === 0) {
     await usersStore.fetchAll();
   }
 
+  // تعبئة النموذج بالبيانات الحالية
   Object.assign(editForm, {
     fullName: emp.fullName,
     nationalityType: emp.nationalityType,
@@ -639,8 +787,16 @@ const openEdit = async (emp: Employee) => {
     jobTitle: emp.jobTitle ?? "",
     department: emp.department ?? "",
     status: emp.status,
-    userId: emp.user?.id ?? null, // ✅ تعيين المستخدم المرتبط حالياً
+    userId: emp.user?.id ?? null,
+    // ✅ نسخ المؤهلات الحالية
+    educations: emp.educations
+      ? JSON.parse(JSON.stringify(emp.educations))
+      : [],
   });
+
+  // إظهار فورم التعليم إذا كان هناك مؤهلات موجودة
+  showEducationForm.value = editForm.educations.length > 0;
+
   showEditModal.value = true;
 };
 
@@ -657,7 +813,14 @@ const handleUpdate = async () => {
       jobTitle: editForm.jobTitle || undefined,
       department: editForm.department || undefined,
       status: editForm.status,
-      userId: editForm.userId || undefined, // ✅ إرسال userId للباك إند
+      userId: editForm.userId || undefined,
+      // ✅ إرسال المؤهلات المحدثة
+      educations: editForm.educations.map((edu) => ({
+        ...edu,
+        expiryDate: edu.expiryDate || undefined,
+        attachmentPath: edu.attachmentPath || undefined,
+        certificateNumber: edu.certificateNumber || undefined,
+      })),
     };
 
     if (editForm.nationalityType !== "non_saudi") {
@@ -665,7 +828,7 @@ const handleUpdate = async () => {
     }
 
     await store.update(editingEmployee.value.id, payload);
-    toast.success("تم تحديث بيانات الموظف وربط الحساب بنجاح");
+    toast.success("تم تحديث بيانات الموظف بنجاح");
     showEditModal.value = false;
   } catch (e: any) {
     toast.error(e.message);
@@ -724,7 +887,7 @@ const isIqamaExpiringSoon = (date: string) => {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 onMounted(() => {
   store.fetchAll();
-  usersStore.fetchAll(); // ✅ جلب المستخدمين عند تحميل الصفحة
+  usersStore.fetchAll();
 });
 </script>
 
@@ -1043,6 +1206,10 @@ onMounted(() => {
     background: rgba($stb-success, 0.1);
     color: $stb-success;
   }
+  &--edu {
+    background: rgba($stb-info, 0.1);
+    color: $stb-info;
+  }
   &--doc {
     background: rgba($stb-warning, 0.1);
     color: $stb-warning;
@@ -1103,7 +1270,6 @@ onMounted(() => {
   margin-top: $space-4 !important;
 }
 
-/* ✅ تنسيقات خاصة بخانة ربط المستخدم */ /* تم التصحيح هنا */
 .linked-user-section {
   background: rgba($stb-accent, 0.03);
   padding: $space-3;
@@ -1136,6 +1302,144 @@ onMounted(() => {
   font-size: 11px;
   color: $stb-text-muted;
   margin-top: $space-1;
+}
+
+/* --- Education Section Styles (Matching Onboarding) --- */
+.education-toggle-section {
+  .toggle-card {
+    @include flex(row, center, space-between);
+    padding: $space-4;
+    background: $stb-surface-2;
+    border: 1px solid $stb-border;
+    border-radius: $radius-lg;
+
+    &__info {
+      @include flex(row, center, flex-start, $space-3);
+
+      strong {
+        display: block;
+        font-size: $font-size-sm;
+        font-weight: 700;
+      }
+
+      p {
+        font-size: $font-size-xs;
+        color: $stb-text-muted;
+        margin: 0;
+      }
+    }
+
+    &__icon {
+      color: $stb-accent;
+      flex-shrink: 0;
+    }
+  }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+
+    input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    &__track {
+      position: absolute;
+      inset: 0;
+      background: $stb-surface-3;
+      border-radius: 24px;
+      border: 1px solid $stb-border;
+      transition: all $transition-base;
+
+      &::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: $stb-text-muted;
+        top: 2px;
+        right: 2px; // RTL
+        transition: all $transition-base;
+      }
+    }
+
+    input:checked + .toggle-switch__track {
+      background: $stb-accent;
+      border-color: $stb-accent;
+
+      &::before {
+        background: #fff;
+        right: calc(100% - 20px);
+      }
+    }
+  }
+}
+
+.add-edu-header {
+  margin-bottom: $space-3;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn--dashed {
+  border-style: dashed;
+  border-color: $stb-border;
+  color: $stb-text-secondary;
+
+  &:hover {
+    border-color: $stb-accent;
+    color: $stb-accent;
+    background: rgba($stb-accent, 0.05);
+  }
+}
+
+.education-item-card {
+  background: $stb-surface-2;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  padding: $space-4;
+  margin-bottom: $space-3;
+  position: relative;
+
+  .edu-item-header {
+    @include flex(row, center, space-between);
+    margin-bottom: $space-3;
+    padding-bottom: $space-2;
+    border-bottom: 1px solid $stb-border;
+
+    .edu-index {
+      font-size: $font-size-sm;
+      font-weight: 700;
+      color: $stb-accent;
+    }
+  }
+
+  .edu-item-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-3;
+
+    @include respond-to("md") {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.empty-mini {
+  text-align: center;
+  padding: $space-4;
+  color: $stb-text-muted;
+  font-size: $font-size-sm;
+  background: rgba($stb-surface-3, 0.5);
+  border-radius: $radius-md;
+  border: 1px dashed $stb-border;
 }
 
 /* --- ID Viewer Styles --- */
