@@ -670,27 +670,32 @@ a:hover {
   transform: translateY(-10px);
 }
 
-// --- Date Input Fixes for RTL ---
+/* التحكم في الحاوية الرئيسية */
 input[type="date"] {
-  // ضمان ظهور النص من اليمين
-  text-align: right;
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #111827;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  color: #e8f1ff;
+  direction: rtl; /* لفرض الاتجاه */
+  font-family: "Cairo", sans-serif;
+}
+
+/* التنسيق الخاص بمحتوى التاريخ داخل المتصفح */
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
   direction: rtl;
+}
 
-  // تحسين مظهر الأيقونة في الوضع الداكن
-  &::-webkit-calendar-picker-indicator {
-    opacity: 0.6;
-    cursor: pointer;
-    margin-left: -5px; // تقريب الأيقونة قليلاً للداخل
-    filter: invert(0.8) sepia(1) saturate(5) hue-rotate(190deg); // تلوين الأيقونة باللون الأزرق الفاتح ليتناسب مع الثيم
-    transition: opacity 0.2s;
+/* تنسيق الحقول (يوم/شهر/سنة) */
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  direction: rtl;
+}
 
-    &:hover {
-      opacity: 1;
-    }
-  }
-
-  // إصلاح خاص لمتصفح فايرفوكس
-  @-moz-document url-prefix() {
-    padding-left: 10px;
-  }
+/* إخفاء أو تنسيق أيقونة التقويم إذا تسببت في مشاكل */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* لجعل الأيقونة تظهر بشكل جيد على الخلفية الداكنة */
+  cursor: pointer;
 }
