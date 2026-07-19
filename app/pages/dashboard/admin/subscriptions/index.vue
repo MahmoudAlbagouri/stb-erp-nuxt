@@ -60,7 +60,7 @@
             <div class="t-accent-bar"></div>
             <div class="t-content">
               <div class="t-info">
-                <span class="t-name">{{ t.company_name }}</span>
+                <span class="t-name">{{ t.companyName }}</span>
                 <span class="t-status" :class="`s-${t.status}`">{{
                   getStatusLabel(t.status)
                 }}</span>
@@ -400,7 +400,7 @@ const statusReason = ref("");
 
 const filteredTenants = computed(() => {
   return tenantStore.tenants.filter((t) =>
-    t.company_name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+    t.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()),
   );
 });
 

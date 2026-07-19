@@ -111,7 +111,7 @@
             <Building2 v-else :size="24" class="logo-placeholder" />
           </div>
           <div class="tenant-info">
-            <h3 class="tenant-name">{{ tenant.company_name }}</h3>
+            <h3 class="tenant-name">{{ tenant.companyName }}</h3>
             <span class="tenant-id">ID: {{ shortenId(tenant.id) }}</span>
           </div>
 
@@ -180,7 +180,7 @@
               <div class="form-group">
                 <label>اسم الشركة *</label>
                 <input
-                  v-model="form.company_name"
+                  v-model="form.companyName"
                   type="text"
                   class="form-input"
                   required
@@ -297,7 +297,7 @@ const isEditing = ref(false);
 
 // Form Data
 const form = reactive({
-  company_name: "",
+  companyName: "",
   phone: "",
   address: "",
   country: "",
@@ -308,7 +308,7 @@ const filteredTenants = computed(() => {
   return store.tenants.filter((t) => {
     const matchesSearch =
       !searchQuery.value ||
-      t.company_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      t.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       t.phone?.includes(searchQuery.value);
 
     const matchesStatus =
@@ -330,14 +330,14 @@ const openModal = (tenant?: Tenant) => {
   if (tenant) {
     isEditing.value = true;
     currentTenantId.value = tenant.id;
-    form.company_name = tenant.company_name;
+    form.companyName = tenant.companyName;
     form.phone = tenant.phone || "";
     form.address = tenant.address || "";
     form.country = tenant.country || "";
   } else {
     isEditing.value = false;
     currentTenantId.value = null;
-    form.company_name = "";
+    form.companyName = "";
     form.phone = "";
     form.address = "";
     form.country = "";

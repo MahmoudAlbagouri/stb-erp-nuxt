@@ -5,7 +5,7 @@ import { useApi } from "../composables/useApi";
 
 export interface Tenant {
   id: string;
-  company_name: string;
+  companyName: string;
   logo_url: string | null;
   domain: string | null;
   phone: string | null;
