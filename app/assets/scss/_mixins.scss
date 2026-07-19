@@ -63,6 +63,7 @@
   transition: all $transition-base;
   outline: none;
   direction: rtl;
+  text-align: right;
 
   &::placeholder {
     color: $stb-text-muted;

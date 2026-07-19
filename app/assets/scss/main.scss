@@ -669,3 +669,28 @@ a:hover {
   opacity: 0;
   transform: translateY(-10px);
 }
+
+// --- Date Input Fixes for RTL ---
+input[type="date"] {
+  // ضمان ظهور النص من اليمين
+  text-align: right;
+  direction: rtl;
+
+  // تحسين مظهر الأيقونة في الوضع الداكن
+  &::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+    margin-left: -5px; // تقريب الأيقونة قليلاً للداخل
+    filter: invert(0.8) sepia(1) saturate(5) hue-rotate(190deg); // تلوين الأيقونة باللون الأزرق الفاتح ليتناسب مع الثيم
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  // إصلاح خاص لمتصفح فايرفوكس
+  @-moz-document url-prefix() {
+    padding-left: 10px;
+  }
+}
