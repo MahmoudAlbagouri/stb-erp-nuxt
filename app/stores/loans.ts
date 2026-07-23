@@ -4,21 +4,18 @@ import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 import type { Loan, LoanStatus } from "@/types";
 
-// ✅ تعريف نوع البيانات المرسل للباك إند مطابق تماماً لـ CreateLoanDto
 export interface CreateLoanPayload {
   totalAmount: number;
   installmentsCount: number;
   reason?: string;
-  startDate: string; // YYYY-MM-DD
+  startDate: string;
 }
 
 export const useLoansStore = defineStore("loans", () => {
   const api = useApi();
-
   const loans = ref<Loan[]>([]);
   const loading = ref(false);
 
-  // جلب جميع القروض
   const fetchAll = async () => {
     loading.value = true;
     try {
@@ -31,21 +28,70 @@ export const useLoansStore = defineStore("loans", () => {
     }
   };
 
-  // ✅ تقديم قرض للموظف الحالي (Self-Service)
   const createMyLoan = async (payload: CreateLoanPayload) => {
     const res = await api.post<Loan>("/loans/my-loans", payload);
-    await fetchAll(); // تحديث القائمة بعد الإضافة
+    await fetchAll();
     return res.data;
   };
 
-  // تحديث حالة القرض (موافقة/رفض)
   const updateStatus = async (id: string, status: LoanStatus) => {
     const res = await api.patch<Loan>(`/loans/${id}/status`, { status });
     await fetchAll();
     return res.data;
   };
 
-  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  // ✅ التصدير الجماعي
+  const exportData = async (type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(`/loans/export/${type}`, true, "blob");
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `loans_report_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Export Error:", e);
+      throw e;
+    }
+  };
+
+  // ✅ التصدير الفردي
+  const exportSingle = async (id: string, type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(
+        `/loans/${id}/export/${type}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `loan_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Single Export Error:", e);
+      throw e;
+    }
+  };
+
   const reset = () => {
     loans.value = [];
     loading.value = false;
@@ -57,6 +103,8 @@ export const useLoansStore = defineStore("loans", () => {
     fetchAll,
     createMyLoan,
     updateStatus,
-    reset, // ✅ تم التصدير
+    exportData,
+    exportSingle,
+    reset,
   };
 });

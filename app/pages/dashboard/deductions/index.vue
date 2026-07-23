@@ -1,3 +1,4 @@
+<!-- pages/deductions/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -6,29 +7,45 @@
         <h1>إدارة الخصومات</h1>
         <p>تسجيل الغرامات والاستقطاعات وتتبع دفعاتها الشهرية</p>
       </div>
-      <button class="btn btn--primary" @click="openModal()">
-        <MinusCircle :size="16" /> تسجيل خصم جديد
-      </button>
+      <div class="page-header__actions">
+        <!-- ✅ أزرار التصدير الجماعي -->
+        <button
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <FileSpreadsheet v-else :size="18" /><span>Excel</span>
+        </button>
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <FileText v-else :size="18" /><span>PDF</span>
+        </button>
+
+        <button class="btn btn--primary" @click="openModal()">
+          <MinusCircle :size="16" /> تسجيل خصم جديد
+        </button>
+      </div>
     </div>
 
     <!-- ══ Stats Bar ════════════════════════════════════════════════════════ -->
     <div class="stats-bar">
       <div class="stat-pill">
-        <FileText :size="13" />
-        <span
+        <FileText :size="13" /><span
           >إجمالي الخصومات: <strong>{{ store.deductions.length }}</strong></span
         >
       </div>
       <div class="stat-pill stat-pill--danger">
-        <Banknote :size="13" />
-        <span
-          >إجمالي المبالغ المستحقة:
-          <strong>{{ formatCurrency(totalRemaining) }}</strong></span
+        <Banknote :size="13" /><span
+          >المستحقة: <strong>{{ formatCurrency(totalRemaining) }}</strong></span
         >
       </div>
       <div class="stat-pill">
-        <Clock :size="13" />
-        <span
+        <Clock :size="13" /><span
           >آخر تحديث: <strong>{{ todayLabel }}</strong></span
         >
       </div>
@@ -82,8 +99,8 @@
         <div class="deduction-card__body">
           <div class="installment-progress">
             <div class="progress-label">
-              <span>الدفعات المسددة</span>
-              <span class="progress-text"
+              <span>الدفعات المسددة</span
+              ><span class="progress-text"
                 >{{ d.paidInstallments }} / {{ d.installmentsCount }}</span
               >
             </div>
@@ -95,28 +112,51 @@
               ></div>
             </div>
           </div>
-
           <div class="deduction-stat">
-            <span class="label"><CalendarDays :size="12" /> تاريخ البدء</span>
-            <span class="value">{{ formatDate(d.startDate) }}</span>
+            <span class="label"><CalendarDays :size="12" /> تاريخ البدء</span
+            ><span class="value">{{ formatDate(d.startDate) }}</span>
           </div>
-
           <div class="deduction-stat" v-if="d.notes">
-            <span class="label"><FileText :size="12" /> ملاحظات</span>
-            <span class="value value--muted">{{ truncateNotes(d.notes) }}</span>
+            <span class="label"><FileText :size="12" /> ملاحظات</span
+            ><span class="value value--muted">{{
+              truncateNotes(d.notes)
+            }}</span>
           </div>
         </div>
 
         <div class="deduction-card__footer">
-          <button class="btn btn--ghost btn--sm" @click="openModal(d)">
-            <Edit :size="13" /> تعديل
-          </button>
-          <button
-            class="btn btn--danger-outline btn--sm"
-            @click="confirmDelete(d.id)"
-          >
-            <Trash2 :size="13" /> حذف
-          </button>
+          <!-- ✅ زر التصدير الفردي -->
+          <div class="export-dropdown">
+            <button
+              class="btn btn--ghost btn--sm export-btn"
+              @click="toggleExportMenu(d.id)"
+              title="تصدير التقرير"
+            >
+              <Download :size="14" />
+            </button>
+            <Transition name="fade">
+              <div v-if="activeExportMenu === d.id" class="dropdown-menu">
+                <button @click="downloadDeduction(d.id, 'pdf')">
+                  <FileText :size="14" /> ملف PDF
+                </button>
+                <button @click="downloadDeduction(d.id, 'excel')">
+                  <FileSpreadsheet :size="14" /> ملف Excel
+                </button>
+              </div>
+            </Transition>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn--ghost btn--sm" @click="openModal(d)">
+              <Edit :size="13" /> تعديل
+            </button>
+            <button
+              class="btn btn--danger-outline btn--sm"
+              @click="confirmDelete(d.id)"
+            >
+              <Trash2 :size="13" /> حذف
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -132,11 +172,10 @@
                 <X :size="18" />
               </button>
             </div>
-
             <form @submit.prevent="handleSubmit" class="modal-form">
               <div class="form-group">
-                <label>الموظف *</label>
-                <select v-model="form.employeeId" class="form-select" required>
+                <label>الموظف *</label
+                ><select v-model="form.employeeId" class="form-select" required>
                   <option value="" disabled>اختر موظفاً...</option>
                   <option
                     v-for="emp in employees"
@@ -147,10 +186,9 @@
                   </option>
                 </select>
               </div>
-
               <div class="form-group">
-                <label>نوع / اسم الخصم *</label>
-                <input
+                <label>نوع / اسم الخصم *</label
+                ><input
                   v-model="form.name"
                   type="text"
                   class="form-input"
@@ -158,11 +196,10 @@
                   required
                 />
               </div>
-
               <div class="grid-2">
                 <div class="form-group">
-                  <label>إجمالي المبلغ (ر.س) *</label>
-                  <input
+                  <label>إجمالي المبلغ (ر.س) *</label
+                  ><input
                     v-model.number="form.totalAmount"
                     type="number"
                     min="0.01"
@@ -172,8 +209,8 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>عدد الدفعات *</label>
-                  <input
+                  <label>عدد الدفعات *</label
+                  ><input
                     v-model.number="form.installmentsCount"
                     type="number"
                     min="1"
@@ -182,36 +219,31 @@
                   />
                 </div>
               </div>
-
               <div class="alert-calc" v-if="calculatedMonthly > 0">
-                <Info :size="14" />
-                <span
+                <Info :size="14" /><span
                   >سيتم خصم
                   <strong>{{ formatCurrency(calculatedMonthly) }}</strong>
                   شهرياً لمدة {{ form.installmentsCount }} أشهر</span
                 >
               </div>
-
               <div class="form-group">
-                <label>تاريخ بداية الخصم *</label>
-                <input
+                <label>تاريخ بداية الخصم *</label
+                ><input
                   v-model="form.startDate"
                   type="date"
                   class="form-input"
                   required
                 />
               </div>
-
               <div class="form-group">
-                <label>ملاحظات</label>
-                <textarea
+                <label>ملاحظات</label
+                ><textarea
                   v-model="form.notes"
                   rows="3"
                   class="form-input"
                   placeholder="تفاصيل إضافية..."
                 ></textarea>
               </div>
-
               <div class="modal__footer">
                 <button
                   type="button"
@@ -225,10 +257,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" />
-                  <span v-else>{{
-                    isEditing ? "حفظ التعديلات" : "تسجيل الخصم"
-                  }}</span>
+                  <span v-if="submitting" class="spinner spinner--sm" /><span
+                    v-else
+                    >{{ isEditing ? "حفظ التعديلات" : "تسجيل الخصم" }}</span
+                  >
                 </button>
               </div>
             </form>
@@ -264,6 +296,8 @@ import {
   FileText,
   Clock,
   Info,
+  FileSpreadsheet,
+  Download,
 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
@@ -279,6 +313,10 @@ const submitting = ref(false);
 const isEditing = ref(false);
 const currentId = ref<string | null>(null);
 
+// ✅ حالة التصدير
+const exporting = ref<"excel" | "pdf" | null>(null);
+const activeExportMenu = ref<string | null>(null);
+
 const form = reactive({
   employeeId: "",
   name: "",
@@ -287,23 +325,22 @@ const form = reactive({
   startDate: new Date().toISOString().split("T")[0],
   notes: "",
 });
-
 const employees = computed(() =>
   employeeStore.employees.filter((e) => e.status === "active"),
 );
-
 const totalRemaining = computed(() =>
-  store.deductions.reduce((sum, d) => {
-    const remaining = d.installmentsCount - d.paidInstallments;
-    return sum + remaining * Number(d.monthlyAmount);
-  }, 0),
+  store.deductions.reduce(
+    (sum, d) =>
+      sum +
+      (d.installmentsCount - d.paidInstallments) * Number(d.monthlyAmount),
+    0,
+  ),
 );
-
-const calculatedMonthly = computed(() => {
-  if (!form.totalAmount || !form.installmentsCount) return 0;
-  return Number((form.totalAmount / form.installmentsCount).toFixed(2));
-});
-
+const calculatedMonthly = computed(() =>
+  form.totalAmount && form.installmentsCount
+    ? Number((form.totalAmount / form.installmentsCount).toFixed(2))
+    : 0,
+);
 const todayLabel = new Date().toLocaleDateString("ar-SA");
 
 const openModal = (deduction?: any) => {
@@ -349,7 +386,6 @@ const confirmDelete = (id: string) => {
   currentId.value = id;
   showDeleteConfirm.value = true;
 };
-
 const handleDelete = async () => {
   try {
     await store.remove(currentId.value!);
@@ -358,7 +394,6 @@ const handleDelete = async () => {
     toast.error(e.message);
   }
 };
-
 const closeModal = () => (showModal.value = false);
 
 const formatCurrency = (val: number | string) =>
@@ -366,16 +401,43 @@ const formatCurrency = (val: number | string) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }) + " ر.س";
-
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;
-
 const getProgressPct = (d: any) =>
   Math.min(100, Math.round((d.paidInstallments / d.installmentsCount) * 100));
 const isCompleted = (d: any) => d.paidInstallments >= d.installmentsCount;
 
+// ✅ منطق التصدير
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportData(type);
+    toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
+  } catch (e: any) {
+    toast.error(e.message);
+  } finally {
+    exporting.value = null;
+  }
+};
+const toggleExportMenu = (id: string) => {
+  activeExportMenu.value = activeExportMenu.value === id ? null : id;
+};
+const downloadDeduction = async (id: string, type: "excel" | "pdf") => {
+  try {
+    await store.exportSingle(id, type);
+    toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
+    activeExportMenu.value = null;
+  } catch (e: any) {
+    toast.error(e.message);
+  }
+};
+
 onMounted(() => {
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement).closest(".export-dropdown"))
+      activeExportMenu.value = null;
+  });
   store.fetchAll();
   employeeStore.fetchAll();
 });
@@ -385,6 +447,12 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
+.page-header__actions {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+  align-items: center;
+}
 .stats-bar {
   display: flex;
   gap: $space-3;
@@ -413,7 +481,7 @@ onMounted(() => {
 
 .loading-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: $space-4;
 }
 .empty-wrapper {
@@ -481,7 +549,6 @@ onMounted(() => {
       opacity: 1;
     }
   }
-
   &__header {
     @include flex(row, center, flex-start, $space-3);
     padding: $space-5 $space-5 $space-4;
@@ -506,7 +573,6 @@ onMounted(() => {
     font-size: $font-size-xs;
     color: $stb-text-muted;
   }
-
   &__body {
     display: flex;
     flex-direction: column;
@@ -664,5 +730,55 @@ onMounted(() => {
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
+}
+
+// ✅ تنسيق قائمة التصدير المنسدلة
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.export-btn {
+  color: $stb-text-muted;
+  &:hover {
+    color: $stb-accent;
+    background: rgba($stb-accent, 0.1);
+  }
+}
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: $space-2;
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  z-index: 10;
+  min-width: 140px;
+  overflow: hidden;
+  button {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    width: 100%;
+    padding: $space-2 $space-3;
+    border: none;
+    background: transparent;
+    color: $stb-text-primary;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    transition: all $transition-fast;
+    &:hover {
+      background: rgba($stb-accent, 0.08);
+      color: $stb-accent;
+    }
+    svg {
+      color: $stb-text-muted;
+    }
+  }
+}
+.action-buttons {
+  display: flex;
+  gap: $space-2;
 }
 </style>

@@ -1,3 +1,4 @@
+<!-- pages/bonuses/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -6,29 +7,46 @@
         <h1>إدارة المكافآت</h1>
         <p>تسجيل وصرف المكافآت التشجيعية والموسمية للموظفين</p>
       </div>
-      <button class="btn btn--primary" @click="openModal()">
-        <Plus :size="16" /> تسجيل مكافأة جديدة
-      </button>
+      <div class="page-header__actions">
+        <!-- ✅ أزرار التصدير الجماعي -->
+        <button
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <FileSpreadsheet v-else :size="18" /><span>Excel</span>
+        </button>
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <FileText v-else :size="18" /><span>PDF</span>
+        </button>
+
+        <button class="btn btn--primary" @click="openModal()">
+          <Plus :size="16" /> تسجيل مكافأة جديدة
+        </button>
+      </div>
     </div>
 
     <!-- ══ Stats Bar ════════════════════════════════════════════════════════ -->
     <div class="stats-bar">
       <div class="stat-pill">
-        <Gift :size="13" />
-        <span
+        <Gift :size="13" /><span
           >إجمالي المكافآت: <strong>{{ store.bonuses.length }}</strong></span
         >
       </div>
       <div class="stat-pill stat-pill--accent">
-        <Banknote :size="13" />
-        <span
+        <Banknote :size="13" /><span
           >إجمالي المبالغ:
           <strong>{{ formatCurrency(totalAmount) }}</strong></span
         >
       </div>
       <div class="stat-pill">
-        <CalendarDays :size="13" />
-        <span
+        <CalendarDays :size="13" /><span
           >آخر صرف: <strong>{{ lastPayoutLabel }}</strong></span
         >
       </div>
@@ -45,9 +63,7 @@
     <!-- ═ Empty State ══════════════════════════════════════════════════════ -->
     <div v-else-if="!store.bonuses.length" class="empty-wrapper">
       <div class="empty-state">
-        <div class="empty-state__illustration">
-          <Gift :size="32" />
-        </div>
+        <div class="empty-state__illustration"><Gift :size="32" /></div>
         <div class="empty-state__title">لا توجد مكافآت مسجلة</div>
         <div class="empty-state__text">
           ابدأ بتسجيل أول مكافأة تشجيعية لموظفيك
@@ -61,11 +77,8 @@
     <!-- ══ Bonuses Grid ═════════════════════════════════════════════════════ -->
     <div v-else class="emp-grid">
       <div v-for="bonus in store.bonuses" :key="bonus.id" class="bonus-card">
-        <!-- Card Header -->
         <div class="bonus-card__header">
-          <div class="bonus-icon">
-            <Gift :size="22" />
-          </div>
+          <div class="bonus-icon"><Gift :size="22" /></div>
           <div class="bonus-card__meta">
             <h3>{{ bonus.employee?.fullName || "—" }}</h3>
             <span class="bonus-card__sub">{{
@@ -75,35 +88,56 @@
           <span class="bonus-amount">{{ formatCurrency(bonus.amount) }}</span>
         </div>
 
-        <!-- Card Body -->
         <div class="bonus-card__body">
           <div class="bonus-stat">
-            <span class="label"><CalendarDays :size="12" /> تاريخ الصرف</span>
-            <span class="value">{{ formatDate(bonus.payoutDate) }}</span>
+            <span class="label"><CalendarDays :size="12" /> تاريخ الصرف</span
+            ><span class="value">{{ formatDate(bonus.payoutDate) }}</span>
           </div>
           <div class="bonus-stat" v-if="bonus.notes">
-            <span class="label"><FileText :size="12" /> ملاحظات</span>
-            <span class="value value--muted">{{
+            <span class="label"><FileText :size="12" /> ملاحظات</span
+            ><span class="value value--muted">{{
               truncateNotes(bonus.notes)
             }}</span>
           </div>
           <div class="bonus-stat">
-            <span class="label"><Clock :size="12" /> تاريخ التسجيل</span>
-            <span class="value">{{ formatDate(bonus.createdAt) }}</span>
+            <span class="label"><Clock :size="12" /> تاريخ التسجيل</span
+            ><span class="value">{{ formatDate(bonus.createdAt) }}</span>
           </div>
         </div>
 
-        <!-- Card Footer -->
         <div class="bonus-card__footer">
-          <button class="btn btn--ghost btn--sm" @click="openModal(bonus)">
-            <Edit :size="13" /> تعديل
-          </button>
-          <button
-            class="btn btn--danger-outline btn--sm"
-            @click="confirmDelete(bonus.id)"
-          >
-            <Trash2 :size="13" /> حذف
-          </button>
+          <!-- ✅ زر التصدير الفردي -->
+          <div class="export-dropdown">
+            <button
+              class="btn btn--ghost btn--sm export-btn"
+              @click="toggleExportMenu(bonus.id)"
+              title="تصدير التقرير"
+            >
+              <Download :size="14" />
+            </button>
+            <Transition name="fade">
+              <div v-if="activeExportMenu === bonus.id" class="dropdown-menu">
+                <button @click="downloadBonus(bonus.id, 'pdf')">
+                  <FileText :size="14" /> ملف PDF
+                </button>
+                <button @click="downloadBonus(bonus.id, 'excel')">
+                  <FileSpreadsheet :size="14" /> ملف Excel
+                </button>
+              </div>
+            </Transition>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn--ghost btn--sm" @click="openModal(bonus)">
+              <Edit :size="13" /> تعديل
+            </button>
+            <button
+              class="btn btn--danger-outline btn--sm"
+              @click="confirmDelete(bonus.id)"
+            >
+              <Trash2 :size="13" /> حذف
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -119,11 +153,10 @@
                 <X :size="18" />
               </button>
             </div>
-
             <form @submit.prevent="handleSubmit" class="modal-form">
               <div class="form-group">
-                <label>الموظف *</label>
-                <select v-model="form.employeeId" class="form-select" required>
+                <label>الموظف *</label
+                ><select v-model="form.employeeId" class="form-select" required>
                   <option value="" disabled>اختر موظفاً...</option>
                   <option
                     v-for="emp in employees"
@@ -134,11 +167,10 @@
                   </option>
                 </select>
               </div>
-
               <div class="grid-2">
                 <div class="form-group">
-                  <label>المبلغ (ر.س) *</label>
-                  <input
+                  <label>المبلغ (ر.س) *</label
+                  ><input
                     v-model.number="form.amount"
                     type="number"
                     min="0.01"
@@ -148,8 +180,8 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>تاريخ الصرف *</label>
-                  <input
+                  <label>تاريخ الصرف *</label
+                  ><input
                     v-model="form.payoutDate"
                     type="date"
                     class="form-input"
@@ -157,25 +189,21 @@
                   />
                 </div>
               </div>
-
               <div class="form-group">
-                <label>ملاحظات</label>
-                <textarea
+                <label>ملاحظات</label
+                ><textarea
                   v-model="form.notes"
                   rows="3"
                   class="form-input"
                   placeholder="سبب المكافأة، المناسبة..."
                 ></textarea>
               </div>
-
               <div class="alert-info">
-                <Info :size="14" />
-                <span
+                <Info :size="14" /><span
                   >سيتم احتساب هذه المكافأة تلقائياً في مسير رواتب شهر
                   {{ getPayoutMonthLabel() }}</span
                 >
               </div>
-
               <div class="modal__footer">
                 <button
                   type="button"
@@ -189,10 +217,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" />
-                  <span v-else>{{
-                    isEditing ? "حفظ التعديلات" : "تسجيل المكافأة"
-                  }}</span>
+                  <span v-if="submitting" class="spinner spinner--sm" /><span
+                    v-else
+                    >{{ isEditing ? "حفظ التعديلات" : "تسجيل المكافأة" }}</span
+                  >
                 </button>
               </div>
             </form>
@@ -214,7 +242,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useBonusStore } from "@/stores/bonuses";
-import { useEmployeesStore } from "@/stores/employees"; // افترض وجوده
+import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "@/composables/useToast";
 import {
   Plus,
@@ -227,6 +255,8 @@ import {
   FileText,
   Clock,
   Info,
+  FileSpreadsheet,
+  Download,
 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
@@ -242,21 +272,22 @@ const submitting = ref(false);
 const isEditing = ref(false);
 const currentId = ref<string | null>(null);
 
+// ✅ حالة التصدير
+const exporting = ref<"excel" | "pdf" | null>(null);
+const activeExportMenu = ref<string | null>(null);
+
 const form = reactive({
   employeeId: "",
   amount: 0,
   payoutDate: new Date().toISOString().split("T")[0],
   notes: "",
 });
-
 const employees = computed(() =>
   employeeStore.employees.filter((e) => e.status === "active"),
 );
-
 const totalAmount = computed(() =>
   store.bonuses.reduce((sum, b) => sum + Number(b.amount), 0),
 );
-
 const lastPayoutLabel = computed(() => {
   if (!store.bonuses.length) return "—";
   const sorted = [...store.bonuses].sort(
@@ -305,7 +336,6 @@ const confirmDelete = (id: string) => {
   currentId.value = id;
   showDeleteConfirm.value = true;
 };
-
 const handleDelete = async () => {
   try {
     await store.remove(currentId.value!);
@@ -314,7 +344,6 @@ const handleDelete = async () => {
     toast.error(e.message);
   }
 };
-
 const closeModal = () => (showModal.value = false);
 
 const formatCurrency = (val: number | string) =>
@@ -322,12 +351,9 @@ const formatCurrency = (val: number | string) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }) + " ر.س";
-
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
-
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;
-
 const getPayoutMonthLabel = () => {
   const d = new Date(form.payoutDate!);
   const months = [
@@ -347,7 +373,36 @@ const getPayoutMonthLabel = () => {
   return `${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
+// ✅ منطق التصدير
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportData(type);
+    toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
+  } catch (e: any) {
+    toast.error(e.message);
+  } finally {
+    exporting.value = null;
+  }
+};
+const toggleExportMenu = (id: string) => {
+  activeExportMenu.value = activeExportMenu.value === id ? null : id;
+};
+const downloadBonus = async (id: string, type: "excel" | "pdf") => {
+  try {
+    await store.exportSingle(id, type);
+    toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
+    activeExportMenu.value = null;
+  } catch (e: any) {
+    toast.error(e.message);
+  }
+};
+
 onMounted(() => {
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement).closest(".export-dropdown"))
+      activeExportMenu.value = null;
+  });
   store.fetchAll();
   employeeStore.fetchAll();
 });
@@ -357,7 +412,12 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ── Stats Bar ──────────────────────────────────────────────────────────────
+.page-header__actions {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+  align-items: center;
+}
 .stats-bar {
   display: flex;
   gap: $space-3;
@@ -384,7 +444,6 @@ onMounted(() => {
   }
 }
 
-// ── Loading & Empty ────────────────────────────────────────────────────────
 .loading-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -420,7 +479,6 @@ onMounted(() => {
   }
 }
 
-// ── Bonus Grid ─────────────────────────────────────────────────────────────
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -435,7 +493,6 @@ onMounted(() => {
   transition: all $transition-base;
   overflow: hidden;
   position: relative;
-
   &::before {
     content: "";
     position: absolute;
@@ -447,7 +504,6 @@ onMounted(() => {
     opacity: 0;
     transition: opacity $transition-base;
   }
-
   &:hover {
     transform: translateY(-3px);
     border-color: rgba($stb-accent, 0.35);
@@ -458,7 +514,6 @@ onMounted(() => {
       opacity: 1;
     }
   }
-
   &__header {
     @include flex(row, center, flex-start, $space-3);
     padding: $space-5 $space-5 $space-4;
@@ -483,7 +538,6 @@ onMounted(() => {
     font-size: $font-size-xs;
     color: $stb-text-muted;
   }
-
   &__body {
     display: flex;
     flex-direction: column;
@@ -491,14 +545,12 @@ onMounted(() => {
     gap: 0;
     flex: 1;
   }
-
   &__footer {
     @include flex(row, center, space-between);
     padding: $space-3 $space-5;
     border-top: 1px solid rgba($stb-border, 0.5);
     background: rgba($stb-dark, 0.3);
   }
-
   &--skeleton {
     @include flex(row, center, flex-start, $space-3);
     padding: $space-5;
@@ -546,7 +598,6 @@ onMounted(() => {
   }
 }
 
-// ── Alert Info ─────────────────────────────────────────────────────────────
 .alert-info {
   @include flex(row, flex-start, flex-start, $space-2);
   padding: $space-3;
@@ -562,7 +613,6 @@ onMounted(() => {
   }
 }
 
-// ─ Skeleton ───────────────────────────────────────────────────────────────
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -605,5 +655,55 @@ onMounted(() => {
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
+}
+
+// ✅ تنسيق قائمة التصدير المنسدلة
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.export-btn {
+  color: $stb-text-muted;
+  &:hover {
+    color: $stb-accent;
+    background: rgba($stb-accent, 0.1);
+  }
+}
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: $space-2;
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  z-index: 10;
+  min-width: 140px;
+  overflow: hidden;
+  button {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    width: 100%;
+    padding: $space-2 $space-3;
+    border: none;
+    background: transparent;
+    color: $stb-text-primary;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    transition: all $transition-fast;
+    &:hover {
+      background: rgba($stb-accent, 0.08);
+      color: $stb-accent;
+    }
+    svg {
+      color: $stb-text-muted;
+    }
+  }
+}
+.action-buttons {
+  display: flex;
+  gap: $space-2;
 }
 </style>

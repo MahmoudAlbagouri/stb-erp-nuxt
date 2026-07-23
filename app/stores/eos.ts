@@ -7,7 +7,7 @@ export enum EOSReason {
   RESIGNATION = "استقالة",
   TERMINATION = "فسخ عقد",
   CONTRACT_END = "انتهاء عقد",
-  RETIREMENT = "تقاعد",
+  // RETIREMENT = "تقاعد",
   OTHER = "أخرى",
 }
 

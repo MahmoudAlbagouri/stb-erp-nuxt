@@ -73,12 +73,16 @@
                   <select
                     v-model="form.employee.nationalityType"
                     class="form-select"
+                    :class="{ 'form-select--error': errors.nationalityType }"
                   >
                     <option value="" disabled>اختر...</option>
                     <option value="saudi">🇸🇦 سعودي</option>
                     <option value="non_saudi">🌍 غير سعودي</option>
                     <option value="outside_sponsorship">📄 خارج الكفالة</option>
                   </select>
+                  <span v-if="errors.nationalityType" class="form-error">{{
+                    errors.nationalityType
+                  }}</span>
                 </div>
 
                 <Transition name="slide-down">
@@ -239,7 +243,7 @@
 
                       <div class="edu-item-fields">
                         <div class="form-group">
-                          <label class="form-label">درجة الشهادة</label>
+                          <label class="form-label">نوع الشهادة</label>
                           <input
                             v-model="edu.degree"
                             type="text"
@@ -255,6 +259,17 @@
                             type="text"
                             class="form-input"
                             placeholder="رقم الوثيقة"
+                          />
+                        </div>
+
+                        <!-- ✅ حقل جهة الإصدار الجديد -->
+                        <div class="form-group">
+                          <label class="form-label">جهة الإصدار / المصدر</label>
+                          <input
+                            v-model="edu.issuingAuthority"
+                            type="text"
+                            class="form-input"
+                            placeholder="مثال: جامعة الملك سعود"
                           />
                         </div>
 
@@ -437,6 +452,7 @@
                           <select
                             v-model="form.user.roleId"
                             class="form-select"
+                            :class="{ 'form-select--error': errors.roleId }"
                           >
                             <option value="" disabled>اختر الدور...</option>
                             <option
@@ -450,6 +466,9 @@
                               </span>
                             </option>
                           </select>
+                          <span v-if="errors.roleId" class="form-error">{{
+                            errors.roleId
+                          }}</span>
 
                           <!-- معاينة صلاحيات الدور المختار -->
                           <div
@@ -598,6 +617,7 @@
                     <select
                       v-model="form.contract.contractType"
                       class="form-select"
+                      :class="{ 'form-select--error': errors.contractType }"
                     >
                       <option value="" disabled>اختر النوع...</option>
                       <option value="دائم">دائم</option>
@@ -606,6 +626,9 @@
                       <option value="عن بعد">عن بعد (Remote)</option>
                       <option value="أخرى">أخرى</option>
                     </select>
+                    <span v-if="errors.contractType" class="form-error">{{
+                      errors.contractType
+                    }}</span>
                   </div>
 
                   <div class="form-group">
@@ -701,6 +724,9 @@
                     <select
                       v-model="form.contract.nationality"
                       class="form-select"
+                      :class="{
+                        'form-select--error': errors.contractNationality,
+                      }"
                       required
                     >
                       <option value="" disabled>اختر الجنسية...</option>
@@ -712,6 +738,11 @@
                         {{ nat }}
                       </option>
                     </select>
+                    <span
+                      v-if="errors.contractNationality"
+                      class="form-error"
+                      >{{ errors.contractNationality }}</span
+                    >
                   </div>
 
                   <div class="form-group">
@@ -959,7 +990,12 @@
                       :key="idx"
                       class="review-row"
                     >
-                      <span>#{{ idx + 1 }} {{ edu.degree }}</span>
+                      <div class="review-col">
+                        <span>#{{ idx + 1 }} {{ edu.degree }}</span>
+                        <small v-if="edu.issuingAuthority" class="text-muted">{{
+                          edu.issuingAuthority
+                        }}</small>
+                      </div>
                       <strong v-if="edu.certificateNumber">{{
                         edu.certificateNumber
                       }}</strong>
@@ -1382,66 +1418,82 @@ const clearErrors = () => {
 
 const validateCurrentTab = (): boolean => {
   clearErrors();
+  let isValid = true;
 
+  // 1. تحقق تبويب الموظف (إلزامي دائماً)
   if (activeTab.value === "employee") {
     if (!form.employee.fullName.trim()) {
       errors.fullName = "الاسم الكامل مطلوب";
-      return false;
+      isValid = false;
     }
     if (!form.employee.nationalityType) {
       errors.nationalityType = "نوع الجنسية مطلوب";
-      return false;
+      isValid = false;
     }
     if (
       form.employee.nationalityType === "non_saudi" &&
       !form.employee.iqamaExpiryDate
     ) {
       errors.iqamaExpiryDate = "تاريخ انتهاء الهوية مطلوب لغير السعوديين";
-      return false;
+      isValid = false;
     }
   }
 
+  // 2. تحقق تبويب المستخدم (إذا كان مفعلاً)
   if (activeTab.value === "user" && form.withUser) {
     if (!form.user.username.trim()) {
       errors.username = "اسم المستخدم مطلوب";
-      return false;
+      isValid = false;
     }
     if (!form.user.email || !/\S+@\S+\.\S+/.test(form.user.email)) {
       errors.email = "بريد إلكتروني غير صالح";
-      return false;
+      isValid = false;
     }
     if (!form.user.password || form.user.password.length < 8) {
       errors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
-      return false;
+      isValid = false;
+    }
+
+    // التحقق من الدور
+    if (form.roleMode === "existing" && !form.user.roleId) {
+      errors.roleId = "يرجى اختيار دور";
+      isValid = false;
     }
     if (form.roleMode === "new" && !form.user.roleName.trim()) {
-      errors.roleName = "اسم الدور مطلوب";
-      return false;
+      errors.roleName = "اسم الدور الجديد مطلوب";
+      isValid = false;
     }
   }
 
+  // 3. تحقق تبويب العقد (إذا كان مفعلاً)
   if (activeTab.value === "contract" && form.withContract) {
+    if (!form.contract.contractType) {
+      errors.contractType = "يرجى اختيار نوع العقد";
+      isValid = false;
+    }
     if (!form.contract.startDate) {
       errors.startDate = "تاريخ بداية العقد مطلوب";
-      return false;
+      isValid = false;
     }
-    // ✅ التحقق من الجنسية إذا كان غير سعودي
+    // التحقق من الجنسية في العقد لغير السعوديين
     if (
       form.employee.nationalityType === "non_saudi" &&
       !form.contract.nationality
     ) {
-      // يمكن إضافة خطأ هنا إذا أردت إجبارية الجنسية في العقد
+      errors.contractNationality = "يرجى تحديد جنسية الموظف في العقد";
+      isValid = false;
     }
   }
 
+  // 4. تحقق تبويب الراتب (إذا كان مفعلاً)
   if (activeTab.value === "salary" && form.withSalary) {
     if (!form.salary.basicSalary || form.salary.basicSalary <= 0) {
       errors.basicSalary = "الراتب الأساسي يجب أن يكون أكبر من صفر";
-      return false;
+      isValid = false;
     }
   }
 
-  return true;
+  return isValid;
 };
 
 // ── Password Generator ────────────────────────────────────────────────────────
@@ -1459,6 +1511,7 @@ const addEducationRow = () => {
   form.educations.push({
     degree: "",
     certificateNumber: "",
+    issuingAuthority: "", // ✅ تهيئة الحقل الجديد
     expiryDate: "",
     attachmentPath: "",
   });
@@ -1536,6 +1589,61 @@ const handleClose = () => {
 // ── Submit Onboarding ───────────────────────────────────────────────────────
 const handleSubmit = async () => {
   clearErrors();
+
+  // تحقق نهائي شامل قبل الإرسال
+  // ننتقل عبر جميع التبويبات للتحقق منها إذا كانت مفعلة
+  let allValid = true;
+  const originalTab = activeTab.value;
+
+  // نقوم بالتحقق من كل تبويب دون تغيير الواجهة فعلياً
+  // (يمكن تحسين هذا الجزء ليكون أكثر كفاءة، لكن للضمان نتحقق يدوياً)
+
+  // تحقق الموظف
+  if (!form.employee.fullName.trim() || !form.employee.nationalityType)
+    allValid = false;
+  if (
+    form.employee.nationalityType === "non_saudi" &&
+    !form.employee.iqamaExpiryDate
+  )
+    allValid = false;
+
+  // تحقق المستخدم
+  if (form.withUser) {
+    if (
+      !form.user.username ||
+      !form.user.email ||
+      form.user.password.length < 8
+    )
+      allValid = false;
+    if (form.roleMode === "existing" && !form.user.roleId) allValid = false;
+    if (form.roleMode === "new" && !form.user.roleName) allValid = false;
+  }
+
+  // تحقق العقد
+  if (form.withContract) {
+    if (!form.contract.contractType || !form.contract.startDate)
+      allValid = false;
+    if (
+      form.employee.nationalityType === "non_saudi" &&
+      !form.contract.nationality
+    )
+      allValid = false;
+  }
+
+  // تحقق الراتب
+  if (
+    form.withSalary &&
+    (!form.salary.basicSalary || form.salary.basicSalary <= 0)
+  )
+    allValid = false;
+
+  if (!allValid) {
+    toast.error(
+      "يرجى التأكد من تعبئة جميع الحقول المطلوبة في التبويبات المختلفة",
+    );
+    return;
+  }
+
   submitting.value = true;
 
   try {
@@ -1560,10 +1668,11 @@ const handleSubmit = async () => {
     // ✅ إضافة جميع المؤهلات المدخلة
     if (form.educations.length > 0) {
       payload.educations = form.educations
-        .filter((edu) => edu.degree) // إرسال فقط المؤهلات التي لها درجة
+        .filter((edu) => edu.degree) // إرسال فقط المؤهلات التي لها نوع
         .map((edu) => ({
           degree: edu.degree,
           certificateNumber: edu.certificateNumber || undefined,
+          issuingAuthority: edu.issuingAuthority || undefined, // ✅ إرسال مصدر الشهادة
           expiryDate: edu.expiryDate || undefined,
           attachmentPath: edu.attachmentPath || undefined,
         }));
@@ -1871,7 +1980,8 @@ const nationalityLabel = (type: string) => {
   color: $stb-danger;
 }
 
-.form-input--error {
+.form-input--error,
+.form-select--error {
   border-color: $stb-danger !important;
 }
 
@@ -2338,6 +2448,11 @@ const nationalityLabel = (type: string) => {
   padding: $space-2 $space-4;
   font-size: $font-size-sm;
 
+  .review-col {
+    display: flex;
+    flex-direction: column;
+  }
+
   span {
     color: $stb-text-muted;
   }
@@ -2350,6 +2465,11 @@ const nationalityLabel = (type: string) => {
   &--total strong {
     color: $stb-accent;
   }
+}
+
+.text-muted {
+  font-size: 10px;
+  color: $stb-text-muted;
 }
 
 .review-skip {

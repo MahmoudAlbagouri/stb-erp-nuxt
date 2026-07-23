@@ -6,7 +6,6 @@ import type { Salary, CreateSalaryPayload, UpdateSalaryPayload } from "@/types";
 
 export const useSalariesStore = defineStore("salaries", () => {
   const api = useApi();
-
   const salaries = ref<Salary[]>([]);
   const loading = ref(false);
 
@@ -34,7 +33,62 @@ export const useSalariesStore = defineStore("salaries", () => {
     return res.data;
   };
 
-  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  // ✅ التصدير الجماعي
+  const exportData = async (type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(
+        `/salaries/export/${type}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `salaries_report_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Export Error:", e);
+      throw e;
+    }
+  };
+
+  // ✅ التصدير الفردي
+  const exportSingle = async (id: string, type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(
+        `/salaries/${id}/export/${type}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `salary_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Single Export Error:", e);
+      throw e;
+    }
+  };
+
   const reset = () => {
     salaries.value = [];
     loading.value = false;
@@ -46,6 +100,8 @@ export const useSalariesStore = defineStore("salaries", () => {
     fetchAll,
     create,
     update,
-    reset, // ✅ تم التصدير
+    exportData,
+    exportSingle,
+    reset,
   };
 });

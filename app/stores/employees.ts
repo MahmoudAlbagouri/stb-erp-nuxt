@@ -10,7 +10,6 @@ import type {
 
 export const useEmployeesStore = defineStore("employees", () => {
   const api = useApi();
-
   const employees = ref<Employee[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -62,21 +61,16 @@ export const useEmployeesStore = defineStore("employees", () => {
         true,
         "blob",
       );
-
-      if (!blob || blob.size === 0) {
+      if (!blob || blob.size === 0)
         throw new Error("الملف المستلم فارغ أو تالف");
-      }
-
       const extension = type === "excel" ? "xlsx" : "pdf";
       const fileName = `employees_report_${new Date().toISOString().split("T")[0]}.${extension}`;
-
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -87,7 +81,34 @@ export const useEmployeesStore = defineStore("employees", () => {
     }
   };
 
-  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  // ✅ دالة تصدير موظف واحد
+  const exportSingle = async (id: string, type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(
+        `/employees/${id}/export/${type}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `employee_profile_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Single Export Error:", e);
+      throw e;
+    }
+  };
+
   const reset = () => {
     employees.value = [];
     loading.value = false;
@@ -104,6 +125,7 @@ export const useEmployeesStore = defineStore("employees", () => {
     update,
     remove,
     exportData,
+    exportSingle,
     reset,
   };
 });

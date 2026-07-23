@@ -17,7 +17,6 @@
           <FileSpreadsheet v-else :size="18" />
           <span>Excel</span>
         </button>
-
         <button
           class="btn btn--outline"
           @click="handleExport('pdf')"
@@ -27,7 +26,6 @@
           <FileText v-else :size="18" />
           <span>PDF</span>
         </button>
-
         <button class="btn btn--primary" @click="showOnboarding = true">
           <UserPlus :size="18" />
           <span>إضافة موظف</span>
@@ -38,32 +36,31 @@
     <!-- ══ Stats Bar ═══════════════════════════════════════════════════════ -->
     <div class="stats-bar">
       <div class="stat-pill">
-        <Users :size="14" />
-        <span
+        <Users :size="14" /><span
           >الإجمالي: <strong>{{ store.employees.length }}</strong></span
         >
       </div>
       <div class="stat-pill stat-pill--active">
-        <span class="dot dot--active"></span>
-        <span
+        <span class="dot dot--active"></span
+        ><span
           >نشط: <strong>{{ countByStatus("active") }}</strong></span
         >
       </div>
       <div class="stat-pill stat-pill--inactive">
-        <span class="dot dot--inactive"></span>
-        <span
+        <span class="dot dot--inactive"></span
+        ><span
           >غير نشط: <strong>{{ countByStatus("inactive") }}</strong></span
         >
       </div>
       <div class="stat-pill stat-pill--terminated">
-        <span class="dot dot--terminated"></span>
-        <span
+        <span class="dot dot--terminated"></span
+        ><span
           >منتهي: <strong>{{ countByStatus("terminated") }}</strong></span
         >
       </div>
     </div>
 
-    <!-- ══ Filters ═════════════════════════════════════════════════════════ -->
+    <!-- ══ Filters ════════════════════════════════════════════════════════ -->
     <div class="card filters-card">
       <div class="filters-row">
         <div class="search-bar">
@@ -106,9 +103,7 @@
     <!-- ══ Empty State ══════════════════════════════════════════════════════ -->
     <div v-else-if="!filtered.length" class="empty-wrapper">
       <div class="empty-state">
-        <div class="empty-state__illustration">
-          <Users :size="48" />
-        </div>
+        <div class="empty-state__illustration"><Users :size="48" /></div>
         <div class="empty-state__title">
           {{ search || statusFilter ? "لا توجد نتائج" : "لا يوجد موظفون بعد" }}
         </div>
@@ -124,8 +119,7 @@
           class="btn btn--primary mt-4"
           @click="showOnboarding = true"
         >
-          <UserPlus :size="16" />
-          إضافة موظف جديد
+          <UserPlus :size="16" /> إضافة موظف جديد
         </button>
       </div>
     </div>
@@ -146,27 +140,25 @@
             <h3>{{ emp.fullName }}</h3>
             <span class="emp-card__code">{{ emp.employeeCode }}</span>
           </div>
-          <span :class="`badge badge--${emp.status}`">
-            {{ empStatusLabel(emp.status) }}
-          </span>
+          <span :class="`badge badge--${emp.status}`">{{
+            empStatusLabel(emp.status)
+          }}</span>
         </div>
-
         <div class="emp-card__body">
           <div
             v-if="emp.jobTitle || emp.department"
             class="emp-detail emp-detail--primary"
           >
             <Briefcase :size="13" class="detail-icon" />
-            <span>
-              {{ [emp.jobTitle, emp.department].filter(Boolean).join(" — ") }}
-            </span>
+            <span>{{
+              [emp.jobTitle, emp.department].filter(Boolean).join(" — ")
+            }}</span>
           </div>
-
           <div class="emp-detail">
-            <Globe :size="13" class="detail-icon" />
-            <span>{{ getNationalityLabel(emp.nationalityType) }}</span>
+            <Globe :size="13" class="detail-icon" /><span>{{
+              getNationalityLabel(emp.nationalityType)
+            }}</span>
           </div>
-
           <div v-if="emp.iqamaExpiryDate" class="emp-detail">
             <CalendarDays :size="13" class="detail-icon" />
             <span
@@ -178,34 +170,28 @@
               <span v-if="isIqamaExpiringSoon(emp.iqamaExpiryDate)">⚠️</span>
             </span>
           </div>
-
           <div v-if="emp.nationalId" class="emp-detail">
-            <IdCard :size="13" class="detail-icon" />
-            <span dir="ltr">{{ emp.nationalId }}</span>
+            <IdCard :size="13" class="detail-icon" /><span dir="ltr">{{
+              emp.nationalId
+            }}</span>
           </div>
-
           <div v-if="emp.phone" class="emp-detail">
-            <Phone :size="13" class="detail-icon" />
-            <span dir="ltr">{{ emp.phone }}</span>
+            <Phone :size="13" class="detail-icon" /><span dir="ltr">{{
+              emp.phone
+            }}</span>
           </div>
-
-          <!-- مؤشرات المستخدم والعقد والمؤهلات -->
           <div class="emp-card__badges" @click.stop>
-            <span v-if="emp.user" class="mini-badge mini-badge--user">
-              <ShieldCheck :size="11" /> مستخدم
-            </span>
-            <span v-if="emp.contract" class="mini-badge mini-badge--contract">
-              <FileText :size="11" /> عقد
-            </span>
-
-            <!-- ✅ مؤشر المؤهلات -->
+            <span v-if="emp.user" class="mini-badge mini-badge--user"
+              ><ShieldCheck :size="11" /> مستخدم</span
+            >
+            <span v-if="emp.contract" class="mini-badge mini-badge--contract"
+              ><FileText :size="11" /> عقد</span
+            >
             <span
               v-if="emp.educations && emp.educations.length > 0"
               class="mini-badge mini-badge--edu"
+              ><GraduationCap :size="11" /> مؤهل</span
             >
-              <GraduationCap :size="11" /> مؤهل
-            </span>
-
             <button
               v-if="emp.nationalIdCardPath"
               class="mini-badge mini-badge--doc view-id-btn"
@@ -217,21 +203,42 @@
           </div>
         </div>
 
+        <!-- ✅ فوتر الكارت مع زر التصدير المنفصل -->
         <div class="emp-card__footer" @click.stop>
-          <button class="btn btn--ghost btn--sm" @click="openEdit(emp)">
-            <Pencil :size="14" /> تعديل
-          </button>
-          <button class="btn btn--danger btn--sm" @click="confirmDelete(emp)">
-            <Trash2 :size="14" /> حذف
-          </button>
+          <div class="export-dropdown" ref="exportDropdownRef">
+            <button
+              class="btn btn--ghost btn--sm export-btn"
+              @click="toggleExportMenu(emp.id)"
+            >
+              <Download :size="14" /> تصدير
+            </button>
+            <Transition name="fade">
+              <div v-if="activeExportMenu === emp.id" class="dropdown-menu">
+                <button @click="downloadProfile(emp.id, 'pdf')">
+                  <FileText :size="14" /> ملف PDF
+                </button>
+                <button @click="downloadProfile(emp.id, 'excel')">
+                  <FileSpreadsheet :size="14" /> ملف Excel
+                </button>
+              </div>
+            </Transition>
+          </div>
+
+          <div class="footer-actions">
+            <button class="btn btn--ghost btn--sm" @click="openEdit(emp)">
+              <Pencil :size="14" /> تعديل
+            </button>
+            <button class="btn btn--danger btn--sm" @click="confirmDelete(emp)">
+              <Trash2 :size="14" /> حذف
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ══ Onboarding Modal ══════════════════════════════════════════════════ -->
     <OnboardingModal v-model="showOnboarding" @created="onEmployeeCreated" />
 
-    <!-- ══ Edit Modal (تصميم المؤهلات مثل الـ Onboarding) ═════════════════════ -->
+    <!-- Edit Modal -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -249,19 +256,17 @@
                 <X :size="20" />
               </button>
             </div>
-
             <form @submit.prevent="handleUpdate" class="modal-form">
               <div class="grid-2">
                 <div class="form-group">
-                  <label>الاسم الكامل *</label>
-                  <input
+                  <label>الاسم الكامل *</label
+                  ><input
                     v-model="editForm.fullName"
                     type="text"
                     class="form-input"
                     required
                   />
                 </div>
-
                 <div class="form-group">
                   <label>الجنسية *</label>
                   <select
@@ -274,23 +279,21 @@
                     <option value="outside_sponsorship">📄 خارج الكفالة</option>
                   </select>
                 </div>
-
                 <div
                   v-if="editForm.nationalityType === 'non_saudi'"
                   class="form-group"
                 >
-                  <label>تاريخ انتهاء *</label>
-                  <input
+                  <label>تاريخ انتهاء *</label
+                  ><input
                     v-model="editForm.iqamaExpiryDate"
                     type="date"
                     class="form-input"
                     required
                   />
                 </div>
-
                 <div class="form-group">
-                  <label>رقم الهوية</label>
-                  <input
+                  <label>رقم الهوية</label
+                  ><input
                     v-model="editForm.nationalId"
                     type="text"
                     class="form-input"
@@ -304,27 +307,25 @@
                     "
                   />
                 </div>
-
                 <div class="form-group">
-                  <label>المسمى الوظيفي</label>
-                  <input
+                  <label>المسمى الوظيفي</label
+                  ><input
                     v-model="editForm.jobTitle"
                     type="text"
                     class="form-input"
                   />
                 </div>
-
                 <div class="form-group">
-                  <label>القسم</label>
-                  <input
+                  <label>القسم</label
+                  ><input
                     v-model="editForm.department"
                     type="text"
                     class="form-input"
                   />
                 </div>
                 <div class="form-group">
-                  <label>رقم الهاتف</label>
-                  <input
+                  <label>رقم الهاتف</label
+                  ><input
                     v-model="editForm.phone"
                     type="tel"
                     class="form-input"
@@ -335,7 +336,6 @@
                     "
                   />
                 </div>
-
                 <div class="form-group">
                   <label>الحالة الوظيفية</label>
                   <select v-model="editForm.status" class="form-select">
@@ -344,14 +344,8 @@
                     <option value="terminated">❌ منتهي الخدمة</option>
                   </select>
                 </div>
-
-                <!-- ✅ خانة ربط المستخدم الجديد -->
                 <div class="form-group full-width linked-user-section">
-                  <label>
-                    <LinkIcon :size="14" />
-                    ربط بحساب مستخدم موجود
-                  </label>
-
+                  <label><LinkIcon :size="14" /> ربط بحساب مستخدم موجود</label>
                   <div class="linked-user-controls">
                     <select
                       v-model="editForm.userId"
@@ -367,7 +361,6 @@
                         {{ u.username }} ({{ u.email }})
                       </option>
                     </select>
-
                     <button
                       v-if="editForm.userId"
                       type="button"
@@ -378,15 +371,14 @@
                       <Unlink :size="14" />
                     </button>
                   </div>
-
-                  <small class="form-hint">
-                    يظهر هنا فقط المستخدمون الذين لا يرتبطون بموظف آخر حالياً.
-                  </small>
+                  <small class="form-hint"
+                    >يظهر هنا فقط المستخدمون الذين لا يرتبطون بموظف آخر
+                    حالياً.</small
+                  >
                 </div>
-
                 <div class="form-group full-width">
-                  <label>صورة/ملف الهوية</label>
-                  <StbUploader
+                  <label>صورة/ملف الهوية</label
+                  ><StbUploader
                     v-model="editForm.nationalIdCardPath"
                     endpoint="/media/upload/employee"
                     field-name="files"
@@ -397,8 +389,6 @@
                     @error="toast.error"
                   />
                 </div>
-
-                <!-- ✅ قسم المؤهلات التعليمية (بنفس تصميم الـ Onboarding) -->
                 <div class="form-group full-width education-toggle-section">
                   <div class="toggle-card">
                     <div class="toggle-card__info">
@@ -408,15 +398,16 @@
                         <p>إضافة وتعديل درجات الشهادات</p>
                       </div>
                     </div>
-                    <label class="toggle-switch">
-                      <input v-model="showEducationForm" type="checkbox" />
-                      <span class="toggle-switch__track"></span>
-                    </label>
+                    <label class="toggle-switch"
+                      ><input
+                        v-model="showEducationForm"
+                        type="checkbox" /><span
+                        class="toggle-switch__track"
+                      ></span
+                    ></label>
                   </div>
-
                   <Transition name="slide-down">
                     <div v-if="showEducationForm" class="mt-4">
-                      <!-- زر إضافة مؤهل جديد -->
                       <div class="add-edu-header">
                         <button
                           type="button"
@@ -426,16 +417,14 @@
                           <Plus :size="14" /> إضافة مؤهل جديد
                         </button>
                       </div>
-
-                      <!-- قائمة المؤهلات -->
                       <div
                         v-for="(edu, index) in editForm.educations"
                         :key="index"
                         class="education-item-card"
                       >
                         <div class="edu-item-header">
-                          <span class="edu-index">#{{ index + 1 }}</span>
-                          <button
+                          <span class="edu-index">#{{ index + 1 }}</span
+                          ><button
                             type="button"
                             class="btn btn--icon btn--danger btn--sm"
                             @click="removeEducationRow(index)"
@@ -444,42 +433,47 @@
                             <Trash2 :size="16" />
                           </button>
                         </div>
-
                         <div class="edu-item-fields">
                           <div class="form-group">
-                            <label class="form-label">درجة الشهادة</label>
-                            <input
+                            <label class="form-label">نوع الشهادة</label
+                            ><input
                               v-model="edu.degree"
                               type="text"
                               class="form-input"
                               placeholder="مثال: بكالوريوس هندسة"
                             />
                           </div>
-
                           <div class="form-group">
-                            <label class="form-label">رقم الشهادة</label>
-                            <input
+                            <label class="form-label">رقم الشهادة</label
+                            ><input
                               v-model="edu.certificateNumber"
                               type="text"
                               class="form-input"
                               placeholder="رقم الوثيقة"
                             />
                           </div>
-
+                          <div class="form-group">
+                            <label class="form-label"
+                              >جهة الإصدار / المصدر</label
+                            ><input
+                              v-model="edu.issuingAuthority"
+                              type="text"
+                              class="form-input"
+                              placeholder="مثال: جامعة الملك سعود"
+                            />
+                          </div>
                           <div class="form-group">
                             <label class="form-label"
                               >تاريخ الانتهاء (اختياري)</label
-                            >
-                            <input
+                            ><input
                               v-model="edu.expiryDate"
                               type="date"
                               class="form-input"
                             />
                           </div>
-
                           <div class="form-group form-group--full">
-                            <label class="form-label">مرفق الشهادة</label>
-                            <StbUploader
+                            <label class="form-label">مرفق الشهادة</label
+                            ><StbUploader
                               :model-value="edu.attachmentPath"
                               @update:model-value="
                                 (val) => (edu.attachmentPath = val || '')
@@ -495,7 +489,6 @@
                           </div>
                         </div>
                       </div>
-
                       <div
                         v-if="editForm.educations.length === 0"
                         class="empty-mini"
@@ -509,7 +502,6 @@
                   </Transition>
                 </div>
               </div>
-
               <div class="modal__footer">
                 <button
                   type="button"
@@ -523,8 +515,9 @@
                   class="btn btn--primary"
                   :disabled="updating"
                 >
-                  <span v-if="updating" class="spinner" />
-                  <span v-else>حفظ التغييرات</span>
+                  <span v-if="updating" class="spinner" /><span v-else
+                    >حفظ التغييرات</span
+                  >
                 </button>
               </div>
             </form>
@@ -533,7 +526,7 @@
       </Transition>
     </Teleport>
 
-    <!-- ══ ID Viewer Modal (نافذة عرض الهوية) ═══════════════════════════════ -->
+    <!-- ID Viewer Modal -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -543,10 +536,7 @@
         >
           <div class="modal modal-md id-viewer-modal">
             <div class="modal__header">
-              <h3>
-                <IdCard :size="20" class="modal-icon" />
-                صورة الهوية
-              </h3>
+              <h3><IdCard :size="20" class="modal-icon" /> صورة الهوية</h3>
               <button
                 class="btn btn--icon btn--ghost"
                 @click="showIdModal = false"
@@ -555,7 +545,6 @@
                 <X :size="20" />
               </button>
             </div>
-
             <div class="modal__body id-preview-container">
               <div v-if="currentIdUrl" class="id-image-wrapper">
                 <img
@@ -563,27 +552,22 @@
                   alt="صورة الهوية"
                   class="id-full-img"
                 />
-
                 <div class="id-actions-overlay">
                   <a
                     :href="currentIdUrl"
                     target="_blank"
                     class="btn btn--primary"
+                    ><ExternalLink :size="16" /> فتح في تبويب جديد</a
                   >
-                    <ExternalLink :size="16" />
-                    فتح في تبويب جديد
-                  </a>
-                  <a :href="currentIdUrl" download class="btn btn--outline">
-                    <Download :size="16" />
-                    تحميل الصورة
-                  </a>
+                  <a :href="currentIdUrl" download class="btn btn--outline"
+                    ><Download :size="16" /> تحميل الصورة</a
+                  >
                 </div>
               </div>
               <div v-else class="empty-state-mini">
                 <p>لا توجد صورة متاحة</p>
               </div>
             </div>
-
             <div class="modal__footer">
               <button class="btn btn--ghost" @click="showIdModal = false">
                 إغلاق
@@ -594,7 +578,6 @@
       </Transition>
     </Teleport>
 
-    <!-- ══ Confirm Delete ════════════════════════════════════════════════════ -->
     <ConfirmDialog
       v-model="showConfirm"
       title="حذف الموظف"
@@ -607,13 +590,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, nextTick } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useUsersStore } from "@/stores/users";
 import { useToast } from "@/composables/useToast";
 import type { Employee, User, Education } from "@/types";
 import OnboardingModal from "@/components/employees/OnboardingModal.vue";
-
 import {
   FileSpreadsheet,
   FileText,
@@ -635,8 +617,8 @@ import {
   Eye,
   ExternalLink,
   Download,
-  GraduationCap, // ✅ أيقونة المؤهلات
-  Plus, // ✅ أيقونة الإضافة
+  GraduationCap,
+  Plus,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -644,17 +626,11 @@ definePageMeta({ middleware: "auth" });
 const store = useEmployeesStore();
 const usersStore = useUsersStore();
 const toast = useToast();
-
-// ─── Onboarding ───────────────────────────────────────────────────────────────
 const showOnboarding = ref(false);
-
-const onEmployeeCreated = (result: any) => {
+const onEmployeeCreated = (result: any) =>
   toast.success(`✅ تم إضافة الموظف "${result.employee.fullName}" بنجاح`);
-};
 
-// ─── Export ──────────────────────────────────────────────────────────────────
 const exporting = ref<"excel" | "pdf" | null>(null);
-
 const handleExport = async (type: "excel" | "pdf") => {
   exporting.value = type;
   try {
@@ -667,11 +643,34 @@ const handleExport = async (type: "excel" | "pdf") => {
   }
 };
 
-// ─── Filters ──────────────────────────────────────────────────────────────────
+// ✅ منطق التصدير الفردي
+const activeExportMenu = ref<string | null>(null);
+const toggleExportMenu = (id: string) => {
+  activeExportMenu.value = activeExportMenu.value === id ? null : id;
+};
+
+const downloadProfile = async (id: string, type: "excel" | "pdf") => {
+  try {
+    await store.exportSingle(id, type);
+    toast.success(`تم تصدير ملف الموظف بصيغة ${type.toUpperCase()} بنجاح`);
+    activeExportMenu.value = null;
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
+  }
+};
+
+// إغلاق القائمة عند النقر خارجها
+onMounted(() => {
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement).closest(".export-dropdown")) {
+      activeExportMenu.value = null;
+    }
+  });
+});
+
 const search = ref("");
 const statusFilter = ref("");
 const nationalityFilter = ref("");
-
 const filtered = computed(() =>
   store.employees.filter((e: Employee) => {
     const q = search.value.toLowerCase();
@@ -687,14 +686,11 @@ const filtered = computed(() =>
     return matchSearch && matchStatus && matchNat;
   }),
 );
-
 const countByStatus = (s: string) =>
   store.employees.filter((e: Employee) => e.status === s).length;
 
-// ─── ID Viewer Logic ────────────────────────────────────────────────────────
 const showIdModal = ref(false);
 const currentIdUrl = ref<string>("");
-
 const openIdViewer = (emp: Employee) => {
   if (emp.nationalIdCardPath) {
     currentIdUrl.value = emp.nationalIdCardPath;
@@ -702,13 +698,11 @@ const openIdViewer = (emp: Employee) => {
   }
 };
 
-// ─── Edit Modal & User Linking ───────────────────────────────────────────────
 const showEditModal = ref(false);
 const updating = ref(false);
 const editingEmployee = ref<Employee | null>(null);
-const showEducationForm = ref(false); // ✅ Toggle لإظهار قسم المؤهلات
+const showEducationForm = ref(false);
 
-// تعريف هيكل النموذج للتعديل
 interface EditFormType {
   fullName: string;
   nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
@@ -720,9 +714,8 @@ interface EditFormType {
   department: string;
   status: "active" | "inactive" | "terminated";
   userId: string | null;
-  educations: Education[]; // ✅ مصفوفة المؤهلات
+  educations: Education[];
 }
-
 const editForm = reactive<EditFormType>({
   fullName: "",
   nationalityType: "saudi",
@@ -737,44 +730,29 @@ const editForm = reactive<EditFormType>({
   educations: [],
 });
 
-/**
- * ✅ حساب المستخدمين المتاحين للربط
- */
 const availableUsers = computed(() => {
   const assignedUserIds = new Set(
     store.employees.filter((e) => e.user?.id).map((e) => e.user!.id),
   );
-
-  if (editingEmployee.value?.user?.id) {
+  if (editingEmployee.value?.user?.id)
     assignedUserIds.delete(editingEmployee.value.user.id);
-  }
-
   return usersStore.users.filter((u: User) => !assignedUserIds.has(u.id));
 });
 
-// دالة إضافة صف مؤهل جديد
-const addEducationRow = () => {
+const addEducationRow = () =>
   editForm.educations.push({
     degree: "",
     certificateNumber: "",
+    issuingAuthority: "",
     expiryDate: "",
     attachmentPath: "",
   });
-};
-
-// دالة حذف صف مؤهل
-const removeEducationRow = (index: number) => {
+const removeEducationRow = (index: number) =>
   editForm.educations.splice(index, 1);
-};
 
 const openEdit = async (emp: Employee) => {
   editingEmployee.value = emp;
-
-  if (usersStore.users.length === 0) {
-    await usersStore.fetchAll();
-  }
-
-  // تعبئة النموذج بالبيانات الحالية
+  if (usersStore.users.length === 0) await usersStore.fetchAll();
   Object.assign(editForm, {
     fullName: emp.fullName,
     nationalityType: emp.nationalityType,
@@ -788,15 +766,11 @@ const openEdit = async (emp: Employee) => {
     department: emp.department ?? "",
     status: emp.status,
     userId: emp.user?.id ?? null,
-    // ✅ نسخ المؤهلات الحالية
     educations: emp.educations
       ? JSON.parse(JSON.stringify(emp.educations))
       : [],
   });
-
-  // إظهار فورم التعليم إذا كان هناك مؤهلات موجودة
   showEducationForm.value = editForm.educations.length > 0;
-
   showEditModal.value = true;
 };
 
@@ -804,6 +778,17 @@ const handleUpdate = async () => {
   if (!editingEmployee.value) return;
   updating.value = true;
   try {
+    const cleanEducations = editForm.educations.map((edu) => {
+      const cleanEdu: any = {
+        degree: edu.degree,
+        certificateNumber: edu.certificateNumber || undefined,
+        issuingAuthority: edu.issuingAuthority || undefined,
+        expiryDate: edu.expiryDate || undefined,
+        attachmentPath: edu.attachmentPath || undefined,
+      };
+      if (edu.id) cleanEdu.id = edu.id;
+      return cleanEdu;
+    });
     const payload: any = {
       fullName: editForm.fullName,
       nationalityType: editForm.nationalityType,
@@ -814,44 +799,32 @@ const handleUpdate = async () => {
       department: editForm.department || undefined,
       status: editForm.status,
       userId: editForm.userId || undefined,
-      // ✅ إرسال المؤهلات المحدثة
-      educations: editForm.educations.map((edu) => ({
-        ...edu,
-        expiryDate: edu.expiryDate || undefined,
-        attachmentPath: edu.attachmentPath || undefined,
-        certificateNumber: edu.certificateNumber || undefined,
-      })),
+      educations: cleanEducations,
     };
-
-    if (editForm.nationalityType !== "non_saudi") {
+    if (editForm.nationalityType !== "non_saudi")
       payload.iqamaExpiryDate = null;
-    }
-
     await store.update(editingEmployee.value.id, payload);
     toast.success("تم تحديث بيانات الموظف بنجاح");
     showEditModal.value = false;
+    await store.fetchAll();
   } catch (e: any) {
-    toast.error(e.message);
+    console.error(e);
+    toast.error(e.message || "حدث خطأ أثناء التحديث");
   } finally {
     updating.value = false;
   }
 };
 
-// ─── Detail ──────────────────────────────────────────────────────────────────
-const openDetail = (emp: Employee) => {
-  navigateTo(`/employees/${emp.id}`);
-};
+const openDetail = (emp: Employee) =>
+  navigateTo(`/dashboard/employees/${emp.id}`);
 
-// ─── Delete ───────────────────────────────────────────────────────────────────
 const showConfirm = ref(false);
 const deleting = ref(false);
 const deleteTarget = ref<Employee | null>(null);
-
 const confirmDelete = (emp: Employee) => {
   deleteTarget.value = emp;
   showConfirm.value = true;
 };
-
 const doDelete = async () => {
   if (!deleteTarget.value) return;
   deleting.value = true;
@@ -866,25 +839,20 @@ const doDelete = async () => {
   }
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const empStatusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", terminated: "منتهي" })[s] ?? s;
-
 const getNationalityLabel = (type?: string) =>
   ({
     saudi: "🇸🇦 سعودي",
     non_saudi: "🌍 غير سعودي",
     outside_sponsorship: "📄 خارج الكفالة",
   })[type ?? ""] ?? "—";
-
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
-
 const isIqamaExpiringSoon = (date: string) => {
   const diff = new Date(date).getTime() - Date.now();
-  return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000; // 60 يوم
+  return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
 };
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
 onMounted(() => {
   store.fetchAll();
   usersStore.fetchAll();
@@ -894,7 +862,6 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
-
 .page-header__actions {
   display: flex;
   gap: $space-2;
@@ -904,14 +871,12 @@ onMounted(() => {
     justify-content: space-between;
   }
 }
-
 .stats-bar {
   display: flex;
   gap: $space-3;
   flex-wrap: wrap;
   margin-bottom: $space-4;
 }
-
 .stat-pill {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;
@@ -934,7 +899,6 @@ onMounted(() => {
     border-color: rgba($stb-danger, 0.3);
   }
 }
-
 .dot {
   width: 8px;
   height: 8px;
@@ -950,7 +914,6 @@ onMounted(() => {
     background: $stb-danger;
   }
 }
-
 .filters-card {
   padding: $space-4 $space-5;
   margin-bottom: $space-5;
@@ -1006,7 +969,6 @@ onMounted(() => {
     width: 100%;
   }
 }
-
 .loading-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -1055,7 +1017,6 @@ onMounted(() => {
     background-position: -200% 0;
   }
 }
-
 .empty-wrapper {
   @include flex(row, center, center);
   min-height: 320px;
@@ -1085,7 +1046,6 @@ onMounted(() => {
     max-width: 280px;
   }
 }
-
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -1166,10 +1126,63 @@ onMounted(() => {
     margin-top: $space-1;
   }
   &__footer {
-    @include flex(row, center, flex-end, $space-2);
+    @include flex(row, center, space-between, $space-2);
     padding-top: $space-3;
     border-top: 1px solid $stb-border;
     margin-top: auto;
+
+    .footer-actions {
+      display: flex;
+      gap: $space-2;
+    }
+
+    // ✅ تنسيق قائمة التصدير المنسدلة
+    .export-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .export-btn {
+      color: $stb-accent;
+      &:hover {
+        background: rgba($stb-accent, 0.1);
+        color: $stb-accent;
+      }
+    }
+    .dropdown-menu {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      margin-bottom: $space-2;
+      background: $stb-surface;
+      border: 1px solid $stb-border;
+      border-radius: $radius-md;
+      box-shadow: $shadow-lg;
+      z-index: 10;
+      min-width: 140px;
+      overflow: hidden;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        width: 100%;
+        padding: $space-2 $space-3;
+        border: none;
+        background: transparent;
+        color: $stb-text-primary;
+        font-size: $font-size-xs;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &:hover {
+          background: rgba($stb-accent, 0.08);
+          color: $stb-accent;
+        }
+        svg {
+          color: $stb-text-muted;
+        }
+      }
+    }
   }
 }
 .emp-detail {
@@ -1197,7 +1210,6 @@ onMounted(() => {
   border-radius: $radius-sm;
   font-weight: 600;
   cursor: default;
-
   &--user {
     background: rgba($stb-accent, 0.1);
     color: $stb-accent;
@@ -1216,14 +1228,12 @@ onMounted(() => {
     border: none;
     cursor: pointer;
     transition: all 0.2s;
-
     &:hover {
       background: rgba($stb-warning, 0.2);
       transform: translateY(-1px);
     }
   }
 }
-
 .modal-lg {
   max-width: 680px;
 }
@@ -1269,42 +1279,34 @@ onMounted(() => {
 .mt-4 {
   margin-top: $space-4 !important;
 }
-
 .linked-user-section {
   background: rgba($stb-accent, 0.03);
   padding: $space-3;
   border-radius: $radius-md;
   border: 1px dashed $stb-border;
-
   label {
     margin-bottom: $space-2;
     color: $stb-accent;
   }
 }
-
 .linked-user-controls {
   display: flex;
   gap: $space-2;
   align-items: center;
-
   select {
     flex: 1;
   }
-
   .unlink-btn {
     flex-shrink: 0;
     height: 38px;
     padding: 0 $space-3;
   }
 }
-
 .form-hint {
   font-size: 11px;
   color: $stb-text-muted;
   margin-top: $space-1;
 }
-
-/* --- Education Section Styles (Matching Onboarding) --- */
 .education-toggle-section {
   .toggle-card {
     @include flex(row, center, space-between);
@@ -1312,43 +1314,36 @@ onMounted(() => {
     background: $stb-surface-2;
     border: 1px solid $stb-border;
     border-radius: $radius-lg;
-
     &__info {
       @include flex(row, center, flex-start, $space-3);
-
       strong {
         display: block;
         font-size: $font-size-sm;
         font-weight: 700;
       }
-
       p {
         font-size: $font-size-xs;
         color: $stb-text-muted;
         margin: 0;
       }
     }
-
     &__icon {
       color: $stb-accent;
       flex-shrink: 0;
     }
   }
-
   .toggle-switch {
     position: relative;
     display: inline-block;
     width: 44px;
     height: 24px;
     cursor: pointer;
-
     input {
       opacity: 0;
       width: 0;
       height: 0;
       position: absolute;
     }
-
     &__track {
       position: absolute;
       inset: 0;
@@ -1356,7 +1351,6 @@ onMounted(() => {
       border-radius: 24px;
       border: 1px solid $stb-border;
       transition: all $transition-base;
-
       &::before {
         content: "";
         position: absolute;
@@ -1365,15 +1359,13 @@ onMounted(() => {
         border-radius: 50%;
         background: $stb-text-muted;
         top: 2px;
-        right: 2px; // RTL
+        right: 2px;
         transition: all $transition-base;
       }
     }
-
     input:checked + .toggle-switch__track {
       background: $stb-accent;
       border-color: $stb-accent;
-
       &::before {
         background: #fff;
         right: calc(100% - 20px);
@@ -1381,25 +1373,21 @@ onMounted(() => {
     }
   }
 }
-
 .add-edu-header {
   margin-bottom: $space-3;
   display: flex;
   justify-content: flex-end;
 }
-
 .btn--dashed {
   border-style: dashed;
   border-color: $stb-border;
   color: $stb-text-secondary;
-
   &:hover {
     border-color: $stb-accent;
     color: $stb-accent;
     background: rgba($stb-accent, 0.05);
   }
 }
-
 .education-item-card {
   background: $stb-surface-2;
   border: 1px solid $stb-border;
@@ -1407,31 +1395,26 @@ onMounted(() => {
   padding: $space-4;
   margin-bottom: $space-3;
   position: relative;
-
   .edu-item-header {
     @include flex(row, center, space-between);
     margin-bottom: $space-3;
     padding-bottom: $space-2;
     border-bottom: 1px solid $stb-border;
-
     .edu-index {
       font-size: $font-size-sm;
       font-weight: 700;
       color: $stb-accent;
     }
   }
-
   .edu-item-fields {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: $space-3;
-
     @include respond-to("md") {
       grid-template-columns: 1fr;
     }
   }
 }
-
 .empty-mini {
   text-align: center;
   padding: $space-4;
@@ -1441,12 +1424,9 @@ onMounted(() => {
   border-radius: $radius-md;
   border: 1px dashed $stb-border;
 }
-
-/* --- ID Viewer Styles --- */
 .id-viewer-modal {
   max-width: 900px;
 }
-
 .id-preview-container {
   padding: 0;
   background: $stb-dark;
@@ -1455,20 +1435,17 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
 }
-
 .id-image-wrapper {
   position: relative;
   width: 100%;
   display: flex;
   justify-content: center;
-
   .id-full-img {
     max-width: 100%;
     max-height: 70vh;
     object-fit: contain;
     border-radius: $radius-sm;
   }
-
   .id-actions-overlay {
     position: absolute;
     bottom: $space-4;
@@ -1482,17 +1459,14 @@ onMounted(() => {
     backdrop-filter: blur(4px);
     opacity: 0;
     transition: opacity 0.3s ease;
-
     a {
       font-size: $font-size-xs;
     }
   }
-
   &:hover .id-actions-overlay {
     opacity: 1;
   }
 }
-
 .empty-state-mini {
   color: $stb-text-muted;
   text-align: center;

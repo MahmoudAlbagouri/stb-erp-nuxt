@@ -1,3 +1,4 @@
+<!-- pages/contracts/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -6,10 +7,32 @@
         <h1>إدارة العقود</h1>
         <p>متابعة عقود الموظفين وتفاصيلها</p>
       </div>
-      <button class="btn btn--primary" @click="openCreateModal">
-        <Plus :size="18" />
-        <span>إضافة عقد جديد</span>
-      </button>
+      <div class="page-header__actions">
+        <!-- ✅ أزرار التصدير الجماعي -->
+        <button
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <FileSpreadsheet v-else :size="18" />
+          <span>Excel</span>
+        </button>
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <FileText v-else :size="18" />
+          <span>PDF</span>
+        </button>
+
+        <button class="btn btn--primary" @click="openCreateModal">
+          <Plus :size="18" />
+          <span>إضافة عقد جديد</span>
+        </button>
+      </div>
     </div>
 
     <!-- ══ Loading State ════════════════════════════════════════════════════ -->
@@ -26,8 +49,7 @@
           ابدأ بإضافة عقد للموظفين الجدد أو الحاليين
         </div>
         <button class="btn btn--primary mt-4" @click="openCreateModal">
-          <Plus :size="16" />
-          إضافة عقد
+          <Plus :size="16" /> إضافة عقد
         </button>
       </div>
     </div>
@@ -77,13 +99,10 @@
                 <span
                   v-if="contract.contractDurationYears"
                   class="badge badge--neutral"
+                  >{{ contract.contractDurationYears }} سنة</span
                 >
-                  {{ contract.contractDurationYears }} سنة
-                </span>
                 <span v-else class="text-muted">-</span>
               </td>
-
-              <!-- ✅ عرض التأمين الطبي -->
               <td>
                 <span
                   v-if="
@@ -91,24 +110,18 @@
                     contract.medicalInsurance !== 'بدون'
                   "
                   class="badge badge--success"
+                  >{{ contract.medicalInsurance }}</span
                 >
-                  {{ contract.medicalInsurance }}
-                </span>
                 <span v-else class="text-muted">-</span>
               </td>
-
-              <!-- ✅ عرض التذكرة -->
               <td>
                 <span
                   v-if="contract.ticketType && contract.ticketType !== 'بدون'"
                   class="badge badge--info"
+                  >{{ contract.ticketType }}</span
                 >
-                  {{ contract.ticketType }}
-                </span>
                 <span v-else class="text-muted">-</span>
               </td>
-
-              <!-- ✅ عرض فترة التجربة -->
               <td>
                 <span
                   v-if="
@@ -116,13 +129,10 @@
                     contract.probationPeriod !== 'بدون'
                   "
                   class="badge badge--warning"
+                  >{{ contract.probationPeriod }}</span
                 >
-                  {{ contract.probationPeriod }}
-                </span>
                 <span v-else class="text-muted">-</span>
               </td>
-
-              <!-- ✅ خانة المرفقات التفاعلية -->
               <td>
                 <div
                   v-if="
@@ -136,21 +146,47 @@
                     @click="openAttachmentsViewer(contract)"
                     title="عرض المرفقات"
                   >
-                    <Paperclip :size="14" />
-                    <span>{{ contract.attachmentPaths.length }}</span>
+                    <Paperclip :size="14" /><span>{{
+                      contract.attachmentPaths.length
+                    }}</span>
                   </button>
                 </div>
                 <span v-else class="text-muted">-</span>
               </td>
 
+              <!-- ✅ خانة الإجراءات مع قائمة التصدير المنسدلة -->
               <td>
-                <button
-                  class="btn btn--danger btn--sm"
-                  @click="confirmDelete(contract)"
-                  title="حذف العقد"
-                >
-                  <Trash2 :size="14" />
-                </button>
+                <div class="actions-cell">
+                  <div class="export-dropdown" ref="exportDropdownRef">
+                    <button
+                      class="btn btn--ghost btn--sm export-btn"
+                      @click="toggleExportMenu(contract.id)"
+                    >
+                      <Download :size="14" />
+                    </button>
+                    <Transition name="fade">
+                      <div
+                        v-if="activeExportMenu === contract.id"
+                        class="dropdown-menu"
+                      >
+                        <button @click="downloadContract(contract.id, 'pdf')">
+                          <FileText :size="14" /> ملف PDF
+                        </button>
+                        <button @click="downloadContract(contract.id, 'excel')">
+                          <FileSpreadsheet :size="14" /> ملف Excel
+                        </button>
+                      </div>
+                    </Transition>
+                  </div>
+
+                  <button
+                    class="btn btn--danger btn--sm"
+                    @click="confirmDelete(contract)"
+                    title="حذف العقد"
+                  >
+                    <Trash2 :size="14" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -158,7 +194,7 @@
       </div>
     </div>
 
-    <!-- ══ Create Contract Modal ════════════════════════════════════════════ -->
+    <!-- ═ Create Contract Modal ════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -169,8 +205,7 @@
           <div class="modal modal-lg">
             <div class="modal__header">
               <h3>
-                <FileSignature :size="20" class="modal-icon" />
-                إضافة عقد جديد
+                <FileSignature :size="20" class="modal-icon" /> إضافة عقد جديد
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -180,10 +215,8 @@
                 <X :size="20" />
               </button>
             </div>
-
             <form @submit.prevent="handleSubmit" class="modal-form">
               <div class="grid-2">
-                <!-- اختيار الموظف -->
                 <div class="form-group full-width">
                   <label>الموظف *</label>
                   <select
@@ -202,8 +235,6 @@
                     </option>
                   </select>
                 </div>
-
-                <!-- نوع العقد -->
                 <div class="form-group">
                   <label>نوع العقد *</label>
                   <select
@@ -218,8 +249,6 @@
                     <option value="أخرى">أخرى</option>
                   </select>
                 </div>
-
-                <!-- أيام الإجازة -->
                 <div class="form-group">
                   <label>أيام الإجازة السنوية *</label>
                   <input
@@ -230,8 +259,6 @@
                     min="0"
                   />
                 </div>
-
-                <!-- مدة العقد -->
                 <div class="form-group">
                   <label>مدة العقد (بالسنوات)</label>
                   <input
@@ -241,8 +268,6 @@
                     min="1"
                   />
                 </div>
-
-                <!-- تاريخ البداية -->
                 <div class="form-group">
                   <label>تاريخ بداية العقد *</label>
                   <input
@@ -252,8 +277,6 @@
                     required
                   />
                 </div>
-
-                <!-- تاريخ النهاية -->
                 <div class="form-group">
                   <label>تاريخ نهاية العقد (اختياري)</label>
                   <input
@@ -262,8 +285,6 @@
                     class="form-input"
                   />
                 </div>
-
-                <!-- ✅ التأمين الطبي -->
                 <div class="form-group">
                   <label>التأمين الطبي</label>
                   <select v-model="form.medicalInsurance" class="form-select">
@@ -272,8 +293,6 @@
                     <option value="عائلي">عائلي</option>
                   </select>
                 </div>
-
-                <!-- ✅ الجنسية (تظهر فقط لغير السعوديين) -->
                 <div
                   v-if="selectedEmployeeNationality === 'non_saudi'"
                   class="form-group"
@@ -294,8 +313,6 @@
                     </option>
                   </select>
                 </div>
-
-                <!-- ✅ نوع تذكرة الطيران -->
                 <div class="form-group">
                   <label>تذكرة طيران</label>
                   <select v-model="form.ticketType" class="form-select">
@@ -304,8 +321,6 @@
                     <option value="ذهاب وعودة">ذهاب وعودة</option>
                   </select>
                 </div>
-
-                <!-- ✅ فترة التجربة -->
                 <div class="form-group">
                   <label>فترة التجربة</label>
                   <select v-model="form.probationPeriod" class="form-select">
@@ -314,8 +329,6 @@
                     <option value="6 شهور">6 شهور</option>
                   </select>
                 </div>
-
-                <!-- حقل رفع المرفقات -->
                 <div class="form-group full-width">
                   <label>مرفقات العقد</label>
                   <StbUploader
@@ -331,8 +344,6 @@
                     @error="toast.error"
                   />
                 </div>
-
-                <!-- ملاحظات -->
                 <div class="form-group full-width">
                   <label>ملاحظات</label>
                   <textarea
@@ -343,7 +354,6 @@
                   ></textarea>
                 </div>
               </div>
-
               <div class="modal__footer">
                 <button
                   type="button"
@@ -357,8 +367,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" />
-                  <span v-else>حفظ العقد</span>
+                  <span v-if="submitting" class="spinner spinner--sm" /><span
+                    v-else
+                    >حفظ العقد</span
+                  >
                 </button>
               </div>
             </form>
@@ -377,10 +389,7 @@
         >
           <div class="modal modal-md attachments-modal">
             <div class="modal__header">
-              <h3>
-                <Paperclip :size="20" class="modal-icon" />
-                مرفقات العقد
-              </h3>
+              <h3><Paperclip :size="20" class="modal-icon" /> مرفقات العقد</h3>
               <button
                 class="btn btn--icon btn--ghost"
                 @click="showAttachmentsModal = false"
@@ -389,14 +398,12 @@
                 <X :size="20" />
               </button>
             </div>
-
             <div class="modal__body attachments-grid">
               <div
                 v-for="(url, index) in currentContractAttachments"
                 :key="index"
                 class="attachment-item"
               >
-                <!-- معاينة الصور -->
                 <div v-if="isImage(url)" class="img-preview">
                   <img :src="url" alt="مرفق" />
                   <div class="overlay-actions">
@@ -404,18 +411,13 @@
                       :href="url"
                       target="_blank"
                       class="btn btn--sm btn--primary"
+                      ><ExternalLink :size="14" /> فتح</a
                     >
-                      <ExternalLink :size="14" />
-                      فتح
-                    </a>
-                    <a :href="url" download class="btn btn--sm btn--outline">
-                      <Download :size="14" />
-                      تحميل
-                    </a>
+                    <a :href="url" download class="btn btn--sm btn--outline"
+                      ><Download :size="14" /> تحميل</a
+                    >
                   </div>
                 </div>
-
-                <!-- معاينة ملفات PDF وغيرها -->
                 <div v-else class="file-preview">
                   <FileText :size="32" class="file-icon" />
                   <span class="file-name">{{ getFileName(url) }}</span>
@@ -424,15 +426,12 @@
                       :href="url"
                       target="_blank"
                       class="btn btn--sm btn--primary"
+                      ><ExternalLink :size="14" /> فتح</a
                     >
-                      <ExternalLink :size="14" />
-                      فتح
-                    </a>
                   </div>
                 </div>
               </div>
             </div>
-
             <div class="modal__footer">
               <button
                 class="btn btn--ghost"
@@ -464,8 +463,6 @@ import { useContractsStore } from "@/stores/contracts";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
 import type { Contract, CreateContractPayload } from "@/types";
-
-// ✅ استيراد أيقونات Lucide
 import {
   Plus,
   FileSignature,
@@ -475,12 +472,12 @@ import {
   ExternalLink,
   Download,
   FileText,
+  FileSpreadsheet,
 } from "lucide-vue-next";
 import StbUploader from "@/components/global/StbUploader.vue";
 
 definePageMeta({ middleware: "auth" });
 
-// ✅ قائمة الجنسيات
 const NATIONALITIES = [
   "مصري",
   "يمني",
@@ -520,16 +517,14 @@ const submitting = ref(false);
 const showConfirm = ref(false);
 const deleting = ref(false);
 const deleteTarget = ref<Contract | null>(null);
-
-// State for Attachments Viewer
 const showAttachmentsModal = ref(false);
 const currentContractAttachments = ref<string[]>([]);
-
-// متغير مؤقت لتخزين روابط المرفقات القادمة من الـ Uploader
 const tempAttachments = ref<string[]>([]);
-
-// متغير لتتبع جنسية الموظف المختار
 const selectedEmployeeNationality = ref<string>("");
+
+// ✅ حالة التصدير
+const exporting = ref<"excel" | "pdf" | null>(null);
+const activeExportMenu = ref<string | null>(null);
 
 interface ExtendedCreatePayload extends CreateContractPayload {
   attachmentPaths?: string[];
@@ -547,22 +542,18 @@ const EMPTY_FORM: ExtendedCreatePayload = {
   contractDurationYears: 1,
   ticketType: "بدون",
   probationPeriod: "بدون",
-  medicalInsurance: "بدون", // ✅ القيمة الافتراضية
-  nationality: "", // ✅ القيمة الافتراضية
+  medicalInsurance: "بدون",
+  nationality: "",
   notes: "",
   attachmentPaths: [],
 };
-
 const form = reactive<ExtendedCreatePayload>({ ...EMPTY_FORM });
 
-// ✅ Computed Property لحل مشكلة النوع والقيمة الوهمية
-const uploaderModelValue = computed(() => {
-  return tempAttachments.value.length > 0
+const uploaderModelValue = computed(() =>
+  tempAttachments.value.length > 0
     ? tempAttachments.value.join(",")
-    : undefined;
-});
-
-// دالة للتعامل مع التحديثات القادمة من الـ Uploader
+    : undefined,
+);
 const handleUploaderUpdate = (val: string) => {
   if (!val) {
     tempAttachments.value = [];
@@ -571,15 +562,11 @@ const handleUploaderUpdate = (val: string) => {
   }
 };
 
-// دالة لتحديث جنسية الموظف عند الاختيار
 const onEmployeeChange = () => {
   const emp = employeesStore.employees.find((e) => e.id === form.employeeId);
   if (emp) {
     selectedEmployeeNationality.value = emp.nationalityType;
-    // إذا لم يكن غير سعودي، نصفر الجنسية في العقد
-    if (emp.nationalityType !== "non_saudi") {
-      form.nationality = "";
-    }
+    if (emp.nationalityType !== "non_saudi") form.nationality = "";
   } else {
     selectedEmployeeNationality.value = "";
     form.nationality = "";
@@ -598,11 +585,8 @@ const handleSubmit = async () => {
   submitting.value = true;
   try {
     form.attachmentPaths = tempAttachments.value;
-
-    // تنظيف البيانات قبل الإرسال
     const payload = { ...form };
     if (payload.nationality === "") delete payload.nationality;
-
     await store.create(payload);
     toast.success("تم إضافة العقد بنجاح");
     showModal.value = false;
@@ -617,7 +601,6 @@ const confirmDelete = (contract: Contract) => {
   deleteTarget.value = contract;
   showConfirm.value = true;
 };
-
 const doDelete = async () => {
   if (!deleteTarget.value) return;
   deleting.value = true;
@@ -632,39 +615,55 @@ const doDelete = async () => {
   }
 };
 
-// ── Attachments Logic ──────────────────────────────────────────────────────
 const openAttachmentsViewer = (contract: Contract) => {
   if (contract.attachmentPaths) {
     currentContractAttachments.value = contract.attachmentPaths;
     showAttachmentsModal.value = true;
   }
 };
-
-const isImage = (url: string) => {
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-};
-
-const getFileName = (url: string) => {
-  return url.split("/").pop() || "ملف";
-};
-
-// ── Helpers ────────────────────────────────────────────────────────────────
+const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+const getFileName = (url: string) => url.split("/").pop() || "ملف";
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("ar-SA");
 };
 
-const truncateText = (text: string, limit: number) => {
-  if (text.length <= limit) return text;
-  return text.substring(0, limit) + "...";
+// ✅ منطق التصدير
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportData(type);
+    toast.success(`تم تصدير تقرير العقود بصيغة ${type.toUpperCase()} بنجاح`);
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
+  } finally {
+    exporting.value = null;
+  }
 };
 
-// ─── Init ───────────────────────────────────────────────────────────────────
-onMounted(() => {
-  store.fetchAll();
-  if (employeesStore.employees.length === 0) {
-    employeesStore.fetchAll();
+const toggleExportMenu = (id: string) => {
+  activeExportMenu.value = activeExportMenu.value === id ? null : id;
+};
+
+const downloadContract = async (id: string, type: "excel" | "pdf") => {
+  try {
+    await store.exportSingle(id, type);
+    toast.success(`تم تصدير ملف العقد بصيغة ${type.toUpperCase()} بنجاح`);
+    activeExportMenu.value = null;
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
   }
+};
+
+// إغلاق القوائم عند النقر خارجها
+onMounted(() => {
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement).closest(".export-dropdown"))
+      activeExportMenu.value = null;
+  });
+
+  store.fetchAll();
+  if (employeesStore.employees.length === 0) employeesStore.fetchAll();
 });
 </script>
 
@@ -672,134 +671,162 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-.empty-card {
-  .empty-state {
-    padding: $space-10 $space-4;
-  }
-
+.page-header__actions {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.empty-card .empty-state {
+  padding: $space-10 $space-4;
   .empty-icon {
     color: $stb-text-muted;
     opacity: 0.4;
     margin-bottom: $space-3;
   }
 }
-
 .table-card {
   padding: 0;
   overflow: hidden;
 }
-
 .table-responsive {
   overflow-x: auto;
   @include scrollbar;
 }
-
 .employee-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-
 .employee-name {
   font-weight: 600;
   color: $stb-text-primary;
   font-size: $font-size-sm;
 }
-
 .employee-job {
   font-size: $font-size-xs;
   color: $stb-text-muted;
 }
-
-.notes-text {
-  font-size: $font-size-xs;
-  color: $stb-text-secondary;
-}
-
 .modal-lg {
   max-width: 700px;
 }
-
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: $space-4;
 }
-
 .full-width {
   grid-column: span 2;
-
   @include respond-to("md") {
     grid-column: span 1;
   }
 }
-
 .textarea-resize {
   resize: vertical;
   min-height: 80px;
 }
-
 .mt-4 {
   margin-top: $space-4 !important;
 }
-
 .modal-icon {
   color: $stb-accent;
   margin-left: $space-2;
 }
 
-/* --- Attachments Styles --- */
+// ✅ تنسيق خلية الإجراءات والقائمة المنسدلة
+.actions-cell {
+  display: flex;
+  gap: $space-1;
+  align-items: center;
+  justify-content: flex-end;
+}
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.export-btn {
+  color: $stb-accent;
+  &:hover {
+    background: rgba($stb-accent, 0.1);
+    color: $stb-accent;
+  }
+}
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: $space-2;
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  z-index: 10;
+  min-width: 140px;
+  overflow: hidden;
+  button {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    width: 100%;
+    padding: $space-2 $space-3;
+    border: none;
+    background: transparent;
+    color: $stb-text-primary;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    transition: all $transition-fast;
+    &:hover {
+      background: rgba($stb-accent, 0.08);
+      color: $stb-accent;
+    }
+    svg {
+      color: $stb-text-muted;
+    }
+  }
+}
+
 .attachments-cell {
   display: flex;
   justify-content: center;
 }
-
 .attachments-btn {
   gap: 6px;
   font-weight: 500;
-
   &:hover {
     background-color: rgba($stb-primary, 0.1);
     color: $stb-primary;
   }
 }
-
 .attachments-modal {
   max-width: 800px;
 }
-
 .attachments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: $space-4;
   padding: $space-4;
 }
-
 .attachment-item {
   border: 1px solid $stb-border;
   border-radius: $radius-md;
   overflow: hidden;
   transition: transform 0.2s;
   background: $stb-surface;
-
   &:hover {
     transform: translateY(-2px);
     box-shadow: $shadow-md;
     border-color: $stb-border-light;
   }
 }
-
 .img-preview {
   position: relative;
   height: 150px;
   background: #f8f9fa;
-
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
   .overlay-actions {
     position: absolute;
     bottom: 0;
@@ -811,7 +838,6 @@ onMounted(() => {
     justify-content: space-around;
     opacity: 0;
     transition: opacity 0.2s;
-
     a {
       color: white !important;
       &:hover {
@@ -819,12 +845,10 @@ onMounted(() => {
       }
     }
   }
-
   &:hover .overlay-actions {
     opacity: 1;
   }
 }
-
 .file-preview {
   height: 150px;
   display: flex;
@@ -834,11 +858,9 @@ onMounted(() => {
   gap: $space-2;
   padding: $space-3;
   background: $stb-surface-2;
-
   .file-icon {
     color: $stb-text-muted;
   }
-
   .file-name {
     font-size: $font-size-xs;
     text-align: center;
@@ -846,7 +868,6 @@ onMounted(() => {
     color: $stb-text-secondary;
     padding: 0 $space-2;
   }
-
   .file-actions {
     margin-top: auto;
   }

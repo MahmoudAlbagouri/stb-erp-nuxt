@@ -10,11 +10,9 @@ import type {
 
 export const useContractsStore = defineStore("contracts", () => {
   const api = useApi();
-
   const contracts = ref<Contract[]>([]);
   const loading = ref(false);
 
-  // جلب جميع العقود
   const fetchAll = async () => {
     loading.value = true;
     try {
@@ -27,29 +25,81 @@ export const useContractsStore = defineStore("contracts", () => {
     }
   };
 
-  // إنشاء عقد جديد
   const create = async (
     payload: CreateContractPayload & { attachmentPaths?: string[] },
   ) => {
     const res = await api.post<Contract>("/contracts", payload);
-    await fetchAll(); // تحديث القائمة
+    await fetchAll();
     return res.data;
   };
 
-  // تحديث عقد
   const update = async (id: string, payload: UpdateContractPayload) => {
     const res = await api.patch<Contract>(`/contracts/${id}`, payload);
     await fetchAll();
     return res.data;
   };
 
-  // حذف عقد
   const remove = async (id: string) => {
     await api.del(`/contracts/${id}`);
     contracts.value = contracts.value.filter((c) => c.id !== id);
   };
 
-  // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)
+  // ✅ دالة التصدير الجماعي
+  const exportData = async (type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(
+        `/contracts/export/${type}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `contracts_report_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Export Error:", e);
+      throw e;
+    }
+  };
+
+  // ✅ دالة التصدير الفردي
+  const exportSingle = async (id: string, type: "excel" | "pdf") => {
+    try {
+      const blob = await api.get<Blob>(
+        `/contracts/${id}/export/${type}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `contract_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Single Export Error:", e);
+      throw e;
+    }
+  };
+
   const reset = () => {
     contracts.value = [];
     loading.value = false;
@@ -62,6 +112,8 @@ export const useContractsStore = defineStore("contracts", () => {
     create,
     update,
     remove,
-    reset, // ✅ تم التصدير
+    exportData,
+    exportSingle,
+    reset,
   };
 });

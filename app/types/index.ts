@@ -68,11 +68,113 @@ export interface Education {
   id?: string; // معرف المؤهل (للتحديث والحذف)
   degree: string; // درجة الشهادة
   certificateNumber?: string; // رقم الشهادة
+  issuingAuthority?: string; // ✅ جهة الإصدار / المصدر (جديد)
   expiryDate?: string | null; // تاريخ الانتهاء
   attachmentPath?: string; // مسار المرفق
 }
 
-// ✅ تحديث واجهة Employee لتشمل الجنسية والمؤهلات
+// ✅ تعريفات الجداول المرتبطة بالموظف (لإصلاح خطأ TypeScript)
+export interface Advance {
+  id: string;
+  amount: number;
+  reason?: string | null;
+  status: "pending" | "approved" | "rejected" | "paid";
+  repaymentDate: string;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface Loan {
+  id: string;
+  totalAmount: number;
+  installmentsCount: number;
+  monthlyInstallment: number;
+  startDate: string;
+  reason?: string | null;
+  status: "pending" | "approved" | "rejected" | "completed";
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface Bonus {
+  id: string;
+  amount: number;
+  payoutDate: string;
+  notes?: string | null;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface Deduction {
+  id: string;
+  name: string;
+  totalAmount: number;
+  monthlyAmount: number;
+  paidInstallments: number;
+  installmentsCount: number;
+  startDate: string;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  type: "annual" | "unpaid" | "other";
+  startDate: string;
+  endDate: string;
+  status: "pending" | "approved" | "rejected";
+  reason?: string | null;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface Settlement {
+  id: string;
+  unusedLeaveDays: number;
+  totalAmount: number;
+  settlementDate: string;
+  notes?: string | null;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface EndOfService {
+  id: string;
+  eosAmount: number;
+  terminationDate: string;
+  reason: string;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface ResignationRequest {
+  id: string;
+  requestDate: string;
+  lastWorkingDay: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface Salary {
+  id: string;
+  basicSalary: number;
+  housingAllowance: number;
+  transportAllowance: number;
+  otherAllowances: number;
+  totalSalary: number;
+  createdAt: string;
+  employeeId: string;
+}
+
+export interface Shift {
+  id: string;
+  alias?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+// ✅ تحديث واجهة Employee لتشمل الجنسية والمؤهلات وجميع العلاقات
 export interface Employee {
   id: string;
   fullName: string;
@@ -85,21 +187,32 @@ export interface Employee {
   nationalId?: string | null;
   nationalIdCardPath?: string | null;
   phone: string | null;
-  jobTitle: string | null;
-  department: string | null;
+  jobTitle?: string | null;
+  department?: string | null;
 
   status: "active" | "inactive" | "terminated";
   tenantId: string;
   shiftId?: string | null;
   createdAt: string;
   updatedAt: string;
-  deletedAt: string | null;
+  deletedAt?: string | null;
 
+  // العلاقات الأساسية
   user?: User | null;
-  contract?: any;
-
-  // ✅ إضافة مصفوفة المؤهلات
+  contract?: any; // يمكن استبداله بواجهة Contract لاحقاً
   educations?: Education[];
+  shift?: Shift | null;
+
+  // ✅ العلاقات الجديدة التي تسبب الخطأ
+  advances?: Advance[];
+  loans?: Loan[];
+  bonuses?: Bonus[];
+  deductions?: Deduction[];
+  leaveRequests?: LeaveRequest[];
+  settlements?: Settlement[];
+  endOfServices?: EndOfService[];
+  resignationRequests?: ResignationRequest[];
+  salaries?: Salary[];
 }
 
 // --- Auth ---
@@ -198,29 +311,15 @@ export interface UpdateEmployeePayload {
   educations?: Education[];
 }
 
-// --- Leaves ---
-export interface LeaveRequest {
-  id: string;
-  employeeId: string;
-  startDate: string;
-  endDate: string;
-  type?: "annual" | "unpaid" | "other";
-  status: "pending" | "approved" | "rejected";
-  reason: string;
-  tenantId: string;
-  createdAt: string;
-  employee?: Employee;
-}
-
-// ✅ تحديث LeaveBalance ليشمل الحقول الجديدة (المرتحل وتاريخ البدء)
+// --- Leaves (Legacy Interfaces kept for compatibility if needed) ---
 export interface LeaveBalance {
   id: string;
   employeeId: string;
   year: number;
   totalAllowance: number;
   consumedDays: number;
-  carriedOverDays?: number; // رصيد مرحل من سنوات سابقة
-  accrualStartDate?: string; // تاريخ بدء دورة الاستحقاق الحالية
+  carriedOverDays?: number;
+  accrualStartDate?: string;
   tenantId: string;
 }
 
@@ -239,8 +338,6 @@ export interface SetBalancePayload {
 
 // --- Contracts ---
 export type ContractType = "دائم" | "جزئي" | "مرن" | "عن بعد" | "أخرى";
-
-// ✅ تعريف أنواع التذكرة وفترة التجربة للـ Frontend
 export type TicketType = "بدون" | "ذهاب فقط" | "ذهاب وعودة";
 export type ProbationPeriod = "بدون" | "3 شهور" | "6 شهور";
 
@@ -251,12 +348,9 @@ export interface Contract {
   startDate: string;
   endDate?: string | null;
   annualLeaveDays: number;
-
-  // ✅ الحقول الجديدة
   contractDurationYears?: number | null;
   ticketType?: TicketType | null;
   probationPeriod?: ProbationPeriod | null;
-
   notes?: string | null;
   attachmentPaths?: string[] | null;
   tenantId: string;
@@ -271,12 +365,9 @@ export interface CreateContractPayload {
   startDate: string;
   endDate?: string;
   annualLeaveDays: number;
-
-  // ✅ الحقول الجديدة
   contractDurationYears?: number;
   ticketType?: TicketType;
   probationPeriod?: ProbationPeriod;
-
   notes?: string;
   attachmentPaths?: string[];
 }
@@ -286,53 +377,18 @@ export interface UpdateContractPayload {
   startDate?: string;
   endDate?: string;
   annualLeaveDays?: number;
-
-  // ✅ الحقول الجديدة
   contractDurationYears?: number;
   ticketType?: TicketType;
   probationPeriod?: ProbationPeriod;
-
   notes?: string;
   attachmentPaths?: string[];
 }
 
-// --- Advances ---
-export type AdvanceStatus = "pending" | "approved" | "rejected" | "paid";
-
-export interface Advance {
-  id: string;
-  amount: number;
-  numberOfInstallments?: number;
-  repaymentDate?: string;
-  reason?: string | null;
-  status: AdvanceStatus;
-  employeeId: string;
-  tenantId: string;
-  createdAt: string;
-  employee?: Employee;
-}
-
+// --- Advances & Loans Payloads ---
 export interface CreateAdvancePayload {
   amount: number;
   repaymentDate: string;
   reason?: string;
-}
-
-// --- Loans ---
-export type LoanStatus = "pending" | "approved" | "rejected" | "completed";
-
-export interface Loan {
-  id: string;
-  totalAmount: number;
-  installmentsCount: number;
-  monthlyInstallment: number;
-  startDate?: string;
-  reason?: string | null;
-  status: LoanStatus;
-  employeeId: string;
-  tenantId: string;
-  createdAt: string;
-  employee?: Employee;
 }
 
 export interface CreateLoanPayload {
@@ -342,21 +398,7 @@ export interface CreateLoanPayload {
   reason?: string;
 }
 
-// --- Salaries ---
-export interface Salary {
-  id: string;
-  employeeId: string;
-  basicSalary: number;
-  housingAllowance: number;
-  transportAllowance: number;
-  otherAllowances: number;
-  totalSalary: number;
-  tenantId: string;
-  createdAt: string;
-  updatedAt: string;
-  employee?: Employee;
-}
-
+// --- Salaries Payloads ---
 export interface CreateSalaryPayload {
   employeeId: string;
   basicSalary: number;
@@ -456,34 +498,15 @@ export interface SettlementPreview {
   employeeId: string;
   year: number;
   serviceDays: number;
-  availableDays: number; // الرصيد المتاح الفعلي للحساب
+  availableDays: number;
   dailyRate: number;
-  totalAmountIfFull: number; // المبلغ لو كانت تسوية كاملة
+  totalAmountIfFull: number;
 }
 
 export interface ConfirmSettlementPayload {
   employeeId: string;
   settlementDate: string;
-  settlementType: SettlementType; // تحديد نوع التسوية
-  daysToSettle?: number; // مطلوب فقط في حالة PARTIAL
+  settlementType: SettlementType;
+  daysToSettle?: number;
   notes?: string;
-}
-
-export interface Settlement {
-  id: string;
-  employeeId: string;
-  employee?: {
-    id: string;
-    fullName: string;
-    employeeCode: string;
-    jobTitle?: string;
-    department?: string;
-  };
-  unusedLeaveDays: number;
-  dailyRate: number;
-  totalAmount: number;
-  settlementDate: string;
-  notes?: string;
-  tenantId: string;
-  createdAt: string;
 }

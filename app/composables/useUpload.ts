@@ -89,6 +89,8 @@ export const useUpload = (options: UploadOptions) => {
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
+  // ── Validation ──────────────────────────────────────────────────────────────
+
   const validateFiles = (files: File[]): string | null => {
     const opts = mergedOptions.value;
 
@@ -102,14 +104,26 @@ export const useUpload = (options: UploadOptions) => {
 
     for (const file of files) {
       if (opts.accept && opts.accept.length > 0) {
-        const isAllowed = opts.accept.some((mime) => {
-          if (mime.endsWith("/*")) {
-            return file.type.startsWith(mime.replace("/*", "/"));
+        // ✅ التحقق المرن: يقبل MIME types أو الامتدادات (.pdf, .docx)
+        const isAllowed = opts.accept.some((pattern) => {
+          // 1. إذا كان النمط ينتهي بـ /* (مثل image/*)
+          if (pattern.endsWith("/*")) {
+            return file.type.startsWith(pattern.replace("/*", "/"));
           }
-          return file.type === mime;
+
+          // 2. إذا كان النمط يبدأ بنقطة (امتداد ملف مثل .pdf)
+          if (pattern.startsWith(".")) {
+            const ext = pattern.toLowerCase();
+            const fileName = file.name.toLowerCase();
+            return fileName.endsWith(ext);
+          }
+
+          // 3. المطابقة الكاملة لـ MIME type
+          return file.type === pattern;
         });
+
         if (!isAllowed) {
-          return `نوع الملف "${file.name}" غير مدعوم`;
+          return `نوع الملف "${file.name}" غير مدعوم. الصيغ المسموحة: ${opts.accept.join(", ")}`;
         }
       }
 

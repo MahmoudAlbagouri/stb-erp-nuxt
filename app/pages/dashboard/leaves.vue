@@ -1,3 +1,4 @@
+<!-- pages/leaves/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -6,38 +7,47 @@
         <h1>طلبات الإجازات</h1>
         <p>تقديم ومتابعة طلبات الإجازات الخاصة بي</p>
       </div>
-      <button class="btn btn--primary" @click="openCreateModal">
-        <Plus :size="18" />
-        <span>طلب إجازة جديد</span>
-      </button>
+      <div class="page-header__actions">
+        <button
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <FileSpreadsheet v-else :size="18" /><span>Excel</span>
+        </button>
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <FileText v-else :size="18" /><span>PDF</span>
+        </button>
+        <button class="btn btn--primary" @click="openCreateModal">
+          <Plus :size="18" /><span>طلب إجازة جديد</span>
+        </button>
+      </div>
     </div>
 
     <!-- ══ Stats Cards ═════════════════════════════════════════════════════ -->
     <div class="grid-3 stats-row">
       <div class="stat-card stat-pending">
-        <div class="stat-card__icon">
-          <Hourglass :size="24" />
-        </div>
+        <div class="stat-card__icon"><Hourglass :size="24" /></div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ pendingCount }}</div>
           <div class="stat-card__label">طلباتي المعلقة</div>
         </div>
       </div>
-
       <div class="stat-card stat-approved">
-        <div class="stat-card__icon">
-          <CheckCircle2 :size="24" />
-        </div>
+        <div class="stat-card__icon"><CheckCircle2 :size="24" /></div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ approvedCount }}</div>
           <div class="stat-card__label">تمت الموافقة</div>
         </div>
       </div>
-
       <div class="stat-card stat-rejected">
-        <div class="stat-card__icon">
-          <XCircle :size="24" />
-        </div>
+        <div class="stat-card__icon"><XCircle :size="24" /></div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ rejectedCount }}</div>
           <div class="stat-card__label">مرفوضة</div>
@@ -50,20 +60,19 @@
       <div class="spinner spinner--lg" />
     </div>
 
-    <!-- ══ Empty State ══════════════════════════════════════════════════════ -->
+    <!--  Empty State ══════════════════════════════════════════════════════ -->
     <div v-else-if="!store.requests.length" class="card empty-card">
       <div class="empty-state">
         <CalendarDays :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات إجازات</div>
         <div class="empty-state__text">ابدأ بتقديم طلب إجازة جديد</div>
         <button class="btn btn--primary mt-4" @click="openCreateModal">
-          <Plus :size="16" />
-          طلب إجازة
+          <Plus :size="16" /> طلب إجازة
         </button>
       </div>
     </div>
 
-    <!-- ══ Requests Table ═══════════════════════════════════════════════════ -->
+    <!-- ═ Requests Table ═══════════════════════════════════════════════════ -->
     <div v-else class="card table-card">
       <div class="table-responsive">
         <table class="data-table">
@@ -82,41 +91,63 @@
           </thead>
           <tbody>
             <tr v-for="req in store.requests" :key="req.id">
-              <td class="font-medium">
-                {{ getEmployeeName(req) }}
-              </td>
-
+              <td class="font-medium">{{ getEmployeeName(req) }}</td>
               <td>{{ formatDate(req.startDate) }}</td>
               <td>{{ formatDate(req.endDate) }}</td>
               <td>{{ calculateDays(req.startDate, req.endDate) }} يوم</td>
               <td>
-                <span class="badge badge--neutral">
-                  {{ getTypeLabel(req.type) }}
-                </span>
+                <span class="badge badge--neutral">{{
+                  getTypeLabel(req.type)
+                }}</span>
               </td>
               <td>{{ req.reason || "-" }}</td>
               <td>
-                <span :class="`badge badge--${req.status}`">
-                  {{ getStatusLabel(req.status) }}
-                </span>
+                <span :class="`badge badge--${req.status}`">{{
+                  getStatusLabel(req.status)
+                }}</span>
               </td>
               <td>{{ formatDate(req.createdAt) }}</td>
               <td>
-                <div class="actions-cell" v-if="req.status === 'pending'">
-                  <button
-                    class="btn btn--success btn--sm"
-                    @click="triggerApprove(req)"
-                    title="موافقة"
-                  >
-                    <Check :size="14" />
-                  </button>
-                  <button
-                    class="btn btn--danger btn--sm"
-                    @click="triggerReject(req)"
-                    title="رفض"
-                  >
-                    <X :size="14" />
-                  </button>
+                <div class="actions-cell">
+                  <!-- ✅ قائمة التصدير المنسدلة -->
+                  <div class="export-dropdown">
+                    <button
+                      class="btn btn--ghost btn--sm export-btn"
+                      @click="toggleExportMenu(req.id)"
+                    >
+                      <Download :size="14" />
+                    </button>
+                    <Transition name="fade">
+                      <div
+                        v-if="activeExportMenu === req.id"
+                        class="dropdown-menu"
+                      >
+                        <button @click="downloadLeave(req.id, 'pdf')">
+                          <FileText :size="14" /> ملف PDF
+                        </button>
+                        <button @click="downloadLeave(req.id, 'excel')">
+                          <FileSpreadsheet :size="14" /> ملف Excel
+                        </button>
+                      </div>
+                    </Transition>
+                  </div>
+
+                  <div v-if="req.status === 'pending'" class="approval-actions">
+                    <button
+                      class="btn btn--success btn--sm"
+                      @click="triggerApprove(req)"
+                      title="موافقة"
+                    >
+                      <Check :size="14" />
+                    </button>
+                    <button
+                      class="btn btn--danger btn--sm"
+                      @click="triggerReject(req)"
+                      title="رفض"
+                    >
+                      <X :size="14" />
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -125,7 +156,7 @@
       </div>
     </div>
 
-    <!-- ══ Create Leave Modal ═══════════════════════════════════════════════ -->
+    <!-- ═ Create Leave Modal ═══════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -136,8 +167,7 @@
           <div class="modal modal-md">
             <div class="modal__header">
               <h3>
-                <CalendarPlus :size="20" class="modal-icon" />
-                طلب إجازة جديد
+                <CalendarPlus :size="20" class="modal-icon" /> طلب إجازة جديد
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -147,12 +177,11 @@
                 <X :size="20" />
               </button>
             </div>
-
             <form @submit.prevent="handleCreateLeave" class="modal-form">
               <div class="grid-2">
                 <div class="form-group">
-                  <label>تاريخ البداية *</label>
-                  <input
+                  <label>تاريخ البداية *</label
+                  ><input
                     v-model="createForm.startDate"
                     type="date"
                     class="form-input"
@@ -160,18 +189,17 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>تاريخ النهاية *</label>
-                  <input
+                  <label>تاريخ النهاية *</label
+                  ><input
                     v-model="createForm.endDate"
                     type="date"
                     class="form-input"
                     required
                   />
                 </div>
-
                 <div class="form-group full-width">
-                  <label>نوع الإجازة *</label>
-                  <select
+                  <label>نوع الإجازة *</label
+                  ><select
                     v-model="createForm.type"
                     class="form-select"
                     required
@@ -185,10 +213,9 @@
                     </option>
                   </select>
                 </div>
-
                 <div class="form-group full-width">
-                  <label>سبب الإجازة</label>
-                  <textarea
+                  <label>سبب الإجازة</label
+                  ><textarea
                     v-model="createForm.reason"
                     class="form-input textarea-resize"
                     rows="3"
@@ -196,7 +223,6 @@
                   ></textarea>
                 </div>
               </div>
-
               <div class="modal__footer">
                 <button
                   type="button"
@@ -210,8 +236,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" />
-                  <span v-else>إرسال الطلب</span>
+                  <span v-if="submitting" class="spinner spinner--sm" /><span
+                    v-else
+                    >إرسال الطلب</span
+                  >
                 </button>
               </div>
             </form>
@@ -220,7 +248,6 @@
       </Transition>
     </Teleport>
 
-    <!-- ✅ Confirm Dialog for Approve -->
     <ConfirmDialog
       v-model="showApproveConfirm"
       title="تأكيد الموافقة"
@@ -229,8 +256,6 @@
       :loading="actionLoading"
       @confirm="executeApprove"
     />
-
-    <!-- ✅ Confirm Dialog for Reject -->
     <ConfirmDialog
       v-model="showRejectConfirm"
       title="تأكيد الرفض"
@@ -248,7 +273,6 @@ import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "../../composables/useToast";
 import type { CreateLeavePayload, LeaveRequest } from "@/types";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
-
 import {
   Plus,
   Hourglass,
@@ -258,6 +282,9 @@ import {
   Check,
   X,
   CalendarPlus,
+  FileSpreadsheet,
+  FileText,
+  Download,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -267,11 +294,14 @@ const toast = useToast();
 
 const showCreateModal = ref(false);
 const submitting = ref(false);
-
 const showApproveConfirm = ref(false);
 const showRejectConfirm = ref(false);
 const actionLoading = ref(false);
 const currentActionTarget = ref<LeaveRequest | null>(null);
+
+// ✅ حالة التصدير
+const exporting = ref<"excel" | "pdf" | null>(null);
+const activeExportMenu = ref<string | null>(null);
 
 const leaveTypeOptions: { value: CreateLeavePayload["type"]; label: string }[] =
   [
@@ -297,44 +327,23 @@ const rejectedCount = computed(
   () => store.requests.filter((r) => r.status === "rejected").length,
 );
 
-const getEmployeeName = (req: any) => {
-  if (req.employee) {
-    return req.employee.fullName || req.employee.name || "غير محدد";
-  }
-  if (req.employeeName) return req.employeeName;
-  return "-";
-};
-
-const getStatusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    pending: "قيد الانتظار",
-    approved: "موافق عليه",
-    rejected: "مرفوض",
-  };
-  return map[status] || status;
-};
-
-const getTypeLabel = (type?: string) => {
-  const map: Record<string, string> = {
-    annual: "سنوية",
-    unpaid: "بدون راتب",
-    other: "أخرى",
-  };
-  return type ? map[type] || type : "-";
-};
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("ar-SA");
-};
-
-const calculateDays = (start: string, end: string) => {
-  if (!start || !end) return 0;
-  const diffTime = Math.abs(
-    new Date(end).getTime() - new Date(start).getTime(),
-  );
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-};
+const getEmployeeName = (req: any) =>
+  req.employee?.fullName || req.employeeName || "-";
+const getStatusLabel = (status: string) =>
+  ({ pending: "قيد الانتظار", approved: "موافق عليه", rejected: "مرفوض" })[
+    status
+  ] || status;
+const getTypeLabel = (type?: string) =>
+  ({ annual: "سنوية", unpaid: "بدون راتب", other: "أخرى" })[type || ""] || "-";
+const formatDate = (dateStr: string) =>
+  dateStr ? new Date(dateStr).toLocaleDateString("ar-SA") : "-";
+const calculateDays = (start: string, end: string) =>
+  start && end
+    ? Math.ceil(
+        Math.abs(new Date(end).getTime() - new Date(start).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ) + 1
+    : 0;
 
 const openCreateModal = () => {
   Object.assign(createForm, {
@@ -363,7 +372,6 @@ const triggerApprove = (req: LeaveRequest) => {
   currentActionTarget.value = req;
   showApproveConfirm.value = true;
 };
-
 const executeApprove = async () => {
   if (!currentActionTarget.value) return;
   actionLoading.value = true;
@@ -377,12 +385,10 @@ const executeApprove = async () => {
     actionLoading.value = false;
   }
 };
-
 const triggerReject = (req: LeaveRequest) => {
   currentActionTarget.value = req;
   showRejectConfirm.value = true;
 };
-
 const executeReject = async () => {
   if (!currentActionTarget.value) return;
   actionLoading.value = true;
@@ -397,7 +403,36 @@ const executeReject = async () => {
   }
 };
 
+// ✅ منطق التصدير
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportData(type);
+    toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
+  } catch (e: any) {
+    toast.error(e.message);
+  } finally {
+    exporting.value = null;
+  }
+};
+const toggleExportMenu = (id: string) => {
+  activeExportMenu.value = activeExportMenu.value === id ? null : id;
+};
+const downloadLeave = async (id: string, type: "excel" | "pdf") => {
+  try {
+    await store.exportSingle(id, type);
+    toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
+    activeExportMenu.value = null;
+  } catch (e: any) {
+    toast.error(e.message);
+  }
+};
+
 onMounted(() => {
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement).closest(".export-dropdown"))
+      activeExportMenu.value = null;
+  });
   store.fetchAll();
 });
 </script>
@@ -405,7 +440,12 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
-
+.page-header__actions {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+  align-items: center;
+}
 .stats-row {
   margin-bottom: $space-6;
 }
@@ -442,6 +482,57 @@ onMounted(() => {
 .actions-cell {
   @include flex(row, center, flex-start, $space-2);
 }
+.approval-actions {
+  display: flex;
+  gap: $space-1;
+}
+
+// ✅ تنسيق قائمة التصدير
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.export-btn {
+  color: $stb-accent;
+  &:hover {
+    background: rgba($stb-accent, 0.1);
+    color: $stb-accent;
+  }
+}
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: $space-2;
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  z-index: 10;
+  min-width: 140px;
+  overflow: hidden;
+  button {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    width: 100%;
+    padding: $space-2 $space-3;
+    border: none;
+    background: transparent;
+    color: $stb-text-primary;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    transition: all $transition-fast;
+    &:hover {
+      background: rgba($stb-accent, 0.08);
+      color: $stb-accent;
+    }
+    svg {
+      color: $stb-text-muted;
+    }
+  }
+}
+
 .modal-md {
   max-width: 560px;
 }
