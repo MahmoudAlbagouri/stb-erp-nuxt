@@ -5,9 +5,9 @@
         <h1>الصلاحيات</h1>
         <p>إدارة صلاحيات النظام والأدوار المخصصة</p>
       </div>
-      <button class="btn btn--primary" @click="openCreate">
+      <!-- <button class="btn btn--primary" @click="openCreate">
         <span>+</span> إضافة صلاحية مخصصة
-      </button>
+      </button> -->
     </div>
 
     <!-- Search + filter -->
@@ -41,15 +41,15 @@
         <thead>
           <tr>
             <th>الوصف (عربي)</th>
-            <th>المعرف التقني</th>
+            <!-- <th>المعرف التقني</th>
             <th>النطاق</th>
-            <th>الإجراءات</th>
+            <th>الإجراءات</th> -->
           </tr>
         </thead>
         <tbody>
           <tr v-for="perm in filtered" :key="perm.id">
             <td class="font-medium">{{ perm.displayNameAr }}</td>
-            <td>
+            <!-- <td>
               <code class="perm-code">{{ perm.name }}</code>
             </td>
             <td>
@@ -59,9 +59,7 @@
             </td>
             <td>
               <div style="display: flex; gap: 0.5rem; align-items: center">
-                <!-- ✅ الحماية تعتمد على tenantId وليس scope فقط -->
-                <!-- الصلاحيات التي ليس لها tenantId (null) تعتبر أساسية ومحمية -->
-                <template v-if="perm.tenantId">
+              <template v-if="perm.tenantId">
                   <button
                     class="btn btn--ghost btn--sm"
                     @click="openEdit(perm)"
@@ -76,12 +74,11 @@
                   </button>
                 </template>
 
-                <!-- رسالة للصلاحيات المحمية (سواء system أو tenant بدون id) -->
                 <span v-else class="text-xs text-muted locked-badge">
                   🔒 محمي (أساسي)
                 </span>
               </div>
-            </td>
+            </td> -->
           </tr>
         </tbody>
       </table>

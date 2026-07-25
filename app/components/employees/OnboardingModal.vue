@@ -631,14 +631,16 @@
                     }}</span>
                   </div>
 
+                  <!-- ✅ تغيير المدة إلى شهور -->
                   <div class="form-group">
-                    <label class="form-label">مدة العقد (بالسنوات)</label>
+                    <label class="form-label">مدة العقد (بالشهور)</label>
                     <input
-                      v-model.number="form.contract.contractDurationYears"
+                      v-model.number="form.contract.contractDurationMonths"
                       type="number"
                       min="1"
                       class="form-input"
-                      placeholder="مثال: 2"
+                      placeholder="مثال: 12"
+                      @input="calculateContractDates"
                     />
                   </div>
 
@@ -649,6 +651,7 @@
                       type="date"
                       class="form-input"
                       :class="{ 'form-input--error': errors.startDate }"
+                      @input="calculateContractDates"
                     />
                     <span v-if="errors.startDate" class="form-error">{{
                       errors.startDate
@@ -659,13 +662,18 @@
                     <label class="form-label"
                       >تاريخ نهاية العقد
                       <span class="label-optional"
-                        >(للعقود المؤقتة)</span
+                        >(محسوب تلقائياً)</span
                       ></label
                     >
                     <input
                       v-model="form.contract.endDate"
                       type="date"
                       class="form-input"
+                      readonly
+                      style="
+                        background-color: var(--stb-surface-2);
+                        cursor: not-allowed;
+                      "
                     />
                   </div>
 
@@ -762,11 +770,28 @@
                     <select
                       v-model="form.contract.probationPeriod"
                       class="form-select"
+                      @change="calculateContractDates"
                     >
                       <option value="بدون">بدون</option>
                       <option value="3 شهور">3 شهور</option>
                       <option value="6 شهور">6 شهور</option>
                     </select>
+                  </div>
+
+                  <!-- ✅ عرض تاريخ نهاية فترة التجربة المحسوب -->
+                  <div class="form-group" v-if="calculatedProbationEndDate">
+                    <label class="form-label">تاريخ نهاية فترة التجربة</label>
+                    <input
+                      :value="calculatedProbationEndDate"
+                      type="text"
+                      class="form-input"
+                      readonly
+                      style="
+                        background-color: var(--stb-surface-2);
+                        cursor: not-allowed;
+                        color: var(--stb-accent);
+                      "
+                    />
                   </div>
 
                   <div class="form-group form-group--full">
@@ -1047,8 +1072,8 @@
                     <div class="review-row">
                       <span>المدة</span>
                       <strong>{{
-                        form.contract.contractDurationYears
-                          ? form.contract.contractDurationYears + " سنوات"
+                        form.contract.contractDurationMonths
+                          ? form.contract.contractDurationMonths + " شهر"
                           : "غير محدد"
                       }}</strong>
                     </div>
@@ -1074,6 +1099,10 @@
                       <strong>{{
                         form.contract.probationPeriod || "بدون"
                       }}</strong>
+                    </div>
+                    <div v-if="calculatedProbationEndDate" class="review-row">
+                      <span>نهاية التجربة</span>
+                      <strong>{{ calculatedProbationEndDate }}</strong>
                     </div>
                   </div>
                   <div v-else class="review-skip">
@@ -1305,7 +1334,8 @@ const form = reactive({
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
     annualLeaveDays: 30,
-    contractDurationYears: 1,
+    // ✅ تغيير من سنوات إلى شهور
+    contractDurationMonths: 12,
     ticketType: "بدون" as string,
     probationPeriod: "بدون" as string,
     medicalInsurance: "بدون" as string, // ✅ القيمة الافتراضية
@@ -1390,6 +1420,25 @@ const filteredPermissions = computed(() => {
   );
 });
 
+// ✅ حساب تاريخ نهاية فترة التجربة للعرض فقط
+const calculatedProbationEndDate = computed(() => {
+  if (!form.contract.startDate || form.contract.probationPeriod === "بدون")
+    return "";
+
+  const start = new Date(form.contract.startDate);
+  let months = 0;
+
+  if (form.contract.probationPeriod === "3 شهور") months = 3;
+  else if (form.contract.probationPeriod === "6 شهور") months = 6;
+
+  if (months === 0) return "";
+
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + months);
+
+  return end.toISOString().split("T")[0];
+});
+
 // ── Watchers ──────────────────────────────────────────────────────────────────
 watch(
   () => props.modelValue,
@@ -1397,6 +1446,7 @@ watch(
     if (v) {
       rolesStore.fetchAll();
       permissionsStore.fetchAll();
+      calculateContractDates(); // حساب أولي عند الفتح
     }
   },
 );
@@ -1567,7 +1617,7 @@ const handleClose = () => {
         startDate: new Date().toISOString().split("T")[0],
         endDate: "",
         annualLeaveDays: 30,
-        contractDurationYears: 1,
+        contractDurationMonths: 12, // ✅ إعادة التعيين للشهور
         ticketType: "بدون",
         probationPeriod: "بدون",
         medicalInsurance: "بدون", // ✅ إعادة التعيين
@@ -1701,7 +1751,8 @@ const handleSubmit = async () => {
         startDate: form.contract.startDate,
         endDate: form.contract.endDate || undefined,
         annualLeaveDays: form.contract.annualLeaveDays,
-        contractDurationYears: form.contract.contractDurationYears,
+        // ✅ إرسال المدة بالشهور
+        contractDurationMonths: form.contract.contractDurationMonths,
         ticketType: form.contract.ticketType,
         probationPeriod: form.contract.probationPeriod,
 
@@ -1750,6 +1801,32 @@ const nationalityLabel = (type: string) => {
     outside_sponsorship: "📄 خارج الكفالة",
   };
   return map[type] ?? "—";
+};
+
+// ✅ دالة حساب تواريخ العقد والتجربة
+const calculateContractDates = () => {
+  if (!form.contract.startDate) return;
+
+  const startDate = new Date(form.contract.startDate);
+
+  // 1. حساب تاريخ نهاية العقد
+  if (
+    form.contract.contractDurationMonths &&
+    form.contract.contractDurationMonths > 0
+  ) {
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + form.contract.contractDurationMonths);
+    form.contract.endDate = endDate.toISOString().split("T")[0] || "";
+  } else {
+    // إذا لم تكن هناك مدة، نمسح التاريخ المحسوب إلا إذا كان مدخلاً يدوياً (لكن هنا الحقل readonly)
+    // يمكن تركه فارغاً أو الاحتفاظ بالقيمة السابقة إذا أردت
+    form.contract.endDate = "";
+  }
+
+  // 2. حساب تاريخ نهاية فترة التجربة (يتم عرضه في computed ولكن يمكن تحديثه هنا إذا لزم الأمر للـ Payload)
+  // بما أننا نستخدم computed للعرض، فلا حاجة لتحديث form هنا إلا إذا كنا سنرسله للباك اند مباشرة
+  // الباك اند سيقوم بالحساب أيضاً، لكن للتأكد من التزامن:
+  // (لا حاجة لكود إضافي هنا لأن الباك اند سيحسبه بناءً على probationPeriod و startDate)
 };
 </script>
 

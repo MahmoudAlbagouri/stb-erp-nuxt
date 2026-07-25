@@ -180,6 +180,8 @@
               emp.phone
             }}</span>
           </div>
+
+          <!-- ✅ قسم الشارات والأزرار (الهوية + المؤهلات) -->
           <div class="emp-card__badges" @click.stop>
             <span v-if="emp.user" class="mini-badge mini-badge--user"
               ><ShieldCheck :size="11" /> مستخدم</span
@@ -187,19 +189,36 @@
             <span v-if="emp.contract" class="mini-badge mini-badge--contract"
               ><FileText :size="11" /> عقد</span
             >
-            <span
-              v-if="emp.educations && emp.educations.length > 0"
-              class="mini-badge mini-badge--edu"
-              ><GraduationCap :size="11" /> مؤهل</span
-            >
+
+            <!-- زر الهوية -->
             <button
               v-if="emp.nationalIdCardPath"
               class="mini-badge mini-badge--doc view-id-btn"
-              @click="openIdViewer(emp)"
+              @click="openFileViewer(emp.nationalIdCardPath, 'الهوية الشخصية')"
               title="عرض الهوية"
             >
               <Eye :size="11" /> هوية
             </button>
+
+            <!-- ✅ أزرار المؤهلات (تظهر فقط إذا كان هناك مرفق) -->
+            <template v-if="emp.educations && emp.educations.length > 0">
+              <template v-for="(edu, idx) in emp.educations" :key="idx">
+                <button
+                  v-if="edu.attachmentPath"
+                  class="mini-badge mini-badge--edu view-edu-btn"
+                  @click="
+                    openFileViewer(
+                      edu.attachmentPath,
+                      `مؤهل: ${edu.degree || 'شهادة'}`,
+                    )
+                  "
+                  :title="edu.degree"
+                >
+                  <GraduationCap :size="11" />
+                  <span class="truncate-text">{{ edu.degree || "مؤهل" }}</span>
+                </button>
+              </template>
+            </template>
           </div>
         </div>
 
@@ -472,20 +491,35 @@
                             />
                           </div>
                           <div class="form-group form-group--full">
-                            <label class="form-label">مرفق الشهادة</label
-                            ><StbUploader
-                              :model-value="edu.attachmentPath"
-                              @update:model-value="
-                                (val) => (edu.attachmentPath = val || '')
-                              "
-                              endpoint="/media/upload/employee"
-                              field-name="files"
-                              accept=".pdf,.doc,.docx,image/*"
-                              :max-size="5 * 1024 * 1024"
-                              idle-title="ارفع صورة أو ملف PDF"
-                              hint="PDF / Images — بحد أقصى 5 MB"
-                              @error="toast.error"
-                            />
+                            <label class="form-label">مرفق الشهادة</label>
+                            <div class="uploader-with-viewer">
+                              <StbUploader
+                                :model-value="edu.attachmentPath"
+                                @update:model-value="
+                                  (val) => (edu.attachmentPath = val || '')
+                                "
+                                endpoint="/media/upload/employee"
+                                field-name="files"
+                                accept=".pdf,.doc,.docx,image/*"
+                                :max-size="5 * 1024 * 1024"
+                                idle-title="ارفع صورة أو ملف PDF"
+                                hint="PDF / Images — بحد أقصى 5 MB"
+                                @error="toast.error"
+                              />
+                              <button
+                                v-if="edu.attachmentPath"
+                                type="button"
+                                class="btn btn--outline btn--sm view-file-btn"
+                                @click="
+                                  openFileViewer(
+                                    edu.attachmentPath,
+                                    `مرفق: ${edu.degree || 'شهادة'}`,
+                                  )
+                                "
+                              >
+                                <Eye :size="14" /> عرض المرفق
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -526,50 +560,72 @@
       </Transition>
     </Teleport>
 
-    <!-- ID Viewer Modal -->
+    <!-- ✅ Universal File Viewer Modal (للصور و PDF) -->
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="showIdModal"
+          v-if="showFileViewer"
           class="modal-overlay"
-          @click.self="showIdModal = false"
+          @click.self="closeFileViewer"
         >
-          <div class="modal modal-md id-viewer-modal">
+          <div class="modal modal-lg file-viewer-modal">
             <div class="modal__header">
-              <h3><IdCard :size="20" class="modal-icon" /> صورة الهوية</h3>
+              <h3>
+                <FileText :size="20" class="modal-icon" />
+                {{ viewerTitle }}
+              </h3>
               <button
                 class="btn btn--icon btn--ghost"
-                @click="showIdModal = false"
+                @click="closeFileViewer"
                 aria-label="إغلاق"
               >
                 <X :size="20" />
               </button>
             </div>
-            <div class="modal__body id-preview-container">
-              <div v-if="currentIdUrl" class="id-image-wrapper">
+            <div class="modal__body file-preview-container">
+              <div v-if="currentFileUrl" class="file-content-wrapper">
+                <!-- حالة الصورة -->
                 <img
-                  :src="currentIdUrl"
-                  alt="صورة الهوية"
-                  class="id-full-img"
+                  v-if="isImage(currentFileUrl)"
+                  :src="currentFileUrl"
+                  alt="معاينة الملف"
+                  class="preview-image"
                 />
-                <div class="id-actions-overlay">
+
+                <!-- حالة PDF -->
+                <div v-else-if="isPdf(currentFileUrl)" class="pdf-preview">
+                  <div class="pdf-icon-large">
+                    <FileText :size="64" />
+                  </div>
+                  <p class="pdf-hint">ملف PDF - يرجى تحميله للمشاهدة الكاملة</p>
+                </div>
+
+                <!-- حالة أخرى -->
+                <div v-else class="file-preview-fallback">
+                  <File :size="48" class="fallback-icon" />
+                  <p>نوع الملف غير مدعوم للمعاينة المباشرة</p>
+                </div>
+
+                <!-- أزرار التحكم -->
+                <div class="file-actions-bar">
                   <a
-                    :href="currentIdUrl"
+                    :href="currentFileUrl"
                     target="_blank"
                     class="btn btn--primary"
-                    ><ExternalLink :size="16" /> فتح في تبويب جديد</a
                   >
-                  <a :href="currentIdUrl" download class="btn btn--outline"
-                    ><Download :size="16" /> تحميل الصورة</a
-                  >
+                    <ExternalLink :size="16" /> فتح في تبويب جديد
+                  </a>
+                  <a :href="currentFileUrl" download class="btn btn--outline">
+                    <Download :size="16" /> تحميل الملف
+                  </a>
                 </div>
               </div>
               <div v-else class="empty-state-mini">
-                <p>لا توجد صورة متاحة</p>
+                <p>لا يوجد ملف للعرض</p>
               </div>
             </div>
             <div class="modal__footer">
-              <button class="btn btn--ghost" @click="showIdModal = false">
+              <button class="btn btn--ghost" @click="closeFileViewer">
                 إغلاق
               </button>
             </div>
@@ -590,7 +646,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useUsersStore } from "@/stores/users";
 import { useToast } from "@/composables/useToast";
@@ -599,6 +655,7 @@ import OnboardingModal from "@/components/employees/OnboardingModal.vue";
 import {
   FileSpreadsheet,
   FileText,
+  File, // Added for generic file icon
   UserPlus,
   Search,
   Users,
@@ -607,7 +664,6 @@ import {
   IdCard,
   Briefcase,
   Phone,
-  Paperclip,
   Pencil,
   Trash2,
   X,
@@ -689,14 +745,26 @@ const filtered = computed(() =>
 const countByStatus = (s: string) =>
   store.employees.filter((e: Employee) => e.status === s).length;
 
-const showIdModal = ref(false);
-const currentIdUrl = ref<string>("");
-const openIdViewer = (emp: Employee) => {
-  if (emp.nationalIdCardPath) {
-    currentIdUrl.value = emp.nationalIdCardPath;
-    showIdModal.value = true;
-  }
+// ─── Universal File Viewer Logic ──────────────────────────────────────────
+const showFileViewer = ref(false);
+const currentFileUrl = ref<string>("");
+const viewerTitle = ref<string>("");
+
+const openFileViewer = (url: string, title: string = "عرض الملف") => {
+  currentFileUrl.value = url;
+  viewerTitle.value = title;
+  showFileViewer.value = true;
 };
+
+const closeFileViewer = () => {
+  showFileViewer.value = false;
+  currentFileUrl.value = "";
+  viewerTitle.value = "";
+};
+
+// دالة مساعدة لتحديد نوع الملف
+const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+const isPdf = (url: string) => /\.pdf$/i.test(url);
 
 const showEditModal = ref(false);
 const updating = ref(false);
@@ -1210,6 +1278,19 @@ onMounted(() => {
   border-radius: $radius-sm;
   font-weight: 600;
   cursor: default;
+
+  // ✅ تحسين شكل أزرار العرض لتكون قابلة للنقر بوضوح
+  &.view-id-btn,
+  &.view-edu-btn {
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+  }
+
   &--user {
     background: rgba($stb-accent, 0.1);
     color: $stb-accent;
@@ -1221,6 +1302,13 @@ onMounted(() => {
   &--edu {
     background: rgba($stb-info, 0.1);
     color: $stb-info;
+    &.view-edu-btn {
+      background: rgba($stb-info, 0.15);
+      border-color: rgba($stb-info, 0.3);
+      &:hover {
+        background: rgba($stb-info, 0.25);
+      }
+    }
   }
   &--doc {
     background: rgba($stb-warning, 0.1);
@@ -1234,6 +1322,15 @@ onMounted(() => {
     }
   }
 }
+.truncate-text {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .modal-lg {
   max-width: 680px;
 }
@@ -1424,49 +1521,70 @@ onMounted(() => {
   border-radius: $radius-md;
   border: 1px dashed $stb-border;
 }
-.id-viewer-modal {
+
+// ✅ Styles for Uploader with Viewer Button
+.uploader-with-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  .view-file-btn {
+    align-self: flex-start;
+    font-size: $font-size-xs;
+  }
+}
+
+// ✅ Styles for Universal File Viewer
+.file-viewer-modal {
   max-width: 900px;
 }
-.id-preview-container {
-  padding: 0;
-  background: $stb-dark;
+.file-preview-container {
+  padding: $space-4;
+  background: $stb-surface-2;
   min-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
 }
-.id-image-wrapper {
-  position: relative;
+.file-content-wrapper {
   width: 100%;
   display: flex;
-  justify-content: center;
-  .id-full-img {
-    max-width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-    border-radius: $radius-sm;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-4;
+}
+.preview-image {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: $radius-md;
+  box-shadow: $shadow-md;
+}
+.pdf-preview {
+  text-align: center;
+  padding: $space-8;
+  .pdf-icon-large {
+    color: $stb-danger;
+    margin-bottom: $space-3;
   }
-  .id-actions-overlay {
-    position: absolute;
-    bottom: $space-4;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: $space-2;
-    background: rgba($stb-dark, 0.8);
-    padding: $space-2 $space-3;
-    border-radius: $radius-full;
-    backdrop-filter: blur(4px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    a {
-      font-size: $font-size-xs;
-    }
-  }
-  &:hover .id-actions-overlay {
-    opacity: 1;
+  .pdf-hint {
+    color: $stb-text-muted;
+    font-size: $font-size-sm;
   }
 }
+.file-preview-fallback {
+  text-align: center;
+  color: $stb-text-muted;
+  .fallback-icon {
+    margin-bottom: $space-2;
+  }
+}
+.file-actions-bar {
+  display: flex;
+  gap: $space-3;
+  margin-top: $space-2;
+}
+
 .empty-state-mini {
   color: $stb-text-muted;
   text-align: center;

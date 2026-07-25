@@ -1,172 +1,204 @@
+<!-- pages/resignations/index.vue -->
 <template>
   <div class="page-container">
-    <!-- ═ Page Header ══════════════════════════════════════════════════════ -->
+    <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>إدارة طلبات الاستقالة</h1>
         <p>تقديم ومتابعة والبت في طلبات استقالة الموظفين</p>
       </div>
-      <button v-if="!isManager" class="btn btn--primary" @click="openModal()">
-        <FilePlus :size="16" /> تقديم طلب استقالة
-      </button>
-    </div>
 
-    <!-- ══ Stats Bar ════════════════════════════════════════════════════════ -->
-    <div class="stats-bar">
-      <div class="stat-pill">
-        <FileText :size="13" />
-        <span
-          >إجمالي الطلبات: <strong>{{ store.requests.length }}</strong></span
-        >
-      </div>
-      <div class="stat-pill stat-pill--warning">
-        <Clock :size="13" />
-        <span
-          >طلبات معلقة: <strong>{{ pendingCount }}</strong></span
-        >
-      </div>
-      <div class="stat-pill">
-        <CalendarDays :size="13" />
-        <span
-          >آخر تحديث: <strong>{{ todayLabel }}</strong></span
-        >
-      </div>
-    </div>
-
-    <!-- ══ Filters ════════════════════════════════════════════════════════ -->
-    <div class="card filters-card" v-if="isManager">
-      <div class="filters-row">
-        <select v-model="filterStatus" class="form-select status-select">
-          <option value="">كل الحالات</option>
-          <option v-for="(label, key) in StatusLabels" :key="key" :value="key">
-            {{ label }}
-          </option>
-        </select>
-        <div class="spacer"></div>
-      </div>
-    </div>
-
-    <!-- ══ Loading State ════════════════════════════════════════════════════ -->
-    <div v-if="store.loading" class="loading-grid">
-      <div v-for="i in 4" :key="i" class="res-card res-card--skeleton">
-        <div class="skeleton skeleton--line"></div>
-        <div class="skeleton skeleton--line-sm"></div>
-      </div>
-    </div>
-
-    <!--  Empty State ═════════════════════════════════════════════════════ -->
-    <div v-else-if="!filteredRequests.length" class="empty-wrapper">
-      <div class="empty-state">
-        <div class="empty-state__illustration"><FilePlus :size="32" /></div>
-        <div class="empty-state__title">لا توجد طلبات استقالة</div>
-        <div class="empty-state__text">
-          {{
-            isManager
-              ? "لا توجد طلبات مطابقة للفلتر"
-              : "لم تقم بتقديم أي طلب استقالة حتى الآن"
-          }}
-        </div>
+      <!-- ✅ أزرار التصدير والعمليات -->
+      <div class="page-header__actions">
         <button
-          v-if="!isManager"
-          class="btn btn--primary mt-4"
-          @click="openModal()"
+          class="btn btn--outline"
+          @click="handleExport('excel')"
+          :disabled="!!exporting"
         >
-          <Plus :size="15" /> تقديم طلب
+          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+          <FileSpreadsheet v-else :size="18" />
+          <span>Excel</span>
+        </button>
+
+        <button
+          class="btn btn--outline"
+          @click="handleExport('pdf')"
+          :disabled="!!exporting"
+        >
+          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+          <FileText v-else :size="18" />
+          <span>PDF</span>
+        </button>
+
+        <button class="btn btn--primary" @click="openCreateModal">
+          <FilePlus :size="18" />
+          <span>تقديم طلب استقالة</span>
         </button>
       </div>
     </div>
 
-    <!-- ═ Requests Grid ═══════════════════════════════════════════════════ -->
-    <div v-else class="emp-grid">
-      <div v-for="req in filteredRequests" :key="req.id" class="res-card">
-        <div class="res-card__header">
-          <div class="res-icon"><UserX :size="22" /></div>
-          <div class="res-card__meta">
-            <h3>{{ req.employee?.fullName || "—" }}</h3>
-            <span class="res-card__sub"
-              >{{ req.employee?.employeeCode }} •
-              {{ formatDate(req.requestDate) }}</span
-            >
-          </div>
-          <span :class="['status-badge', `badge--${req.status}`]">{{
-            getStatusLabel(req.status)
-          }}</span>
+    <!-- ══ Stats Cards ═════════════════════════════════════════════════════ -->
+    <div class="grid-3 stats-row">
+      <div class="stat-card stat-total">
+        <div class="stat-card__icon">
+          <FileText :size="24" />
         </div>
-
-        <div class="res-card__body">
-          <div class="res-stat">
-            <span class="label"
-              ><CalendarRange :size="12" /> آخر يوم عمل مقترح</span
-            >
-            <span class="value">{{ formatDate(req.lastWorkingDay) }}</span>
-          </div>
-          <div class="res-stat">
-            <span class="label"><FileText :size="12" /> سبب الاستقالة</span>
-            <span class="value value--muted">{{
-              truncateText(req.reason, 50)
-            }}</span>
-          </div>
-          <div class="res-stat" v-if="req.managerNotes">
-            <span class="label"
-              ><MessageSquare :size="12" /> ملاحظات المدير</span
-            >
-            <span class="value value--muted">{{
-              truncateText(req.managerNotes, 50)
-            }}</span>
-          </div>
-          <div class="res-stat" v-if="req.decisionDate">
-            <span class="label"><Clock :size="12" /> تاريخ القرار</span>
-            <span class="value">{{ formatDateTime(req.decisionDate) }}</span>
-          </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value">{{ store.requests.length }}</div>
+          <div class="stat-card__label">إجمالي الطلبات</div>
         </div>
+      </div>
 
-        <div class="res-card__footer">
-          <!-- أزرار الموظف -->
-          <template v-if="!isManager && req.status === 'pending'">
-            <button
-              class="btn btn--danger-outline btn--sm"
-              @click="confirmCancel(req.id)"
-            >
-              <XCircle :size="13" /> إلغاء طلبي
-            </button>
-          </template>
+      <div class="stat-card stat-count">
+        <div class="stat-card__icon">
+          <Clock :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value">{{ pendingCount }}</div>
+          <div class="stat-card__label">طلبات معلقة</div>
+        </div>
+      </div>
 
-          <!-- أزرار المدير -->
-          <template v-if="isManager && req.status === 'pending'">
-            <button
-              class="btn btn--success-outline btn--sm"
-              @click="openDecisionModal(req, 'approved')"
-            >
-              <CheckCircle :size="13" /> موافقة
-            </button>
-            <button
-              class="btn btn--danger-outline btn--sm"
-              @click="openDecisionModal(req, 'rejected')"
-            >
-              <XCircle :size="13" /> رفض
-            </button>
-          </template>
+      <div class="stat-card stat-avg">
+        <div class="stat-card__icon">
+          <CheckCircle :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value">{{ approvedCount }}</div>
+          <div class="stat-card__label">تمت الموافقة</div>
         </div>
       </div>
     </div>
 
-    <!-- ══ Create Request Modal ════════════════════════════════════════════ -->
+    <!-- ══ Loading State ════════════════════════════════════════════════════ -->
+    <div v-if="store.loading" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
+
+    <!-- ══ Empty State ══════════════════════════════════════════════════════ -->
+    <div v-else-if="!store.requests.length" class="card empty-card">
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <FileSignature :size="48" />
+        </div>
+        <div class="empty-state__title">لا توجد طلبات استقالة</div>
+        <div class="empty-state__text">
+          ابدأ بتقديم طلب استقالة جديد أو انتظر وصول طلبات من الموظفين
+        </div>
+        <button class="btn btn--primary mt-4" @click="openCreateModal">
+          <FilePlus :size="16" />
+          تقديم طلب جديد
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ Requests Table ══════════════════════════════════════════════════ -->
+    <div v-else class="card table-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الموظف</th>
+              <th>تاريخ التقديم</th>
+              <th>آخر يوم عمل</th>
+              <th>سبب الاستقالة</th>
+              <th>الحالة</th>
+              <th>ملاحظات المدير</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="req in store.requests" :key="req.id">
+              <td>
+                <div class="employee-cell">
+                  <div class="employee-avatar">
+                    {{ req.employee?.fullName?.[0] ?? "—" }}
+                  </div>
+                  <div class="employee-info">
+                    <span class="employee-name">{{
+                      req.employee?.fullName ?? "—"
+                    }}</span>
+                    <span class="employee-meta">
+                      {{
+                        [req.employee?.employeeCode].filter(Boolean).join(" · ")
+                      }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td>{{ formatDate(req.requestDate) }}</td>
+              <td>
+                <span class="days-badge">
+                  <CalendarOff :size="13" />
+                  {{ formatDate(req.lastWorkingDay) }}
+                </span>
+              </td>
+              <td class="notes-cell">{{ truncateText(req.reason, 40) }}</td>
+              <td>
+                <span :class="['badge', `badge--${req.status}`]">
+                  {{ getStatusLabel(req.status) }}
+                </span>
+              </td>
+              <td class="notes-cell">{{ req.managerNotes || "—" }}</td>
+              <td>
+                <div class="actions-cell">
+                  <!-- زر الإلغاء -->
+                  <button
+                    v-if="req.status === 'pending'"
+                    class="btn btn--danger-outline btn--sm"
+                    @click="confirmCancel(req.id)"
+                    title="إلغاء الطلب"
+                  >
+                    <XCircle :size="14" />
+                  </button>
+
+                  <!-- أزرار القرار -->
+                  <template v-if="req.status === 'pending'">
+                    <button
+                      class="btn btn--success-outline btn--sm"
+                      @click="openDecisionModal(req, 'approved')"
+                      title="موافقة"
+                    >
+                      <CheckCircle :size="14" />
+                    </button>
+                    <button
+                      class="btn btn--danger-outline btn--sm"
+                      @click="openDecisionModal(req, 'rejected')"
+                      title="رفض"
+                    >
+                      <XCircle :size="14" />
+                    </button>
+                  </template>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Modal: تقديم طلب استقالة جديد
+    ════════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
           v-if="showCreateModal"
           class="modal-overlay"
-          @click.self="closeModals"
+          @click.self="closeAll"
         >
-          <div class="modal modal--md">
+          <div class="modal modal-md">
             <div class="modal__header">
-              <h3>تقديم طلب استقالة جديد</h3>
-              <button class="btn btn--icon btn--ghost" @click="closeModals">
-                <X :size="18" />
+              <h3>
+                <FilePlus :size="20" class="modal-icon" />
+                تقديم طلب استقالة جديد
+              </h3>
+              <button class="btn btn--icon btn--ghost" @click="closeAll">
+                <X :size="20" />
               </button>
             </div>
+
             <form @submit.prevent="handleCreate" class="modal-form">
-              <!-- ✅ حقل تاريخ مخصص وخفيف باستخدام @vueuse/core -->
               <div class="form-group">
                 <label>آخر يوم عمل مقترح *</label>
                 <div class="date-input-wrapper">
@@ -191,19 +223,14 @@
                   required
                 ></textarea>
               </div>
-              <div class="alert-info">
-                <Info :size="14" />
-                <span
-                  >سيتم إرسال طلبك للمدير المباشر للموافقة أو الرفض. يمكنك إلغاء
-                  الطلب طالما أنه لا يزال معلقاً.</span
-                >
+
+              <div class="info-banner">
+                <Info :size="16" />
+                <p>سيتم إرسال طلبك للمدير المباشر للموافقة أو الرفض.</p>
               </div>
+
               <div class="modal__footer">
-                <button
-                  type="button"
-                  class="btn btn--ghost"
-                  @click="closeModals"
-                >
+                <button type="button" class="btn btn--ghost" @click="closeAll">
                   إلغاء
                 </button>
                 <button
@@ -221,15 +248,17 @@
       </Transition>
     </Teleport>
 
-    <!-- ═ Decision Modal (For Manager) ════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Modal: قرار المدير (موافقة / رفض)
+    ════════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
           v-if="showDecisionModal"
           class="modal-overlay"
-          @click.self="closeModals"
+          @click.self="closeAll"
         >
-          <div class="modal modal--md">
+          <div class="modal modal-md">
             <div class="modal__header">
               <h3>
                 {{
@@ -238,10 +267,11 @@
                     : "رفض الاستقالة"
                 }}
               </h3>
-              <button class="btn btn--icon btn--ghost" @click="closeModals">
-                <X :size="18" />
+              <button class="btn btn--icon btn--ghost" @click="closeAll">
+                <X :size="20" />
               </button>
             </div>
+
             <form @submit.prevent="handleDecision" class="modal-form">
               <div
                 class="alert-info"
@@ -251,10 +281,11 @@
                 <CheckCircle v-else :size="14" />
                 <span>{{
                   decisionType === "approved"
-                    ? "ستتم الموافقة على الطلب وإنشاء سجل نهاية الخدمة تلقائياً."
+                    ? "ستتم الموافقة على الطلب وإنهاء إجراءاته."
                     : "سيتم رفض الطلب ولن يتم اتخاذ أي إجراء إضافي."
                 }}</span>
               </div>
+
               <div class="form-group">
                 <label>ملاحظات للموظف (اختياري)</label>
                 <textarea
@@ -264,12 +295,9 @@
                   placeholder="أضف ملاحظاتك هنا..."
                 ></textarea>
               </div>
+
               <div class="modal__footer">
-                <button
-                  type="button"
-                  class="btn btn--ghost"
-                  @click="closeModals"
-                >
+                <button type="button" class="btn btn--ghost" @click="closeAll">
                   إلغاء
                 </button>
                 <button
@@ -306,61 +334,62 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from "vue";
-// ✅ استيراد دوال التاريخ الخفيفة من @vueuse/core
+import { ref, reactive, computed, onMounted } from "vue";
 import { useDateFormat, useNow } from "@vueuse/core";
 
 import { useResignationStore, ResignationStatus } from "@/stores/resignations";
-import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/composables/useToast";
 import {
-  Plus,
-  X,
   FilePlus,
-  UserX,
-  CalendarRange,
   FileText,
-  MessageSquare,
   Clock,
   Info,
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Calendar, // ✅ أيقونة التقويم
+  Calendar,
+  FileSignature,
+  FileSpreadsheet,
+  X,
+  CalendarOff,
 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useResignationStore();
-const auth = useAuthStore();
 const toast = useToast();
 
-// تحديد هل المستخدم مدير أم موظف عادي
-const isManager = computed(
-  () => auth.user?.isSystemAdmin || auth.user?.isSuperAdmin,
-);
+// ─── Export State ───────────────────────────────────────────────────────────
+const exporting = ref<"excel" | "pdf" | null>(null);
 
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()} (محاكاة)`);
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
+  } finally {
+    exporting.value = null;
+  }
+};
+
+// ─── UI State ────────────────────────────────────────────────────────────────
 const showCreateModal = ref(false);
 const showDecisionModal = ref(false);
 const showCancelConfirm = ref(false);
 const submitting = ref(false);
-const filterStatus = ref("");
 const currentRequestId = ref<string | null>(null);
 const decisionType = ref<"approved" | "rejected">("approved");
 
-// ✅ استخدام String للتاريخ لتوافق أفضل مع input type="date"
 const createForm = reactive({
   lastWorkingDay: "",
   reason: "",
 });
-
 const decisionForm = reactive({ notes: "" });
 
-// ✅ الحصول على تاريخ اليوم بصيغة YYYY-MM-DD للحقل
 const now = useNow();
 const todayStr = useDateFormat(now, "YYYY-MM-DD");
-const todayLabel = useDateFormat(now, "D MMMM YYYY", { locales: "ar-SA" });
 
 const StatusLabels: Record<string, string> = {
   pending: "معلق",
@@ -369,23 +398,20 @@ const StatusLabels: Record<string, string> = {
   cancelled: "ملغى",
 };
 
-const filteredRequests = computed(() => {
-  let reqs = store.requests;
-  if (!isManager.value && auth.user?.userId) {
-    reqs = reqs.filter((r) => r.employeeId === auth.user!.userId);
-  }
-  if (filterStatus.value) {
-    reqs = reqs.filter((r) => r.status === filterStatus.value);
-  }
-  return reqs;
-});
-
+// ─── Computed ───────────────────────────────────────────────────────────────
 const pendingCount = computed(
   () =>
     store.requests.filter((r) => r.status === ResignationStatus.PENDING).length,
 );
 
-const openModal = () => {
+const approvedCount = computed(
+  () =>
+    store.requests.filter((r) => r.status === ResignationStatus.APPROVED)
+      .length,
+);
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+const openCreateModal = () => {
   createForm.lastWorkingDay = "";
   createForm.reason = "";
   showCreateModal.value = true;
@@ -403,7 +429,7 @@ const confirmCancel = (id: string) => {
   showCancelConfirm.value = true;
 };
 
-const closeModals = () => {
+const closeAll = () => {
   showCreateModal.value = false;
   showDecisionModal.value = false;
   showCancelConfirm.value = false;
@@ -411,16 +437,14 @@ const closeModals = () => {
 
 const handleCreate = async () => {
   if (!createForm.lastWorkingDay) {
-    toast.error("يرجى اختيار تاريخ آخر يوم عمل");
+    toast.error("يرجى تعبئة جميع الحقول المطلوبة");
     return;
   }
-
   submitting.value = true;
   try {
-    // إرسال التاريخ كما هو لأنه بالفعل بصيغة ISO من input type="date"
     await store.create(createForm);
     toast.success("تم تقديم طلب الاستقالة بنجاح");
-    closeModals();
+    closeAll();
   } catch (e: any) {
     toast.error(e.message);
   } finally {
@@ -443,7 +467,7 @@ const handleDecision = async () => {
         ? "تمت الموافقة على الطلب"
         : "تم رفض الطلب",
     );
-    closeModals();
+    closeAll();
   } catch (e: any) {
     toast.error(e.message);
   } finally {
@@ -460,18 +484,15 @@ const handleCancel = async () => {
   }
 };
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
 const getStatusLabel = (status: string) => StatusLabels[status] || status;
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
-const formatDateTime = (d: string) => new Date(d).toLocaleString("ar-SA");
 const truncateText = (text: string, len: number) =>
   text.length > len ? text.slice(0, len) + "..." : text;
 
-watch(filterStatus, () =>
-  store.fetchAll((filterStatus.value as ResignationStatus) || undefined),
-);
-
 onMounted(() => {
-  store.fetchAll();
+  // ✅ استخدام المسار الجديد لجلب طلبات الموظف الحالي
+  store.fetchMyRequests();
 });
 </script>
 
@@ -479,178 +500,94 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-.stats-bar {
+.page-header__actions {
   display: flex;
-  gap: $space-3;
+  gap: $space-2;
   flex-wrap: wrap;
-  margin-bottom: $space-5;
 }
-.stat-pill {
-  @include flex(row, center, flex-start, $space-2);
-  padding: $space-2 $space-3;
-  background: $stb-surface-2;
-  border: 1px solid $stb-border;
-  border-radius: $radius-full;
-  font-size: $font-size-xs;
-  color: $stb-text-secondary;
-  strong {
-    color: $stb-text-primary;
-    font-weight: 700;
+
+.stats-row {
+  margin-bottom: $space-6;
+}
+.stat-card {
+  &.stat-total .stat-card__icon {
+    background: rgba($stb-info, 0.12);
+    color: $stb-info;
   }
-  &--warning {
-    border-color: rgba($stb-warning, 0.3);
-    strong {
-      color: $stb-warning;
-    }
+  &.stat-count .stat-card__icon {
+    background: rgba($stb-warning, 0.12);
+    color: $stb-warning;
+  }
+  &.stat-avg .stat-card__icon {
+    background: rgba($stb-success, 0.12);
+    color: $stb-success;
   }
 }
 
-.filters-card {
-  padding: $space-3 $space-4;
-  margin-bottom: $space-4;
-  .filters-row {
-    @include flex(row, center, flex-start, $space-3);
-  }
-  .status-select {
-    width: 180px;
-  }
-  .spacer {
-    flex: 1;
-  }
+.empty-card .empty-state {
+  padding: $space-16 $space-8;
+}
+.mt-4 {
+  margin-top: $space-4 !important;
 }
 
-.loading-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: $space-4;
-}
-.empty-wrapper {
-  @include flex(row, center, center);
-  min-height: 280px;
-}
-.empty-state {
-  @include flex(column, center, center, $space-3);
-  text-align: center;
-  &__illustration {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: $stb-surface-2;
-    border: 1px solid $stb-border;
-    @include flex(row, center, center);
-    color: $stb-text-muted;
-    opacity: 0.55;
-    margin-bottom: $space-2;
-  }
-  &__title {
-    font-size: $font-size-lg;
-    font-weight: 700;
-    color: $stb-text-secondary;
-  }
-  &__text {
-    font-size: $font-size-sm;
-    color: $stb-text-muted;
-    max-width: 280px;
-  }
-}
-
-.emp-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: $space-4;
-}
-
-.res-card {
-  @include glass-card;
+.table-card {
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  transition: all $transition-base;
   overflow: hidden;
-  position: relative;
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: $gradient-accent;
-    opacity: 0;
-    transition: opacity $transition-base;
-  }
-  &:hover {
-    transform: translateY(-3px);
-    border-color: rgba($stb-accent, 0.35);
-    box-shadow:
-      0 0 16px rgba($stb-accent, 0.12),
-      0 8px 24px rgba(0, 0, 0, 0.5);
-    &::before {
-      opacity: 1;
-    }
-  }
-  &__header {
-    @include flex(row, center, flex-start, $space-3);
-    padding: $space-5 $space-5 $space-4;
-    border-bottom: 1px solid rgba($stb-border, 0.6);
-    background: linear-gradient(
-      180deg,
-      rgba($stb-surface-2, 0.8) 0%,
-      transparent 100%
-    );
-  }
-  &__meta {
-    flex: 1;
-    min-width: 0;
-    h3 {
-      font-size: $font-size-base;
-      font-weight: 700;
-      color: $stb-text-primary;
-      margin-bottom: 2px;
-    }
-  }
-  &__sub {
-    font-size: $font-size-xs;
-    color: $stb-text-muted;
-  }
-  &__body {
-    display: flex;
-    flex-direction: column;
-    padding: $space-4 $space-5;
-    gap: 0;
-    flex: 1;
-  }
-  &__footer {
-    @include flex(row, center, space-between);
-    padding: $space-3 $space-5;
-    border-top: 1px solid rgba($stb-border, 0.5);
-    background: rgba($stb-dark, 0.3);
-  }
-  &--skeleton {
-    @include flex(row, center, flex-start, $space-3);
-    padding: $space-5;
-    pointer-events: none;
-    min-height: 80px;
-  }
+}
+.table-responsive {
+  overflow-x: auto;
+  @include scrollbar;
 }
 
-.res-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: $radius-lg;
-  background: rgba($stb-danger, 0.1);
-  border: 1px solid rgba($stb-danger, 0.2);
-  color: $stb-danger;
+.employee-cell {
+  @include flex(row, center, flex-start, $space-3);
+}
+.employee-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-md;
+  background: $gradient-primary;
   @include flex(row, center, center);
+  font-weight: 700;
+  font-size: $font-size-sm;
+  color: #fff;
   flex-shrink: 0;
 }
+.employee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.employee-name {
+  font-weight: 600;
+  color: $stb-text-primary;
+  font-size: $font-size-sm;
+  @include truncate;
+}
+.employee-meta {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+}
 
-.status-badge {
+.days-badge {
+  @include flex(row, center, flex-start, $space-1);
+  display: inline-flex;
+  padding: $space-1 $space-3;
+  border-radius: $radius-full;
+  background: rgba($stb-accent, 0.1);
+  color: $stb-accent;
+  font-size: $font-size-xs;
+  font-weight: 700;
+  border: 1px solid rgba($stb-accent, 0.25);
+}
+
+.badge {
   font-size: 0.7rem;
   padding: 3px 10px;
   border-radius: $radius-full;
   font-weight: 600;
-  white-space: nowrap;
   &.badge--pending {
     background: rgba($stb-warning, 0.15);
     color: $stb-warning;
@@ -669,25 +606,58 @@ onMounted(() => {
   }
 }
 
-.res-stat {
-  @include flex(row, center, space-between);
-  padding: $space-2 + 0.125rem 0;
-  border-bottom: 1px solid rgba($stb-border, 0.4);
+.notes-cell {
+  max-width: 180px;
+  @include truncate;
   font-size: $font-size-xs;
-  &:last-of-type {
-    border-bottom: none;
-  }
-  .label {
-    @include flex(row, center, flex-start, $space-1);
-    color: $stb-text-muted;
-  }
-  .value {
+  color: $stb-text-muted;
+}
+.actions-cell {
+  display: flex;
+  gap: $space-1;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.modal-md {
+  max-width: 520px;
+}
+.modal-icon {
+  color: $stb-accent;
+  margin-left: $space-2;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+  padding: $space-5;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  label {
+    font-size: $font-size-sm;
     font-weight: 600;
-    color: $stb-text-primary;
-    &--muted {
-      color: $stb-text-muted;
-      font-weight: 400;
-    }
+    color: $stb-text-secondary;
+  }
+}
+
+.info-banner {
+  @include flex(row, flex-start, flex-start, $space-3);
+  padding: $space-3 $space-4;
+  background: rgba($stb-info, 0.07);
+  border: 1px solid rgba($stb-info, 0.2);
+  border-radius: $radius-md;
+  color: $stb-info;
+  font-size: $font-size-xs;
+  line-height: 1.7;
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  p {
+    color: $stb-text-secondary;
   }
 }
 
@@ -713,71 +683,13 @@ onMounted(() => {
   }
 }
 
-.btn--success {
-  background: $stb-success;
-  color: #fff;
-  &:hover:not(:disabled) {
-    background: red;
-  }
-}
-.btn--success-outline {
-  background: transparent;
-  color: $stb-success;
-  border: 1px solid rgba($stb-success, 0.3);
-  &:hover:not(:disabled) {
-    background: rgba($stb-success, 0.08);
-    border-color: $stb-success;
-  }
-}
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    $stb-surface-2 25%,
-    $stb-surface-3 50%,
-    $stb-surface-2 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: $radius-md;
-  &--line {
-    height: 14px;
-    width: 70%;
-    margin-bottom: $space-2;
-  }
-  &--line-sm {
-    height: 11px;
-    width: 40%;
-  }
-}
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.mt-4 {
-  margin-top: $space-4 !important;
-}
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: $space-4;
-  padding: $space-5;
-}
-
-/* ✅ تنسيقات حقل التاريخ المخصص والخفيف */
 .date-input-wrapper {
   position: relative;
   width: 100%;
-
   .date-input {
     width: 100%;
     padding: $space-3 $space-4;
-    padding-left: $space-10; /* مساحة للأيقونة */
+    padding-left: $space-10;
     background: $stb-surface;
     border: 1px solid $stb-border;
     border-radius: $radius-md;
@@ -788,17 +700,10 @@ onMounted(() => {
     outline: none;
     direction: rtl;
     text-align: right;
-
-    &::placeholder {
-      color: $stb-text-muted;
-    }
-
     &:focus {
       border-color: $stb-accent;
       box-shadow: 0 0 0 3px rgba($stb-accent, 0.1);
     }
-
-    /* إصلاح أيقونة التقويم الافتراضية للمتصفح */
     &::-webkit-calendar-picker-indicator {
       opacity: 0;
       position: absolute;
@@ -807,7 +712,6 @@ onMounted(() => {
       cursor: pointer;
     }
   }
-
   .date-icon {
     position: absolute;
     left: $space-3;

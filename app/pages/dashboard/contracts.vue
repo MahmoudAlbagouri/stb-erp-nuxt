@@ -96,8 +96,14 @@
               </td>
               <td>{{ contract.annualLeaveDays }} يوم</td>
               <td>
+                <!-- ✅ عرض المدة بالشهور إذا توفرت، وإلا بالسنوات -->
                 <span
-                  v-if="contract.contractDurationYears"
+                  v-if="contract.contractDurationMonths"
+                  class="badge badge--neutral"
+                  >{{ contract.contractDurationMonths }} شهر</span
+                >
+                <span
+                  v-else-if="contract.contractDurationYears"
                   class="badge badge--neutral"
                   >{{ contract.contractDurationYears }} سنة</span
                 >
@@ -259,15 +265,19 @@
                     min="0"
                   />
                 </div>
+
+                <!-- ✅ تغيير المدة إلى شهور -->
                 <div class="form-group">
-                  <label>مدة العقد (بالسنوات)</label>
+                  <label>مدة العقد (بالشهور)</label>
                   <input
-                    v-model.number="form.contractDurationYears"
+                    v-model.number="form.contractDurationMonths"
                     type="number"
                     class="form-input"
                     min="1"
+                    @input="calculateContractDates"
                   />
                 </div>
+
                 <div class="form-group">
                   <label>تاريخ بداية العقد *</label>
                   <input
@@ -275,14 +285,20 @@
                     type="date"
                     class="form-input"
                     required
+                    @input="calculateContractDates"
                   />
                 </div>
                 <div class="form-group">
-                  <label>تاريخ نهاية العقد (اختياري)</label>
+                  <label>تاريخ نهاية العقد (محسوب تلقائياً)</label>
                   <input
                     v-model="form.endDate"
                     type="date"
                     class="form-input"
+                    readonly
+                    style="
+                      background-color: var(--stb-surface-2);
+                      cursor: not-allowed;
+                    "
                   />
                 </div>
                 <div class="form-group">
@@ -323,12 +339,34 @@
                 </div>
                 <div class="form-group">
                   <label>فترة التجربة</label>
-                  <select v-model="form.probationPeriod" class="form-select">
+                  <select
+                    v-model="form.probationPeriod"
+                    class="form-select"
+                    @change="calculateContractDates"
+                  >
                     <option value="بدون">بدون</option>
                     <option value="3 شهور">3 شهور</option>
                     <option value="6 شهور">6 شهور</option>
                   </select>
                 </div>
+
+                <!-- ✅ حقل جديد: عرض تاريخ نهاية فترة التجربة -->
+                <div class="form-group" v-if="calculatedProbationEndDate">
+                  <label>تاريخ نهاية فترة التجربة</label>
+                  <input
+                    :value="calculatedProbationEndDate"
+                    type="text"
+                    class="form-input"
+                    readonly
+                    style="
+                      background-color: var(--stb-surface-2);
+                      color: var(--stb-accent);
+                      font-weight: bold;
+                      cursor: not-allowed;
+                    "
+                  />
+                </div>
+
                 <div class="form-group full-width">
                   <label>مرفقات العقد</label>
                   <StbUploader
@@ -498,6 +536,7 @@ const NATIONALITIES = [
 type ContractWithExtras = Contract & {
   attachmentPaths?: string[];
   contractDurationYears?: number;
+  contractDurationMonths?: number; // ✅ إضافة الحقل الجديد
   ticketType?: string;
   probationPeriod?: string;
   medicalInsurance?: string;
@@ -529,6 +568,7 @@ const activeExportMenu = ref<string | null>(null);
 interface ExtendedCreatePayload extends CreateContractPayload {
   attachmentPaths?: string[];
   contractDurationYears?: number;
+  contractDurationMonths?: number; // ✅ إضافة الحقل الجديد
   medicalInsurance?: string;
   nationality?: string;
 }
@@ -539,7 +579,7 @@ const EMPTY_FORM: ExtendedCreatePayload = {
   startDate: new Date().toISOString().split("T")[0] as string,
   endDate: "",
   annualLeaveDays: 30,
-  contractDurationYears: 1,
+  contractDurationMonths: 12, // ✅ الافتراضي 12 شهر
   ticketType: "بدون",
   probationPeriod: "بدون",
   medicalInsurance: "بدون",
@@ -578,6 +618,7 @@ const openCreateModal = () => {
   Object.assign(form, EMPTY_FORM);
   tempAttachments.value = [];
   selectedEmployeeNationality.value = "";
+  calculateContractDates(); // حساب أولي
   showModal.value = true;
 };
 
@@ -652,6 +693,40 @@ const downloadContract = async (id: string, type: "excel" | "pdf") => {
     activeExportMenu.value = null;
   } catch (e: any) {
     toast.error(e.message || "فشل في التصدير");
+  }
+};
+
+// ✅ Computed Property لعرض تاريخ نهاية فترة التجربة
+const calculatedProbationEndDate = computed(() => {
+  if (!form.startDate || form.probationPeriod === "بدون") return "";
+
+  const start = new Date(form.startDate);
+  let months = 0;
+
+  if (form.probationPeriod === "3 شهور") months = 3;
+  else if (form.probationPeriod === "6 شهور") months = 6;
+
+  if (months === 0) return "";
+
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + months);
+
+  return end.toISOString().split("T")[0];
+});
+
+// ✅ دالة حساب تواريخ العقد (نهاية العقد فقط)
+const calculateContractDates = () => {
+  if (!form.startDate) return;
+
+  const startDate = new Date(form.startDate);
+
+  // حساب تاريخ نهاية العقد بناءً على الشهور
+  if (form.contractDurationMonths && form.contractDurationMonths > 0) {
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + form.contractDurationMonths);
+    form.endDate = endDate.toISOString().split("T")[0];
+  } else {
+    form.endDate = "";
   }
 };
 

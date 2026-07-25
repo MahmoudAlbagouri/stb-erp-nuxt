@@ -32,6 +32,7 @@ export const useResignationStore = defineStore("resignations", () => {
   const requests = ref<ResignationRequest[]>([]);
   const loading = ref(false);
 
+  // ✅ جلب جميع الطلبات (للمدراء)
   const fetchAll = async (status?: ResignationStatus) => {
     loading.value = true;
     try {
@@ -39,17 +40,34 @@ export const useResignationStore = defineStore("resignations", () => {
         `/resignations${status ? `?status=${status}` : ""}`,
       );
       requests.value = res.data;
+    } catch (error) {
+      console.error("Failed to fetch all resignations:", error);
     } finally {
       loading.value = false;
     }
   };
 
-  const create = async (data: Partial<ResignationRequest>) => {
+  // ✅ جلب طلبات الموظف الحالي فقط (المسار الجديد)
+  const fetchMyRequests = async () => {
+    loading.value = true;
+    try {
+      const res = await api.get<ResignationRequest[]>(
+        "/resignations/my-requests",
+      );
+      requests.value = res.data;
+    } catch (error) {
+      console.error("Failed to fetch my requests:", error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const create = async (data: { lastWorkingDay: string; reason: string }) => {
     const res = await api.post<ResignationRequest>(
       "/resignations/my-request",
       data,
     );
-    requests.value.unshift(res.data);
+    await fetchMyRequests(); // تحديث قائمة طلباتي بعد الإضافة
     return res.data;
   };
 
@@ -57,8 +75,7 @@ export const useResignationStore = defineStore("resignations", () => {
     const res = await api.post<ResignationRequest>(
       "/resignations/my-request/cancel",
     );
-    const index = requests.value.findIndex((r) => r.id === res.data.id);
-    if (index !== -1) requests.value[index] = res.data;
+    await fetchMyRequests(); // تحديث القائمة بعد الإلغاء
     return res.data;
   };
 
@@ -71,17 +88,23 @@ export const useResignationStore = defineStore("resignations", () => {
       `/resignations/${id}/decision`,
       { newStatus, managerNotes },
     );
-    const index = requests.value.findIndex((r) => r.id === id);
-    if (index !== -1) requests.value[index] = res.data;
+    await fetchAll(); // المدير يحتاج تحديث القائمة الكاملة
     return res.data;
+  };
+
+  const reset = () => {
+    requests.value = [];
+    loading.value = false;
   };
 
   return {
     requests,
     loading,
     fetchAll,
+    fetchMyRequests, // ✅ تصدير الدالة الجديدة
     create,
     cancelMyRequest,
     makeDecision,
+    reset,
   };
 });
