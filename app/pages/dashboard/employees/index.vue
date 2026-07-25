@@ -615,9 +615,14 @@
                   >
                     <ExternalLink :size="16" /> فتح في تبويب جديد
                   </a>
-                  <a :href="currentFileUrl" download class="btn btn--outline">
+
+                  <!-- ✅ زر التحميل القسري -->
+                  <button
+                    @click="forceDownload(currentFileUrl)"
+                    class="btn btn--outline"
+                  >
                     <Download :size="16" /> تحميل الملف
-                  </a>
+                  </button>
                 </div>
               </div>
               <div v-else class="empty-state-mini">
@@ -765,6 +770,32 @@ const closeFileViewer = () => {
 // دالة مساعدة لتحديد نوع الملف
 const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
 const isPdf = (url: string) => /\.pdf$/i.test(url);
+
+// ✅ دالة التحميل القسري (لتجنب فتح PDF في المتصفح)
+const forceDownload = async (url: string) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+
+    // محاولة استخراج اسم الملف من الرابط الأصلي
+    const fileName = url.split("/").pop() || "downloaded_file";
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+
+    // تنظيف
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("فشل في تحميل الملف:", error);
+    toast.error("حدث خطأ أثناء محاولة تحميل الملف");
+  }
+};
 
 const showEditModal = ref(false);
 const updating = ref(false);
