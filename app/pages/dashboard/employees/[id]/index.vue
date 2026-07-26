@@ -508,11 +508,26 @@ const downloadProfile = async (type: "excel" | "pdf") => {
   }
 };
 
-// ✅ دالة التحميل المباشر للملفات باستخدام useApi لضمان إرسال التوكن
+// ✅ دالة التحميل المباشر للملفات (محدثة للتعامل مع الروابط الخارجية والداخلية)
 const downloadFile = async (url: string, defaultName: string) => {
+  if (!url) return;
+
   try {
-    // استخدام api.get مع responseType: 'blob' لضمان التعامل الصحيح مع المصادقة والملفات
-    const blob = await api.get<Blob>(url, true, "blob");
+    let blob: Blob;
+
+    // التحقق مما إذا كان الرابط خارجياً (يبدأ بـ http)
+    const isExternal = url.startsWith("http://") || url.startsWith("https://");
+
+    if (isExternal) {
+      // للروابط الخارجية: نستخدم fetch مباشر لتجنب دمج الـ Base URL الخاطئ
+      const response = await fetch(url);
+      if (!response.ok)
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      blob = await response.blob();
+    } else {
+      // للروابط الداخلية (النسبية): نستخدم api.get كما هو معتاد
+      blob = await api.get<Blob>(url, true, "blob");
+    }
 
     if (!blob || blob.size === 0) throw new Error("الملف فارغ أو تالف");
 
@@ -520,12 +535,15 @@ const downloadFile = async (url: string, defaultName: string) => {
     const link = document.createElement("a");
     link.href = blobUrl;
 
-    // محاولة استخراج اسم الملف الأصلي من الرابط أو استخدام الاسم الافتراضي
+    // محاولة استخراج اسم الملف الأصلي من الرابط
     const urlParts = url.split("/");
     const originalName = urlParts[urlParts.length - 1] || "";
+    // تنظيف الاسم من أي query parameters
+    const cleanName = originalName.split("?")[0];
+
     const fileName =
-      originalName && originalName.includes(".")
-        ? originalName
+      cleanName && cleanName.includes(".")
+        ? decodeURIComponent(cleanName)
         : `${defaultName}.pdf`;
 
     link.download = fileName;
@@ -539,7 +557,13 @@ const downloadFile = async (url: string, defaultName: string) => {
     toast.success("تم بدء تحميل الملف");
   } catch (error: any) {
     console.error("Download failed:", error);
-    toast.error(error.message || "فشل في تحميل الملف، يرجى المحاولة لاحقاً");
+    // إذا فشل التحميل المباشر للرابط الخارجي، نحاول فتحه في تبويب جديد كبديل
+    if (url.startsWith("http")) {
+      window.open(url, "_blank");
+      toast.warning("تم فتح الملف في تبويب جديد بدلاً من التحميل المباشر");
+    } else {
+      toast.error(error.message || "فشل في تحميل الملف");
+    }
   }
 };
 
