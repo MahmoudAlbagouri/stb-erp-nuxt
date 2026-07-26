@@ -90,10 +90,10 @@
               >{{ d.name }} • {{ d.employee?.employeeCode }}</span
             >
           </div>
-          <div class="deduction-amounts">
-            <span class="total">{{ formatCurrency(d.totalAmount) }}</span>
-            <span class="monthly">/{{ formatCurrency(d.monthlyAmount) }}</span>
-          </div>
+          <!-- ✅ شارة الحالة -->
+          <span :class="['status-badge', `badge--${d.status || 'pending'}`]">
+            {{ getStatusLabel(d.status) }}
+          </span>
         </div>
 
         <div class="deduction-card__body">
@@ -147,6 +147,30 @@
           </div>
 
           <div class="action-buttons">
+            <!-- ✅ أزرار تغيير الحالة تظهر بناءً على الحالة الحالية -->
+
+            <!-- إذا كان معلقاً: زر تفعيل -->
+            <button
+              v-if="d.status === DeductionStatus.PENDING"
+              class="btn btn--success-outline btn--sm"
+              @click="handleStatusChange(d.id, DeductionStatus.ACTIVE)"
+              title="تفعيل الخصم"
+            >
+              <Play :size="13" />
+            </button>
+
+            <!-- إذا كان نشطاً: زر إلغاء -->
+            <button
+              v-if="d.status === DeductionStatus.ACTIVE"
+              class="btn btn--danger-outline btn--sm"
+              @click="handleStatusChange(d.id, DeductionStatus.CANCELLED)"
+              title="إيقاف الخصم"
+            >
+              <Pause :size="13" />
+            </button>
+
+            <!-- إذا كان مكتملاً أو ملغى: لا تظهر أزرار حالة -->
+
             <button class="btn btn--ghost btn--sm" @click="openModal(d)">
               <Edit :size="13" /> تعديل
             </button>
@@ -196,6 +220,18 @@
                   required
                 />
               </div>
+
+              <!-- ✅ اختيار الحالة عند الإنشاء/التعديل -->
+              <div class="form-group">
+                <label>حالة الخصم</label>
+                <select v-model="form.status" class="form-select">
+                  <option :value="DeductionStatus.PENDING">معلق</option>
+                  <option :value="DeductionStatus.ACTIVE">نشط</option>
+                  <option :value="DeductionStatus.COMPLETED">مكتمل</option>
+                  <option :value="DeductionStatus.CANCELLED">ملغي</option>
+                </select>
+              </div>
+
               <div class="grid-2">
                 <div class="form-group">
                   <label>إجمالي المبلغ (ر.س) *</label
@@ -281,7 +317,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
-import { useDeductionStore } from "@/stores/deductions";
+import { useDeductionStore, DeductionStatus } from "@/stores/deductions"; // ✅ استيراد DeductionStatus
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "@/composables/useToast";
 import {
@@ -298,6 +334,8 @@ import {
   Info,
   FileSpreadsheet,
   Download,
+  Play, // ✅ أيقونة التفعيل
+  Pause, // ✅ أيقونة الإيقاف المؤقت
 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
@@ -324,6 +362,7 @@ const form = reactive({
   installmentsCount: 1,
   startDate: new Date().toISOString().split("T")[0],
   notes: "",
+  status: DeductionStatus.PENDING as DeductionStatus, // ✅ الحالة الافتراضية
 });
 const employees = computed(() =>
   employeeStore.employees.filter((e) => e.status === "active"),
@@ -343,6 +382,22 @@ const calculatedMonthly = computed(() =>
 );
 const todayLabel = new Date().toLocaleDateString("ar-SA");
 
+// ✅ دالة لترجمة الحالة
+const getStatusLabel = (status?: DeductionStatus) => {
+  switch (status) {
+    case DeductionStatus.PENDING:
+      return "معلق";
+    case DeductionStatus.ACTIVE:
+      return "نشط";
+    case DeductionStatus.COMPLETED:
+      return "مكتمل";
+    case DeductionStatus.CANCELLED:
+      return "ملغي";
+    default:
+      return "غير محدد";
+  }
+};
+
 const openModal = (deduction?: any) => {
   if (deduction) {
     isEditing.value = true;
@@ -353,6 +408,7 @@ const openModal = (deduction?: any) => {
     form.installmentsCount = deduction.installmentsCount;
     form.startDate = deduction.startDate.split("T")[0];
     form.notes = deduction.notes || "";
+    form.status = deduction.status || DeductionStatus.PENDING;
   } else {
     isEditing.value = false;
     currentId.value = null;
@@ -362,6 +418,7 @@ const openModal = (deduction?: any) => {
     form.installmentsCount = 1;
     form.startDate = new Date().toISOString().split("T")[0];
     form.notes = "";
+    form.status = DeductionStatus.PENDING;
   }
   showModal.value = true;
 };
@@ -379,6 +436,16 @@ const handleSubmit = async () => {
     toast.error(e.message);
   } finally {
     submitting.value = false;
+  }
+};
+
+// ✅ دالة تغيير الحالة السريعة
+const handleStatusChange = async (id: string, status: DeductionStatus) => {
+  try {
+    await store.updateStatus(id, status);
+    toast.success(`تم تغيير حالة الخصم إلى: ${getStatusLabel(status)}`);
+  } catch (e: any) {
+    toast.error(e.message);
   }
 };
 
@@ -604,6 +671,32 @@ onMounted(() => {
   @include flex(row, center, center);
   flex-shrink: 0;
 }
+
+// ✅ تنسيق شارة الحالة
+.status-badge {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: $radius-full;
+  font-weight: 600;
+  white-space: nowrap;
+  &.badge--pending {
+    background: rgba($stb-warning, 0.15);
+    color: $stb-warning;
+  }
+  &.badge--active {
+    background: rgba($stb-success, 0.15);
+    color: $stb-success;
+  }
+  &.badge--completed {
+    background: rgba($stb-accent, 0.15);
+    color: $stb-accent;
+  }
+  &.badge--cancelled {
+    background: rgba($stb-text-muted, 0.15);
+    color: $stb-text-muted;
+  }
+}
+
 .deduction-amounts {
   text-align: left;
   white-space: nowrap;

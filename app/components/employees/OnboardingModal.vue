@@ -62,6 +62,7 @@
                     class="form-input"
                     :class="{ 'form-input--error': errors.fullName }"
                     placeholder="محمد أحمد العمري"
+                    @blur="validateField('fullName')"
                   />
                   <span v-if="errors.fullName" class="form-error">{{
                     errors.fullName
@@ -74,6 +75,7 @@
                     v-model="form.employee.nationalityType"
                     class="form-select"
                     :class="{ 'form-select--error': errors.nationalityType }"
+                    @change="validateField('nationalityType')"
                   >
                     <option value="" disabled>اختر...</option>
                     <option value="saudi">🇸🇦 سعودي</option>
@@ -98,6 +100,7 @@
                       type="date"
                       class="form-input"
                       :class="{ 'form-input--error': errors.iqamaExpiryDate }"
+                      @blur="validateField('iqamaExpiryDate')"
                     />
                     <span v-if="errors.iqamaExpiryDate" class="form-error">{{
                       errors.iqamaExpiryDate
@@ -143,27 +146,37 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">المسمى الوظيفي</label>
+                  <label class="form-label required">المسمى الوظيفي</label>
                   <input
                     v-model="form.employee.jobTitle"
                     type="text"
                     class="form-input"
+                    :class="{ 'form-input--error': errors.jobTitle }"
                     placeholder="مهندس برمجيات أول"
+                    @blur="validateField('jobTitle')"
                   />
+                  <span v-if="errors.jobTitle" class="form-error">{{
+                    errors.jobTitle
+                  }}</span>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">القسم</label>
+                  <label class="form-label required">القسم</label>
                   <input
                     v-model="form.employee.department"
                     type="text"
                     class="form-input"
+                    :class="{ 'form-input--error': errors.department }"
                     placeholder="تقنية المعلومات"
+                    @blur="validateField('department')"
                   />
+                  <span v-if="errors.department" class="form-error">{{
+                    errors.department
+                  }}</span>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">رقم الهاتف</label>
+                  <label class="form-label required">رقم الهاتف</label>
                   <input
                     v-model="form.employee.phone"
                     type="tel"
@@ -178,6 +191,7 @@
                         '',
                       )
                     "
+                    @blur="validateField('phone')"
                   />
                   <span v-if="errors.phone" class="form-error">{{
                     errors.phone
@@ -185,12 +199,20 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">الحالة الوظيفية</label>
-                  <select v-model="form.employee.status" class="form-select">
+                  <label class="form-label required">الحالة الوظيفية</label>
+                  <select
+                    v-model="form.employee.status"
+                    class="form-select"
+                    :class="{ 'form-select--error': errors.status }"
+                    @change="validateField('status')"
+                  >
                     <option value="active">✅ نشط</option>
                     <option value="inactive">⏸ غير نشط</option>
                     <option value="terminated">❌ منتهي الخدمة</option>
                   </select>
+                  <span v-if="errors.status" class="form-error">{{
+                    errors.status
+                  }}</span>
                 </div>
               </div>
 
@@ -243,11 +265,15 @@
 
                       <div class="edu-item-fields">
                         <div class="form-group">
-                          <label class="form-label">نوع الشهادة</label>
+                          <label class="form-label required">نوع الشهادة</label>
                           <input
                             v-model="edu.degree"
                             type="text"
                             class="form-input"
+                            :class="{
+                              'form-input--error':
+                                !edu.degree && showEducationErrors,
+                            }"
                             placeholder="مثال: بكالوريوس هندسة"
                           />
                         </div>
@@ -264,11 +290,17 @@
 
                         <!-- ✅ حقل جهة الإصدار الجديد -->
                         <div class="form-group">
-                          <label class="form-label">جهة الإصدار / المصدر</label>
+                          <label class="form-label required"
+                            >جهة الإصدار / المصدر</label
+                          >
                           <input
                             v-model="edu.issuingAuthority"
                             type="text"
                             class="form-input"
+                            :class="{
+                              'form-input--error':
+                                !edu.issuingAuthority && showEducationErrors,
+                            }"
                             placeholder="مثال: جامعة الملك سعود"
                           />
                         </div>
@@ -347,6 +379,7 @@
                         :class="{ 'form-input--error': errors.username }"
                         placeholder="ahmed.ali"
                         dir="ltr"
+                        @blur="validateField('username')"
                       />
                       <span v-if="errors.username" class="form-error">{{
                         errors.username
@@ -364,6 +397,7 @@
                         :class="{ 'form-input--error': errors.email }"
                         placeholder="ahmed@company.com"
                         dir="ltr"
+                        @blur="validateField('email')"
                       />
                       <span v-if="errors.email" class="form-error">{{
                         errors.email
@@ -380,6 +414,7 @@
                           :class="{ 'form-input--error': errors.password }"
                           placeholder="••••••••"
                           dir="ltr"
+                          @blur="validateField('password')"
                         />
                         <button
                           type="button"
@@ -405,7 +440,7 @@
 
                     <!-- ─ الدور ─ -->
                     <div class="form-group form-group--full">
-                      <label class="form-label">الدور الوظيفي</label>
+                      <label class="form-label required">الدور الوظيفي</label>
 
                       <!-- اختيار: دور موجود أم جديد -->
                       <div class="role-toggle">
@@ -453,6 +488,7 @@
                             v-model="form.user.roleId"
                             class="form-select"
                             :class="{ 'form-select--error': errors.roleId }"
+                            @change="validateField('roleId')"
                           >
                             <option value="" disabled>اختر الدور...</option>
                             <option
@@ -513,6 +549,7 @@
                                 'form-input--error': errors.roleName,
                               }"
                               placeholder="مثال: مشرف المبيعات"
+                              @blur="validateField('roleName')"
                             />
                             <span v-if="errors.roleName" class="form-error">{{
                               errors.roleName
@@ -521,7 +558,7 @@
 
                           <!-- اختيار الصلاحيات -->
                           <div class="form-group">
-                            <label class="form-label"
+                            <label class="form-label required"
                               >صلاحيات الدور
                               <span class="label-count"
                                 >({{
@@ -618,6 +655,7 @@
                       v-model="form.contract.contractType"
                       class="form-select"
                       :class="{ 'form-select--error': errors.contractType }"
+                      @change="validateField('contractType')"
                     >
                       <option value="" disabled>اختر النوع...</option>
                       <option value="دائم">دائم</option>
@@ -633,15 +671,26 @@
 
                   <!-- ✅ تغيير المدة إلى شهور -->
                   <div class="form-group">
-                    <label class="form-label">مدة العقد (بالشهور)</label>
+                    <label class="form-label required"
+                      >مدة العقد (بالشهور)</label
+                    >
                     <input
                       v-model.number="form.contract.contractDurationMonths"
                       type="number"
                       min="1"
                       class="form-input"
+                      :class="{
+                        'form-input--error': errors.contractDurationMonths,
+                      }"
                       placeholder="مثال: 12"
                       @input="calculateContractDates"
+                      @blur="validateField('contractDurationMonths')"
                     />
+                    <span
+                      v-if="errors.contractDurationMonths"
+                      class="form-error"
+                      >{{ errors.contractDurationMonths }}</span
+                    >
                   </div>
 
                   <div class="form-group">
@@ -652,6 +701,7 @@
                       class="form-input"
                       :class="{ 'form-input--error': errors.startDate }"
                       @input="calculateContractDates"
+                      @blur="validateField('startDate')"
                     />
                     <span v-if="errors.startDate" class="form-error">{{
                       errors.startDate
@@ -678,7 +728,9 @@
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">أيام الإجازة السنوية</label>
+                    <label class="form-label required"
+                      >أيام الإجازة السنوية</label
+                    >
                     <div class="number-stepper">
                       <button
                         type="button"
@@ -697,6 +749,8 @@
                         min="0"
                         max="365"
                         class="form-input"
+                        :class="{ 'form-input--error': errors.annualLeaveDays }"
+                        @blur="validateField('annualLeaveDays')"
                       />
                       <button
                         type="button"
@@ -708,19 +762,27 @@
                         <Plus :size="14" />
                       </button>
                     </div>
+                    <span v-if="errors.annualLeaveDays" class="form-error">{{
+                      errors.annualLeaveDays
+                    }}</span>
                   </div>
 
                   <!-- ✅ التأمين الطبي -->
                   <div class="form-group">
-                    <label class="form-label">التأمين الطبي</label>
+                    <label class="form-label required">التأمين الطبي</label>
                     <select
                       v-model="form.contract.medicalInsurance"
                       class="form-select"
+                      :class="{ 'form-select--error': errors.medicalInsurance }"
+                      @change="validateField('medicalInsurance')"
                     >
                       <option value="بدون">بدون</option>
                       <option value="فردي">فردي</option>
                       <option value="عائلي">عائلي</option>
                     </select>
+                    <span v-if="errors.medicalInsurance" class="form-error">{{
+                      errors.medicalInsurance
+                    }}</span>
                   </div>
 
                   <!-- ✅ الجنسية (تظهر فقط لغير السعوديين) -->
@@ -736,6 +798,7 @@
                         'form-select--error': errors.contractNationality,
                       }"
                       required
+                      @change="validateField('contractNationality')"
                     >
                       <option value="" disabled>اختر الجنسية...</option>
                       <option
@@ -754,28 +817,38 @@
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">تذكرة طيران</label>
+                    <label class="form-label required">تذكرة طيران</label>
                     <select
                       v-model="form.contract.ticketType"
                       class="form-select"
+                      :class="{ 'form-select--error': errors.ticketType }"
+                      @change="validateField('ticketType')"
                     >
                       <option value="بدون">بدون</option>
                       <option value="ذهاب فقط">ذهاب فقط</option>
                       <option value="ذهاب وعودة">ذهاب وعودة</option>
                     </select>
+                    <span v-if="errors.ticketType" class="form-error">{{
+                      errors.ticketType
+                    }}</span>
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">فترة التجربة</label>
+                    <label class="form-label required">فترة التجربة</label>
                     <select
                       v-model="form.contract.probationPeriod"
                       class="form-select"
+                      :class="{ 'form-select--error': errors.probationPeriod }"
                       @change="calculateContractDates"
+                      @blur="validateField('probationPeriod')"
                     >
                       <option value="بدون">بدون</option>
                       <option value="3 شهور">3 شهور</option>
                       <option value="6 شهور">6 شهور</option>
                     </select>
+                    <span v-if="errors.probationPeriod" class="form-error">{{
+                      errors.probationPeriod
+                    }}</span>
                   </div>
 
                   <!-- ✅ عرض تاريخ نهاية فترة التجربة المحسوب -->
@@ -863,6 +936,7 @@
                           }"
                           placeholder="0"
                           dir="ltr"
+                          @blur="validateField('basicSalary')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
@@ -872,48 +946,71 @@
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">بدل السكن</label>
+                      <label class="form-label required">بدل السكن</label>
                       <div class="input-with-suffix">
                         <input
                           v-model.number="form.salary.housingAllowance"
                           type="number"
                           min="0"
                           class="form-input"
+                          :class="{
+                            'form-input--error': errors.housingAllowance,
+                          }"
                           placeholder="0"
                           dir="ltr"
+                          @blur="validateField('housingAllowance')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
+                      <span v-if="errors.housingAllowance" class="form-error">{{
+                        errors.housingAllowance
+                      }}</span>
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">بدل النقل</label>
+                      <label class="form-label required">بدل النقل</label>
                       <div class="input-with-suffix">
                         <input
                           v-model.number="form.salary.transportAllowance"
                           type="number"
                           min="0"
                           class="form-input"
+                          :class="{
+                            'form-input--error': errors.transportAllowance,
+                          }"
                           placeholder="0"
                           dir="ltr"
+                          @blur="validateField('transportAllowance')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
+                      <span
+                        v-if="errors.transportAllowance"
+                        class="form-error"
+                        >{{ errors.transportAllowance }}</span
+                      >
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">بدلات أخرى</label>
+                      <label class="form-label required">بدلات أخرى</label>
                       <div class="input-with-suffix">
                         <input
                           v-model.number="form.salary.otherAllowances"
                           type="number"
                           min="0"
                           class="form-input"
+                          :class="{
+                            'form-input--error': errors.otherAllowances,
+                          }"
                           placeholder="0"
                           dir="ltr"
+                          @blur="validateField('otherAllowances')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
+                      <span v-if="errors.otherAllowances" class="form-error">{{
+                        errors.otherAllowances
+                      }}</span>
                     </div>
                   </div>
 
@@ -1285,10 +1382,13 @@ const goTo = (key: TabKey) => {
 
 const nextTab = () => {
   const idx = tabOrder.indexOf(activeTab.value);
+  // ✅ التحقق الصارم قبل الانتقال
   if (validateCurrentTab()) {
     doneTabs.value.add(activeTab.value);
     const nextKey = tabOrder[idx + 1];
     if (nextKey) activeTab.value = nextKey;
+  } else {
+    toast.error("يرجى تعبئة جميع الحقول المطلوبة قبل الانتقال");
   }
 };
 
@@ -1356,6 +1456,7 @@ const form = reactive({
 });
 
 const showEducationForm = ref(false); // ✅ Toggle لإظهار قسم المؤهلات
+const showEducationErrors = ref(false); // ✅ لإظهار أخطاء المؤهلات عند المحاولة
 
 const errors = reactive<Record<string, string>>({});
 const submitting = ref(false);
@@ -1466,7 +1567,13 @@ const clearErrors = () => {
   Object.keys(errors).forEach((k) => delete errors[k]);
 };
 
-const validateCurrentTab = (): boolean => {
+// دالة مساعدة للتحقق من حقل واحد وعرض الخطأ فوراً
+const validateField = (field: string) => {
+  // إعادة تشغيل التحقق العام لتحديث الأخطاء
+  validateCurrentTab(true);
+};
+
+const validateCurrentTab = (silent: boolean = false): boolean => {
   clearErrors();
   let isValid = true;
 
@@ -1486,6 +1593,39 @@ const validateCurrentTab = (): boolean => {
     ) {
       errors.iqamaExpiryDate = "تاريخ انتهاء الهوية مطلوب لغير السعوديين";
       isValid = false;
+    }
+    if (!form.employee.jobTitle.trim()) {
+      errors.jobTitle = "المسمى الوظيفي مطلوب";
+      isValid = false;
+    }
+    if (!form.employee.department.trim()) {
+      errors.department = "القسم مطلوب";
+      isValid = false;
+    }
+    if (!form.employee.phone || form.employee.phone.length !== 10) {
+      errors.phone = "رقم الهاتف مطلوب ويجب أن يكون 10 أرقام";
+      isValid = false;
+    }
+    if (!form.employee.status) {
+      errors.status = "الحالة الوظيفية مطلوبة";
+      isValid = false;
+    }
+
+    // التحقق من المؤهلات إذا كانت مفتوحة
+    if (showEducationForm.value && form.educations.length > 0) {
+      const invalidEdu = form.educations.some(
+        (e) => !e.degree || !e.issuingAuthority,
+      );
+      if (invalidEdu) {
+        showEducationErrors.value = true;
+        if (!silent)
+          toast.error(
+            "يرجى إكمال بيانات المؤهلات المضافة (النوع وجهة الإصدار)",
+          );
+        isValid = false;
+      } else {
+        showEducationErrors.value = false;
+      }
     }
   }
 
@@ -1525,6 +1665,33 @@ const validateCurrentTab = (): boolean => {
       errors.startDate = "تاريخ بداية العقد مطلوب";
       isValid = false;
     }
+    if (
+      !form.contract.contractDurationMonths ||
+      form.contract.contractDurationMonths < 1
+    ) {
+      errors.contractDurationMonths = "مدة العقد مطلوبة ويجب أن تكون أكبر من 0";
+      isValid = false;
+    }
+    if (
+      form.contract.annualLeaveDays === undefined ||
+      form.contract.annualLeaveDays < 0
+    ) {
+      errors.annualLeaveDays = "أيام الإجازة مطلوبة";
+      isValid = false;
+    }
+    if (!form.contract.medicalInsurance) {
+      errors.medicalInsurance = "يرجى تحديد حالة التأمين الطبي";
+      isValid = false;
+    }
+    if (!form.contract.ticketType) {
+      errors.ticketType = "يرجى تحديد حالة التذكرة";
+      isValid = false;
+    }
+    if (!form.contract.probationPeriod) {
+      errors.probationPeriod = "يرجى تحديد فترة التجربة";
+      isValid = false;
+    }
+
     // التحقق من الجنسية في العقد لغير السعوديين
     if (
       form.employee.nationalityType === "non_saudi" &&
@@ -1538,7 +1705,29 @@ const validateCurrentTab = (): boolean => {
   // 4. تحقق تبويب الراتب (إذا كان مفعلاً)
   if (activeTab.value === "salary" && form.withSalary) {
     if (!form.salary.basicSalary || form.salary.basicSalary <= 0) {
-      errors.basicSalary = "الراتب الأساسي يجب أن يكون أكبر من صفر";
+      errors.basicSalary = "الراتب الأساسي مطلوب ويجب أن يكون أكبر من صفر";
+      isValid = false;
+    }
+    // جعل البدلات إجبارية أيضاً حسب الطلب
+    if (
+      form.salary.housingAllowance === undefined ||
+      form.salary.housingAllowance < 0
+    ) {
+      errors.housingAllowance = "بدل السكن مطلوب";
+      isValid = false;
+    }
+    if (
+      form.salary.transportAllowance === undefined ||
+      form.salary.transportAllowance < 0
+    ) {
+      errors.transportAllowance = "بدل النقل مطلوب";
+      isValid = false;
+    }
+    if (
+      form.salary.otherAllowances === undefined ||
+      form.salary.otherAllowances < 0
+    ) {
+      errors.otherAllowances = "البدلات الأخرى مطلوبة";
       isValid = false;
     }
   }
@@ -1580,6 +1769,7 @@ const handleClose = () => {
     doneTabs.value.clear();
     clearErrors();
     showEducationForm.value = false; // ✅ إعادة تعيين التوجل
+    showEducationErrors.value = false;
 
     tempNationalIdFile.value = "";
     tempContractFiles.value = [];
@@ -1643,21 +1833,36 @@ const handleSubmit = async () => {
   // تحقق نهائي شامل قبل الإرسال
   // ننتقل عبر جميع التبويبات للتحقق منها إذا كانت مفعلة
   let allValid = true;
+
+  // محاكاة التنقل عبر التبويبات للتحقق من كل شيء
   const originalTab = activeTab.value;
 
-  // نقوم بالتحقق من كل تبويب دون تغيير الواجهة فعلياً
-  // (يمكن تحسين هذا الجزء ليكون أكثر كفاءة، لكن للضمان نتحقق يدوياً)
+  // نتحقق يدوياً من كل قسم بناءً على حالته (معطل/مفعل)
 
-  // تحقق الموظف
-  if (!form.employee.fullName.trim() || !form.employee.nationalityType)
+  // 1. تحقق الموظف (دائماً مطلوب)
+  if (
+    !form.employee.fullName.trim() ||
+    !form.employee.nationalityType ||
+    !form.employee.jobTitle ||
+    !form.employee.department ||
+    !form.employee.phone ||
+    !form.employee.status
+  ) {
     allValid = false;
+  }
   if (
     form.employee.nationalityType === "non_saudi" &&
     !form.employee.iqamaExpiryDate
-  )
+  ) {
     allValid = false;
+  }
+  // تحقق المؤهلات
+  if (showEducationForm.value && form.educations.length > 0) {
+    if (form.educations.some((e) => !e.degree || !e.issuingAuthority))
+      allValid = false;
+  }
 
-  // تحقق المستخدم
+  // 2. تحقق المستخدم (إذا مفعل)
   if (form.withUser) {
     if (
       !form.user.username ||
@@ -1669,10 +1874,18 @@ const handleSubmit = async () => {
     if (form.roleMode === "new" && !form.user.roleName) allValid = false;
   }
 
-  // تحقق العقد
+  // 3. تحقق العقد (إذا مفعل)
   if (form.withContract) {
-    if (!form.contract.contractType || !form.contract.startDate)
+    if (
+      !form.contract.contractType ||
+      !form.contract.startDate ||
+      !form.contract.contractDurationMonths ||
+      !form.contract.medicalInsurance ||
+      !form.contract.ticketType ||
+      !form.contract.probationPeriod
+    ) {
       allValid = false;
+    }
     if (
       form.employee.nationalityType === "non_saudi" &&
       !form.contract.nationality
@@ -1680,17 +1893,33 @@ const handleSubmit = async () => {
       allValid = false;
   }
 
-  // تحقق الراتب
-  if (
-    form.withSalary &&
-    (!form.salary.basicSalary || form.salary.basicSalary <= 0)
-  )
-    allValid = false;
+  // 4. تحقق الراتب (إذا مفعل)
+  if (form.withSalary) {
+    if (!form.salary.basicSalary || form.salary.basicSalary <= 0)
+      allValid = false;
+    if (
+      form.salary.housingAllowance === undefined ||
+      form.salary.housingAllowance < 0
+    )
+      allValid = false;
+    if (
+      form.salary.transportAllowance === undefined ||
+      form.salary.transportAllowance < 0
+    )
+      allValid = false;
+    if (
+      form.salary.otherAllowances === undefined ||
+      form.salary.otherAllowances < 0
+    )
+      allValid = false;
+  }
 
   if (!allValid) {
     toast.error(
       "يرجى التأكد من تعبئة جميع الحقول المطلوبة في التبويبات المختلفة",
     );
+    // العودة للتبويب الأول الذي يحتوي على خطأ (اختياري، لكن مفيد)
+    // يمكن تحسينه لاحقاً للقفز للتبويب الخاطئ مباشرة
     return;
   }
 

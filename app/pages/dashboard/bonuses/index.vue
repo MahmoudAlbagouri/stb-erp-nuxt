@@ -85,10 +85,21 @@
               bonus.employee?.employeeCode || ""
             }}</span>
           </div>
-          <span class="bonus-amount">{{ formatCurrency(bonus.amount) }}</span>
+          <!-- ✅ شارة الحالة -->
+          <span
+            :class="['status-badge', `badge--${bonus.status || 'pending'}`]"
+          >
+            {{ getStatusLabel(bonus.status) }}
+          </span>
         </div>
 
         <div class="bonus-card__body">
+          <div class="bonus-stat">
+            <span class="label"><Banknote :size="12" /> المبلغ</span>
+            <span class="value value--amount">{{
+              formatCurrency(bonus.amount)
+            }}</span>
+          </div>
           <div class="bonus-stat">
             <span class="label"><CalendarDays :size="12" /> تاريخ الصرف</span
             ><span class="value">{{ formatDate(bonus.payoutDate) }}</span>
@@ -98,10 +109,6 @@
             ><span class="value value--muted">{{
               truncateNotes(bonus.notes)
             }}</span>
-          </div>
-          <div class="bonus-stat">
-            <span class="label"><Clock :size="12" /> تاريخ التسجيل</span
-            ><span class="value">{{ formatDate(bonus.createdAt) }}</span>
           </div>
         </div>
 
@@ -128,6 +135,24 @@
           </div>
 
           <div class="action-buttons">
+            <!-- ✅ أزرار الموافقة والرفض تظهر فقط للمكافآت المعلقة -->
+            <template v-if="bonus.status === BonusStatus.PENDING">
+              <button
+                class="btn btn--success-outline btn--sm"
+                @click="handleStatusChange(bonus.id, BonusStatus.APPROVED)"
+                title="موافقة"
+              >
+                <Check :size="13" />
+              </button>
+              <button
+                class="btn btn--danger-outline btn--sm"
+                @click="handleStatusChange(bonus.id, BonusStatus.REJECTED)"
+                title="رفض"
+              >
+                <XCircle :size="13" />
+              </button>
+            </template>
+
             <button class="btn btn--ghost btn--sm" @click="openModal(bonus)">
               <Edit :size="13" /> تعديل
             </button>
@@ -167,6 +192,18 @@
                   </option>
                 </select>
               </div>
+
+              <!-- ✅ اختيار الحالة عند الإنشاء/التعديل -->
+              <div class="form-group">
+                <label>حالة المكافأة</label>
+                <select v-model="form.status" class="form-select">
+                  <option :value="BonusStatus.PENDING">معلقة</option>
+                  <option :value="BonusStatus.APPROVED">موافق عليها</option>
+                  <option :value="BonusStatus.REJECTED">مرفوضة</option>
+                  <option :value="BonusStatus.PAID">تم الصرف</option>
+                </select>
+              </div>
+
               <div class="grid-2">
                 <div class="form-group">
                   <label>المبلغ (ر.س) *</label
@@ -241,7 +278,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
-import { useBonusStore } from "@/stores/bonuses";
+import { useBonusStore, BonusStatus } from "@/stores/bonuses"; // ✅ استيراد BonusStatus
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "@/composables/useToast";
 import {
@@ -257,6 +294,8 @@ import {
   Info,
   FileSpreadsheet,
   Download,
+  Check, // ✅ أيقونة الموافقة
+  XCircle, // ✅ أيقونة الرفض
 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
@@ -281,13 +320,17 @@ const form = reactive({
   amount: 0,
   payoutDate: new Date().toISOString().split("T")[0],
   notes: "",
+  status: BonusStatus.PENDING as BonusStatus, // ✅ الحالة الافتراضية
 });
+
 const employees = computed(() =>
   employeeStore.employees.filter((e) => e.status === "active"),
 );
+
 const totalAmount = computed(() =>
   store.bonuses.reduce((sum, b) => sum + Number(b.amount), 0),
 );
+
 const lastPayoutLabel = computed(() => {
   if (!store.bonuses.length) return "—";
   const sorted = [...store.bonuses].sort(
@@ -297,6 +340,22 @@ const lastPayoutLabel = computed(() => {
   return sorted[0] ? formatDate(sorted[0].payoutDate) : "—";
 });
 
+// ✅ دالة لترجمة الحالة
+const getStatusLabel = (status?: BonusStatus) => {
+  switch (status) {
+    case BonusStatus.PENDING:
+      return "معلقة";
+    case BonusStatus.APPROVED:
+      return "موافق عليها";
+    case BonusStatus.REJECTED:
+      return "مرفوضة";
+    case BonusStatus.PAID:
+      return "تم الصرف";
+    default:
+      return "غير محدد";
+  }
+};
+
 const openModal = (bonus?: any) => {
   if (bonus) {
     isEditing.value = true;
@@ -305,6 +364,7 @@ const openModal = (bonus?: any) => {
     form.amount = Number(bonus.amount);
     form.payoutDate = bonus.payoutDate.split("T")[0];
     form.notes = bonus.notes || "";
+    form.status = bonus.status || BonusStatus.PENDING;
   } else {
     isEditing.value = false;
     currentId.value = null;
@@ -312,6 +372,7 @@ const openModal = (bonus?: any) => {
     form.amount = 0;
     form.payoutDate = new Date().toISOString().split("T")[0];
     form.notes = "";
+    form.status = BonusStatus.PENDING;
   }
   showModal.value = true;
 };
@@ -329,6 +390,16 @@ const handleSubmit = async () => {
     toast.error(e.message);
   } finally {
     submitting.value = false;
+  }
+};
+
+// ✅ دالة تغيير الحالة السريعة
+const handleStatusChange = async (id: string, status: BonusStatus) => {
+  try {
+    await store.updateStatus(id, status);
+    toast.success(`تم تغيير حالة المكافأة إلى: ${getStatusLabel(status)}`);
+  } catch (e: any) {
+    toast.error(e.message);
   }
 };
 
@@ -351,9 +422,11 @@ const formatCurrency = (val: number | string) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }) + " ر.س";
+
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;
+
 const getPayoutMonthLabel = () => {
   const d = new Date(form.payoutDate!);
   const months = [
@@ -569,11 +642,30 @@ onMounted(() => {
   @include flex(row, center, center);
   flex-shrink: 0;
 }
-.bonus-amount {
-  font-size: $font-size-lg;
-  font-weight: 800;
-  color: $stb-success;
+
+// ✅ تنسيق شارة الحالة
+.status-badge {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: $radius-full;
+  font-weight: 600;
   white-space: nowrap;
+  &.badge--pending {
+    background: rgba($stb-warning, 0.15);
+    color: $stb-warning;
+  }
+  &.badge--approved {
+    background: rgba($stb-success, 0.15);
+    color: $stb-success;
+  }
+  &.badge--rejected {
+    background: rgba($stb-danger, 0.15);
+    color: $stb-danger;
+  }
+  &.badge--paid {
+    background: rgba($stb-accent, 0.15);
+    color: $stb-accent;
+  }
 }
 
 .bonus-stat {
@@ -594,6 +686,10 @@ onMounted(() => {
     &--muted {
       color: $stb-text-muted;
       font-weight: 400;
+    }
+    &--amount {
+      color: $stb-success;
+      font-weight: 700;
     }
   }
 }

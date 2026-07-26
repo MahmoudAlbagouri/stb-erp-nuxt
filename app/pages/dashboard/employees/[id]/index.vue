@@ -37,10 +37,6 @@
             </div>
           </Transition>
         </div>
-
-        <!-- <button class="btn btn--outline" @click="openEditModal">
-          <Pencil :size="16" /> تعديل البيانات
-        </button> -->
       </div>
     </div>
 
@@ -68,14 +64,18 @@
               >
             </span>
           </div>
+          <!-- ✅ تعديل رابط الهوية للتحميل المباشر -->
           <div class="info-item full-width" v-if="employee.nationalIdCardPath">
             <label>صورة الهوية</label>
             <a
-              :href="employee.nationalIdCardPath"
-              target="_blank"
+              href="#"
+              @click.prevent="
+                downloadFile(employee.nationalIdCardPath, 'identity_card')
+              "
               class="file-link"
-              ><Eye :size="14" /> عرض صورة الهوية</a
             >
+              <Download :size="14" /> تحميل صورة الهوية
+            </a>
           </div>
         </div>
       </div>
@@ -190,6 +190,8 @@
             <label>فترة التجربة</label
             ><span>{{ employee.contract.probationPeriod }}</span>
           </div>
+
+          <!-- ✅ تعديل مرفقات العقد للتحميل المباشر -->
           <div
             class="info-item full-width"
             v-if="employee.contract.attachmentPaths?.length"
@@ -199,11 +201,14 @@
               <a
                 v-for="(path, i) in employee.contract.attachmentPaths"
                 :key="i"
-                :href="path"
-                target="_blank"
+                href="#"
+                @click.prevent="
+                  downloadFile(path, `contract_attachment_${Number(i) + 1}`)
+                "
                 class="file-link"
-                ><Paperclip :size="14" /> مرفق {{ Number(i) + 1 }}</a
               >
+                <Paperclip :size="14" /> تحميل مرفق {{ Number(i) + 1 }}
+              </a>
             </div>
           </div>
         </div>
@@ -237,13 +242,22 @@
                 <td dir="ltr">{{ edu.certificateNumber || "—" }}</td>
                 <td>{{ formatDate(edu.expiryDate) }}</td>
                 <td>
+                  <!-- ✅ تعديل مرفق المؤهل للتحميل المباشر -->
                   <a
                     v-if="edu.attachmentPath"
-                    :href="edu.attachmentPath"
-                    target="_blank"
+                    href="#"
+                    @click.prevent="
+                      downloadFile(
+                        edu.attachmentPath,
+                        `certificate_${edu.degree}`,
+                      )
+                    "
                     class="icon-link"
-                    ><Download :size="16"
-                  /></a>
+                    title="تحميل الشهادة"
+                  >
+                    <Download :size="16" />
+                  </a>
+                  <span v-else class="text-muted">—</span>
                 </td>
               </tr>
             </tbody>
@@ -449,6 +463,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRoute, navigateTo } from "#app";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "@/composables/useToast";
+import { useApi } from "@/composables/useApi"; // ✅ استيراد useApi
 import type { Employee } from "@/types";
 import {
   User,
@@ -473,6 +488,7 @@ import {
 const route = useRoute();
 const store = useEmployeesStore();
 const toast = useToast();
+const api = useApi(); // ✅ تهيئة API
 const employee = ref<Employee | null>(null);
 const loading = ref(true);
 
@@ -489,6 +505,41 @@ const downloadProfile = async (type: "excel" | "pdf") => {
     showExportMenu.value = false;
   } catch (e: any) {
     toast.error(e.message || "فشل في التصدير");
+  }
+};
+
+// ✅ دالة التحميل المباشر للملفات باستخدام useApi لضمان إرسال التوكن
+const downloadFile = async (url: string, defaultName: string) => {
+  try {
+    // استخدام api.get مع responseType: 'blob' لضمان التعامل الصحيح مع المصادقة والملفات
+    const blob = await api.get<Blob>(url, true, "blob");
+
+    if (!blob || blob.size === 0) throw new Error("الملف فارغ أو تالف");
+
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+
+    // محاولة استخراج اسم الملف الأصلي من الرابط أو استخدام الاسم الافتراضي
+    const urlParts = url.split("/");
+    const originalName = urlParts[urlParts.length - 1] || "";
+    const fileName =
+      originalName && originalName.includes(".")
+        ? originalName
+        : `${defaultName}.pdf`;
+
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // تنظيف
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+
+    toast.success("تم بدء تحميل الملف");
+  } catch (error: any) {
+    console.error("Download failed:", error);
+    toast.error(error.message || "فشل في تحميل الملف، يرجى المحاولة لاحقاً");
   }
 };
 
@@ -724,6 +775,7 @@ const openEditModal = () => console.log("Edit:", employee.value?.id);
   color: $stb-accent;
   text-decoration: none;
   font-size: $font-size-xs;
+  cursor: pointer;
   &:hover {
     text-decoration: underline;
   }

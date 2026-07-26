@@ -3,6 +3,14 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 
+// ✅ تعريف حالات الخصم لتطابق الباك إند
+export enum DeductionStatus {
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled",
+}
+
 export interface Deduction {
   id: string;
   employeeId: string;
@@ -13,6 +21,7 @@ export interface Deduction {
   paidInstallments: number;
   startDate: string;
   notes?: string;
+  status?: DeductionStatus; // ✅ إضافة الحقل
   createdAt: string;
   employee?: { id: string; fullName: string; employeeCode: string };
 }
@@ -40,6 +49,16 @@ export const useDeductionStore = defineStore("deductions", () => {
 
   const update = async (id: string, data: Partial<Deduction>) => {
     const res = await api.patch<Deduction>(`/deductions/${id}`, data);
+    const index = deductions.value.findIndex((d) => d.id === id);
+    if (index !== -1) deductions.value[index] = res.data;
+    return res.data;
+  };
+
+  // ✅ دالة جديدة لتحديث الحالة
+  const updateStatus = async (id: string, status: DeductionStatus) => {
+    const res = await api.patch<Deduction>(`/deductions/${id}/status`, {
+      status,
+    });
     const index = deductions.value.findIndex((d) => d.id === id);
     if (index !== -1) deductions.value[index] = res.data;
     return res.data;
@@ -112,6 +131,7 @@ export const useDeductionStore = defineStore("deductions", () => {
     fetchAll,
     create,
     update,
+    updateStatus, // ✅ تصدير الدالة
     remove,
     exportData,
     exportSingle,

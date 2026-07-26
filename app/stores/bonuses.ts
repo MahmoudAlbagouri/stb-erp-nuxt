@@ -3,12 +3,21 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 
+// ✅ تعريف حالات المكافأة لتطابق الباك إند
+export enum BonusStatus {
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  PAID = "paid",
+}
+
 export interface Bonus {
   id: string;
   employeeId: string;
   amount: number;
   payoutDate: string;
   notes?: string;
+  status?: BonusStatus; // ✅ إضافة الحقل
   createdAt: string;
   employee?: { id: string; fullName: string; employeeCode: string };
 }
@@ -36,6 +45,14 @@ export const useBonusStore = defineStore("bonuses", () => {
 
   const update = async (id: string, data: Partial<Bonus>) => {
     const res = await api.patch<Bonus>(`/bonuses/${id}`, data);
+    const index = bonuses.value.findIndex((b) => b.id === id);
+    if (index !== -1) bonuses.value[index] = res.data;
+    return res.data;
+  };
+
+  // ✅ دالة جديدة لتحديث الحالة
+  const updateStatus = async (id: string, status: BonusStatus) => {
+    const res = await api.patch<Bonus>(`/bonuses/${id}/status`, { status });
     const index = bonuses.value.findIndex((b) => b.id === id);
     if (index !== -1) bonuses.value[index] = res.data;
     return res.data;
@@ -104,6 +121,7 @@ export const useBonusStore = defineStore("bonuses", () => {
     fetchAll,
     create,
     update,
+    updateStatus, // ✅ تصدير الدالة
     remove,
     exportData,
     exportSingle,

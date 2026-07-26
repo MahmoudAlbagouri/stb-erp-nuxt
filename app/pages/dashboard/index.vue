@@ -59,7 +59,7 @@
         </div>
       </div>
 
-      <!-- Stat 3: Total Payroll (جديد) -->
+      <!-- Stat 3: Total Payroll -->
       <div class="stat-card" :style="`--accent-color: ${stats[2].color}`">
         <div
           class="stat-card__icon"
@@ -76,7 +76,7 @@
         </div>
       </div>
 
-      <!-- Stat 4: Avg Salary (جديد) -->
+      <!-- Stat 4: Avg Salary -->
       <div class="stat-card" :style="`--accent-color: ${stats[3].color}`">
         <div
           class="stat-card__icon"
@@ -93,7 +93,7 @@
         </div>
       </div>
 
-      <!-- Stat 5: Total Settlements (جديد) -->
+      <!-- Stat 5: Total Settlements -->
       <div class="stat-card" :style="`--accent-color: ${stats[4].color}`">
         <div
           class="stat-card__icon"
@@ -110,7 +110,41 @@
         </div>
       </div>
 
-      <!-- Stat 6: Merged Pending Approvals -->
+      <!-- ✅ Stat 6: Total Bonuses (جديد) -->
+      <div class="stat-card" :style="`--accent-color: ${stats[5].color}`">
+        <div
+          class="stat-card__icon"
+          :style="`background: rgba(${stats[5].colorRgb}, 0.12); color: ${stats[5].color}`"
+        >
+          <component :is="stats[5].icon" :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value value-sm">
+            <span v-if="!loading">{{ stats[5].value }}</span>
+            <span v-else class="spinner spinner--sm"></span>
+          </div>
+          <div class="stat-card__label">{{ stats[5].label }}</div>
+        </div>
+      </div>
+
+      <!-- ✅ Stat 7: Total Deductions (جديد) -->
+      <div class="stat-card" :style="`--accent-color: ${stats[6].color}`">
+        <div
+          class="stat-card__icon"
+          :style="`background: rgba(${stats[6].colorRgb}, 0.12); color: ${stats[6].color}`"
+        >
+          <component :is="stats[6].icon" :size="24" />
+        </div>
+        <div class="stat-card__info">
+          <div class="stat-card__value value-sm">
+            <span v-if="!loading">{{ stats[6].value }}</span>
+            <span v-else class="spinner spinner--sm"></span>
+          </div>
+          <div class="stat-card__label">{{ stats[6].label }}</div>
+        </div>
+      </div>
+
+      <!-- Stat 8: Merged Pending Approvals -->
       <div
         class="stat-card stat-card--merged"
         :style="`--accent-color: #f59e0b`"
@@ -146,6 +180,17 @@
           <div class="breakdown-item">
             <span> <Landmark :size="14" class="item-icon" /> قروض </span>
             <span class="count">{{ countPending(loansStore.loans) }}</span>
+          </div>
+          <!-- ✅ إضافة المكافآت والخصومات للمعلقة -->
+          <div class="breakdown-item">
+            <span> <Gift :size="14" class="item-icon" /> مكافآت </span>
+            <span class="count">{{ countPending(bonusesStore.bonuses) }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span> <MinusCircle :size="14" class="item-icon" /> خصومات </span>
+            <span class="count">{{
+              countPending(deductionsStore.deductions)
+            }}</span>
           </div>
         </div>
       </div>
@@ -229,9 +274,11 @@ import { useLeavesStore } from "@/stores/leaves";
 import { useAdvancesStore } from "@/stores/advances";
 import { useLoansStore } from "@/stores/loans";
 import { useProfileStore } from "@/stores/profile";
-// ✅ استيراد Stores الرواتب والتسويات الجديدة
+// ✅ استيراد Stores الرواتب والتسويات والمكافآت والخصومات
 import { useSalariesStore } from "@/stores/salaries";
 import { useSettlementsStore } from "@/stores/settlements";
+import { useBonusStore } from "@/stores/bonuses"; // ✅ جديد
+import { useDeductionStore } from "@/stores/deductions"; // ✅ جديد
 
 import { computed, onMounted, ref, onUnmounted, type Component } from "vue";
 
@@ -249,12 +296,14 @@ import {
   Banknote,
   TrendingUp,
   Wallet,
+  Gift, // ✅ أيقونة المكافآت
+  MinusCircle, // ✅ أيقونة الخصومات
 } from "lucide-vue-next";
 
 type StatItem = {
   icon: Component;
   label: string;
-  value: string | number; // السماح بالنصوص للقيم المالية
+  value: string | number;
   color: string;
   colorRgb: string;
 };
@@ -267,9 +316,11 @@ const leavesStore = useLeavesStore();
 const advancesStore = useAdvancesStore();
 const loansStore = useLoansStore();
 const profileStore = useProfileStore();
-// ✅ تهيئة المتغيرات الجديدة (هذا هو سبب المشكلة السابقة)
 const salariesStore = useSalariesStore();
 const settlementsStore = useSettlementsStore();
+// ✅ تهيئة المتغيرات الجديدة
+const bonusesStore = useBonusStore();
+const deductionsStore = useDeductionStore();
 
 const loading = ref(true);
 const saudiTime = ref("");
@@ -298,7 +349,7 @@ onMounted(async () => {
   timeInterval = setInterval(updateSaudiTime, 1000);
   await profileStore.fetchProfile();
 
-  // ✅ استخدام allSettled لضمان عدم توقف الصفحة إذا فشل جلب الرواتب بسبب الصلاحيات
+  // ✅ استخدام allSettled لضمان عدم توقف الصفحة إذا فشل جلب أي بيانات
   await Promise.allSettled([
     usersStore.fetchAll(),
     employeesStore.fetchAll(),
@@ -307,9 +358,10 @@ onMounted(async () => {
     loansStore.fetchAll(),
     salariesStore.fetchAll(),
     settlementsStore.fetchAll(),
+    bonusesStore.fetchAll(), // ✅ جلب المكافآت
+    deductionsStore.fetchAll(), // ✅ جلب الخصومات
   ]);
 
-  // ✅ التأكد من إخفاء التحميل بغض النظر عن نجاح أو فشل الطلبات
   loading.value = false;
 });
 
@@ -318,6 +370,7 @@ onUnmounted(() => {
 });
 
 const countPending = (items: any[]) => {
+  // التحقق من وجود حقل الحالة، وإذا لم يوجد نفترض أنها غير معلقة إلا إذا كان هناك منطق آخر
   return items.filter((item) => item.status === "pending").length;
 };
 
@@ -325,7 +378,9 @@ const totalPending = computed(() => {
   return (
     countPending(leavesStore.requests) +
     countPending(advancesStore.advances) +
-    countPending(loansStore.loans)
+    countPending(loansStore.loans) +
+    countPending(bonusesStore.bonuses) + // ✅ إضافة مكافآت معلقة
+    countPending(deductionsStore.deductions) // ✅ إضافة خصومات معلقة
   );
 });
 
@@ -358,7 +413,7 @@ const formatCurrency = (val: number) => {
   }).format(val);
 };
 
-// حساب القيم الإجمالية للرواتب والتسويات
+// حساب القيم الإجمالية
 const totalPayrollValue = computed(() => {
   return salariesStore.salaries.reduce(
     (sum, s) => sum + Number(s.totalSalary),
@@ -382,46 +437,73 @@ const totalSettlementsValue = computed(() => {
   );
 });
 
-// ✅ مصفوفة الإحصائيات المحدثة
-const stats = computed<[StatItem, StatItem, StatItem, StatItem, StatItem]>(
-  () => [
-    {
-      icon: Users,
-      label: "المستخدمون",
-      value: usersStore.users.length,
-      color: "#00aaff",
-      colorRgb: "0,170,255",
-    },
-    {
-      icon: UserCog,
-      label: "الموظفون",
-      value: employeesStore.employees.length,
-      color: "#10b981",
-      colorRgb: "16,185,129",
-    },
-    {
-      icon: Banknote,
-      label: "إجمالي الرواتب",
-      value: formatCurrency(totalPayrollValue.value),
-      color: "#8b5cf6",
-      colorRgb: "139,92,246",
-    },
-    {
-      icon: TrendingUp,
-      label: "متوسط الراتب",
-      value: formatCurrency(avgSalaryValue.value),
-      color: "#f59e0b",
-      colorRgb: "245,158,11",
-    },
-    {
-      icon: Wallet,
-      label: "إجمالي التسويات",
-      value: formatCurrency(totalSettlementsValue.value),
-      color: "#ef4444",
-      colorRgb: "239,68,68",
-    },
-  ],
-);
+// ✅ حساب إجمالي المكافآت
+const totalBonusesValue = computed(() => {
+  return bonusesStore.bonuses.reduce((sum, b) => sum + Number(b.amount), 0);
+});
+
+// ✅ حساب إجمالي الخصومات
+const totalDeductionsValue = computed(() => {
+  return deductionsStore.deductions.reduce(
+    (sum, d) => sum + Number(d.totalAmount),
+    0,
+  );
+});
+
+// ✅ مصفوفة الإحصائيات المحدثة (7 عناصر الآن)
+const stats = computed<
+  [StatItem, StatItem, StatItem, StatItem, StatItem, StatItem, StatItem]
+>(() => [
+  {
+    icon: Users,
+    label: "المستخدمون",
+    value: usersStore.users.length,
+    color: "#00aaff",
+    colorRgb: "0,170,255",
+  },
+  {
+    icon: UserCog,
+    label: "الموظفون",
+    value: employeesStore.employees.length,
+    color: "#10b981",
+    colorRgb: "16,185,129",
+  },
+  {
+    icon: Banknote,
+    label: "إجمالي الرواتب",
+    value: formatCurrency(totalPayrollValue.value),
+    color: "#8b5cf6",
+    colorRgb: "139,92,246",
+  },
+  {
+    icon: TrendingUp,
+    label: "متوسط الراتب",
+    value: formatCurrency(avgSalaryValue.value),
+    color: "#f59e0b",
+    colorRgb: "245,158,11",
+  },
+  {
+    icon: Wallet,
+    label: "إجمالي التسويات",
+    value: formatCurrency(totalSettlementsValue.value),
+    color: "#ef4444",
+    colorRgb: "239,68,68",
+  },
+  {
+    icon: Gift,
+    label: "إجمالي المكافآت",
+    value: formatCurrency(totalBonusesValue.value),
+    color: "#ec4899", // لون وردي للمكافآت
+    colorRgb: "236,72,153",
+  },
+  {
+    icon: MinusCircle,
+    label: "إجمالي الخصومات",
+    value: formatCurrency(totalDeductionsValue.value),
+    color: "#64748b", // لون رمادي مزرق للخصومات
+    colorRgb: "100,116,139",
+  },
+]);
 
 const statusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", suspended: "موقوف" })[s] ?? s;
@@ -614,10 +696,13 @@ const statusLabel = (s: string) =>
     border-top: 1px dashed rgba($stb-border, 0.5);
     @include flex(row, flex-start, flex-start, 6px);
     width: 100%;
+    flex-wrap: wrap; /* السماح بالتفاف العناصر إذا كثرت */
 
     .breakdown-item {
       @include flex(column, space-between, center);
-      width: 100%;
+      /* تعديل العرض ليناسب العدد الجديد */
+      flex: 1 1 18%;
+      min-width: 80px;
       font-size: $font-size-xs;
       color: $stb-text-secondary;
       padding: 0 $space-1;
