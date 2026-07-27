@@ -23,11 +23,8 @@
     </div>
 
     <div v-else-if="store.data" class="profile-grid">
-      <!-- ... (الأقسام السابقة: البطاقة الشخصية، العقد، الراتب، الإجازات) تبقى كما هي ... -->
-
       <!-- 1. البطاقة الشخصية -->
       <div class="card profile-card--main">
-        <!-- ... محتوى البطاقة الشخصية ... -->
         <div class="profile-avatar-section">
           <div class="profile-avatar-lg">{{ store.avatarInitials }}</div>
           <div class="profile-info-main">
@@ -42,7 +39,6 @@
           </div>
         </div>
         <div class="profile-details-grid">
-          <!-- ... تفاصيل الموظف ... -->
           <div class="detail-item">
             <span class="label"
               ><Hash :size="12" class="label-icon" /> كود الموظف</span
@@ -105,52 +101,64 @@
         <div v-else class="empty-state--mini">لا يوجد عقد نشط</div>
       </div>
 
-      <!-- 3. الراتب والمديونية -->
-      <div class="card">
+      <!-- ✅ 3. الراتب والمديونية (تم تحسين التصميم وإصلاح عرض البدلات) -->
+      <div class="card financial-card">
         <div class="card__header">
           <h3 class="card__title">
             <Wallet :size="18" class="title-icon" /> الراتب والمديونية
           </h3>
         </div>
-        <div v-if="store.data.financial?.salary" class="salary-breakdown">
-          <div class="salary-row total">
-            <span>إجمالي الراتب</span>
-            <span class="amount">{{
-              formatCurrency(store.data.financial.salary.total)
-            }}</span>
+
+        <div v-if="store.data.financial?.salary" class="financial-content">
+          <!-- قسم الراتب -->
+          <div class="salary-section">
+            <div class="salary-total-row">
+              <span class="label">إجمالي الراتب</span>
+              <span class="amount highlight">{{
+                formatCurrency(store.data.financial.salary.total)
+              }}</span>
+            </div>
+            <div class="salary-breakdown">
+              <div class="breakdown-item">
+                <span class="label">الأساسي</span>
+                <span class="value">{{
+                  formatCurrency(store.data.financial.salary.basic)
+                }}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="label">البدلات</span>
+                <span class="value">{{
+                  formatCurrency(store.data.financial.salary.allowances)
+                }}</span>
+              </div>
+            </div>
           </div>
-          <div class="divider"></div>
-          <div class="salary-row">
-            <span>الأساسي</span>
-            <span>{{ formatCurrency(store.data.financial.salary.basic) }}</span>
-          </div>
-          <div class="salary-row">
-            <span>البدلات</span>
-            <span>{{
-              formatCurrency(store.data.financial.salary.allowances)
-            }}</span>
+
+          <!-- فاصل بصري -->
+          <div class="financial-divider"></div>
+
+          <!-- قسم المديونية -->
+          <div class="debt-section">
+            <div class="debt-row">
+              <span class="label">إجمالي المديونية</span>
+              <span class="amount danger">{{
+                formatCurrency(store.totalDebt)
+              }}</span>
+            </div>
+            <div class="debt-ratio">
+              <span class="label">نسبة المديونية للراتب</span>
+              <span
+                class="ratio-value"
+                :class="
+                  store.debtToSalaryRatio > 50 ? 'text-danger' : 'text-success'
+                "
+              >
+                {{ store.debtToSalaryRatio }}%
+              </span>
+            </div>
           </div>
         </div>
         <div v-else class="empty-state--mini">لا يوجد راتب مسجل</div>
-        <div class="debt-summary mt-4">
-          <div class="debt-stat">
-            <span class="label">إجمالي المديونية</span>
-            <span class="value text-danger">{{
-              formatCurrency(store.totalDebt)
-            }}</span>
-          </div>
-          <div class="debt-stat">
-            <span class="label">نسبة المديوينة الى الراتب</span>
-            <span
-              class="value"
-              :class="
-                store.debtToSalaryRatio > 50 ? 'text-danger' : 'text-success'
-              "
-            >
-              {{ store.debtToSalaryRatio }}%
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- 4. رصيد الإجازات -->
@@ -278,7 +286,7 @@
         </div>
       </div>
 
-      <!-- ✅ 6. سجل الإجازات (جديد) -->
+      <!-- ✅ 6. سجل الإجازات -->
       <div class="card full-width">
         <div class="card__header">
           <h3 class="card__title">
@@ -322,7 +330,7 @@
         </div>
       </div>
 
-      <!-- ✅ 7. المعاملات المرفوضة (جديد) -->
+      <!-- ✅ 7. المعاملات المرفوضة -->
       <div class="card full-width">
         <div class="card__header">
           <h3 class="card__title">
@@ -414,7 +422,6 @@ import { ref, computed, onMounted } from "vue";
 import { useProfileStore } from "@/stores/profile";
 import { useToast } from "../../composables/useToast";
 
-// ✅ استيراد أيقونات Lucide الجديدة
 import {
   RefreshCw,
   Hash,
@@ -435,7 +442,7 @@ const store = useProfileStore();
 const toast = useToast();
 
 const activeTab = ref<"advances" | "loans">("advances");
-const rejectedTab = ref<"advances" | "loans">("advances"); // ✅ تبويب جديد للمرفوضات
+const rejectedTab = ref<"advances" | "loans">("advances");
 
 const nationalityLabel = computed(() => {
   const type = store.data?.personal.employee?.nationalityType;
@@ -495,8 +502,13 @@ const refreshData = async () => {
 const formatDate = (date?: string | null) =>
   date ? new Date(date).toLocaleDateString("ar-SA") : "-";
 
-const formatCurrency = (val?: number) =>
-  val ? `${val.toLocaleString("ar-SA")} ر.س` : "0 ر.س";
+// ✅ إصلاح دالة تنسيق العملة لتعمل مع الأرقام والنصوص بشكل صحيح
+const formatCurrency = (val?: number | string) => {
+  if (!val && val !== 0) return "0 ر.س";
+  const num = Number(val);
+  if (isNaN(num)) return "0 ر.س";
+  return `${num.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+};
 
 onMounted(() => {
   if (!store.isLoaded) store.fetchProfile();
@@ -506,8 +518,6 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
-
-/* ... (نفس الـ CSS السابق) ... */
 
 .profile-grid {
   display: grid;
@@ -619,24 +629,98 @@ onMounted(() => {
   transition: width 0.5s ease;
 }
 
-.salary-row {
-  @include flex(row, center, space-between);
-  padding: $space-2 0;
-  font-size: $font-size-sm;
-}
-.salary-row.total {
-  font-weight: 800;
-  font-size: $font-size-lg;
-  color: $stb-accent;
-}
-.debt-summary {
-  @include flex(row, center, space-between);
-  background: $stb-surface;
-  padding: $space-3;
-  border-radius: $radius-md;
-}
-.debt-stat {
-  @include flex(column, center, center, $space-1);
+/* ✅ تنسيقات جديدة ومحسنة لكارت الراتب والمديونية */
+.financial-card {
+  .financial-content {
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+  }
+
+  .salary-section {
+    background: rgba($stb-accent, 0.03);
+    border: 1px solid rgba($stb-accent, 0.1);
+    border-radius: $radius-md;
+    padding: $space-3;
+  }
+
+  .salary-total-row {
+    @include flex(row, center, space-between);
+    margin-bottom: $space-3;
+    padding-bottom: $space-2;
+    border-bottom: 1px dashed rgba($stb-accent, 0.2);
+
+    .label {
+      font-weight: 700;
+      color: $stb-text-secondary;
+    }
+    .amount.highlight {
+      font-size: $font-size-lg;
+      font-weight: 800;
+      color: $stb-accent;
+    }
+  }
+
+  .salary-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+  }
+
+  .breakdown-item {
+    @include flex(row, center, space-between);
+    font-size: $font-size-sm;
+
+    .label {
+      color: $stb-text-muted;
+    }
+    .value {
+      font-weight: 600;
+      color: $stb-text-primary;
+    }
+  }
+
+  .financial-divider {
+    height: 1px;
+    background: $stb-border;
+    margin: $space-1 0;
+  }
+
+  .debt-section {
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
+  }
+
+  .debt-row {
+    @include flex(row, center, space-between);
+
+    .label {
+      font-weight: 600;
+      color: $stb-text-secondary;
+    }
+    .amount.danger {
+      font-size: $font-size-base;
+      font-weight: 800;
+      color: $stb-danger;
+    }
+  }
+
+  .debt-ratio {
+    @include flex(row, center, space-between);
+    background: $stb-surface-2;
+    padding: $space-2 $space-3;
+    border-radius: $radius-sm;
+
+    .label {
+      font-size: $font-size-xs;
+      color: $stb-text-muted;
+    }
+    .ratio-value {
+      font-size: $font-size-sm;
+      font-weight: 700;
+    }
+  }
 }
 
 .leave-circle-container {
