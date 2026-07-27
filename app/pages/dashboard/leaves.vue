@@ -1,11 +1,10 @@
-<!-- pages/leaves/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>طلبات الإجازات</h1>
-        <p>تقديم ومتابعة طلبات الإجازات الخاصة بي</p>
+        <p>تقديم ومتابعة طلبات الإجازات</p>
       </div>
       <div class="page-header__actions">
         <button
@@ -24,11 +23,24 @@
           <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
-        <button class="btn btn--primary" @click="openCreateModal">
+
+        <!-- زر طلب إجازة شخصي -->
+        <button class="btn btn--primary" @click="openCreateModal(false)">
           <Plus :size="18" /><span>طلب إجازة جديد</span>
+        </button>
+
+        <!-- ✅ زر جديد: إنشاء إجازة لموظف (للمدراء) -->
+        <button
+          v-if="canCreateForOthers"
+          class="btn btn--secondary"
+          @click="openCreateModal(true)"
+        >
+          <UserPlus :size="18" /><span>إنشاء إجازة لموظف</span>
         </button>
       </div>
     </div>
+
+    <!-- ... (باقي الكود الخاص بالإحصائيات والجداول كما هو) ... -->
 
     <!-- ══ Stats Cards ═════════════════════════════════════════════════════ -->
     <div class="grid-3 stats-row">
@@ -36,7 +48,7 @@
         <div class="stat-card__icon"><Hourglass :size="24" /></div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ pendingCount }}</div>
-          <div class="stat-card__label">طلباتي المعلقة</div>
+          <div class="stat-card__label">طلبات معلقة</div>
         </div>
       </div>
       <div class="stat-card stat-approved">
@@ -66,7 +78,7 @@
         <CalendarDays :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات إجازات</div>
         <div class="empty-state__text">ابدأ بتقديم طلب إجازة جديد</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal">
+        <button class="btn btn--primary mt-4" @click="openCreateModal(false)">
           <Plus :size="16" /> طلب إجازة
         </button>
       </div>
@@ -132,7 +144,10 @@
                     </Transition>
                   </div>
 
-                  <div v-if="req.status === 'pending'" class="approval-actions">
+                  <div
+                    v-if="req.status === 'pending' && canApprove"
+                    class="approval-actions"
+                  >
                     <button
                       class="btn btn--success btn--sm"
                       @click="triggerApprove(req)"
@@ -156,32 +171,52 @@
       </div>
     </div>
 
-    <!-- ═ Create Leave Modal ═══════════════════════════════════════════════ -->
+    <!-- ═ Create Leave Modal (Shared for Self & Admin) ═══════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
         <div
           v-if="showCreateModal"
           class="modal-overlay"
-          @click.self="showCreateModal = false"
+          @click.self="closeCreateModal"
         >
           <div class="modal modal-md">
             <div class="modal__header">
               <h3>
-                <CalendarPlus :size="20" class="modal-icon" /> طلب إجازة جديد
+                <CalendarPlus :size="20" class="modal-icon" />
+                {{ isAdminMode ? "إنشاء إجازة لموظف" : "طلب إجازة جديد" }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
-                @click="showCreateModal = false"
+                @click="closeCreateModal"
                 aria-label="إغلاق"
               >
                 <X :size="20" />
               </button>
             </div>
             <form @submit.prevent="handleCreateLeave" class="modal-form">
+              <!-- ✅ حقل اختيار الموظف (يظهر فقط في وضع المدير) -->
+              <div v-if="isAdminMode" class="form-group full-width">
+                <label>اختر الموظف *</label>
+                <select
+                  v-model="createForm.employeeId"
+                  class="form-select"
+                  required
+                >
+                  <option value="" disabled>-- اختر موظف --</option>
+                  <option
+                    v-for="emp in employeesList"
+                    :key="emp.id"
+                    :value="emp.id"
+                  >
+                    {{ emp.fullName }} ({{ emp.employeeCode }})
+                  </option>
+                </select>
+              </div>
+
               <div class="grid-2">
                 <div class="form-group">
-                  <label>تاريخ البداية *</label
-                  ><input
+                  <label>تاريخ البداية *</label>
+                  <input
                     v-model="createForm.startDate"
                     type="date"
                     class="form-input"
@@ -189,8 +224,8 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>تاريخ النهاية *</label
-                  ><input
+                  <label>تاريخ النهاية *</label>
+                  <input
                     v-model="createForm.endDate"
                     type="date"
                     class="form-input"
@@ -198,8 +233,8 @@
                   />
                 </div>
                 <div class="form-group full-width">
-                  <label>نوع الإجازة *</label
-                  ><select
+                  <label>نوع الإجازة *</label>
+                  <select
                     v-model="createForm.type"
                     class="form-select"
                     required
@@ -214,8 +249,8 @@
                   </select>
                 </div>
                 <div class="form-group full-width">
-                  <label>سبب الإجازة</label
-                  ><textarea
+                  <label>سبب الإجازة</label>
+                  <textarea
                     v-model="createForm.reason"
                     class="form-input textarea-resize"
                     rows="3"
@@ -227,7 +262,7 @@
                 <button
                   type="button"
                   class="btn btn--ghost"
-                  @click="showCreateModal = false"
+                  @click="closeCreateModal"
                 >
                   إلغاء
                 </button>
@@ -236,10 +271,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" /><span
-                    v-else
-                    >إرسال الطلب</span
-                  >
+                  <span v-if="submitting" class="spinner spinner--sm" />
+                  <span v-else>{{
+                    isAdminMode ? "إنشاء الإجازة" : "إرسال الطلب"
+                  }}</span>
                 </button>
               </div>
             </form>
@@ -271,6 +306,8 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "../../composables/useToast";
+import { useApi } from "../../composables/useApi"; // ✅ استيراد useApi
+import { useAuthStore } from "@/stores/auth"; // ✅ افترض وجود AuthStore للتحقق من الصلاحيات
 import type { CreateLeavePayload, LeaveRequest } from "@/types";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 import {
@@ -285,12 +322,15 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
+  UserPlus, // ✅ أيقونة جديدة
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useLeavesStore();
 const toast = useToast();
+const api = useApi();
+// const authStore = useAuthStore(); // Uncomment if you have auth store logic for permissions
 
 const showCreateModal = ref(false);
 const submitting = ref(false);
@@ -303,6 +343,10 @@ const currentActionTarget = ref<LeaveRequest | null>(null);
 const exporting = ref<"excel" | "pdf" | null>(null);
 const activeExportMenu = ref<string | null>(null);
 
+// ✅ متغيرات الوضع الإداري
+const isAdminMode = ref(false);
+const employeesList = ref<any[]>([]);
+
 const leaveTypeOptions: { value: CreateLeavePayload["type"]; label: string }[] =
   [
     { value: "annual", label: "سنوية" },
@@ -310,11 +354,30 @@ const leaveTypeOptions: { value: CreateLeavePayload["type"]; label: string }[] =
     { value: "other", label: "أخرى" },
   ];
 
-const createForm = reactive<CreateLeavePayload>({
+// ✅ نموذج يشمل employeeId اختياري
+interface ExtendedCreatePayload extends CreateLeavePayload {
+  employeeId?: string;
+}
+
+const createForm = reactive<ExtendedCreatePayload>({
   startDate: "",
   endDate: "",
   type: "annual",
   reason: "",
+  employeeId: "",
+});
+
+// ✅ التحقق من الصلاحيات (يمكنك تعديل هذا المنطق حسب نظام الصلاحيات لديك)
+// مثال: إذا كان المستخدم لديه دور 'admin' أو صلاحية محددة
+const canCreateForOthers = computed(() => {
+  // return authStore.user?.roles?.includes('admin') || authStore.hasPermission('LEAVE_CREATE_ADMIN');
+  // مؤقتاً: نجعلها true للتجربة، أو يمكنك ربطها بالـ Backend Guard
+  return true;
+});
+
+const canApprove = computed(() => {
+  // return authStore.hasPermission('LEAVE_APPROVE');
+  return true;
 });
 
 const pendingCount = computed(
@@ -345,22 +408,69 @@ const calculateDays = (start: string, end: string) =>
       ) + 1
     : 0;
 
-const openCreateModal = () => {
+// ✅ فتح المودال مع تحديد الوضع
+const openCreateModal = async (isAdmin: boolean) => {
+  isAdminMode.value = isAdmin;
+
+  // إعادة تعيين النموذج
   Object.assign(createForm, {
     startDate: "",
     endDate: "",
     type: "annual",
     reason: "",
+    employeeId: "",
   });
+
+  if (isAdmin) {
+    // جلب قائمة الموظفين إذا لم تكون محملة
+    if (employeesList.value.length === 0) {
+      try {
+        const res = await api.get("/employees"); // تأكد من صحة المسار
+        // res.data may be typed as unknown from generic api wrapper — cast to any[]
+        employeesList.value = (res.data as any[]) || [];
+      } catch (e) {
+        toast.error("فشل في جلب قائمة الموظفين");
+        return;
+      }
+    }
+  }
+
   showCreateModal.value = true;
+};
+
+const closeCreateModal = () => {
+  showCreateModal.value = false;
+  isAdminMode.value = false;
 };
 
 const handleCreateLeave = async () => {
   submitting.value = true;
   try {
-    await store.createMyLeave(createForm);
-    toast.success("تم إرسال طلب الإجازة بنجاح");
-    showCreateModal.value = false;
+    if (isAdminMode.value) {
+      if (!createForm.employeeId) {
+        toast.error("يرجى اختيار موظف");
+        submitting.value = false;
+        return;
+      }
+      // استخدام دالة المدير
+      await store.createAdminLeave(createForm.employeeId, {
+        startDate: createForm.startDate,
+        endDate: createForm.endDate,
+        type: createForm.type,
+        reason: createForm.reason,
+      });
+      toast.success("تم إنشاء الإجازة للموظف بنجاح");
+    } else {
+      // استخدام دالة الموظف العادي
+      await store.createMyLeave({
+        startDate: createForm.startDate,
+        endDate: createForm.endDate,
+        type: createForm.type,
+        reason: createForm.reason,
+      });
+      toast.success("تم إرسال طلب الإجازة بنجاح");
+    }
+    closeCreateModal();
   } catch (e: any) {
     toast.error(e.message || "حدث خطأ أثناء الإرسال");
   } finally {
@@ -440,12 +550,23 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
 .page-header__actions {
   display: flex;
   gap: $space-2;
   flex-wrap: wrap;
   align-items: center;
 }
+
+.btn--secondary {
+  background-color: $stb-surface-2; // أو لون ثانوي مناسب
+  color: $stb-text-primary;
+  border: 1px solid $stb-border;
+  &:hover {
+    background-color: $stb-surface-3;
+  }
+}
+
 .stats-row {
   margin-bottom: $space-6;
 }

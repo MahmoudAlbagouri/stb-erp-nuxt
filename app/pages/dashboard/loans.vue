@@ -1,4 +1,3 @@
-<!-- pages/loans/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -24,8 +23,19 @@
           <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
-        <button class="btn btn--primary" @click="openCreateModal">
+
+        <!-- زر طلب قرض شخصي -->
+        <button class="btn btn--primary" @click="openCreateModal(false)">
           <Plus :size="16" /> طلب قرض جديد
+        </button>
+
+        <!-- ✅ زر جديد: إنشاء قرض لموظف (للمدراء) -->
+        <button
+          v-if="canCreateForOthers"
+          class="btn btn--secondary"
+          @click="openCreateModal(true)"
+        >
+          <UserPlus :size="18" /><span>إنشاء قرض لموظف</span>
         </button>
       </div>
     </div>
@@ -63,8 +73,8 @@
       <div class="empty-state">
         <div class="empty-state__illustration"><Landmark :size="32" /></div>
         <div class="empty-state__title">لا توجد طلبات قروض</div>
-        <div class="empty-state__text">ابدأ بتقديم طلب قرض جديد للموظفين</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal">
+        <div class="empty-state__text">ابدأ بتقديم طلب قرض جديد</div>
+        <button class="btn btn--primary mt-4" @click="openCreateModal(false)">
           <Plus :size="15" /> طلب قرض
         </button>
       </div>
@@ -147,7 +157,10 @@
             </Transition>
           </div>
 
-          <div class="action-buttons" v-if="loan.status === 'pending'">
+          <div
+            class="action-buttons"
+            v-if="loan.status === 'pending' && canApprove"
+          >
             <button
               class="btn btn--success-outline btn--sm"
               @click="triggerApprove(loan)"
@@ -167,29 +180,40 @@
       </div>
     </div>
 
-    <!-- ═ Create Loan Modal ════════════════════════════════════════════════ -->
+    <!-- ═ Create Loan Modal (Shared for Self & Admin) ════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div
-          v-if="showModal"
-          class="modal-overlay"
-          @click.self="showModal = false"
-        >
+        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
           <div class="modal modal--md">
             <div class="modal__header">
-              <h3><Landmark :size="20" class="modal-icon" /> طلب قرض جديد</h3>
-              <button
-                class="btn btn--icon btn--ghost"
-                @click="showModal = false"
-              >
+              <h3>
+                <Landmark :size="20" class="modal-icon" />
+                {{ isAdminMode ? "إنشاء قرض لموظف" : "طلب قرض جديد" }}
+              </h3>
+              <button class="btn btn--icon btn--ghost" @click="closeModal">
                 <X :size="18" />
               </button>
             </div>
             <form @submit.prevent="handleSubmit" class="modal-form">
+              <!-- ✅ حقل اختيار الموظف (يظهر فقط في وضع المدير) -->
+              <div v-if="isAdminMode" class="form-group full-width">
+                <label>اختر الموظف *</label>
+                <select v-model="form.employeeId" class="form-select" required>
+                  <option value="" disabled>-- اختر موظف --</option>
+                  <option
+                    v-for="emp in employeesList"
+                    :key="emp.id"
+                    :value="emp.id"
+                  >
+                    {{ emp.fullName }} ({{ emp.employeeCode }})
+                  </option>
+                </select>
+              </div>
+
               <div class="grid-2">
                 <div class="form-group">
-                  <label>مبلغ القرض الإجمالي *</label
-                  ><input
+                  <label>مبلغ القرض الإجمالي *</label>
+                  <input
                     v-model.number="form.totalAmount"
                     type="number"
                     class="form-input"
@@ -200,8 +224,8 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>مدة السداد (شهور) *</label
-                  ><input
+                  <label>مدة السداد (شهور) *</label>
+                  <input
                     v-model.number="form.installmentsCount"
                     type="number"
                     class="form-input"
@@ -222,19 +246,20 @@
               </div>
 
               <div class="form-group">
-                <label>تاريخ بداية الخصم *</label
-                ><input
+                <label>تاريخ بداية الخصم *</label>
+                <input
                   v-model="form.startDate"
                   type="date"
                   class="form-input"
                   required
-                /><small class="form-hint"
+                />
+                <small class="form-hint"
                   >سيتم بدء خصم أول قسط من راتب هذا التاريخ</small
                 >
               </div>
               <div class="form-group">
-                <label>سبب القرض</label
-                ><textarea
+                <label>سبب القرض</label>
+                <textarea
                   v-model="form.reason"
                   rows="3"
                   class="form-input"
@@ -246,7 +271,7 @@
                 <button
                   type="button"
                   class="btn btn--ghost"
-                  @click="showModal = false"
+                  @click="closeModal"
                 >
                   إلغاء
                 </button>
@@ -255,10 +280,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" /><span
-                    v-else
-                    >إرسال الطلب</span
-                  >
+                  <span v-if="submitting" class="spinner spinner--sm" />
+                  <span v-else>{{
+                    isAdminMode ? "إنشاء القرض" : "إرسال الطلب"
+                  }}</span>
                 </button>
               </div>
             </form>
@@ -291,6 +316,7 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useLoansStore } from "@/stores/loans";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
+import { useApi } from "../../composables/useApi";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 import {
   Plus,
@@ -305,6 +331,7 @@ import {
   Info,
   FileSpreadsheet,
   Download,
+  UserPlus,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -312,6 +339,7 @@ definePageMeta({ middleware: "auth" });
 const store = useLoansStore();
 const employeesStore = useEmployeesStore();
 const toast = useToast();
+const api = useApi();
 
 const showModal = ref(false);
 const submitting = ref(false);
@@ -323,13 +351,37 @@ const currentLoanTarget = ref<any | null>(null);
 const exporting = ref<"excel" | "pdf" | null>(null);
 const activeExportMenu = ref<string | null>(null);
 
+// ✅ متغيرات الوضع الإداري
+const isAdminMode = ref(false);
+const employeesList = ref<any[]>([]);
+
+interface ExtendedLoanPayload {
+  totalAmount: number;
+  installmentsCount: number;
+  reason?: string;
+  startDate: string;
+  employeeId?: string;
+}
+
 const EMPTY_FORM = {
   totalAmount: 500,
   installmentsCount: 2,
   reason: "",
   startDate: "",
+  employeeId: "",
 };
-const form = reactive({ ...EMPTY_FORM });
+const form = reactive<ExtendedLoanPayload>({ ...EMPTY_FORM });
+
+// ✅ التحقق من الصلاحيات (يمكنك ربطها بـ AuthStore)
+const canCreateForOthers = computed(() => {
+  // return authStore.hasPermission('LOAN_CREATE_ADMIN');
+  return true; // مؤقتاً للتجربة
+});
+
+const canApprove = computed(() => {
+  // return authStore.hasPermission('LOAN_APPROVE');
+  return true;
+});
 
 const pendingCount = computed(
   () => store.loans.filter((l) => l.status === "pending").length,
@@ -346,23 +398,67 @@ const calculatedMonthly = computed(() =>
 );
 const todayLabel = new Date().toLocaleDateString("ar-SA");
 
-const openCreateModal = () => {
+// ✅ فتح المودال مع تحديد الوضع
+const openCreateModal = async (isAdmin: boolean) => {
+  isAdminMode.value = isAdmin;
+
+  // إعادة تعيين النموذج
   Object.assign(form, EMPTY_FORM);
+
+  // تعيين تاريخ البداية الافتراضي (الشهر القادم)
   const nextMonth = new Date(
     new Date().getFullYear(),
     new Date().getMonth() + 1,
     1,
   );
   form.startDate = nextMonth.toISOString().slice(0, 10);
+
+  if (isAdmin) {
+    // جلب قائمة الموظفين إذا لم تكون محملة
+    if (employeesList.value.length === 0) {
+      try {
+        const res = await api.get("/employees"); // تأكد من صحة المسار
+        employeesList.value = res.data;
+      } catch (e) {
+        toast.error("فشل في جلب قائمة الموظفين");
+        return;
+      }
+    }
+  }
+
   showModal.value = true;
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  isAdminMode.value = false;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    await store.createMyLoan(form);
-    toast.success("تم تقديم طلب القرض بنجاح");
-    showModal.value = false;
+    const payload = {
+      totalAmount: form.totalAmount,
+      installmentsCount: form.installmentsCount,
+      reason: form.reason,
+      startDate: form.startDate,
+    };
+
+    if (isAdminMode.value) {
+      if (!form.employeeId) {
+        toast.error("يرجى اختيار موظف");
+        submitting.value = false;
+        return;
+      }
+      // استخدام دالة المدير
+      await store.createForEmployee(form.employeeId, payload);
+      toast.success("تم إنشاء القرض للموظف بنجاح");
+    } else {
+      // استخدام دالة الموظف العادي
+      await store.createMyLoan(payload);
+      toast.success("تم تقديم طلب القرض بنجاح");
+    }
+    closeModal();
   } catch (e: any) {
     toast.error(e.message || "حدث خطأ أثناء الإرسال");
   } finally {
@@ -478,6 +574,16 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: center;
 }
+
+.btn--secondary {
+  background-color: $stb-surface-2;
+  color: $stb-text-primary;
+  border: 1px solid $stb-border;
+  &:hover {
+    background-color: $stb-surface-3;
+  }
+}
+
 .stats-bar {
   display: flex;
   gap: $space-3;
@@ -759,6 +865,12 @@ onMounted(() => {
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
+}
+.full-width {
+  grid-column: span 2;
+  @include respond-to("md") {
+    grid-column: span 1;
+  }
 }
 .form-hint {
   color: $stb-text-muted;

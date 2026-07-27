@@ -1,4 +1,3 @@
-<!-- pages/advances/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -24,8 +23,19 @@
           <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
-        <button class="btn btn--primary" @click="openCreateModal">
+
+        <!-- زر طلب سلفة شخصي -->
+        <button class="btn btn--primary" @click="openCreateModal(false)">
           <Plus :size="18" /><span>طلب سلفة جديدة</span>
+        </button>
+
+        <!-- ✅ زر جديد: إنشاء سلفة لموظف (للمدراء) -->
+        <button
+          v-if="canCreateForOthers"
+          class="btn btn--secondary"
+          @click="openCreateModal(true)"
+        >
+          <UserPlus :size="18" /><span>إنشاء سلفة لموظف</span>
         </button>
       </div>
     </div>
@@ -65,8 +75,8 @@
       <div class="empty-state">
         <HandCoins :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات سلف</div>
-        <div class="empty-state__text">ابدأ بتقديم طلب سلفة جديد للموظفين</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal">
+        <div class="empty-state__text">ابدأ بتقديم طلب سلفة جديد</div>
+        <button class="btn btn--primary mt-4" @click="openCreateModal(false)">
           <Plus :size="16" /> طلب سلفة
         </button>
       </div>
@@ -120,10 +130,9 @@
               </td>
               <td>{{ formatDate(adv.createdAt) }}</td>
 
-              <!-- ✅ خانة الإجراءات المعدلة: التصدير دائماً + أزرار الموافقة عند الحاجة -->
+              <!-- ✅ خانة الإجراءات -->
               <td>
                 <div class="actions-cell">
-                  <!-- زر التصدير الفردي يظهر دائماً -->
                   <div class="export-dropdown">
                     <button
                       class="btn btn--ghost btn--sm export-btn"
@@ -147,8 +156,7 @@
                     </Transition>
                   </div>
 
-                  <!-- أزرار الموافقة والرفض تظهر فقط للسلف المعلقة -->
-                  <template v-if="adv.status === 'pending'">
+                  <template v-if="adv.status === 'pending' && canApprove">
                     <button
                       class="btn btn--success btn--sm"
                       @click="triggerApprove(adv)"
@@ -172,32 +180,44 @@
       </div>
     </div>
 
-    <!-- ═ Create Advance Modal ═════════════════════════════════════════════ -->
+    <!-- ═ Create Advance Modal (Shared for Self & Admin) ═════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div
-          v-if="showModal"
-          class="modal-overlay"
-          @click.self="showModal = false"
-        >
+        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
           <div class="modal modal-md">
             <div class="modal__header">
               <h3>
-                <HandCoins :size="20" class="modal-icon" /> طلب سلفة جديدة
+                <HandCoins :size="20" class="modal-icon" />
+                {{ isAdminMode ? "إنشاء سلفة لموظف" : "طلب سلفة جديدة" }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
-                @click="showModal = false"
+                @click="closeModal"
                 aria-label="إغلاق"
               >
                 <X :size="20" />
               </button>
             </div>
             <form @submit.prevent="handleSubmit" class="modal-form">
+              <!-- ✅ حقل اختيار الموظف (يظهر فقط في وضع المدير) -->
+              <div v-if="isAdminMode" class="form-group full-width">
+                <label>اختر الموظف *</label>
+                <select v-model="form.employeeId" class="form-select" required>
+                  <option value="" disabled>-- اختر موظف --</option>
+                  <option
+                    v-for="emp in employeesList"
+                    :key="emp.id"
+                    :value="emp.id"
+                  >
+                    {{ emp.fullName }} ({{ emp.employeeCode }})
+                  </option>
+                </select>
+              </div>
+
               <div class="grid-2">
                 <div class="form-group">
-                  <label>مبلغ السلفة *</label
-                  ><input
+                  <label>مبلغ السلفة *</label>
+                  <input
                     v-model.number="form.amount"
                     type="number"
                     class="form-input"
@@ -208,19 +228,20 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>تاريخ السداد المتوقع *</label
-                  ><input
+                  <label>تاريخ السداد المتوقع *</label>
+                  <input
                     v-model="form.repaymentDate"
                     type="date"
                     class="form-input"
                     required
-                  /><small class="form-hint"
+                  />
+                  <small class="form-hint"
                     >سيتم خصم المبلغ من راتب هذا الشهر</small
                   >
                 </div>
                 <div class="form-group full-width">
-                  <label>سبب السلفة</label
-                  ><textarea
+                  <label>سبب السلفة</label>
+                  <textarea
                     v-model="form.reason"
                     class="form-input textarea-resize"
                     rows="3"
@@ -232,7 +253,7 @@
                 <button
                   type="button"
                   class="btn btn--ghost"
-                  @click="showModal = false"
+                  @click="closeModal"
                 >
                   إلغاء
                 </button>
@@ -241,10 +262,10 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  <span v-if="submitting" class="spinner spinner--sm" /><span
-                    v-else
-                    >إرسال الطلب</span
-                  >
+                  <span v-if="submitting" class="spinner spinner--sm" />
+                  <span v-else>{{
+                    isAdminMode ? "إنشاء السلفة" : "إرسال الطلب"
+                  }}</span>
                 </button>
               </div>
             </form>
@@ -277,6 +298,7 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useAdvancesStore } from "@/stores/advances";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
+import { useApi } from "../../composables/useApi"; // ✅ استيراد API
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 import {
   Plus,
@@ -289,6 +311,7 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
+  UserPlus, // ✅ أيقونة جديدة
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -296,6 +319,7 @@ definePageMeta({ middleware: "auth" });
 const store = useAdvancesStore();
 const employeesStore = useEmployeesStore();
 const toast = useToast();
+const api = useApi();
 
 const showModal = ref(false);
 const submitting = ref(false);
@@ -308,8 +332,30 @@ const currentAdvanceTarget = ref<any | null>(null);
 const exporting = ref<"excel" | "pdf" | null>(null);
 const activeExportMenu = ref<string | null>(null);
 
-const EMPTY_FORM = { amount: 0, reason: "", repaymentDate: "" };
-const form = reactive({ ...EMPTY_FORM });
+// ✅ متغيرات الوضع الإداري
+const isAdminMode = ref(false);
+const employeesList = ref<any[]>([]);
+
+interface ExtendedAdvancePayload {
+  amount: number;
+  reason?: string;
+  repaymentDate: string;
+  employeeId?: string; // اختياري للموظف العادي، إجباري للمدير
+}
+
+const EMPTY_FORM = { amount: 0, reason: "", repaymentDate: "", employeeId: "" };
+const form = reactive<ExtendedAdvancePayload>({ ...EMPTY_FORM });
+
+// ✅ التحقق من الصلاحيات (يمكنك ربطها بـ AuthStore)
+const canCreateForOthers = computed(() => {
+  // return authStore.hasPermission('ADVANCE_CREATE_ADMIN');
+  return true; // مؤقتاً للتجربة
+});
+
+const canApprove = computed(() => {
+  // return authStore.hasPermission('ADVANCE_APPROVE');
+  return true;
+});
 
 const pendingCount = computed(
   () => store.advances.filter((a) => a.status === "pending").length,
@@ -321,20 +367,63 @@ const totalAmount = computed(() => {
     .toLocaleString("ar-SA");
 });
 
-const openCreateModal = () => {
+// ✅ فتح المودال مع تحديد الوضع
+const openCreateModal = async (isAdmin: boolean) => {
+  isAdminMode.value = isAdmin;
+
+  // إعادة تعيين النموذج
   Object.assign(form, EMPTY_FORM);
+
+  // تعيين تاريخ السداد الافتراضي (الشهر القادم)
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   form.repaymentDate = String(nextMonth.toISOString().split("T")[0]);
+
+  if (isAdmin) {
+    // جلب قائمة الموظفين إذا لم تكون محملة
+    if (employeesList.value.length === 0) {
+      try {
+        const res = await api.get("/employees"); // تأكد من صحة المسار
+        employeesList.value = res.data;
+      } catch (e) {
+        toast.error("فشل في جلب قائمة الموظفين");
+        return;
+      }
+    }
+  }
+
   showModal.value = true;
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  isAdminMode.value = false;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    await store.createMyAdvance(form);
-    toast.success("تم تقديم طلب السلفة بنجاح");
-    showModal.value = false;
+    const payload = {
+      amount: form.amount,
+      reason: form.reason,
+      repaymentDate: form.repaymentDate,
+    };
+
+    if (isAdminMode.value) {
+      if (!form.employeeId) {
+        toast.error("يرجى اختيار موظف");
+        submitting.value = false;
+        return;
+      }
+      // استخدام دالة المدير
+      await store.createForEmployee(form.employeeId, payload);
+      toast.success("تم إنشاء السلفة للموظف بنجاح");
+    } else {
+      // استخدام دالة الموظف العادي
+      await store.createMyAdvance(payload);
+      toast.success("تم تقديم طلب السلفة بنجاح");
+    }
+    closeModal();
   } catch (e: any) {
     toast.error(e.message || "حدث خطأ أثناء الإرسال");
   } finally {
@@ -434,12 +523,23 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
 .page-header__actions {
   display: flex;
   gap: $space-2;
   flex-wrap: wrap;
   align-items: center;
 }
+
+.btn--secondary {
+  background-color: $stb-surface-2;
+  color: $stb-text-primary;
+  border: 1px solid $stb-border;
+  &:hover {
+    background-color: $stb-surface-3;
+  }
+}
+
 .stats-row {
   margin-bottom: $space-6;
 }

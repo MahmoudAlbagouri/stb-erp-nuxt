@@ -1,4 +1,3 @@
-// stores/loans.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
@@ -30,6 +29,16 @@ export const useLoansStore = defineStore("loans", () => {
 
   const createMyLoan = async (payload: CreateLoanPayload) => {
     const res = await api.post<Loan>("/loans/my-loans", payload);
+    await fetchAll();
+    return res.data;
+  };
+
+  // ✅ دالة جديدة لإنشاء قرض لموظف (Admin)
+  const createForEmployee = async (
+    employeeId: string,
+    payload: CreateLoanPayload,
+  ) => {
+    const res = await api.post<Loan>(`/loans/admin/${employeeId}`, payload);
     await fetchAll();
     return res.data;
   };
@@ -102,6 +111,7 @@ export const useLoansStore = defineStore("loans", () => {
     loading,
     fetchAll,
     createMyLoan,
+    createForEmployee, // ✅ تم التصدير
     updateStatus,
     exportData,
     exportSingle,
