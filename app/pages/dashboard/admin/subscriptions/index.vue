@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
+    <!-- ══ Page Header ═════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>إدارة اشتراكات العملاء</h1>
@@ -87,14 +87,31 @@
             <div class="plan-icon-wrapper">
               <Gem :size="28" />
             </div>
+
             <div class="plan-details">
               <h2>{{ subData.plan.nameAr }}</h2>
               <span :class="['status-badge', `b-${subData.status}`]">
                 <span class="dot"></span>
                 {{ getStatusLabel(subData.status) }}
               </span>
+
+              <!-- ✅ عداد الأيام المتبقية للتجربة (يظهر فقط للحالة trial) -->
+              <div
+                v-if="subData.status === 'trial' && subData.endDate"
+                class="trial-countdown-inline"
+              >
+                <Clock :size="14" />
+                <span
+                  >متبقي:
+                  <strong
+                    >{{ getTrialDaysLeft(subData.endDate) }} يوم</strong
+                  ></span
+                >
+              </div>
             </div>
+
             <div class="plan-price-tag">
+              <!-- ✅ استخدام الدالة المعدلة لتجنب NaN -->
               {{ formatPrice(subData.plan.price) }}
               <span class="cycle"
                 >/ {{ getBillingLabel(subData.plan.billingCycle) }}</span
@@ -179,13 +196,17 @@
               </button>
             </div>
             <form @submit.prevent="handleUpdateStatus" class="modal-form">
+              <!-- داخل Status Management Modal -->
               <div class="form-group">
                 <label>الحالة الجديدة</label>
                 <select v-model="newStatus" class="form-select" required>
+                  <!-- ✅ عرض جميع الحالات المتاحة -->
                   <option value="active">نشط (Active)</option>
+                  <option value="trial">تجريبي (Trial)</option>
                   <option value="suspended">معلق (Suspended)</option>
                   <option value="cancelled">ملغي (Cancelled)</option>
                   <option value="pending">قيد الانتظار (Pending)</option>
+                  <option value="expired">منتهي الصلاحية (Expired)</option>
                 </select>
               </div>
               <div class="form-group" v-if="newStatus === 'active'">
@@ -405,7 +426,6 @@ const filteredTenants = computed(() => {
 });
 
 const activeSubsCount = computed(() => {
-  // يمكن استبداله برقم حقيقي من API إذا توفر
   return tenantStore.tenants.filter((t) => t.status === "active").length;
 });
 
@@ -495,7 +515,7 @@ const getStatusLabel = (s: string) => {
   const map: any = {
     active: "نشط",
     trial: "تجريبي",
-    expired: "منتهي",
+    expired: "منتهي الصلاحية", // ✅ تمت الإضافة
     cancelled: "ملغي",
     suspended: "معلق",
     pending: "قيد الانتظار",
@@ -503,10 +523,26 @@ const getStatusLabel = (s: string) => {
   return map[s] || s;
 };
 
-const formatPrice = (p: string) => Number(p).toLocaleString("en-US") + " ر.س";
+// ✅ دالة تنسيق السعر لتجنب NaN
+const formatPrice = (p: string | number | null) => {
+  if (!p && p !== 0) return "مجاناً";
+  const num = Number(p);
+  return isNaN(num) ? "0 ر.س" : `${num.toLocaleString("ar-SA")} ر.س`;
+};
+
 const getBillingLabel = (c: string) =>
   c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
+
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
+
+// ✅ دالة حساب الأيام المتبقية للتجربة
+const getTrialDaysLeft = (endDate: string) => {
+  if (!endDate) return 0;
+  const end = new Date(endDate).getTime();
+  const now = new Date().getTime();
+  const diff = end - now;
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+};
 
 onMounted(() => {
   tenantStore.fetchAll();
@@ -715,6 +751,23 @@ onMounted(() => {
         font-size: $font-size-xl;
         margin-bottom: 4px;
       }
+
+      // ✅ ستايل العداد المدمج
+      .trial-countdown-inline {
+        margin-top: 8px;
+        @include flex(row, flex-start, center, 6px);
+        font-size: $font-size-xs;
+        color: $stb-danger;
+        background: rgba($stb-danger, 0.1);
+        padding: 4px 8px;
+        border-radius: $radius-sm;
+        width: fit-content;
+
+        strong {
+          font-weight: 700;
+        }
+      }
+
       .status-badge {
         @include flex(row, center, center, 4px);
         font-size: 0.7rem;

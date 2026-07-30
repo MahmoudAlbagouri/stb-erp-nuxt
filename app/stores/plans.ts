@@ -6,6 +6,9 @@ import { useApi } from "../composables/useApi";
 export interface PlanQuotas {
   max_users?: number;
   max_employees?: number;
+  max_contracts?: number; // ✅ تمت الإضافة
+  max_biometric_devices?: number; // ✅ تمت الإضافة
+  max_storage_mb?: number;
   [key: string]: number | undefined;
 }
 
@@ -35,7 +38,6 @@ export const usePlanStore = defineStore("plans", () => {
   const availableFeatures = ref<AvailableFeature[]>([]);
   const loading = ref(false);
 
-  // جلب كل الخطط
   const fetchAll = async () => {
     loading.value = true;
     try {
@@ -46,7 +48,6 @@ export const usePlanStore = defineStore("plans", () => {
     }
   };
 
-  // جلب قائمة الميزات المتاحة
   const fetchFeatures = async () => {
     try {
       const res = await api.get<AvailableFeature[]>("/plans/features/list");
@@ -56,14 +57,12 @@ export const usePlanStore = defineStore("plans", () => {
     }
   };
 
-  // إنشاء خطة جديدة
   const create = async (data: Partial<Plan>) => {
     const res = await api.post<Plan>("/plans", data);
     plans.value.push(res.data);
     return res.data;
   };
 
-  // تحديث خطة
   const update = async (id: string, data: Partial<Plan>) => {
     const res = await api.patch<Plan>(`/plans/${id}`, data);
     const index = plans.value.findIndex((p) => p.id === id);
@@ -71,7 +70,6 @@ export const usePlanStore = defineStore("plans", () => {
     return res.data;
   };
 
-  // حذف خطة
   const deletePlan = async (id: string) => {
     await api.del(`/plans/${id}`);
     plans.value = plans.value.filter((p) => p.id !== id);

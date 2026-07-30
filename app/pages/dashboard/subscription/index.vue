@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>اشتراك الشركة</h1>
-        <p v-if="!subscription?.isSuperSystem">
+        <p v-if="!store.subscription?.isSuperSystem">
           تفاصيل الخطة الحالية وحدود الاستخدام المتاحة
         </p>
         <p v-else class="super-badge-text">
@@ -13,15 +13,16 @@
     </div>
 
     <!-- حالة التحميل -->
-    <div v-if="loading" class="flex-center p-10">
+    <div v-if="store.loading" class="flex-center p-10">
       <div class="spinner spinner--lg"></div>
     </div>
 
     <!-- عرض خاص لمالك النظام -->
-    <div v-else-if="subscription?.isSuperSystem" class="card super-system-card">
-      <div class="super-icon-wrapper">
-        <ShieldCheck :size="48" />
-      </div>
+    <div
+      v-else-if="store.subscription?.isSuperSystem"
+      class="card super-system-card"
+    >
+      <div class="super-icon-wrapper"><ShieldCheck :size="48" /></div>
       <h2>مالك النظام (System Owner)</h2>
       <p>هذا الحساب يمتلك صلاحية الوصول الكاملة لجميع موارد النظام دون قيود.</p>
       <div class="super-stats">
@@ -31,37 +32,71 @@
     </div>
 
     <!-- العرض العادي للشركات -->
-    <div v-else-if="subscription" class="sub-grid">
+    <div v-else-if="store.subscription" class="sub-grid">
+      <!-- ✅ تنبيه الفترة التجريبية -->
+      <div
+        v-if="store.subscription.status === 'trial'"
+        class="alert alert--warning trial-alert"
+      >
+        <AlertCircle :size="20" />
+        <div>
+          <strong>أنت حالياً في الفترة التجريبية</strong>
+          <p>
+            مدة التجربة 3 أيام فقط. سيتوقف الوصول للنظام بعد تاريخ الانتهاء ما
+            لم يتم ترقية الخطة.
+          </p>
+        </div>
+      </div>
+
       <div class="card sub-card main-info">
         <div class="sub-header">
           <div class="plan-icon"><Gem :size="24" /></div>
           <div>
-            <h2>{{ subscription.plan.nameAr }}</h2>
-            <span :class="['status-badge', `status--${subscription.status}`]">
-              {{ getStatusLabel(subscription.status) }}
+            <h2>{{ store.subscription.plan.nameAr }}</h2>
+            <span
+              :class="['status-badge', `status--${store.subscription.status}`]"
+            >
+              {{ getStatusLabel(store.subscription.status) }}
             </span>
           </div>
         </div>
 
+        <!-- ✅ استخدام formattedPrice من الـ Store لتجنب NaN -->
         <div class="price-tag">
-          {{ formatPrice(subscription.plan.price) }}
+          {{ store.formattedPrice }}
           <span class="cycle"
-            >/ {{ getBillingLabel(subscription.plan.billingCycle) }}</span
+            >/ {{ getBillingLabel(store.subscription.plan.billingCycle) }}</span
           >
         </div>
 
         <div class="dates-row">
           <div class="date-box">
             <span class="label">بداية الفترة</span>
-            <span class="val">{{ formatDate(subscription.startDate) }}</span>
+            <span class="val">{{
+              formatDate(store.subscription.startDate)
+            }}</span>
           </div>
           <div class="date-box">
             <span class="label">نهاية الفترة</span>
-            <span class="val">{{
-              subscription.endDate
-                ? formatDate(subscription.endDate)
-                : "غير محدد"
-            }}</span>
+            <span class="val">
+              {{
+                store.subscription.endDate
+                  ? formatDate(store.subscription.endDate)
+                  : "غير محدد"
+              }}
+            </span>
+          </div>
+        </div>
+
+        <!-- ✅ عداد تنازلي واضح ومميز -->
+        <div
+          v-if="store.subscription.status === 'trial'"
+          class="trial-countdown-box"
+        >
+          <Clock :size="18" class="clock-icon" />
+          <div class="countdown-text">
+            متبقي على انتهاء التجربة:
+            <strong>{{ store.daysRemaining }} يوم</strong>
           </div>
         </div>
       </div>
@@ -70,7 +105,7 @@
         <h3 class="section-title">حدود الاستخدام (Quotas)</h3>
         <div class="quotas-grid">
           <div
-            v-for="(quota, key) in subscription.quotas"
+            v-for="(quota, key) in store.subscription.quotas"
             :key="key"
             class="quota-card"
           >
@@ -95,12 +130,6 @@
               <span v-else class="unlimited-text">غير محدود</span>
             </div>
           </div>
-          <div
-            v-if="Object.keys(subscription.quotas).length === 0"
-            class="empty-quota"
-          >
-            لا توجد حدود محددة لهذه الخطة.
-          </div>
         </div>
       </div>
     </div>
@@ -108,30 +137,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useApi } from "@/composables/useApi";
-import { Gem, ShieldCheck } from "lucide-vue-next";
+import { onMounted } from "vue";
+import { useSubscriptionStore } from "@/stores/subscription"; // ✅ استيراد الـ Store الجديد
+import { Gem, ShieldCheck, AlertCircle, Clock } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
 
-const api = useApi();
-const loading = ref(true);
-const subscription = ref<any>(null);
+const store = useSubscriptionStore();
 
-const fetchMySubscription = async () => {
-  try {
-    const res = await api.get("/subscriptions/me");
-    subscription.value = res.data;
-  } catch (e) {
-    console.error(e);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const formatPrice = (p: string) => Number(p).toLocaleString("en-US") + " ر.س";
-const getBillingLabel = (c: string) =>
-  c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
 const getStatusLabel = (s: string) => {
   const map: any = {
     active: "نشط",
@@ -143,19 +156,23 @@ const getStatusLabel = (s: string) => {
   };
   return map[s] || s;
 };
+
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
+const getBillingLabel = (c: string) =>
+  c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
 const getQuotaLabel = (k: string) =>
   k === "max_users" ? "المستخدمين" : k === "max_employees" ? "الموظفين" : k;
 const getPercentage = (q: any) =>
   q.limit === null ? 0 : Math.min(100, Math.round((q.used / q.limit) * 100));
 
-onMounted(fetchMySubscription);
+onMounted(() => store.fetchMySubscription());
 </script>
 
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
+/* ... (نفس ستايل super-system-card و trial-alert السابق) ... */
 .super-system-card {
   @include glass-card;
   text-align: center;
@@ -165,7 +182,6 @@ onMounted(fetchMySubscription);
     rgba($stb-accent, 0.05),
     rgba($stb-surface, 0.8)
   );
-
   .super-icon-wrapper {
     width: 80px;
     height: 80px;
@@ -175,7 +191,6 @@ onMounted(fetchMySubscription);
     border-radius: 50%;
     @include flex(row, center, center);
   }
-
   h2 {
     font-size: $font-size-xl;
     margin-bottom: $space-2;
@@ -184,7 +199,6 @@ onMounted(fetchMySubscription);
     color: $stb-text-muted;
     margin-bottom: $space-6;
   }
-
   .super-stats {
     display: flex;
     justify-content: center;
@@ -192,6 +206,65 @@ onMounted(fetchMySubscription);
     .stat-item strong {
       color: $stb-success;
     }
+  }
+}
+.trial-alert {
+  @include glass-card;
+  background: rgba($stb-warning, 0.1);
+  border-color: $stb-warning;
+  color: $stb-warning;
+  @include flex(row, flex-start, flex-start, $space-3);
+  margin-bottom: $space-4;
+  padding: $space-3;
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+  p {
+    font-size: $font-size-sm;
+    opacity: 0.9;
+    margin: 0;
+  }
+}
+
+/* ✅ ستايل العداد الجديد */
+.trial-countdown-box {
+  margin-top: $space-5;
+  padding: $space-3;
+  background: rgba($stb-danger, 0.08);
+  border: 1px dashed $stb-danger;
+  border-radius: $radius-lg;
+  @include flex(row, center, center, $space-2);
+
+  .clock-icon {
+    color: $stb-danger;
+    animation: pulse 2s infinite;
+  }
+  .countdown-text {
+    font-size: $font-size-base;
+    color: $stb-text-primary;
+    font-weight: 500;
+  }
+  .countdown-text strong {
+    color: $stb-danger;
+    font-size: $font-size-lg;
+    margin-right: 4px;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
   }
 }
 

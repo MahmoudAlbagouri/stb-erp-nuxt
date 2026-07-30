@@ -28,22 +28,35 @@
         </div>
 
         <div class="plan-body">
+          <!-- قسم الحدود -->
           <div class="section">
-            <h4>الحدود (Quotas)</h4>
+            <h4>الحدود المسموحة (Quotas)</h4>
             <ul class="list-dashed">
               <li v-for="(val, key) in plan.quotas" :key="key">
-                <span>{{ getQuotaLabel(key) }}</span>
-                <strong>{{ val }}</strong>
+                <span class="quota-label">{{ getQuotaLabel(key) }}</span>
+                <strong class="quota-value">{{
+                  val === -1 ? "غير محدود" : val
+                }}</strong>
               </li>
             </ul>
           </div>
 
+          <!-- قسم الميزات -->
           <div class="section">
-            <h4>الميزات</h4>
+            <h4>الميزات المتاحة</h4>
             <div class="features-list">
-              <span v-for="f in plan.features" :key="f" class="feature-pill">
+              <span
+                v-for="f in plan.features"
+                :key="f"
+                class="feature-pill"
+                :title="getFeatureName(f)"
+              >
+                <CheckCircle2 :size="12" />
                 {{ getFeatureName(f) }}
               </span>
+              <span v-if="!plan.features.length" class="text-muted text-sm"
+                >لا توجد ميزات إضافية</span
+              >
             </div>
           </div>
         </div>
@@ -78,17 +91,27 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>الاسم (EN)</label>
-                  <input v-model="form.name" class="form-input" required />
+                  <input
+                    v-model="form.name"
+                    class="form-input"
+                    required
+                    placeholder="e.g. Basic"
+                  />
                 </div>
                 <div class="form-group">
                   <label>الاسم (AR)</label>
-                  <input v-model="form.nameAr" class="form-input" required />
+                  <input
+                    v-model="form.nameAr"
+                    class="form-input"
+                    required
+                    placeholder="مثال: الأساسية"
+                  />
                 </div>
               </div>
 
               <div class="grid-3">
                 <div class="form-group">
-                  <label>السعر</label>
+                  <label>السعر (ر.س)</label>
                   <input
                     v-model="form.price"
                     type="number"
@@ -107,36 +130,53 @@
                 <div class="form-group">
                   <label>النوع</label>
                   <select v-model="form.isCustom" class="form-select">
-                    <option :value="false">عام</option>
-                    <option :value="true">مخصص</option>
+                    <option :value="false">عام (Public)</option>
+                    <option :value="true">مخصص (Custom)</option>
                   </select>
                 </div>
               </div>
 
               <div class="form-section">
-                <label class="section-label">الحدود (Quotas)</label>
+                <label class="section-label">الحدود والقيود (Quotas)</label>
                 <div class="grid-2">
                   <div class="form-group">
-                    <label>Max Users</label>
+                    <label>عدد المستخدمين (Users)</label>
                     <input
                       v-model.number="form.quotas.max_users"
                       type="number"
                       class="form-input"
+                      placeholder="0 = غير محدود"
                     />
                   </div>
                   <div class="form-group">
-                    <label>Max Employees</label>
+                    <label>عدد الموظفين (Employees)</label>
                     <input
                       v-model.number="form.quotas.max_employees"
                       type="number"
                       class="form-input"
                     />
                   </div>
+                  <div class="form-group">
+                    <label>عدد العقود (Contracts)</label>
+                    <input
+                      v-model.number="form.quotas.max_contracts"
+                      type="number"
+                      class="form-input"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>أجهزة البصمة (Devices)</label>
+                    <input
+                      v-model.number="form.quotas.max_biometric_devices"
+                      type="number"
+                      class="form-input"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div class="form-section">
-                <label class="section-label">الميزات المتاحة</label>
+                <label class="section-label">الميزات الإضافية (Add-ons)</label>
                 <div class="features-checkboxes">
                   <label
                     v-for="feat in store.availableFeatures"
@@ -166,7 +206,7 @@
                   class="btn btn--primary"
                   :disabled="submitting"
                 >
-                  حفظ
+                  {{ submitting ? "جاري الحفظ..." : "حفظ الخطة" }}
                 </button>
               </div>
             </form>
@@ -178,8 +218,8 @@
     <ConfirmDialog
       v-model="showDeleteConfirm"
       title="حذف الخطة"
-      message="هل أنت متأكد؟"
-      confirm-text="حذف"
+      message="هل أنت متأكد من حذف هذه الخطة؟ لا يمكن التراجع عن هذا الإجراء."
+      confirm-text="حذف نهائي"
       @confirm="handleDelete"
     />
   </div>
@@ -187,9 +227,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
-import { usePlanStore } from "@/stores/plans"; // افترض وجود هذا المتجر كما سبق
+import { usePlanStore } from "@/stores/plans";
 import { useToast } from "@/composables/useToast";
-import { Plus, Edit, Trash2, X } from "lucide-vue-next";
+import { Plus, Edit, Trash2, X, CheckCircle2 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
 definePageMeta({ middleware: "auth" });
@@ -204,35 +244,48 @@ const currentId = ref<string | null>(null);
 const selectedFeatures = ref<string[]>([]);
 
 type BillingCycle = "monthly" | "yearly" | "lifetime";
+
+// تعريف الهيكل الافتراضي للنموذج
+const initialQuotas = {
+  max_users: 0,
+  max_employees: 0,
+  max_contracts: 0,
+  max_biometric_devices: 0,
+};
+
 const form = reactive<{
   name: string;
   nameAr: string;
   price: string;
   billingCycle: BillingCycle;
   isCustom: boolean;
-  quotas: { max_users: number; max_employees: number };
+  quotas: typeof initialQuotas;
 }>({
   name: "",
   nameAr: "",
   price: "",
   billingCycle: "monthly",
   isCustom: false,
-  quotas: { max_users: 0, max_employees: 0 },
+  quotas: { ...initialQuotas },
 });
 
 const openModal = (plan?: any) => {
   if (plan) {
     isEditing.value = true;
     currentId.value = plan.id;
-    Object.assign(form, { ...plan, quotas: { ...plan.quotas } });
-    selectedFeatures.value = [...plan.features];
+    // نسخ البيانات بعمق لتجنب التعديل المباشر
+    Object.assign(form, {
+      ...plan,
+      quotas: { ...initialQuotas, ...plan.quotas },
+    });
+    selectedFeatures.value = [...(plan.features || [])];
   } else {
     isEditing.value = false;
     currentId.value = null;
     form.name = "";
     form.nameAr = "";
     form.price = "";
-    form.quotas = { max_users: 0, max_employees: 0 };
+    form.quotas = { ...initialQuotas };
     selectedFeatures.value = [];
   }
   showModal.value = true;
@@ -241,13 +294,21 @@ const openModal = (plan?: any) => {
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    const payload = { ...form, features: selectedFeatures.value };
-    if (isEditing.value) await store.update(currentId.value!, payload);
-    else await store.create(payload);
-    toast.success("تم الحفظ بنجاح");
+    const payload = {
+      ...form,
+      features: selectedFeatures.value,
+    };
+
+    if (isEditing.value) {
+      await store.update(currentId.value!, payload);
+    } else {
+      await store.create(payload);
+    }
+
+    toast.success("تم حفظ الخطة بنجاح");
     closeModal();
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "حدث خطأ أثناء الحفظ");
   } finally {
     submitting.value = false;
   }
@@ -257,22 +318,44 @@ const confirmDelete = (id: string) => {
   currentId.value = id;
   showDeleteConfirm.value = true;
 };
+
 const handleDelete = async () => {
   try {
     await store.deletePlan(currentId.value!);
-    toast.success("تم الحذف");
+    toast.success("تم حذف الخطة");
   } catch (e: any) {
-    toast.error(e.message);
+    toast.error(e.message || "فشل الحذف");
   }
 };
 
 const closeModal = () => (showModal.value = false);
-const formatPrice = (p: string) => Number(p).toLocaleString() + " ر.س";
-const getBillingLabel = (c: string) => (c === "monthly" ? "شهر" : "سنة");
-const getQuotaLabel = (k: string) =>
-  k === "max_users" ? "المستخدمين" : "الموظفين";
-const getFeatureName = (name: string) =>
-  store.availableFeatures.find((f) => f.name === name)?.labelAr || name;
+
+// دوال مساعدة للعرض
+const formatPrice = (p: string) => Number(p).toLocaleString("ar-SA") + " ر.س";
+const getBillingLabel = (c: string) => {
+  const map: Record<string, string> = {
+    monthly: "شهر",
+    yearly: "سنة",
+    lifetime: "مدى الحياة",
+  };
+  return map[c] || c;
+};
+
+const getQuotaLabel = (k: string) => {
+  const map: Record<string, string> = {
+    max_users: "المستخدمين",
+    max_employees: "الموظفين",
+    max_contracts: "العقود",
+    max_biometric_devices: "أجهزة البصمة",
+    max_storage_mb: "مساحة التخزين (MB)",
+  };
+  return map[k] || k;
+};
+
+const getFeatureName = (name: string) => {
+  const feat = store.availableFeatures.find((f) => f.name === name);
+  return feat ? feat.labelAr : name;
+};
 
 onMounted(() => {
   store.fetchAll();
@@ -286,53 +369,71 @@ onMounted(() => {
 
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: $space-4;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: $space-5;
 }
 
 .plan-card {
   display: flex;
   flex-direction: column;
-  transition: transform $transition-base;
+  transition: all $transition-base;
+  border: 1px solid $stb-border;
 
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     border-color: $stb-accent;
   }
 
   .plan-header {
     padding: $space-5;
     border-bottom: 1px solid $stb-border;
+    background: rgba($stb-accent, 0.03);
 
     .plan-title h3 {
       font-size: $font-size-lg;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
+      color: $stb-text-primary;
     }
     .plan-key {
       font-size: $font-size-xs;
       color: $stb-text-muted;
       font-family: monospace;
+      background: $stb-surface-2;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
     .plan-price {
       font-size: $font-size-xl;
       font-weight: 700;
       color: $stb-accent;
-      margin-top: $space-2;
+      margin-top: $space-3;
+      small {
+        font-size: $font-size-sm;
+        font-weight: 400;
+        color: $stb-text-secondary;
+      }
     }
   }
 
   .plan-body {
-    padding: $space-4 $space-5;
+    padding: $space-5;
     flex: 1;
   }
 
   .section {
-    margin-bottom: $space-4;
+    margin-bottom: $space-5;
+    &:last-child {
+      margin-bottom: 0;
+    }
+
     h4 {
       font-size: $font-size-xs;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: $stb-text-muted;
-      margin-bottom: $space-2;
+      margin-bottom: $space-3;
+      font-weight: 600;
     }
   }
 
@@ -341,8 +442,15 @@ onMounted(() => {
     li {
       @include flex(row, space-between, center);
       font-size: $font-size-sm;
-      padding: 4px 0;
-      border-bottom: 1px dashed $stb-border;
+      padding: 6px 0;
+      border-bottom: 1px dashed $stb-border-light;
+
+      .quota-label {
+        color: $stb-text-secondary;
+      }
+      .quota-value {
+        color: $stb-text-primary;
+      }
     }
   }
 
@@ -351,40 +459,67 @@ onMounted(() => {
     flex-wrap: wrap;
     gap: $space-2;
     .feature-pill {
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      background: $stb-surface-3;
-      border-radius: 4px;
+      @include flex(row, center, center);
+      gap: 4px;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      background: $stb-surface-2;
+      border-radius: 6px;
       color: $stb-text-secondary;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+
+      svg {
+        color: $stb-success;
+      }
+
+      &:hover {
+        background: $stb-surface-3;
+        border-color: $stb-border;
+      }
     }
   }
 
   .plan-footer {
-    padding: $space-3 $space-5;
+    padding: $space-4 $space-5;
     border-top: 1px solid $stb-border;
     @include flex(row, center, space-between);
-    background: rgba($stb-dark, 0.2);
+    background: $stb-surface-2;
   }
 }
 
 .modal--lg {
-  max-width: 700px;
+  max-width: 800px;
 }
+
 .features-checkboxes {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: $space-2;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: $space-3;
 }
+
 .feature-check {
   background: $stb-surface;
-  padding: $space-2;
+  padding: $space-3;
   border-radius: $radius-md;
   border: 1px solid $stb-border;
   cursor: pointer;
+  @include flex(row, flex-start, center);
+  gap: $space-2;
+  transition: all 0.2s;
+
   &:has(input:checked) {
-    background: rgba($stb-accent, 0.1);
+    background: rgba($stb-accent, 0.08);
     border-color: $stb-accent;
     color: $stb-accent;
+
+    span {
+      font-weight: 500;
+    }
+  }
+
+  input {
+    accent-color: $stb-accent;
   }
 }
 </style>
