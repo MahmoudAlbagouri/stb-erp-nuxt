@@ -378,7 +378,6 @@
 import { ref, computed, reactive, onMounted } from "vue";
 import { usePayrollStore } from "@/stores/payroll";
 import { useToast } from "@/composables/useToast";
-import type { Payroll } from "@/stores/payroll";
 
 import {
   CalendarDays,
@@ -397,6 +396,7 @@ definePageMeta({ middleware: "auth" });
 
 const store = usePayrollStore();
 const toast = useToast();
+type Payroll = (typeof store.payrolls)[number];
 
 // ─── Filters ─────────────────────────────────────────────────────────────────
 const filterYear = ref<number | "">("");
