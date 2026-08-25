@@ -57,6 +57,19 @@
           <Users class="sidebar-nav__icon" />
           <span>المستخدمون</span>
         </NuxtLink>
+        <NuxtLink
+          to="/dashboard/notifications"
+          class="sidebar-nav__item"
+          active-class="is-active"
+        >
+          <Bell :size="18" class="sidebar-nav__icon" />
+          <!-- Import Bell from lucide -->
+          <span>الإشعارات</span>
+          <!-- Optional: Show badge in sidebar too -->
+          <span v-if="notificationsStore.hasUnread" class="sidebar-badge">{{
+            notificationsStore.unreadCount
+          }}</span>
+        </NuxtLink>
 
         <NuxtLink
           to="/dashboard/roles"
@@ -285,12 +298,14 @@ import { useRoute } from "vue-router";
 import { useUiStore } from "@/stores/ui";
 import { useAuthStore } from "@/stores/auth";
 import { useProfileStore } from "@/stores/profile";
+import { useNotificationsStore } from "@/stores/notifications";
 
 // ✅ استيراد أيقونات Lucide المستخدمة
 import {
   LayoutDashboard,
   User,
   Users,
+  Bell,
   ShieldCheck,
   KeyRound,
   ChevronDown,
@@ -316,6 +331,7 @@ import {
 const ui = useUiStore();
 const auth = useAuthStore();
 const profile = useProfileStore();
+const notificationsStore = useNotificationsStore();
 const route = useRoute();
 
 const isHrOpen = ref(true);

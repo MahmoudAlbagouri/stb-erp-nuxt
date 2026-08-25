@@ -15,8 +15,10 @@
       <span class="topbar-breadcrumb__sep">/</span>
       <span class="topbar-breadcrumb__current">{{ pageTitle }}</span>
     </div>
-
     <div class="topbar-actions">
+      <!-- ✅ إضافة جرس الإشعارات هنا -->
+      <NotificationBell />
+
       <div class="topbar-badge">
         <span v-if="auth.isSuperAdmin" class="badge badge--active"
           >مالك الشركة</span
