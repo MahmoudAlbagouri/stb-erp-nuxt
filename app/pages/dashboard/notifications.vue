@@ -1,6 +1,6 @@
+<!-- pages/dashboard/notifications/index.vue -->
 <template>
   <div class="page-container">
-    <!-- Header -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>مركز الإشعارات</h1>
@@ -17,30 +17,25 @@
           <span>تحديد الكل كمقروء</span>
           <span class="btn__count">{{ store.unreadCount }}</span>
         </button>
-
-        <!-- Toggle View for Admins -->
         <div v-if="canViewAll" class="view-toggle">
           <button
             class="btn btn--sm"
             :class="isAdminView ? 'btn--ghost' : 'btn--primary'"
             @click="isAdminView = false"
           >
-            <Bell :size="14" />
-            <span>إشعاراتي</span>
+            <Bell :size="14" /><span>إشعاراتي</span>
           </button>
           <button
             class="btn btn--sm"
             :class="isAdminView ? 'btn--primary' : 'btn--ghost'"
             @click="switchToAdminView"
           >
-            <Users :size="14" />
-            <span>كل الإشعارات</span>
+            <Users :size="14" /><span>كل الإشعارات</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Admin Stats (Only visible in Admin View) -->
     <div v-if="isAdminView && store.stats" class="grid-4 stats-row">
       <div class="stat-card stat-total">
         <div class="stat-card__icon"><Bell :size="24" /></div>
@@ -76,10 +71,8 @@
       </div>
     </div>
 
-    <!-- Filters -->
     <div class="card filter-card">
       <div class="filter-card__icon"><Filter :size="16" /></div>
-
       <div class="filter-group">
         <label>الحالة:</label>
         <select
@@ -119,12 +112,9 @@
       </div>
     </div>
 
-    <!-- Loading -->
     <div v-if="store.loading" class="empty-state">
       <div class="spinner spinner--lg" />
     </div>
-
-    <!-- Empty State -->
     <div v-else-if="currentList.length === 0" class="card empty-card">
       <div class="empty-state">
         <div class="empty-state__icon-wrap">
@@ -137,7 +127,6 @@
       </div>
     </div>
 
-    <!-- Notifications List -->
     <div v-else class="notifications-list">
       <TransitionGroup name="list" tag="div">
         <div
@@ -161,7 +150,21 @@
                 formatTimeAgo(notif.createdAt)
               }}</span>
             </div>
+
             <p class="notif-card__message">{{ notif.message }}</p>
+
+            <!-- ✅ NEW: عرض بيانات الموظف من Metadata -->
+            <div
+              v-if="notif.metadata?.employeeName"
+              class="notif-card__extra-info text-xs text-muted mt-2 flex items-center gap-1"
+            >
+              <User :size="12" />
+              <span
+                >الموظف: {{ notif.metadata.employeeName }} ({{
+                  notif.metadata.employeeCode
+                }})</span
+              >
+            </div>
 
             <div class="notif-card__meta">
               <span
@@ -200,7 +203,6 @@
         </div>
       </TransitionGroup>
 
-      <!-- Pagination (Admin Only) -->
       <div
         v-if="
           isAdminView &&
@@ -231,9 +233,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { useNotificationsStore } from "@/stores/notifications";
-import { useAuthStore } from "@/stores/auth"; // Assuming you have auth store for permissions
+import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/composables/useToast";
 import type { NotificationCategory } from "@/types";
 import {
@@ -258,22 +260,15 @@ import {
 definePageMeta({ middleware: "auth" });
 
 const store = useNotificationsStore();
-const auth = useAuthStore(); // Adjust based on your actual auth store structure
+const auth = useAuthStore();
 const toast = useToast();
 
-// State
 const isAdminView = ref(false);
 const actionLoading = ref(false);
 const searchTimeout = ref<any>(null);
 
-// Permissions (Adjust logic based on your actual permission system)
-const canViewAll = computed(() => {
-  // Example: Check if user has 'view_all_notifications' permission or is admin
-  // return auth.hasPermission('view_all_notifications');
-  return true; // Temporarily true for testing
-});
+const canViewAll = computed(() => true); // Temporarily true for testing
 
-// Filters
 const filters = reactive({
   isRead: undefined as boolean | undefined,
   category: undefined as NotificationCategory | undefined,
@@ -282,14 +277,12 @@ const filters = reactive({
   limit: 10,
 });
 
-// Computed List
-const currentList = computed(() => {
-  return isAdminView.value
+const currentList = computed(() =>
+  isAdminView.value
     ? store.allNotifications?.items || []
-    : store.myNotifications;
-});
+    : store.myNotifications,
+);
 
-// Methods
 const switchToAdminView = async () => {
   isAdminView.value = true;
   filters.page = 1;
@@ -298,14 +291,12 @@ const switchToAdminView = async () => {
 };
 
 const applyFilters = async () => {
-  if (isAdminView.value) {
-    await store.fetchAllNotifications({ ...filters });
-  } else {
+  if (isAdminView.value) await store.fetchAllNotifications({ ...filters });
+  else
     await store.fetchMyNotifications({
       isRead: filters.isRead,
       category: filters.category,
     });
-  }
 };
 
 const debounceSearch = () => {
@@ -368,8 +359,6 @@ const getIcon = (category: NotificationCategory) => {
   }
 };
 
-// Maps each notification category to a semantic brand color used for
-// both the icon tint and the category badge, so the two stay in sync.
 const categoryColorMap: Record<string, string> = {
   contract_expiry: "warning",
   id_expiry: "danger",
@@ -417,11 +406,9 @@ onMounted(async () => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// --- Header ---------------------------------------------------------
 .page-header {
   padding-bottom: $space-5;
   border-bottom: 1px solid rgba($stb-border, 0.6);
-
   &__title h1 {
     font-size: $font-size-2xl;
     letter-spacing: -0.01em;
@@ -444,7 +431,6 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-// --- Stats ------------------------------------------------------------
 .stats-row {
   margin-bottom: $space-6;
 }
@@ -452,7 +438,6 @@ onMounted(async () => {
 .stat-card {
   position: relative;
   overflow: hidden;
-
   &::before {
     content: "";
     position: absolute;
@@ -460,7 +445,6 @@ onMounted(async () => {
     inset-inline: 0;
     height: 3px;
   }
-
   &.stat-total {
     &::before {
       background: $gradient-primary;
@@ -499,7 +483,6 @@ onMounted(async () => {
   }
 }
 
-// --- Filter bar ---------------------------------------------------------
 .filter-card {
   @include flex(row, center, flex-start, $space-5);
   padding: $space-4 $space-5;
@@ -517,7 +500,6 @@ onMounted(async () => {
   @include flex(row, center, flex-start, $space-2);
   position: relative;
   padding-inline-end: $space-5;
-
   &:not(:last-child)::after {
     content: "";
     position: absolute;
@@ -528,17 +510,14 @@ onMounted(async () => {
     height: 20px;
     background: $stb-border;
   }
-
   label {
     font-size: $font-size-sm;
     color: $stb-text-secondary;
     white-space: nowrap;
   }
-
   &--search {
     flex: 1;
     min-width: 200px;
-
     input {
       width: 100%;
     }
@@ -559,7 +538,6 @@ onMounted(async () => {
     padding-inline-end: 0;
     padding-bottom: $space-3;
     border-bottom: 1px solid $stb-border;
-
     &::after {
       display: none;
     }
@@ -570,14 +548,12 @@ onMounted(async () => {
   }
 }
 
-// --- View toggle ---------------------------------------------------------
 .view-toggle {
   @include flex(row, center, center, 0);
   background: $stb-surface-2;
   border-radius: $radius-md;
   padding: 2px;
   border: 1px solid $stb-border;
-
   .btn {
     border: none;
     background: transparent;
@@ -588,7 +564,6 @@ onMounted(async () => {
   }
 }
 
-// --- Notifications list ---------------------------------------------------------
 .notifications-list {
   display: flex;
   flex-direction: column;
@@ -602,7 +577,6 @@ onMounted(async () => {
   transition: all $transition-fast;
   border-right: 3px solid transparent;
   animation: cardEnter 0.35s ease backwards;
-
   &:hover {
     transform: translateX(-2px);
     border-color: rgba($stb-border-light, 0.5);
@@ -617,10 +591,42 @@ onMounted(async () => {
   }
 }
 
-@for $i from 1 through 12 {
-  .notification-card:nth-child(#{$i}) {
-    animation-delay: #{$i * 0.035}s;
-  }
+// ✅ FIX: استبدال @for بحلقات ثابتة لتجنب خطأ Vite/PostCSS
+.notification-card:nth-child(1) {
+  animation-delay: 0.035s;
+}
+.notification-card:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.notification-card:nth-child(3) {
+  animation-delay: 0.105s;
+}
+.notification-card:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.notification-card:nth-child(5) {
+  animation-delay: 0.175s;
+}
+.notification-card:nth-child(6) {
+  animation-delay: 0.21s;
+}
+.notification-card:nth-child(7) {
+  animation-delay: 0.245s;
+}
+.notification-card:nth-child(8) {
+  animation-delay: 0.28s;
+}
+.notification-card:nth-child(9) {
+  animation-delay: 0.315s;
+}
+.notification-card:nth-child(10) {
+  animation-delay: 0.35s;
+}
+.notification-card:nth-child(11) {
+  animation-delay: 0.385s;
+}
+.notification-card:nth-child(12) {
+  animation-delay: 0.42s;
 }
 
 @keyframes cardEnter {
@@ -641,7 +647,6 @@ onMounted(async () => {
   border-radius: $radius-lg;
   @include flex(row, center, center);
   flex-shrink: 0;
-
   &.type-info {
     background: rgba($stb-info, 0.1);
     color: $stb-info;
@@ -696,27 +701,23 @@ onMounted(async () => {
   flex: 1;
   min-width: 0;
 }
-
 .notif-card__header {
   @include flex(row, center, space-between);
   margin-bottom: $space-1;
   gap: $space-3;
 }
-
 .notif-card__title {
   font-size: $font-size-base;
   font-weight: 700;
   color: $stb-text-primary;
   margin: 0;
 }
-
 .notif-card__time {
   font-size: $font-size-xs;
   color: $stb-text-muted;
   white-space: nowrap;
   flex-shrink: 0;
 }
-
 .notif-card__message {
   font-size: $font-size-sm;
   color: $stb-text-secondary;
@@ -727,22 +728,18 @@ onMounted(async () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .notif-card__meta {
   @include flex(row, center, flex-start, $space-3);
   flex-wrap: wrap;
 }
-
 .notif-card__recipient {
   @include flex(row, center, flex-start, 4px);
 }
-
 .notif-card__actions {
   @include flex(column, center, center, $space-2);
   opacity: 0.55;
   transition: opacity $transition-fast;
 }
-
 .notification-card:hover .notif-card__actions,
 .notif-card__actions:focus-within {
   opacity: 1;
@@ -769,18 +766,15 @@ onMounted(async () => {
   }
 }
 
-// --- Empty state ---------------------------------------------------------
 .empty-card .empty-state {
   padding: $space-16 $space-8;
 }
-
 .empty-state__icon-wrap {
   position: relative;
   width: 84px;
   height: 84px;
   @include flex(row, center, center);
   color: $stb-text-muted;
-
   &::before {
     content: "";
     position: absolute;
@@ -812,7 +806,6 @@ onMounted(async () => {
   color: $stb-text-secondary;
   padding: 0 $space-4;
 }
-
 .list-enter-active,
 .list-leave-active {
   transition: all 0.3s ease;
@@ -823,7 +816,6 @@ onMounted(async () => {
   transform: translateX(20px);
 }
 
-// --- Motion & accessibility floor ---------------------------------------------------------
 @media (prefers-reduced-motion: reduce) {
   .notification-card,
   .notif-card__dot,

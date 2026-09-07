@@ -157,7 +157,42 @@
         </div>
       </div>
 
-      <!-- ══ 5. العقد ══════════════════════════════════════════════════ -->
+      <!-- ══ 5. رصيد الإجازات ══════════════════════════════════════════ -->
+      <div class="card detail-card highlight-card" v-if="leaveSummary">
+        <div class="card-header">
+          <CalendarClock :size="18" /> <span>رصيد الإجازات</span>
+        </div>
+        <div class="leave-summary-body">
+          <div class="leave-stat leave-stat--main">
+            <span class="leave-stat__label">الأيام المتبقية</span>
+            <strong class="leave-stat__value">{{
+              formatDays(leaveSummary.availableDays)
+            }}</strong>
+          </div>
+          <div class="leave-stat-grid">
+            <div class="leave-stat">
+              <span class="leave-stat__label">الإجازة الفعلية المستهلكة</span>
+              <strong>{{ formatDays(leaveSummary.consumedAnnualDays) }}</strong>
+            </div>
+            <div class="leave-stat">
+              <span class="leave-stat__label">السقف السنوي</span>
+              <strong>{{ formatDays(leaveSummary.totalAllowance) }}</strong>
+            </div>
+            <div class="leave-stat">
+              <span class="leave-stat__label">المرحّل من العام السابق</span>
+              <strong>{{ formatDays(leaveSummary.carriedOverDays) }}</strong>
+            </div>
+            <div class="leave-stat">
+              <span class="leave-stat__label">الحد الأقصى المسموح بطلبه</span>
+              <strong>{{
+                formatDays(leaveSummary.allowedRequestLimit)
+              }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ 6. العقد ══════════════════════════════════════════════════ -->
       <div class="card detail-card full-width-card" v-if="employee.contract">
         <div class="card-header">
           <FileText :size="18" /> <span>تفاصيل العقد</span
@@ -214,7 +249,7 @@
         </div>
       </div>
 
-      <!--  6. المؤهلات العلمية ═══════════════════════════════════════ -->
+      <!--  7. المؤهلات العلمية ═══════════════════════════════════════ -->
       <div
         class="card detail-card full-width-card"
         v-if="employee.educations?.length"
@@ -265,7 +300,7 @@
         </div>
       </div>
 
-      <!-- ══ 7. السلف المالية ═════════════════════════════════════════ -->
+      <!-- ══ 8. السلف المالية ═════════════════════════════════════════ -->
       <div
         class="card detail-card full-width-card"
         v-if="employee.advances?.length"
@@ -305,7 +340,7 @@
         </div>
       </div>
 
-      <!-- ══ 8. القروض ═════════════════════════════════════════════════ -->
+      <!-- ══ 9. القروض ═════════════════════════════════════════════════ -->
       <div
         class="card detail-card full-width-card"
         v-if="employee.loans?.length"
@@ -345,7 +380,7 @@
         </div>
       </div>
 
-      <!-- ═ 9. المكافآت ══════════════════════════════════════════════ -->
+      <!-- ═ 10. المكافآت ══════════════════════════════════════════════ -->
       <div
         class="card detail-card full-width-card"
         v-if="employee.bonuses?.length"
@@ -377,7 +412,7 @@
         </div>
       </div>
 
-      <!-- ══ 10. الخصومات ══════════════════════════════════════════════ -->
+      <!-- ══ 11. الخصومات ══════════════════════════════════════════════ -->
       <div
         class="card detail-card full-width-card"
         v-if="employee.deductions?.length"
@@ -413,7 +448,7 @@
         </div>
       </div>
 
-      <!-- ══ 11. طلبات الإجازة ═════════════════════════════════════════ -->
+      <!-- ══ 12. طلبات الإجازة ═════════════════════════════════════════ -->
       <div
         class="card detail-card full-width-card"
         v-if="employee.leaveRequests?.length"
@@ -428,6 +463,7 @@
                 <th>النوع</th>
                 <th>من تاريخ</th>
                 <th>إلى تاريخ</th>
+                <th>عدد الأيام</th>
                 <th>الحالة</th>
                 <th>السبب</th>
               </tr>
@@ -437,12 +473,97 @@
                 <td>{{ leaveTypeMap[leave.type] }}</td>
                 <td>{{ formatDate(leave.startDate) }}</td>
                 <td>{{ formatDate(leave.endDate) }}</td>
+                <td>{{ calculateDays(leave.startDate, leave.endDate) }} يوم</td>
                 <td>
                   <span :class="`status-dot status-${leave.status}`">{{
                     leaveStatusMap[leave.status]
                   }}</span>
                 </td>
                 <td>{{ leave.reason || "—" }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ 13. التسويات المالية ═════════════════════════════════════ -->
+      <div
+        class="card detail-card full-width-card"
+        v-if="employee.settlements?.length"
+      >
+        <div class="card-header">
+          <Receipt :size="18" /> <span>التسويات المالية</span>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th>أيام غير مستخدمة</th>
+                <th>السعر اليومي</th>
+                <th>الإجمالي</th>
+                <th>تاريخ التسوية</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in employee.settlements" :key="s.id">
+                <td>{{ s.unusedLeaveDays }} يوم</td>
+                <td>
+                  {{
+                    s.unusedLeaveDays
+                      ? formatCurrency(s.totalAmount / s.unusedLeaveDays)
+                      : "—"
+                  }}
+                </td>
+                <td>
+                  <strong class="text-primary">{{
+                    formatCurrency(s.totalAmount)
+                  }}</strong>
+                </td>
+                <td>{{ formatDate(s.settlementDate) }}</td>
+                <td>{{ s.notes || "—" }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ 14. نهاية الخدمة ═════════════════════════════════════════ -->
+      <div
+        class="card detail-card full-width-card"
+        v-if="employee.endOfServices?.length"
+      >
+        <div class="card-header">
+          <LogOut :size="18" /> <span>نهاية الخدمة</span>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th>تاريخ الإنهاء</th>
+                <th>السبب</th>
+                <th>سنوات الخدمة</th>
+                <th>آخر راتب أساسي</th>
+                <th>قيمة المكافأة</th>
+                <th>تاريخ الصرف</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="eos in employee.endOfServices" :key="eos.id">
+                <td>{{ formatDate(eos.terminationDate) }}</td>
+                <td>{{ eos.reason || "—" }}</td>
+                <td>
+                  {{ Number((eos as any).serviceYears ?? 0).toFixed(2) }} سنة
+                </td>
+                <td>{{ formatCurrency((eos as any).lastBasicSalary) }}</td>
+                <td>
+                  <strong class="text-success">{{
+                    formatCurrency(eos.eosAmount)
+                  }}</strong>
+                </td>
+                <td>{{ formatDate((eos as any).payoutDate) }}</td>
+                <td>{{ (eos as any).notes || "—" }}</td>
               </tr>
             </tbody>
           </table>
@@ -462,6 +583,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, navigateTo } from "#app";
 import { useEmployeesStore } from "@/stores/employees";
+import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "@/composables/useToast";
 import { useApi } from "@/composables/useApi"; // ✅ استيراد useApi
 import type { Employee } from "@/types";
@@ -482,15 +604,22 @@ import {
   Gift,
   MinusCircle,
   CalendarDays,
+  CalendarClock,
+  Receipt,
+  LogOut,
   FileSpreadsheet,
 } from "lucide-vue-next";
 
 const route = useRoute();
 const store = useEmployeesStore();
+const leavesStore = useLeavesStore();
 const toast = useToast();
 const api = useApi(); // ✅ تهيئة API
 const employee = ref<Employee | null>(null);
 const loading = ref(true);
+
+// ✅ ملخص رصيد الإجازات (الفعلي / المتبقي / المرحّل...)
+const leaveSummary = ref<any>(null);
 
 // ✅ منطق التصدير في صفحة التفاصيل
 const showExportMenu = ref(false);
@@ -599,10 +728,26 @@ const leaveStatusMap: Record<string, string> = {
   rejected: "مرفوضة",
 };
 
+// ✅ عدد أيام طلب إجازة واحد (نفس منطق صفحة قائمة الإجازات)
+const calculateDays = (start: string, end: string) =>
+  start && end
+    ? Math.ceil(
+        Math.abs(new Date(end).getTime() - new Date(start).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ) + 1
+    : 0;
+
 onMounted(async () => {
   try {
     const id = route.params.id as string;
     employee.value = await store.getById(id);
+
+    // ✅ جلب ملخص رصيد الإجازات بعد التأكد من وجود الموظف
+    if (employee.value?.id) {
+      leaveSummary.value = await leavesStore.getEmployeeLeaveSummary(
+        employee.value.id,
+      );
+    }
   } catch (error) {
     console.error("Failed to fetch employee:", error);
   } finally {
@@ -624,6 +769,12 @@ const formatDate = (dateStr?: string | null) => {
 const formatCurrency = (val?: string | number) => {
   if (!val) return "0 ر.س";
   return `${Number(val).toLocaleString("ar-SA")} ر.س`;
+};
+// ✅ تنسيق أرقام أيام الإجازات (لأنها قد تأتي كسورية بسبب حساب الاستحقاق اليومي)
+const formatDays = (val?: string | number) => {
+  if (val === undefined || val === null) return "—";
+  const num = Number(val);
+  return `${Number.isInteger(num) ? num : num.toFixed(2)} يوم`;
 };
 const empStatusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", terminated: "منتهي" })[s] ?? s;
@@ -848,6 +999,44 @@ const openEditModal = () => console.log("Edit:", employee.value?.id);
     font-size: $font-size-base;
   }
 }
+
+// ✅ تنسيق كارت رصيد الإجازات
+.leave-summary-body {
+  padding: $space-4;
+}
+.leave-stat--main {
+  text-align: center;
+  padding-bottom: $space-3;
+  margin-bottom: $space-3;
+  border-bottom: 1px dashed $stb-border;
+
+  .leave-stat__value {
+    display: block;
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    color: $stb-accent;
+  }
+}
+.leave-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-3;
+}
+.leave-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  strong {
+    font-size: $font-size-sm;
+    color: $stb-text-primary;
+  }
+}
+.leave-stat__label {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+  font-weight: 600;
+}
+
 .status-dot {
   display: inline-block;
   padding: 2px 8px;

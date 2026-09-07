@@ -186,6 +186,14 @@
               <Fingerprint class="sidebar-nav__icon" />
               <span>البصمة والحضور</span>
             </NuxtLink>
+            <NuxtLink
+              to="/dashboard/shifts"
+              class="sidebar-nav__item sidebar-nav__item--sub"
+              active-class="is-active"
+            >
+              <Clock class="sidebar-nav__icon" />
+              <span>الشيفتات</span>
+            </NuxtLink>
 
             <NuxtLink
               to="/dashboard/advances"
@@ -320,6 +328,7 @@ import {
   Building2,
   CreditCard,
   Layers,
+  Clock,
   RefreshCw,
   Gift,
   MinusCircle,

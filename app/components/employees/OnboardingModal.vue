@@ -216,6 +216,150 @@
                 </div>
               </div>
 
+              <!-- ✅ قسم الشيفت (الدوام) — بنفس أسلوب اختيار الدور تمامًا -->
+              <div class="shift-section mt-4">
+                <div class="section-title">
+                  <Clock :size="18" />
+                  <span>شيفت العمل (الدوام)</span>
+                </div>
+
+                <div class="role-toggle">
+                  <button
+                    type="button"
+                    class="role-toggle__btn"
+                    :class="{
+                      'role-toggle__btn--active': form.shiftMode === 'existing',
+                    }"
+                    @click="form.shiftMode = 'existing'"
+                  >
+                    <ListChecks :size="15" />
+                    اختر شيفت موجود
+                  </button>
+                  <button
+                    type="button"
+                    class="role-toggle__btn"
+                    :class="{
+                      'role-toggle__btn--active': form.shiftMode === 'new',
+                    }"
+                    @click="form.shiftMode = 'new'"
+                  >
+                    <Plus :size="15" />
+                    إنشاء شيفت جديد
+                  </button>
+                  <button
+                    type="button"
+                    class="role-toggle__btn"
+                    :class="{
+                      'role-toggle__btn--active': form.shiftMode === 'none',
+                    }"
+                    @click="form.shiftMode = 'none'"
+                  >
+                    <Ban :size="15" />
+                    بدون شيفت
+                  </button>
+                </div>
+
+                <!-- شيفت موجود -->
+                <Transition name="slide-down">
+                  <div v-if="form.shiftMode === 'existing'" class="mt-3">
+                    <select
+                      v-model="form.employee.shiftId"
+                      class="form-select"
+                      :class="{ 'form-select--error': errors.shiftId }"
+                    >
+                      <option value="" disabled>اختر الشيفت...</option>
+                      <option
+                        v-for="shift in shiftsStore.shifts"
+                        :key="shift.id"
+                        :value="shift.id"
+                      >
+                        {{ shift.name }} ({{ shift.startTime }} -
+                        {{ shift.endTime }})
+                      </option>
+                    </select>
+                    <span v-if="errors.shiftId" class="form-error">{{
+                      errors.shiftId
+                    }}</span>
+                    <small v-if="!shiftsStore.shifts.length" class="form-hint">
+                      لا توجد شيفتات مسجلة بعد. اختر "إنشاء شيفت جديد" بدلاً من
+                      ذلك.
+                    </small>
+                  </div>
+                </Transition>
+
+                <!-- شيفت جديد -->
+                <Transition name="slide-down">
+                  <div v-if="form.shiftMode === 'new'" class="mt-3 form-grid">
+                    <div class="form-group form-group--full">
+                      <label class="form-label required">اسم الشيفت</label>
+                      <input
+                        v-model="form.newShift.name"
+                        type="text"
+                        class="form-input"
+                        :class="{ 'form-input--error': errors.shiftName }"
+                        placeholder="مثال: الشيفت الصباحي"
+                      />
+                      <span v-if="errors.shiftName" class="form-error">{{
+                        errors.shiftName
+                      }}</span>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label required"
+                        >وقت بداية الدوام</label
+                      >
+                      <input
+                        v-model="form.newShift.startTime"
+                        type="time"
+                        class="form-input"
+                        :class="{ 'form-input--error': errors.shiftStartTime }"
+                      />
+                      <span v-if="errors.shiftStartTime" class="form-error">{{
+                        errors.shiftStartTime
+                      }}</span>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label required"
+                        >وقت نهاية الدوام</label
+                      >
+                      <input
+                        v-model="form.newShift.endTime"
+                        type="time"
+                        class="form-input"
+                        :class="{ 'form-input--error': errors.shiftEndTime }"
+                      />
+                      <span v-if="errors.shiftEndTime" class="form-error">{{
+                        errors.shiftEndTime
+                      }}</span>
+                    </div>
+                    <div class="form-group form-group--full">
+                      <label class="form-label required"
+                        >فترة السماحية (دقائق)</label
+                      >
+                      <input
+                        v-model.number="form.newShift.gracePeriod"
+                        type="number"
+                        min="0"
+                        class="form-input"
+                        placeholder="30"
+                      />
+                    </div>
+                  </div>
+                </Transition>
+
+                <Transition name="slide-down">
+                  <div v-if="form.shiftMode === 'none'" class="mt-3">
+                    <div class="info-note">
+                      <Info :size="15" />
+                      <span
+                        >سيتم إنشاء الموظف بدون شيفت محدد. يمكن تعيين شيفت
+                        لاحقًا من صفحة الموظف، ولن يظهر تصنيف التأخير/الانصراف
+                        المبكر في تقارير الحضور له حتى ذلك الحين.</span
+                      >
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+
               <!-- ✅ قسم المؤهلات التعليمية (بنفس تصميم الـ Edit Modal) -->
               <div class="education-toggle-section mt-4">
                 <div class="toggle-card">
@@ -1094,6 +1238,10 @@
                       <span>المسمى</span>
                       <strong>{{ form.employee.jobTitle }}</strong>
                     </div>
+                    <div class="review-row">
+                      <span>الشيفت</span>
+                      <strong>{{ selectedShiftLabel }}</strong>
+                    </div>
                   </div>
                 </div>
 
@@ -1313,6 +1461,7 @@ import {
   WalletCards,
   GraduationCap,
   Trash2,
+  Clock, // ✅ أيقونة الشيفت
 } from "lucide-vue-next";
 
 // استيراد مكون الرفع
@@ -1321,6 +1470,7 @@ import StbUploader from "@/components/global/StbUploader.vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useRolesStore } from "@/stores/roles";
 import { usePermissionsStore } from "@/stores/permissions";
+import { useShiftsStore } from "@/stores/shifts"; // ✅ ستور الشيفتات
 import { useToast } from "@/composables/useToast";
 import type { Education } from "@/types";
 
@@ -1334,6 +1484,7 @@ const emit = defineEmits<{
 const employeesStore = useEmployeesStore();
 const rolesStore = useRolesStore();
 const permissionsStore = usePermissionsStore();
+const shiftsStore = useShiftsStore(); // ✅
 const toast = useToast();
 
 // ✅ قائمة الجنسيات
@@ -1407,6 +1558,7 @@ const form = reactive({
   withContract: false,
   withSalary: false,
   roleMode: "none" as "existing" | "new" | "none",
+  shiftMode: "none" as "existing" | "new" | "none", // ✅ نفس فكرة roleMode
 
   employee: {
     fullName: "",
@@ -1418,6 +1570,7 @@ const form = reactive({
     jobTitle: "",
     department: "",
     status: "active" as "active" | "inactive" | "terminated",
+    shiftId: "", // ✅ يستخدم فقط لو shiftMode === 'existing'
   },
 
   user: {
@@ -1427,6 +1580,14 @@ const form = reactive({
     roleId: "",
     roleName: "",
     permissionIds: [] as string[],
+  },
+
+  // ✅ بيانات إنشاء شيفت جديد أثناء الـ onboarding
+  newShift: {
+    name: "",
+    startTime: "",
+    endTime: "",
+    gracePeriod: 30,
   },
 
   contract: {
@@ -1521,6 +1682,22 @@ const filteredPermissions = computed(() => {
   );
 });
 
+// ✅ نص عرض الشيفت المختار في تبويب المراجعة
+const selectedShiftLabel = computed(() => {
+  if (form.shiftMode === "existing") {
+    const s = shiftsStore.shifts.find((sh) => sh.id === form.employee.shiftId);
+    return s ? `${s.name} (${s.startTime} - ${s.endTime})` : "—";
+  }
+  if (form.shiftMode === "new") {
+    return form.newShift.name
+      ? `${form.newShift.name} (${form.newShift.startTime || "--:--"} - ${
+          form.newShift.endTime || "--:--"
+        })`
+      : "—";
+  }
+  return "بدون شيفت";
+});
+
 // ✅ حساب تاريخ نهاية فترة التجربة للعرض فقط
 const calculatedProbationEndDate = computed(() => {
   if (!form.contract.startDate || form.contract.probationPeriod === "بدون")
@@ -1547,6 +1724,7 @@ watch(
     if (v) {
       rolesStore.fetchAll();
       permissionsStore.fetchAll();
+      shiftsStore.fetchAll(); // ✅ تحميل الشيفتات المتاحة عند فتح المودال
       calculateContractDates(); // حساب أولي عند الفتح
     }
   },
@@ -1609,6 +1787,26 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
     if (!form.employee.status) {
       errors.status = "الحالة الوظيفية مطلوبة";
       isValid = false;
+    }
+
+    // ✅ تحقق قسم الشيفت
+    if (form.shiftMode === "existing" && !form.employee.shiftId) {
+      errors.shiftId = "يرجى اختيار شيفت";
+      isValid = false;
+    }
+    if (form.shiftMode === "new") {
+      if (!form.newShift.name.trim()) {
+        errors.shiftName = "اسم الشيفت مطلوب";
+        isValid = false;
+      }
+      if (!form.newShift.startTime) {
+        errors.shiftStartTime = "وقت بداية الدوام مطلوب";
+        isValid = false;
+      }
+      if (!form.newShift.endTime) {
+        errors.shiftEndTime = "وقت نهاية الدوام مطلوب";
+        isValid = false;
+      }
     }
 
     // التحقق من المؤهلات إذا كانت مفتوحة
@@ -1779,6 +1977,7 @@ const handleClose = () => {
       withContract: false,
       withSalary: false,
       roleMode: "none",
+      shiftMode: "none", // ✅ إعادة تعيين
       employee: {
         fullName: "",
         nationalityType: "" as
@@ -1793,6 +1992,7 @@ const handleClose = () => {
         jobTitle: "",
         department: "",
         status: "active" as "active" | "inactive" | "terminated",
+        shiftId: "", // ✅ إعادة تعيين
       },
       user: {
         username: "",
@@ -1801,6 +2001,13 @@ const handleClose = () => {
         roleId: "",
         roleName: "",
         permissionIds: [] as string[],
+      },
+      newShift: {
+        // ✅ إعادة تعيين
+        name: "",
+        startTime: "",
+        endTime: "",
+        gracePeriod: 30,
       },
       contract: {
         contractType: "",
@@ -1831,13 +2038,7 @@ const handleSubmit = async () => {
   clearErrors();
 
   // تحقق نهائي شامل قبل الإرسال
-  // ننتقل عبر جميع التبويبات للتحقق منها إذا كانت مفعلة
   let allValid = true;
-
-  // محاكاة التنقل عبر التبويبات للتحقق من كل شيء
-  const originalTab = activeTab.value;
-
-  // نتحقق يدوياً من كل قسم بناءً على حالته (معطل/مفعل)
 
   // 1. تحقق الموظف (دائماً مطلوب)
   if (
@@ -1860,6 +2061,19 @@ const handleSubmit = async () => {
   if (showEducationForm.value && form.educations.length > 0) {
     if (form.educations.some((e) => !e.degree || !e.issuingAuthority))
       allValid = false;
+  }
+
+  // ✅ تحقق الشيفت
+  if (form.shiftMode === "existing" && !form.employee.shiftId) {
+    allValid = false;
+  }
+  if (
+    form.shiftMode === "new" &&
+    (!form.newShift.name.trim() ||
+      !form.newShift.startTime ||
+      !form.newShift.endTime)
+  ) {
+    allValid = false;
   }
 
   // 2. تحقق المستخدم (إذا مفعل)
@@ -1918,8 +2132,6 @@ const handleSubmit = async () => {
     toast.error(
       "يرجى التأكد من تعبئة جميع الحقول المطلوبة في التبويبات المختلفة",
     );
-    // العودة للتبويب الأول الذي يحتوي على خطأ (اختياري، لكن مفيد)
-    // يمكن تحسينه لاحقاً للقفز للتبويب الخاطئ مباشرة
     return;
   }
 
@@ -1955,6 +2167,20 @@ const handleSubmit = async () => {
           expiryDate: edu.expiryDate || undefined,
           attachmentPath: edu.attachmentPath || undefined,
         }));
+    }
+
+    // ✅ ربط الشيفت — نفس فكرة الدور: إما شيفت موجود، أو إنشاء شيفت جديد أولاً
+    // ثم استخدام الـ id بتاعه، أو من غير شيفت خالص
+    if (form.shiftMode === "existing" && form.employee.shiftId) {
+      payload.shiftId = form.employee.shiftId;
+    } else if (form.shiftMode === "new") {
+      const createdShift = await shiftsStore.create({
+        name: form.newShift.name,
+        startTime: form.newShift.startTime,
+        endTime: form.newShift.endTime,
+        gracePeriod: form.newShift.gracePeriod,
+      });
+      payload.shiftId = createdShift.id;
     }
 
     if (form.withUser) {
@@ -2047,15 +2273,8 @@ const calculateContractDates = () => {
     endDate.setMonth(endDate.getMonth() + form.contract.contractDurationMonths);
     form.contract.endDate = endDate.toISOString().split("T")[0] || "";
   } else {
-    // إذا لم تكن هناك مدة، نمسح التاريخ المحسوب إلا إذا كان مدخلاً يدوياً (لكن هنا الحقل readonly)
-    // يمكن تركه فارغاً أو الاحتفاظ بالقيمة السابقة إذا أردت
     form.contract.endDate = "";
   }
-
-  // 2. حساب تاريخ نهاية فترة التجربة (يتم عرضه في computed ولكن يمكن تحديثه هنا إذا لزم الأمر للـ Payload)
-  // بما أننا نستخدم computed للعرض، فلا حاجة لتحديث form هنا إلا إذا كنا سنرسله للباك اند مباشرة
-  // الباك اند سيقوم بالحساب أيضاً، لكن للتأكد من التزامن:
-  // (لا حاجة لكود إضافي هنا لأن الباك اند سيحسبه بناءً على probationPeriod و startDate)
 };
 </script>
 
@@ -2367,7 +2586,7 @@ const calculateContractDates = () => {
   }
 }
 
-// ══ Role Toggle ═══════════════════════════════════════════════════════════════
+// ══ Role Toggle (يُعاد استخدامها لقسم الشيفت أيضاً) ═══════════════════════════
 .role-toggle {
   @include flex(row, center, flex-start, $space-2);
   flex-wrap: wrap;
@@ -2395,6 +2614,10 @@ const calculateContractDates = () => {
       color: $stb-accent;
     }
   }
+}
+
+.shift-section {
+  padding-top: $space-2;
 }
 
 // ══ Role Preview ══════════════════════════════════════════════════════════════

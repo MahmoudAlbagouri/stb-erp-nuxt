@@ -68,6 +68,18 @@ export const useLeavesStore = defineStore("leaves", () => {
     }
   };
 
+  // ✅ ملخص إجازات الموظف لصفحة تفاصيل الموظف
+  // (الفعلي المستهلك + الرصيد المتبقي + عدد أيام كل طلب)
+  const getEmployeeLeaveSummary = async (employeeId: string) => {
+    try {
+      const res = await api.get(`/leaves/summary/${employeeId}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch employee leave summary:", error);
+      return null;
+    }
+  };
+
   // ✅ التصدير الجماعي
   const exportData = async (type: "excel" | "pdf") => {
     try {
@@ -136,6 +148,7 @@ export const useLeavesStore = defineStore("leaves", () => {
     updateStatus,
     setBalance,
     getAccrualDetails,
+    getEmployeeLeaveSummary,
     exportData,
     exportSingle,
     reset,

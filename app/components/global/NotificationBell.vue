@@ -1,3 +1,4 @@
+<!-- components/NotificationBell.vue -->
 <template>
   <div class="notification-bell-wrapper" v-click-outside="closePopover">
     <button
@@ -49,7 +50,6 @@
         <div v-else-if="store.loading" class="popover-loading">
           <div class="spinner spinner--sm" />
         </div>
-
         <div v-else class="popover-empty">
           <BellOff :size="24" class="text-muted" />
           <p>لا توجد إشعارات جديدة</p>
@@ -85,19 +85,16 @@ import {
 } from "lucide-vue-next";
 import type { Notification, NotificationCategory } from "@/types";
 
-// Directive for click outside
 const vClickOutside = {
   mounted: (el: any, binding: any) => {
     el.clickOutsideEvent = (event: Event) => {
-      if (!(el === event.target || el.contains(event.target))) {
+      if (!(el === event.target || el.contains(event.target)))
         binding.value(event, el);
-      }
     };
     document.addEventListener("click", el.clickOutsideEvent);
   },
-  unmounted: (el: any) => {
-    document.removeEventListener("click", el.clickOutsideEvent);
-  },
+  unmounted: (el: any) =>
+    document.removeEventListener("click", el.clickOutsideEvent),
 };
 
 const store = useNotificationsStore();
@@ -110,9 +107,8 @@ const limitedNotifications = computed(() => store.myNotifications.slice(0, 5));
 
 const togglePopover = async () => {
   isOpen.value = !isOpen.value;
-  if (isOpen.value && store.myNotifications.length === 0) {
+  if (isOpen.value && store.myNotifications.length === 0)
     await store.fetchMyNotifications();
-  }
 };
 
 const closePopover = () => {
@@ -131,29 +127,23 @@ const handleMarkAllRead = async () => {
   }
 };
 
+// ✅ تحسين منطق التوجيه للتعامل مع العقود والموظفين
 const handleNotifClick = async (notif: Notification) => {
-  // 1. تحديد كمقروء أولاً
-  if (!notif.isRead) {
-    await store.markAsRead(notif.id);
-  }
+  if (!notif.isRead) await store.markAsRead(notif.id);
 
-  // 2. بناء الرابط الذكي
   let targetUrl = "";
 
   if (notif.actionUrl) {
-    // إذا كان actionUrl موجوداً، نستخدمه
-    // نتأكد أنه يبدأ بـ /dashboard
     targetUrl = notif.actionUrl.startsWith("/dashboard")
       ? notif.actionUrl
       : `/dashboard${notif.actionUrl.startsWith("/") ? "" : "/"}${notif.actionUrl}`;
   } else if (notif.referenceType && notif.referenceId) {
-    // إذا لم يكن actionUrl موجوداً، نبنيه من referenceType
     switch (notif.referenceType) {
-      case "employee":
-        targetUrl = `/dashboard/employees/${notif.referenceId}`;
-        break;
       case "contract":
         targetUrl = `/dashboard/contracts/${notif.referenceId}`;
+        break;
+      case "employee":
+        targetUrl = `/dashboard/employees/${notif.referenceId}`;
         break;
       case "leave":
         targetUrl = `/dashboard/leaves/${notif.referenceId}`;
@@ -162,11 +152,9 @@ const handleNotifClick = async (notif: Notification) => {
         targetUrl = "/dashboard/notifications";
     }
   } else {
-    // fallback
     targetUrl = "/dashboard/notifications";
   }
 
-  // 3. الانتقال
   if (targetUrl) {
     router.push(targetUrl);
     closePopover();
@@ -203,7 +191,6 @@ const formatTimeAgo = (dateStr: string) => {
 
 onMounted(() => {
   store.fetchUnreadCount();
-  // Optional: Polling every 60 seconds
   setInterval(() => {
     if (!isOpen.value) store.fetchUnreadCount();
   }, 60000);
@@ -229,7 +216,6 @@ onMounted(() => {
   color: $stb-text-secondary;
   transition: all $transition-fast;
   position: relative;
-
   &:hover {
     background: $stb-surface-3;
     color: $stb-text-primary;
@@ -263,16 +249,8 @@ onMounted(() => {
 .notification-popover {
   position: absolute;
   top: calc(100% + 10px);
-  left: 0; // RTL: aligns to left of button, which is visually right side in RTL?
-  // Actually in RTL, left:0 means start from left edge of parent.
-  // We want it to align to the right edge of the button usually.
-  // Let's use right: 0 for RTL alignment if the button is on the left side of screen?
-  // Wait, topbar actions are usually on the left in RTL (margin-right: auto pushes them left).
-  // So the bell is on the left side of the screen. Dropdown should open to the right or center.
-  // Let's use standard positioning.
-  right: auto;
   left: 0;
-
+  right: auto;
   width: 320px;
   max-height: 400px;
   background: $stb-surface-2;
@@ -283,7 +261,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transform-origin: top right; // RTL origin
+  transform-origin: top right;
 }
 
 .popover-header {
@@ -291,7 +269,6 @@ onMounted(() => {
   padding: $space-3 $space-4;
   border-bottom: 1px solid $stb-border;
   background: rgba($stb-surface, 0.5);
-
   h4 {
     font-size: $font-size-sm;
     font-weight: 700;
@@ -312,7 +289,6 @@ onMounted(() => {
   cursor: pointer;
   transition: background $transition-fast;
   position: relative;
-
   &:hover {
     background: rgba($stb-primary, 0.05);
   }
@@ -330,7 +306,6 @@ onMounted(() => {
   border-radius: $radius-full;
   @include flex(row, center, center);
   flex-shrink: 0;
-
   &--info {
     background: rgba($stb-info, 0.1);
     color: $stb-info;
@@ -353,7 +328,6 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
 }
-
 .notif-title {
   font-size: $font-size-sm;
   font-weight: 600;
@@ -361,7 +335,6 @@ onMounted(() => {
   margin-bottom: 2px;
   @include truncate;
 }
-
 .notif-message {
   font-size: $font-size-xs;
   color: $stb-text-secondary;
@@ -371,12 +344,10 @@ onMounted(() => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .notif-time {
   font-size: 10px;
   color: $stb-text-muted;
 }
-
 .notif-dot {
   width: 6px;
   height: 6px;
@@ -393,7 +364,6 @@ onMounted(() => {
   color: $stb-text-muted;
   font-size: $font-size-sm;
 }
-
 .popover-footer {
   padding: $space-2;
   border-top: 1px solid $stb-border;
