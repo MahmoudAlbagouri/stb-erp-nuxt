@@ -1,10 +1,11 @@
+<!-- pages/dashboard/attendance/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
         <h1>نظام البصمة والحضور</h1>
-        <p>إدارة أجهزة البصمة ومتابعة سجلات الدخول والخروج</p>
+        <p>إدارة أجهزة البصمة ومتابعة سجلات الدخول والخروج والإجازات</p>
       </div>
     </div>
 
@@ -103,24 +104,73 @@
 
     <!-- ══ Tab Content: Logs ════════════════════════════════════════════════ -->
     <div v-if="activeTab === 'logs'" class="tab-content">
-      <div class="action-bar">
-        <div class="filters-row">
-          <input
-            v-model="dateFrom"
-            type="date"
-            class="form-input filter-date"
-          />
-          <span class="filter-sep">إلى</span>
-          <input v-model="dateTo" type="date" class="form-input filter-date" />
-          <button class="btn btn--ghost" @click="loadLogs">
+      <!-- ✅ شريط الفلاتر -->
+      <div class="card filters-card">
+        <div class="filters-grid">
+          <div class="form-group">
+            <label>من تاريخ</label>
+            <input v-model="filters.from" type="date" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>إلى تاريخ</label>
+            <input v-model="filters.to" type="date" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>نوع البصمة</label>
+            <select v-model="filters.punchType" class="form-select">
+              <option value="">الكل</option>
+              <option value="check_in">حضور</option>
+              <option value="check_out">انصراف</option>
+              <option value="leave">إجازة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الموظف</label>
+            <select v-model="filters.employeeId" class="form-select">
+              <option value="">كل الموظفين</option>
+              <option
+                v-for="emp in employeesStore.employees"
+                :key="emp.id"
+                :value="emp.id"
+              >
+                {{ emp.fullName }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="filters-actions">
+          <button class="btn btn--ghost" @click="applyFilters">
             <Search :size="16" />
             بحث
           </button>
+          <button class="btn btn--ghost" @click="resetFilters">
+            <RefreshCw :size="16" />
+            إعادة تعيين
+          </button>
+          <div class="filters-actions__spacer" />
+          <button
+            class="btn btn--outline"
+            :disabled="exporting === 'excel'"
+            @click="handleExport('excel')"
+          >
+            <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
+            <FileSpreadsheet v-else :size="16" />
+            Excel
+          </button>
+          <button
+            class="btn btn--outline"
+            :disabled="exporting === 'pdf'"
+            @click="handleExport('pdf')"
+          >
+            <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
+            <FileText v-else :size="16" />
+            PDF
+          </button>
+          <button class="btn btn--primary" @click="openManualLogModal">
+            <Plus :size="16" />
+            تسجيل بصمة يدوية
+          </button>
         </div>
-        <button class="btn btn--accent" @click="loadLogs">
-          <RefreshCw :size="16" />
-          تحديث السجلات
-        </button>
       </div>
 
       <div v-if="store.loading" class="empty-state">
@@ -140,10 +190,12 @@
             <thead>
               <tr>
                 <th>الموظف</th>
-                <th>الجهاز</th>
                 <th>وقت البصمة</th>
                 <th>النوع</th>
-                <th>طريقة التحقق</th>
+                <th>ساعات العمل</th>
+                <th>إضافي</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -158,25 +210,59 @@
                     >
                   </div>
                 </td>
+                <td>{{ formatDateTime(log.punchTime) }}</td>
                 <td>
-                  <div class="device-cell">
-                    <span class="device-name">
-                      {{ log.device?.alias || log.deviceSn }}
-                    </span>
-                    <span class="device-loc">
-                      {{ log.device?.location }}
+                  <span :class="`badge ${punchBadgeClass(log.punchType)}`">
+                    {{ punchTypeLabel(log.punchType) }}
+                  </span>
+                  <div
+                    v-if="log.punchType === 'leave' && log.leaveReason"
+                    class="leave-reason"
+                  >
+                    {{ log.leaveReason }}
+                  </div>
+                </td>
+                <td>
+                  {{ log.workHours != null ? `${log.workHours} س` : "—" }}
+                </td>
+                <td>
+                  <span
+                    v-if="log.overtimeHours && log.overtimeHours > 0"
+                    class="overtime-value"
+                  >
+                    {{ log.overtimeHours }} س
+                  </span>
+                  <span v-else>—</span>
+                </td>
+                <td>
+                  <div class="status-badges">
+                    <span
+                      v-if="log.isManualEntry"
+                      class="mini-tag mini-tag--manual"
+                      >يدوي</span
+                    >
+                    <span
+                      v-if="log.isEdited"
+                      class="mini-tag mini-tag--edited"
+                      :title="`عدّلها: ${log.editedByName || '-'}`"
+                    >
+                      معدّلة
                     </span>
                   </div>
                 </td>
-                <td>{{ formatDateTime(log.punchTime) }}</td>
                 <td>
-                  <span
-                    :class="`badge badge--${log.punchType === 'check_in' ? 'active' : 'terminated'}`"
+                  <button
+                    v-if="canEditLog(log)"
+                    class="btn btn--sm btn--ghost"
+                    @click="openEditLogModal(log)"
                   >
-                    {{ log.punchType === "check_in" ? "دخول" : "خروج" }}
+                    <Pencil :size="14" />
+                    تعديل
+                  </button>
+                  <span v-else class="text-muted-sm">
+                    {{ log.isEdited ? "تم التعديل" : "انتهت مهلة التعديل" }}
                   </span>
                 </td>
-                <td>{{ getVerifyLabel(log.verifyMode) }}</td>
               </tr>
             </tbody>
           </table>
@@ -341,17 +427,209 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- ══ Manual Log Modal (إضافة بصمة/إجازة يدوية) ═══════════════════════ -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="showManualLogModal"
+          class="modal-overlay"
+          @click.self="showManualLogModal = false"
+        >
+          <div class="modal modal-md">
+            <div class="modal__header">
+              <h3>
+                <Plus :size="20" class="modal-icon" />
+                تسجيل بصمة يدوية
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                @click="showManualLogModal = false"
+                aria-label="إغلاق"
+              >
+                <X :size="20" />
+              </button>
+            </div>
+            <form @submit.prevent="handleCreateManualLog" class="modal-form">
+              <div class="form-group">
+                <label>الموظف *</label>
+                <select
+                  v-model="manualLogForm.employeeId"
+                  class="form-select"
+                  required
+                >
+                  <option value="" disabled>اختر الموظف...</option>
+                  <option
+                    v-for="emp in employeesStore.employees"
+                    :key="emp.id"
+                    :value="emp.id"
+                  >
+                    {{ emp.fullName }} ({{ emp.employeeCode }})
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>نوع البصمة *</label>
+                <select
+                  v-model="manualLogForm.punchType"
+                  class="form-select"
+                  required
+                >
+                  <option value="check_in">حضور</option>
+                  <option value="check_out">انصراف</option>
+                  <option value="leave">إجازة</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>التاريخ والوقت *</label>
+                <input
+                  v-model="manualLogForm.punchTime"
+                  type="datetime-local"
+                  class="form-input"
+                  :max="nowLocalDatetime"
+                  required
+                />
+                <small class="form-hint">
+                  لا يمكن اختيار تاريخ يتجاوز 24 ساعة من الآن.
+                </small>
+              </div>
+
+              <div
+                v-if="manualLogForm.punchType === 'leave'"
+                class="form-group"
+              >
+                <label>سبب الإجازة *</label>
+                <textarea
+                  v-model="manualLogForm.leaveReason"
+                  class="form-textarea"
+                  rows="3"
+                  required
+                  placeholder="مثال: إجازة مرضية / إجازة سنوية..."
+                ></textarea>
+              </div>
+
+              <div class="modal__footer">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showManualLogModal = false"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn--primary"
+                  :disabled="submitting"
+                >
+                  <span v-if="submitting" class="spinner spinner--sm" />
+                  <span v-else>حفظ</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ══ Edit Log Modal (تعديل بصمة — مرة واحدة خلال 24 ساعة) ══════════════ -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="showEditLogModal"
+          class="modal-overlay"
+          @click.self="showEditLogModal = false"
+        >
+          <div class="modal modal-md">
+            <div class="modal__header">
+              <h3>
+                <Pencil :size="20" class="modal-icon" />
+                تعديل بصمة
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                @click="showEditLogModal = false"
+                aria-label="إغلاق"
+              >
+                <X :size="20" />
+              </button>
+            </div>
+
+            <div class="info-note">
+              <Info :size="15" />
+              <span>
+                يمكن تعديل هذه البصمة مرة واحدة فقط، ولن تتمكن من تعديلها مرة
+                أخرى بعد الحفظ.
+              </span>
+            </div>
+
+            <form @submit.prevent="handleUpdateLog" class="modal-form">
+              <div class="form-group">
+                <label>نوع البصمة</label>
+                <select v-model="editLogForm.punchType" class="form-select">
+                  <option value="check_in">حضور</option>
+                  <option value="check_out">انصراف</option>
+                  <option value="leave">إجازة</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>التاريخ والوقت *</label>
+                <input
+                  v-model="editLogForm.punchTime"
+                  type="datetime-local"
+                  class="form-input"
+                  required
+                />
+              </div>
+
+              <div v-if="editLogForm.punchType === 'leave'" class="form-group">
+                <label>سبب الإجازة *</label>
+                <textarea
+                  v-model="editLogForm.leaveReason"
+                  class="form-textarea"
+                  rows="3"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="modal__footer">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showEditLogModal = false"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn--primary"
+                  :disabled="submitting"
+                >
+                  <span v-if="submitting" class="spinner spinner--sm" />
+                  <span v-else>حفظ التعديل</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
-import { useAttendanceStore } from "@/stores/attendance";
+import {
+  useAttendanceStore,
+  type AttendanceLog,
+  type PunchType,
+} from "@/stores/attendance";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
 import type { CreateDevicePayload, BiometricDevice } from "@/types";
 
-// ✅ استيراد أيقونات Lucide
 import {
   Fingerprint,
   ClipboardList,
@@ -364,6 +642,10 @@ import {
   RefreshCw,
   ClipboardX,
   X,
+  Pencil,
+  FileSpreadsheet,
+  FileText,
+  Info,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -375,6 +657,7 @@ const toast = useToast();
 // ─── State ──────────────────────────────────────────────────────────────────
 const activeTab = ref<"devices" | "logs">("devices");
 const submitting = ref(false);
+const exporting = ref<"excel" | "pdf" | null>(null);
 
 // Device Form
 const showDeviceModal = ref(false);
@@ -390,16 +673,51 @@ const showPushModal = ref(false);
 const targetDeviceId = ref<string>("");
 const selectedEmployeeId = ref<string>("");
 
-// Logs Filters
-const dateFrom = ref("");
-const dateTo = ref("");
+// ✅ فلاتر السجلات
+const filters = reactive({
+  from: "",
+  to: "",
+  punchType: "" as PunchType | "",
+  employeeId: "",
+});
 
-// Computed for Target Device Info
+const activeFilters = computed(() => ({
+  from: filters.from || undefined,
+  to: filters.to || undefined,
+  punchType: (filters.punchType || undefined) as PunchType | undefined,
+  employeeId: filters.employeeId || undefined,
+}));
+
+// ✅ إضافة بصمة يدوية
+const showManualLogModal = ref(false);
+const manualLogForm = reactive({
+  employeeId: "",
+  punchType: "check_in" as PunchType,
+  punchTime: "",
+  leaveReason: "",
+});
+
+// ✅ تعديل بصمة
+const showEditLogModal = ref(false);
+const editingLogId = ref<string>("");
+const editLogForm = reactive({
+  punchType: "check_in" as PunchType,
+  punchTime: "",
+  leaveReason: "",
+});
+
+// وقت الآن بصيغة datetime-local، لضبط الحد الأقصى في input
+const nowLocalDatetime = computed(() => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+});
+
 const targetDevice = computed(() =>
   store.devices.find((d) => d.id === targetDeviceId.value),
 );
 
-// ─── Actions ───────────────────────────────────────────────────────────────
+// ─── Devices Actions (بدون تغيير) ──────────────────────────────────────────
 const openDeviceModal = () => {
   Object.assign(deviceForm, {
     serialNumber: "",
@@ -441,7 +759,6 @@ const openPushUserModal = (dev: BiometricDevice) => {
 
 const handlePushUser = async () => {
   if (!selectedEmployeeId.value) return;
-
   submitting.value = true;
   try {
     await store.pushUserToDevice(
@@ -457,11 +774,116 @@ const handlePushUser = async () => {
   }
 };
 
+// ─── Logs: فلترة وتحميل ──────────────────────────────────────────────────
 const loadLogs = () => {
-  store.fetchLogs({
-    from: dateFrom.value || undefined,
-    to: dateTo.value || undefined,
-  });
+  store.fetchLogs(activeFilters.value);
+};
+
+const applyFilters = () => loadLogs();
+
+const resetFilters = () => {
+  filters.from = "";
+  filters.to = "";
+  filters.punchType = "";
+  filters.employeeId = "";
+  loadLogs();
+};
+
+// ─── Logs: التصدير ──────────────────────────────────────────────────────
+const handleExport = async (type: "excel" | "pdf") => {
+  exporting.value = type;
+  try {
+    await store.exportLogs(activeFilters.value, type);
+    toast.success(`تم تصدير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
+  } catch (e: any) {
+    toast.error(e.message || "فشل في التصدير");
+  } finally {
+    exporting.value = null;
+  }
+};
+
+// ─── Logs: إضافة بصمة يدوية ─────────────────────────────────────────────
+const openManualLogModal = () => {
+  manualLogForm.employeeId = "";
+  manualLogForm.punchType = "check_in";
+  manualLogForm.punchTime = nowLocalDatetime.value;
+  manualLogForm.leaveReason = "";
+  showManualLogModal.value = true;
+};
+
+const handleCreateManualLog = async () => {
+  if (
+    manualLogForm.punchType === "leave" &&
+    !manualLogForm.leaveReason.trim()
+  ) {
+    toast.error("سبب الإجازة مطلوب");
+    return;
+  }
+  submitting.value = true;
+  try {
+    await store.createManualLog({
+      employeeId: manualLogForm.employeeId,
+      punchType: manualLogForm.punchType,
+      punchTime: new Date(manualLogForm.punchTime).toISOString(),
+      leaveReason:
+        manualLogForm.punchType === "leave"
+          ? manualLogForm.leaveReason
+          : undefined,
+    });
+    toast.success("تم تسجيل البصمة بنجاح");
+    showManualLogModal.value = false;
+    loadLogs();
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تسجيل البصمة");
+  } finally {
+    submitting.value = false;
+  }
+};
+
+// ─── Logs: تعديل بصمة (مرة واحدة خلال 24 ساعة) ─────────────────────────
+const canEditLog = (log: AttendanceLog): boolean => {
+  if (log.isEdited) return false;
+  const referenceTime = new Date(
+    log.originalPunchTime || log.punchTime,
+  ).getTime();
+  const hoursSince = (Date.now() - referenceTime) / (1000 * 60 * 60);
+  return hoursSince <= 24;
+};
+
+const toDatetimeLocal = (iso: string) => {
+  const d = new Date(iso);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+};
+
+const openEditLogModal = (log: AttendanceLog) => {
+  editingLogId.value = log.id;
+  editLogForm.punchType = log.punchType;
+  editLogForm.punchTime = toDatetimeLocal(log.punchTime);
+  editLogForm.leaveReason = log.leaveReason || "";
+  showEditLogModal.value = true;
+};
+
+const handleUpdateLog = async () => {
+  if (editLogForm.punchType === "leave" && !editLogForm.leaveReason.trim()) {
+    toast.error("سبب الإجازة مطلوب");
+    return;
+  }
+  submitting.value = true;
+  try {
+    await store.updateLog(editingLogId.value, {
+      punchTime: new Date(editLogForm.punchTime).toISOString(),
+      punchType: editLogForm.punchType,
+      leaveReason:
+        editLogForm.punchType === "leave" ? editLogForm.leaveReason : undefined,
+    });
+    toast.success("تم تعديل البصمة بنجاح");
+    showEditLogModal.value = false;
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تعديل البصمة");
+  } finally {
+    submitting.value = false;
+  }
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -470,14 +892,23 @@ const formatDateTime = (dateStr: string) => {
   return new Date(dateStr).toLocaleString("ar-SA");
 };
 
-const getVerifyLabel = (mode: string) => {
+const punchTypeLabel = (type: PunchType) => {
   const map: Record<string, string> = {
-    fingerprint: "بصمة إصبع",
-    card: "بطاقة",
-    password: "كلمة مرور",
-    face: "تعرف وجه",
+    check_in: "حضور",
+    check_out: "انصراف",
+    break_out: "خروج استراحة",
+    break_in: "عودة استراحة",
+    overtime_in: "بداية إضافي",
+    overtime_out: "نهاية إضافي",
+    leave: "إجازة",
   };
-  return map[mode] || mode;
+  return map[type] || type;
+};
+
+const punchBadgeClass = (type: PunchType) => {
+  if (type === "check_in") return "badge--active";
+  if (type === "leave") return "badge--inactive";
+  return "badge--terminated";
 };
 
 // ─── Init ──────────────────────────────────────────────────────────────────
@@ -539,21 +970,6 @@ onMounted(() => {
   gap: $space-3;
 }
 
-.filters-row {
-  @include flex(row, center, flex-start, $space-2);
-  flex-wrap: wrap;
-}
-
-.filter-date {
-  width: auto;
-  min-width: 140px;
-}
-
-.filter-sep {
-  color: $stb-text-muted;
-  font-size: $font-size-sm;
-}
-
 .empty-card {
   .empty-state {
     padding: $space-10 $space-4;
@@ -598,7 +1014,6 @@ onMounted(() => {
       margin-bottom: $space-1;
       @include truncate;
     }
-
     p {
       @include flex(row, center, flex-start, $space-1);
     }
@@ -622,51 +1037,130 @@ onMounted(() => {
   color: $stb-text-secondary;
 }
 
-.table-card {
-  padding: 0;
-  overflow: hidden;
-}
-
-.table-responsive {
-  overflow-x: auto;
-  @include scrollbar;
-}
-
-.employee-cell,
-.device-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.employee-name,
-.device-name {
-  font-weight: 600;
-  color: $stb-text-primary;
-  font-size: $font-size-sm;
-}
-
-.employee-pin,
-.device-loc {
-  font-size: $font-size-xs;
-  color: $stb-text-muted;
-}
-
-.modal-md {
-  max-width: 560px;
-}
-
-.modal-form {
+// ══ Filters ══════════════════════════════════════════════════════════════
+.filters-card {
+  padding: $space-4 $space-5;
+  margin-bottom: $space-4;
   display: flex;
   flex-direction: column;
   gap: $space-4;
 }
 
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $space-3;
+
+  @include respond-to("md") {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.filters-actions {
+  @include flex(row, center, flex-start, $space-2);
+  flex-wrap: wrap;
+
+  &__spacer {
+    flex: 1;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  label {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $stb-text-secondary;
+  }
+}
+
+// ══ Table ════════════════════════════════════════════════════════════════
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+.table-responsive {
+  overflow-x: auto;
+  @include scrollbar;
+}
+
+.employee-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.employee-name {
+  font-weight: 600;
+  color: $stb-text-primary;
+  font-size: $font-size-sm;
+}
+.employee-pin {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+}
+
+.leave-reason {
+  margin-top: 2px;
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+  max-width: 180px;
+  white-space: normal;
+}
+
+.overtime-value {
+  color: $stb-warning;
+  font-weight: 700;
+}
+
+.status-badges {
+  display: flex;
+  gap: $space-1;
+  flex-wrap: wrap;
+}
+
+.mini-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: $radius-sm;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &--manual {
+    background: rgba($stb-info, 0.12);
+    color: $stb-info;
+  }
+  &--edited {
+    background: rgba($stb-warning, 0.12);
+    color: $stb-warning;
+    cursor: help;
+  }
+}
+
+.text-muted-sm {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+}
+
+// ══ Modals (شارك مع الأنماط العامة) ══════════════════════════════════════
+.modal-md {
+  max-width: 560px;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
 .modal-icon {
   color: $stb-accent;
   margin-left: $space-2;
 }
-
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-4;
+}
 .device-info-banner {
   @include flex(row, center, flex-start, $space-2);
   background: rgba($stb-accent, 0.05);
@@ -676,17 +1170,43 @@ onMounted(() => {
   margin-bottom: $space-4;
   font-size: $font-size-sm;
   color: $stb-text-secondary;
-
   b {
     color: $stb-text-primary;
   }
 }
-
 .form-hint {
   color: $stb-text-muted;
   font-size: $font-size-xs;
   margin-top: 4px;
   display: block;
+}
+.form-textarea {
+  width: 100%;
+  background: $stb-surface-3;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  padding: $space-3;
+  color: $stb-text-primary;
+  font-size: $font-size-sm;
+  resize: vertical;
+  font-family: inherit;
+}
+.info-note {
+  @include flex(row, flex-start, flex-start, $space-2);
+  padding: $space-3 $space-4;
+  margin: 0 $space-5;
+  margin-top: $space-2;
+  background: rgba($stb-accent, 0.06);
+  border: 1px solid rgba($stb-accent, 0.2);
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  color: $stb-text-secondary;
+
+  svg {
+    flex-shrink: 0;
+    color: $stb-accent;
+    margin-top: 1px;
+  }
 }
 
 .mt-4 {
