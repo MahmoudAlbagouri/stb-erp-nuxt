@@ -4,13 +4,13 @@
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
     <div class="page-header">
       <div class="page-header__title">
-        <h1>الشيفتات (الدوامات)</h1>
-        <p>تحديد أوقات الدوام وفترات السماحية لكل شيفت</p>
+        <h1>اوقات العمل (الدوامات)</h1>
+        <p>تحديد أوقات الدوام وفترات السماحية لكل وقت دوام</p>
       </div>
       <div class="page-header__actions">
         <button class="btn btn--primary" @click="openCreateModal">
           <Plus :size="18" />
-          <span>إضافة شيفت جديد</span>
+          <span>إضافة وقد دوام جديد</span>
         </button>
       </div>
     </div>
@@ -24,10 +24,10 @@
     <div v-else-if="!store.shifts.length" class="card empty-card">
       <div class="empty-state">
         <Clock :size="40" class="empty-icon" />
-        <div class="empty-state__title">لا توجد شيفتات مسجلة بعد</div>
+        <div class="empty-state__title">لا توجد اوقات دوام مسجلة بعد</div>
         <button class="btn btn--primary mt-4" @click="openCreateModal">
           <Plus :size="16" />
-          إضافة شيفت
+          إضافة وقت دوام جديد
         </button>
       </div>
     </div>
@@ -38,7 +38,7 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>اسم الشيفت</th>
+              <th>اسم اوقات الدوام</th>
               <th>وقت البداية</th>
               <th>وقت النهاية</th>
               <th>النوع</th>
@@ -92,7 +92,7 @@
             <div class="modal__header">
               <h3>
                 <Clock :size="20" class="modal-icon" />
-                {{ isEdit ? "تعديل الشيفت" : "إضافة شيفت جديد" }}
+                {{ isEdit ? "تعديل اوقات الدوام" : "إضافة وقت دوام جديد" }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -104,12 +104,12 @@
             </div>
             <form @submit.prevent="handleSubmit" class="modal-form">
               <div class="form-group">
-                <label>اسم الشيفت *</label>
+                <label>اسم اوقات الدوام *</label>
                 <input
                   v-model="form.name"
                   class="form-input"
                   required
-                  placeholder="مثال: الشيفت الصباحي"
+                  placeholder="مثال: اوقات الدوام الصباحي"
                 />
               </div>
 
@@ -150,12 +150,12 @@
                 </small>
               </div>
 
-              <!-- تنبيه للشيفت الليلي -->
+              <!-- تنبيه للوقت دوام الليلي -->
               <div v-if="isOvernightForm" class="info-note">
                 <Info :size="15" />
                 <span>
-                  هذا شيفت ليلي (وقت النهاية قبل وقت البداية) — النظام هيتعامل
-                  معاه تلقائيًا كوردية تمتد لليوم التالي.
+                  هذا وقت دوام ليلي (وقت النهاية قبل وقت البداية) — النظام
+                  هيتعامل معاه تلقائيًا كوردية تمتد لليوم التالي.
                 </span>
               </div>
 
@@ -207,7 +207,7 @@ const form = reactive({
   gracePeriod: 30,
 });
 
-// ✅ نفس منطق اكتشاف الشيفت الليلي المستخدم في الباك اند (endTime <= startTime)
+// ✅ نفس منطق اكتشاف اوقات الدوام الليلي المستخدم في الباك اند (endTime <= startTime)
 const isOvernight = (shift: Shift) => shift.endTime <= shift.startTime;
 const isOvernightForm = computed(
   () => !!form.startTime && !!form.endTime && form.endTime <= form.startTime,
@@ -240,15 +240,15 @@ const handleSubmit = async () => {
   try {
     if (isEdit.value && editingId.value) {
       await store.update(editingId.value, { ...form });
-      toast.success("تم تحديث الشيفت بنجاح");
+      toast.success("تم تحديث اوقات الدوام بنجاح");
     } else {
       await store.create({ ...form });
-      toast.success("تم إضافة الشيفت بنجاح");
+      toast.success("تم إضافة اوقات الدوام بنجاح");
     }
     showModal.value = false;
     resetForm();
   } catch (e: any) {
-    toast.error(e.message || "فشل في حفظ الشيفت");
+    toast.error(e.message || "فشل في حفظ اوقات الدوام");
   } finally {
     submitting.value = false;
   }

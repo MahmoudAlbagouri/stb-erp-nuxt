@@ -216,11 +216,11 @@
                 </div>
               </div>
 
-              <!-- ✅ قسم الشيفت (الدوام) — بنفس أسلوب اختيار الدور تمامًا -->
+              <!-- ✅ قسم اوقات الدوام (الدوام) — بنفس أسلوب اختيار الدور تمامًا -->
               <div class="shift-section mt-4">
                 <div class="section-title">
                   <Clock :size="18" />
-                  <span>شيفت العمل (الدوام)</span>
+                  <span>وقت دوام العمل (الدوام)</span>
                 </div>
 
                 <div class="role-toggle">
@@ -233,7 +233,7 @@
                     @click="form.shiftMode = 'existing'"
                   >
                     <ListChecks :size="15" />
-                    اختر شيفت موجود
+                    اختر وقت دوام موجود
                   </button>
                   <button
                     type="button"
@@ -244,7 +244,7 @@
                     @click="form.shiftMode = 'new'"
                   >
                     <Plus :size="15" />
-                    إنشاء شيفت جديد
+                    إنشاء وقت دوام جديد
                   </button>
                   <button
                     type="button"
@@ -255,11 +255,11 @@
                     @click="form.shiftMode = 'none'"
                   >
                     <Ban :size="15" />
-                    بدون شيفت
+                    بدون وقت دوام
                   </button>
                 </div>
 
-                <!-- شيفت موجود -->
+                <!-- وقت دوام موجود -->
                 <Transition name="slide-down">
                   <div v-if="form.shiftMode === 'existing'" class="mt-3">
                     <select
@@ -267,7 +267,7 @@
                       class="form-select"
                       :class="{ 'form-select--error': errors.shiftId }"
                     >
-                      <option value="" disabled>اختر الشيفت...</option>
+                      <option value="" disabled>اختر اوقات الدوام...</option>
                       <option
                         v-for="shift in shiftsStore.shifts"
                         :key="shift.id"
@@ -281,23 +281,25 @@
                       errors.shiftId
                     }}</span>
                     <small v-if="!shiftsStore.shifts.length" class="form-hint">
-                      لا توجد شيفتات مسجلة بعد. اختر "إنشاء شيفت جديد" بدلاً من
-                      ذلك.
+                      لا توجد أوقات دوام مسجلة بعد. اختر "إنشاء وقت دوام جديد"
+                      بدلاً من ذلك.
                     </small>
                   </div>
                 </Transition>
 
-                <!-- شيفت جديد -->
+                <!-- وقت دوام جديد -->
                 <Transition name="slide-down">
                   <div v-if="form.shiftMode === 'new'" class="mt-3 form-grid">
                     <div class="form-group form-group--full">
-                      <label class="form-label required">اسم الشيفت</label>
+                      <label class="form-label required"
+                        >اسم اوقات الدوام</label
+                      >
                       <input
                         v-model="form.newShift.name"
                         type="text"
                         class="form-input"
                         :class="{ 'form-input--error': errors.shiftName }"
-                        placeholder="مثال: الشيفت الصباحي"
+                        placeholder="مثال: اوقات الدوام الصباحي"
                       />
                       <span v-if="errors.shiftName" class="form-error">{{
                         errors.shiftName
@@ -351,9 +353,10 @@
                     <div class="info-note">
                       <Info :size="15" />
                       <span
-                        >سيتم إنشاء الموظف بدون شيفت محدد. يمكن تعيين شيفت
-                        لاحقًا من صفحة الموظف، ولن يظهر تصنيف التأخير/الانصراف
-                        المبكر في تقارير الحضور له حتى ذلك الحين.</span
+                        >سيتم إنشاء الموظف بدون وقت دوام محدد. يمكن تعيين وقت
+                        دوام لاحقًا من صفحة الموظف، ولن يظهر تصنيف
+                        التأخير/الانصراف المبكر في تقارير الحضور له حتى ذلك
+                        الحين.</span
                       >
                     </div>
                   </div>
@@ -1239,7 +1242,7 @@
                       <strong>{{ form.employee.jobTitle }}</strong>
                     </div>
                     <div class="review-row">
-                      <span>الشيفت</span>
+                      <span>اوقات الدوام</span>
                       <strong>{{ selectedShiftLabel }}</strong>
                     </div>
                   </div>
@@ -1461,7 +1464,7 @@ import {
   WalletCards,
   GraduationCap,
   Trash2,
-  Clock, // ✅ أيقونة الشيفت
+  Clock, // ✅ أيقونة اوقات الدوام
 } from "lucide-vue-next";
 
 // استيراد مكون الرفع
@@ -1470,7 +1473,7 @@ import StbUploader from "@/components/global/StbUploader.vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useRolesStore } from "@/stores/roles";
 import { usePermissionsStore } from "@/stores/permissions";
-import { useShiftsStore } from "@/stores/shifts"; // ✅ ستور الشيفتات
+import { useShiftsStore } from "@/stores/shifts"; // ✅ ستور الاوقات العمل
 import { useToast } from "@/composables/useToast";
 import type { Education } from "@/types";
 
@@ -1582,7 +1585,7 @@ const form = reactive({
     permissionIds: [] as string[],
   },
 
-  // ✅ بيانات إنشاء شيفت جديد أثناء الـ onboarding
+  // ✅ بيانات إنشاء وقت دوام جديد أثناء الـ onboarding
   newShift: {
     name: "",
     startTime: "",
@@ -1682,7 +1685,7 @@ const filteredPermissions = computed(() => {
   );
 });
 
-// ✅ نص عرض الشيفت المختار في تبويب المراجعة
+// ✅ نص عرض اوقات الدوام المختار في تبويب المراجعة
 const selectedShiftLabel = computed(() => {
   if (form.shiftMode === "existing") {
     const s = shiftsStore.shifts.find((sh) => sh.id === form.employee.shiftId);
@@ -1695,7 +1698,7 @@ const selectedShiftLabel = computed(() => {
         })`
       : "—";
   }
-  return "بدون شيفت";
+  return "بدون وقت دوام";
 });
 
 // ✅ حساب تاريخ نهاية فترة التجربة للعرض فقط
@@ -1724,7 +1727,7 @@ watch(
     if (v) {
       rolesStore.fetchAll();
       permissionsStore.fetchAll();
-      shiftsStore.fetchAll(); // ✅ تحميل الشيفتات المتاحة عند فتح المودال
+      shiftsStore.fetchAll(); // ✅ تحميل اوقات الدوامات المتاحة عند فتح المودال
       calculateContractDates(); // حساب أولي عند الفتح
     }
   },
@@ -1789,14 +1792,14 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       isValid = false;
     }
 
-    // ✅ تحقق قسم الشيفت
+    // ✅ تحقق قسم اوقات الدوام
     if (form.shiftMode === "existing" && !form.employee.shiftId) {
-      errors.shiftId = "يرجى اختيار شيفت";
+      errors.shiftId = "يرجى اختيار وقت دوام";
       isValid = false;
     }
     if (form.shiftMode === "new") {
       if (!form.newShift.name.trim()) {
-        errors.shiftName = "اسم الشيفت مطلوب";
+        errors.shiftName = "اسم اوقات الدوام مطلوب";
         isValid = false;
       }
       if (!form.newShift.startTime) {
@@ -2063,7 +2066,7 @@ const handleSubmit = async () => {
       allValid = false;
   }
 
-  // ✅ تحقق الشيفت
+  // ✅ تحقق اوقات الدوام
   if (form.shiftMode === "existing" && !form.employee.shiftId) {
     allValid = false;
   }
@@ -2169,8 +2172,8 @@ const handleSubmit = async () => {
         }));
     }
 
-    // ✅ ربط الشيفت — نفس فكرة الدور: إما شيفت موجود، أو إنشاء شيفت جديد أولاً
-    // ثم استخدام الـ id بتاعه، أو من غير شيفت خالص
+    // ✅ ربط اوقات الدوام — نفس فكرة الدور: إما وقت دوام موجود، أو إنشاء وقت دوام جديد أولاً
+    // ثم استخدام الـ id بتاعه، أو من غير وقت دوام خالص
     if (form.shiftMode === "existing" && form.employee.shiftId) {
       payload.shiftId = form.employee.shiftId;
     } else if (form.shiftMode === "new") {
@@ -2586,7 +2589,7 @@ const calculateContractDates = () => {
   }
 }
 
-// ══ Role Toggle (يُعاد استخدامها لقسم الشيفت أيضاً) ═══════════════════════════
+// ══ Role Toggle (يُعاد استخدامها لقسم اوقات الدوام أيضاً) ═══════════════════════════
 .role-toggle {
   @include flex(row, center, flex-start, $space-2);
   flex-wrap: wrap;
