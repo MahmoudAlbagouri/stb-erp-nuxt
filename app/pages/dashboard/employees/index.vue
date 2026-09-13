@@ -37,7 +37,7 @@
     <div class="stats-bar">
       <div class="stat-pill">
         <Users :size="14" /><span
-          >الإجمالي: <strong>{{ store.employees.length }}</strong></span
+          >الإجمالي: <strong>{{ store.filteredEmployees.length }}</strong></span
         >
       </div>
       <div class="stat-pill stat-pill--active">
@@ -60,8 +60,9 @@
       </div>
     </div>
 
-    <!-- ══ Filters ════════════════════════════════════════════════════════ -->
+    <!-- ══ Main Filters & Advanced Search ═══════════════════════════════════ -->
     <div class="card filters-card">
+      <!-- الصف الأول: البحث والفلترة السريعة -->
       <div class="filters-row">
         <div class="search-bar">
           <Search class="search-bar__icon" :size="18" />
@@ -87,28 +88,31 @@
           <option value="outside_sponsorship">خارج الكفالة</option>
         </select>
       </div>
-    </div>
-    <!-- ══ Advanced Filters ═══════════════════════════════════════════════════ -->
-    <div class="card filters-card advanced-filters-card">
-      <button
-        type="button"
-        class="advanced-filters-toggle"
-        @click="showAdvancedFilters = !showAdvancedFilters"
-      >
-        <SlidersHorizontal :size="16" />
-        <span>فلترة متقدمة</span>
-        <ChevronDown
-          :size="16"
-          class="chevron"
-          :class="{ 'chevron--open': showAdvancedFilters }"
-        />
-      </button>
 
+      <!-- زر فتح/غلق الفلترة المتقدمة -->
+      <div class="advanced-toggle-wrapper">
+        <button
+          type="button"
+          class="advanced-filters-toggle"
+          :class="{ 'is-active': showAdvancedFilters }"
+          @click="showAdvancedFilters = !showAdvancedFilters"
+        >
+          <SlidersHorizontal :size="16" />
+          <span>تخصيص الفلترة المتقدمة</span>
+          <ChevronDown
+            :size="16"
+            class="chevron-icon"
+            :class="{ 'rotate-180': showAdvancedFilters }"
+          />
+        </button>
+      </div>
+
+      <!-- محتوى الفلترة المتقدمة -->
       <Transition name="slide-down">
         <div v-if="showAdvancedFilters" class="advanced-filters-body">
           <div class="advanced-filters-grid">
             <div class="form-group">
-              <label>القسم</label>
+              <label><Briefcase :size="14" /> القسم</label>
               <select v-model="advFilters.departmentId" class="form-select">
                 <option value="">كل الأقسام</option>
                 <option
@@ -120,8 +124,9 @@
                 </option>
               </select>
             </div>
+
             <div class="form-group">
-              <label>اوقات الدوام</label>
+              <label><Clock :size="14" /> أوقات الدوام</label>
               <select v-model="advFilters.shiftId" class="form-select">
                 <option value="">كل الأوقات</option>
                 <option
@@ -133,24 +138,27 @@
                 </option>
               </select>
             </div>
+
             <div class="form-group">
-              <label>حساب المستخدم</label>
+              <label><UserCheck :size="14" /> حساب المستخدم</label>
               <select v-model="advFilters.hasUser" class="form-select">
                 <option value="">الكل</option>
                 <option value="true">لديه حساب</option>
                 <option value="false">بدون حساب</option>
               </select>
             </div>
+
             <div class="form-group">
-              <label>عقد العمل</label>
+              <label><FileSignature :size="14" /> عقد العمل</label>
               <select v-model="advFilters.hasContract" class="form-select">
                 <option value="">الكل</option>
                 <option value="true">لديه عقد</option>
                 <option value="false">بدون عقد</option>
               </select>
             </div>
+
             <div class="form-group">
-              <label>الإقامة</label>
+              <label><AlertCircle :size="14" /> الإقامة</label>
               <select
                 v-model="advFilters.iqamaExpiringSoon"
                 class="form-select"
@@ -161,16 +169,19 @@
             </div>
           </div>
 
-          <div class="advanced-filters-actions">
+          <!-- شريط الإجراءات السفلي للفلترة -->
+          <div class="advanced-filters-footer">
             <button
-              class="btn btn--ghost btn--sm"
+              class="btn btn--ghost btn--sm reset-btn"
               @click="resetAdvancedFilters"
             >
-              <X :size="14" /> إعادة تعيين
+              <RotateCcw :size="14" /> إعادة تعيين الفلاتر
             </button>
-            <div class="advanced-filters-export">
+
+            <div class="export-actions-group">
+              <span class="export-label">تصدير النتائج الحالية:</span>
               <button
-                class="btn btn--outline btn--sm"
+                class="btn btn--success btn--sm"
                 :disabled="!!exportingFiltered"
                 @click="handleExportFiltered('excel')"
               >
@@ -179,10 +190,10 @@
                   class="spinner spinner--sm"
                 />
                 <FileSpreadsheet v-else :size="14" />
-                تصدير النتائج (Excel)
+                Excel
               </button>
               <button
-                class="btn btn--outline btn--sm"
+                class="btn btn--danger btn--sm"
                 :disabled="!!exportingFiltered"
                 @click="handleExportFiltered('pdf')"
               >
@@ -191,15 +202,13 @@
                   class="spinner spinner--sm"
                 />
                 <FileText v-else :size="14" />
-                تصدير النتائج (PDF)
+                PDF
               </button>
             </div>
           </div>
         </div>
       </Transition>
     </div>
-
-    <!-- ══ Loading ══════════════════════════════════════════════════════════ -->
 
     <!-- ══ Loading ══════════════════════════════════════════════════════════ -->
     <div v-if="store.loading" class="loading-grid">
@@ -217,17 +226,21 @@
       <div class="empty-state">
         <div class="empty-state__illustration"><Users :size="48" /></div>
         <div class="empty-state__title">
-          {{ search || statusFilter ? "لا توجد نتائج" : "لا يوجد موظفون بعد" }}
+          {{
+            search || statusFilter || advFilters.departmentId
+              ? "لا توجد نتائج تطابق البحث"
+              : "لا يوجد موظفون بعد"
+          }}
         </div>
         <div class="empty-state__text">
           {{
-            search || statusFilter
+            search || statusFilter || advFilters.departmentId
               ? "جرب تغيير معايير البحث أو الفلتر"
               : "ابدأ بإضافة أول موظف في شركتك"
           }}
         </div>
         <button
-          v-if="!search && !statusFilter"
+          v-if="!search && !statusFilter && !advFilters.departmentId"
           class="btn btn--primary mt-4"
           @click="showOnboarding = true"
         >
@@ -279,7 +292,7 @@
               "
             >
               إقامة حتى {{ formatDate(emp.iqamaExpiryDate) }}
-              <span v-if="isIqamaExpiringSoon(emp.iqamaExpiryDate)">⚠️</span>
+              <span v-if="isIqamaExpiringSoon(emp.iqamaExpiryDate)">️</span>
             </span>
           </div>
           <div v-if="emp.nationalId" class="emp-detail">
@@ -406,7 +419,7 @@
                     required
                   >
                     <option value="saudi">🇸🇦 سعودي</option>
-                    <option value="non_saudi">🌍 غير سعودي</option>
+                    <option value="non_saudi">غير سعودي</option>
                     <option value="outside_sponsorship">📄 خارج الكفالة</option>
                   </select>
                 </div>
@@ -476,7 +489,7 @@
                   <label>الحالة الوظيفية</label>
                   <select v-model="editForm.status" class="form-select">
                     <option value="active">✅ نشط</option>
-                    <option value="inactive">⏸ غير نشط</option>
+                    <option value="inactive">غير نشط</option>
                     <option value="terminated">❌ منتهي الخدمة</option>
                   </select>
                 </div>
@@ -768,7 +781,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useUsersStore } from "@/stores/users";
 import { useDepartmentsStore } from "@/stores/departments";
@@ -779,7 +792,7 @@ import OnboardingModal from "@/components/employees/OnboardingModal.vue";
 import {
   FileSpreadsheet,
   FileText,
-  File, // Added for generic file icon
+  File,
   UserPlus,
   Search,
   Users,
@@ -801,6 +814,12 @@ import {
   Plus,
   SlidersHorizontal,
   ChevronDown,
+  // أيقونات جديدة للفلترة
+  Clock,
+  UserCheck,
+  FileSignature,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -866,12 +885,44 @@ const advFilters = reactive({
   iqamaExpiringSoon: "" as "" | "true",
 });
 
+// ✅ دالة لتطبيق الفلاتر عبر الـ Backend
+const applyFilters = async () => {
+  const filters = {
+    status: statusFilter.value || undefined,
+    nationalityType: nationalityFilter.value || undefined,
+    search: search.value || undefined,
+    departmentId: advFilters.departmentId || undefined,
+    shiftId: advFilters.shiftId || undefined,
+    hasUser: advFilters.hasUser || undefined,
+    hasContract: advFilters.hasContract || undefined,
+    iqamaExpiringSoon: advFilters.iqamaExpiringSoon || undefined,
+  };
+
+  await store.fetchFilteredFromBackend(filters);
+};
+
+// ✅ مراقبة التغييرات في الفلاتر واستدعاء الـ Backend تلقائياً
+watch(
+  [search, statusFilter, nationalityFilter, advFilters],
+  () => {
+    applyFilters();
+  },
+  { deep: true },
+);
+
+// ✅ الاعتماد على القائمة المجلوبة من السيرفر
+const filtered = computed(() => store.filteredEmployees);
+
+const countByStatus = (s: string) =>
+  store.filteredEmployees.filter((e: Employee) => e.status === s).length;
+
 const resetAdvancedFilters = () => {
   advFilters.departmentId = "";
   advFilters.shiftId = "";
   advFilters.hasUser = "";
   advFilters.hasContract = "";
   advFilters.iqamaExpiringSoon = "";
+  // الـ watch سيقوم باستدعاء applyFilters تلقائياً
 };
 
 const isIqamaWithin60Days = (date?: string) => {
@@ -879,47 +930,6 @@ const isIqamaWithin60Days = (date?: string) => {
   const diff = new Date(date).getTime() - Date.now();
   return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
 };
-
-const filtered = computed(() =>
-  store.employees.filter((e: Employee) => {
-    const q = search.value.toLowerCase();
-    const matchSearch =
-      !q ||
-      e.fullName.toLowerCase().includes(q) ||
-      e.employeeCode.toLowerCase().includes(q) ||
-      (e.nationalId && e.nationalId.includes(q)) ||
-      (e.jobTitle && e.jobTitle.toLowerCase().includes(q));
-    const matchStatus = !statusFilter.value || e.status === statusFilter.value;
-    const matchNat =
-      !nationalityFilter.value || e.nationalityType === nationalityFilter.value;
-    const matchDept =
-      !advFilters.departmentId ||
-      (e.department as any)?.id === advFilters.departmentId;
-    const matchShift =
-      !advFilters.shiftId || (e as any).shiftId === advFilters.shiftId;
-    const matchUser =
-      !advFilters.hasUser ||
-      (advFilters.hasUser === "true" ? !!e.user : !e.user);
-    const matchContract =
-      !advFilters.hasContract ||
-      (advFilters.hasContract === "true" ? !!e.contract : !e.contract);
-    const matchIqama =
-      !advFilters.iqamaExpiringSoon ||
-      isIqamaWithin60Days(e.iqamaExpiryDate as any);
-    return (
-      matchSearch &&
-      matchStatus &&
-      matchNat &&
-      matchDept &&
-      matchShift &&
-      matchUser &&
-      matchContract &&
-      matchIqama
-    );
-  }),
-);
-const countByStatus = (s: string) =>
-  store.employees.filter((e: Employee) => e.status === s).length;
 
 // ✅ تصدير نتائج الفلترة عبر السيرفر
 const exportingFiltered = ref<"excel" | "pdf" | null>(null);
@@ -961,11 +971,9 @@ const closeFileViewer = () => {
   viewerTitle.value = "";
 };
 
-// دالة مساعدة لتحديد نوع الملف
 const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
 const isPdf = (url: string) => /\.pdf$/i.test(url);
 
-// ✅ دالة التحميل القسري (لتجنب فتح PDF في المتصفح)
 const forceDownload = async (url: string) => {
   try {
     const response = await fetch(url);
@@ -974,15 +982,12 @@ const forceDownload = async (url: string) => {
 
     const link = document.createElement("a");
     link.href = blobUrl;
-
-    // محاولة استخراج اسم الملف من الرابط الأصلي
     const fileName = url.split("/").pop() || "downloaded_file";
     link.download = fileName;
 
     document.body.appendChild(link);
     link.click();
 
-    // تنظيف
     document.body.removeChild(link);
     window.URL.revokeObjectURL(blobUrl);
   } catch (error) {
@@ -1025,7 +1030,7 @@ const editForm = reactive<EditFormType>({
 
 const availableUsers = computed(() => {
   const assignedUserIds = new Set(
-    store.employees.filter((e) => e.user?.id).map((e) => e.user!.id),
+    store.filteredEmployees.filter((e) => e.user?.id).map((e) => e.user!.id),
   );
   if (editingEmployee.value?.user?.id)
     assignedUserIds.delete(editingEmployee.value.user.id);
@@ -1099,7 +1104,8 @@ const handleUpdate = async () => {
     await store.update(editingEmployee.value.id, payload);
     toast.success("تم تحديث بيانات الموظف بنجاح");
     showEditModal.value = false;
-    await store.fetchAll();
+    // إعادة تطبيق الفلاتر لتحديث القائمة
+    await applyFilters();
   } catch (e: any) {
     console.error(e);
     toast.error(e.message || "حدث خطأ أثناء التحديث");
@@ -1136,8 +1142,8 @@ const empStatusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", terminated: "منتهي" })[s] ?? s;
 const getNationalityLabel = (type?: string) =>
   ({
-    saudi: "🇸🇦 سعودي",
-    non_saudi: "🌍 غير سعودي",
+    saudi: "🇸 سعودي",
+    non_saudi: " غير سعودي",
     outside_sponsorship: "📄 خارج الكفالة",
   })[type ?? ""] ?? "—";
 const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
@@ -1147,6 +1153,7 @@ const isIqamaExpiringSoon = (date: string) => {
 };
 
 onMounted(() => {
+  // جلب الكل مبدئياً لعرض الصفحة غير فارغة
   store.fetchAll();
   usersStore.fetchAll();
   departmentsStore.fetchAll();
@@ -1157,6 +1164,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
 .page-header__actions {
   display: flex;
   gap: $space-2;
@@ -1166,12 +1174,14 @@ onMounted(() => {
     justify-content: space-between;
   }
 }
+
 .stats-bar {
   display: flex;
   gap: $space-3;
   flex-wrap: wrap;
   margin-bottom: $space-4;
 }
+
 .stat-pill {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;
@@ -1194,6 +1204,7 @@ onMounted(() => {
     border-color: rgba($stb-danger, 0.3);
   }
 }
+
 .dot {
   width: 8px;
   height: 8px;
@@ -1209,24 +1220,36 @@ onMounted(() => {
     background: $stb-danger;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FILTERS CARD STYLES (IMPROVED)
+   ═══════════════════════════════════════════════════════════════════════════ */
 .filters-card {
-  padding: $space-4 $space-5;
+  padding: $space-5;
   margin-bottom: $space-5;
+  border: 1px solid $stb-border;
+  background: $stb-surface;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
 }
 
 .filters-row {
   @include flex(row, center, flex-start, $space-3);
   width: 100%;
   flex-wrap: wrap;
+  margin-bottom: $space-4;
+
   @include respond-to("md") {
     flex-direction: column;
     align-items: stretch;
   }
 }
+
 .search-bar {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 240px;
+
   .search-bar__icon {
     position: absolute;
     right: $space-3;
@@ -1235,41 +1258,230 @@ onMounted(() => {
     color: $stb-text-muted;
     pointer-events: none;
   }
+
   input {
     width: 100%;
     padding-right: $space-8;
-    padding-left: $space-8;
+    padding-left: $space-3;
+    height: 42px;
+    border-radius: $radius-md;
+    border: 1px solid $stb-border;
+    background: $stb-surface-2;
+    transition: all 0.2s;
+
+    &:focus {
+      border-color: $stb-accent;
+      box-shadow: 0 0 0 3px rgba($stb-accent, 0.1);
+      outline: none;
+    }
   }
 }
+
 .search-clear {
   position: absolute;
-  left: $space-3;
+  left: $space-2;
   top: 50%;
   transform: translateY(-50%);
   @include flex(row, center, center);
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: none;
-  background: $stb-surface-3;
+  background: transparent;
   color: $stb-text-muted;
   cursor: pointer;
   &:hover {
-    background: $stb-danger;
-    color: white;
+    background: rgba($stb-danger, 0.1);
+    color: $stb-danger;
   }
 }
+
 .status-select {
-  width: 150px;
+  width: 160px;
+  height: 42px;
+  border-radius: $radius-md;
+  border: 1px solid $stb-border;
+  background: $stb-surface-2;
+  padding: 0 $space-3;
+  cursor: pointer;
+
   @include respond-to("md") {
     width: 100%;
   }
 }
+
+/* Toggle Button for Advanced Filters */
+.advanced-toggle-wrapper {
+  border-top: 1px dashed $stb-border;
+  padding-top: $space-3;
+  margin-top: $space-2;
+}
+
+.advanced-filters-toggle {
+  @include flex(row, center, flex-start, $space-2);
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: $stb-accent;
+  font-weight: 600;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  padding: $space-2 0;
+  transition: color 0.2s;
+
+  &:hover {
+    color: rgba($stb-accent, 50%);
+  }
+
+  &.is-active {
+    color: $stb-text-primary;
+  }
+}
+
+.chevron-icon {
+  margin-right: auto; /* Push to left in RTL */
+  transition: transform 0.3s ease;
+
+  &.rotate-180 {
+    transform: rotate(180deg);
+  }
+}
+
+/* Advanced Filters Body */
+.advanced-filters-body {
+  margin-top: $space-4;
+  padding-top: $space-4;
+  border-top: 1px solid $stb-border;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.advanced-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-4;
+  margin-bottom: $space-5;
+
+  @include respond-to("lg") {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include respond-to("md") {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  label {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $stb-text-secondary;
+    @include flex(row, center, flex-start, $space-1);
+
+    svg {
+      color: $stb-text-muted;
+    }
+  }
+
+  .form-select {
+    width: 100%;
+    height: 40px;
+    border-radius: $radius-md;
+    border: 1px solid $stb-border;
+    background: $stb-surface-2;
+    padding: 0 $space-3;
+    font-size: $font-size-sm;
+    color: $stb-text-primary;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left $space-2 center;
+    background-size: 16px;
+
+    &:focus {
+      border-color: $stb-accent;
+      box-shadow: 0 0 0 3px rgba($stb-accent, 0.1);
+      outline: none;
+    }
+  }
+}
+
+/* Footer Actions for Filters */
+.advanced-filters-footer {
+  @include flex(row, center, space-between);
+  padding-top: $space-4;
+  border-top: 1px solid $stb-border;
+  background: rgba($stb-surface-2, 0.5);
+  margin: 0 (-$space-5) (-$space-5); /* Extend to edges */
+  padding: $space-4 $space-5;
+  border-radius: 0 0 $radius-lg $radius-lg;
+
+  @include respond-to("md") {
+    flex-direction: column;
+    gap: $space-3;
+    align-items: stretch;
+  }
+}
+
+.reset-btn {
+  color: $stb-text-muted;
+  &:hover {
+    color: $stb-danger;
+    background: rgba($stb-danger, 0.05);
+  }
+}
+
+.export-actions-group {
+  @include flex(row, center, flex-end, $space-3);
+
+  @include respond-to("md") {
+    justify-content: space-between;
+  }
+}
+
+.export-label {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+  display: none;
+
+  @include respond-to("sm") {
+    display: block;
+  }
+}
+
+.btn--success {
+  background: rgba($stb-success, 0.1);
+  color: $stb-success;
+  border: 1px solid rgba($stb-success, 0.2);
+  &:hover:not(:disabled) {
+    background: $stb-success;
+    color: #fff;
+  }
+}
+
+.btn--danger {
+  background: rgba($stb-danger, 0.1);
+  color: $stb-danger;
+  border: 1px solid rgba($stb-danger, 0.2);
+  &:hover:not(:disabled) {
+    background: $stb-danger;
+    color: #fff;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOADING & EMPTY STATES
+   ═══════════════════════════════════════════════════════════════════════════ */
 .loading-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
+
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -1296,15 +1508,18 @@ onMounted(() => {
     width: 40%;
   }
 }
+
 .skeleton-lines {
   flex: 1;
 }
+
 .emp-card--skeleton {
   @include flex(row, center, flex-start, $space-3);
   padding: $space-5;
   pointer-events: none;
   min-height: 80px;
 }
+
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
@@ -1313,10 +1528,12 @@ onMounted(() => {
     background-position: -200% 0;
   }
 }
+
 .empty-wrapper {
   @include flex(row, center, center);
   min-height: 320px;
 }
+
 .empty-state {
   @include flex(column, center, center, $space-3);
   text-align: center;
@@ -1342,11 +1559,16 @@ onMounted(() => {
     max-width: 280px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EMPLOYEE GRID & CARDS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
+
 .emp-card {
   @include glass-card;
   padding: $space-5;
@@ -1355,13 +1577,18 @@ onMounted(() => {
   gap: $space-3;
   transition: all $transition-base;
   cursor: pointer;
+  border: 1px solid transparent;
+
   &:hover {
     transform: translateY(-2px);
-    @include glow-border;
+    border-color: $stb-accent;
+    box-shadow: $shadow-md;
   }
+
   &__header {
     @include flex(row, center, flex-start, $space-3);
   }
+
   &__avatar {
     width: 48px;
     height: 48px;
@@ -1394,6 +1621,7 @@ onMounted(() => {
       background: $stb-danger;
     }
   }
+
   &__info {
     flex: 1;
     min-width: 0;
@@ -1404,23 +1632,27 @@ onMounted(() => {
       margin: 0 0 2px;
     }
   }
+
   &__code {
     font-size: $font-size-xs;
     color: $stb-accent;
     font-family: monospace;
     letter-spacing: 0.05em;
   }
+
   &__body {
     display: flex;
     flex-direction: column;
     gap: $space-2;
     flex: 1;
   }
+
   &__badges {
     @include flex(row, center, flex-start, $space-2);
     flex-wrap: wrap;
     margin-top: $space-1;
   }
+
   &__footer {
     @include flex(row, center, space-between, $space-2);
     padding-top: $space-3;
@@ -1432,11 +1664,11 @@ onMounted(() => {
       gap: $space-2;
     }
 
-    // ✅ تنسيق قائمة التصدير المنسدلة
     .export-dropdown {
       position: relative;
       display: inline-block;
     }
+
     .export-btn {
       color: $stb-accent;
       &:hover {
@@ -1444,6 +1676,7 @@ onMounted(() => {
         color: $stb-accent;
       }
     }
+
     .dropdown-menu {
       position: absolute;
       bottom: 100%;
@@ -1481,6 +1714,7 @@ onMounted(() => {
     }
   }
 }
+
 .emp-detail {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-xs;
@@ -1495,10 +1729,12 @@ onMounted(() => {
     font-size: $font-size-sm;
   }
 }
+
 .text-warning {
   color: $stb-warning !important;
   font-weight: 600;
 }
+
 .mini-badge {
   @include flex(row, center, center, 4px);
   font-size: 10px;
@@ -1507,7 +1743,6 @@ onMounted(() => {
   font-weight: 600;
   cursor: default;
 
-  // ✅ تحسين شكل أزرار العرض لتكون قابلة للنقر بوضوح
   &.view-id-btn,
   &.view-edu-btn {
     cursor: pointer;
@@ -1550,6 +1785,7 @@ onMounted(() => {
     }
   }
 }
+
 .truncate-text {
   max-width: 80px;
   overflow: hidden;
@@ -1559,15 +1795,20 @@ onMounted(() => {
   vertical-align: middle;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODALS & FORMS
+   ══════════════════════════════════════════════════════════════════════════ */
 .modal-lg {
   max-width: 680px;
 }
+
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
 }
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1576,12 +1817,14 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 }
+
 .full-width {
   grid-column: span 2;
   @include respond-to("md") {
     grid-column: span 1;
   }
 }
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -1596,14 +1839,17 @@ onMounted(() => {
     }
   }
 }
+
 .modal__footer {
   @include flex(row, center, flex-end, $space-3);
   padding-top: $space-4;
   border-top: 1px solid $stb-border;
 }
+
 .mt-4 {
   margin-top: $space-4 !important;
 }
+
 .linked-user-section {
   background: rgba($stb-accent, 0.03);
   padding: $space-3;
@@ -1614,6 +1860,7 @@ onMounted(() => {
     color: $stb-accent;
   }
 }
+
 .linked-user-controls {
   display: flex;
   gap: $space-2;
@@ -1627,11 +1874,13 @@ onMounted(() => {
     padding: 0 $space-3;
   }
 }
+
 .form-hint {
   font-size: 11px;
   color: $stb-text-muted;
   margin-top: $space-1;
 }
+
 .education-toggle-section {
   .toggle-card {
     @include flex(row, center, space-between);
@@ -1698,11 +1947,13 @@ onMounted(() => {
     }
   }
 }
+
 .add-edu-header {
   margin-bottom: $space-3;
   display: flex;
   justify-content: flex-end;
 }
+
 .btn--dashed {
   border-style: dashed;
   border-color: $stb-border;
@@ -1713,6 +1964,7 @@ onMounted(() => {
     background: rgba($stb-accent, 0.05);
   }
 }
+
 .education-item-card {
   background: $stb-surface-2;
   border: 1px solid $stb-border;
@@ -1740,6 +1992,7 @@ onMounted(() => {
     }
   }
 }
+
 .empty-mini {
   text-align: center;
   padding: $space-4;
@@ -1750,7 +2003,6 @@ onMounted(() => {
   border: 1px dashed $stb-border;
 }
 
-// ✅ Styles for Uploader with Viewer Button
 .uploader-with-viewer {
   display: flex;
   flex-direction: column;
@@ -1761,7 +2013,6 @@ onMounted(() => {
   }
 }
 
-// ✅ Styles for Universal File Viewer
 .file-viewer-modal {
   max-width: 900px;
 }
@@ -1812,9 +2063,36 @@ onMounted(() => {
   gap: $space-3;
   margin-top: $space-2;
 }
-
 .empty-state-mini {
   color: $stb-text-muted;
   text-align: center;
+}
+
+/* Transitions */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+.slide-down-enter-to,
+.slide-down-leave-from {
+  opacity: 1;
+  max-height: 1000px; /* Arbitrary large number */
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
