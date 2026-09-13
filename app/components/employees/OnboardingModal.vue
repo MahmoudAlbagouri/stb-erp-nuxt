@@ -46,7 +46,7 @@
 
           <!-- ══ Content ════════════════════════════════════════════════════ -->
           <div class="ob-body">
-            <!-- ── تاب 1: بيانات الموظف ──────────────────────────────────── -->
+            <!-- ─ تاب 1: بيانات الموظف ──────────────────────────────────── -->
             <div v-show="activeTab === 'employee'" class="ob-section">
               <div class="section-title">
                 <User :size="18" />
@@ -62,7 +62,7 @@
                     class="form-input"
                     :class="{ 'form-input--error': errors.fullName }"
                     placeholder="محمد أحمد العمري"
-                    @blur="validateField('fullName')"
+                    @blur="validateSingleField('fullName')"
                   />
                   <span v-if="errors.fullName" class="form-error">{{
                     errors.fullName
@@ -75,10 +75,10 @@
                     v-model="form.employee.nationalityType"
                     class="form-select"
                     :class="{ 'form-select--error': errors.nationalityType }"
-                    @change="validateField('nationalityType')"
+                    @change="validateSingleField('nationalityType')"
                   >
                     <option value="" disabled>اختر...</option>
-                    <option value="saudi">🇸🇦 سعودي</option>
+                    <option value="saudi">🇦 سعودي</option>
                     <option value="non_saudi">🌍 غير سعودي</option>
                     <option value="outside_sponsorship">📄 خارج الكفالة</option>
                   </select>
@@ -100,7 +100,7 @@
                       type="date"
                       class="form-input"
                       :class="{ 'form-input--error': errors.iqamaExpiryDate }"
-                      @blur="validateField('iqamaExpiryDate')"
+                      @blur="validateSingleField('iqamaExpiryDate')"
                     />
                     <span v-if="errors.iqamaExpiryDate" class="form-error">{{
                       errors.iqamaExpiryDate
@@ -121,6 +121,7 @@
                       form.employee.nationalId =
                         form.employee.nationalId.replace(/[^0-9]/g, '')
                     "
+                    @blur="validateSingleField('nationalId')"
                   />
                   <span v-if="errors.nationalId" class="form-error">{{
                     errors.nationalId
@@ -153,7 +154,7 @@
                     class="form-input"
                     :class="{ 'form-input--error': errors.jobTitle }"
                     placeholder="مهندس برمجيات أول"
-                    @blur="validateField('jobTitle')"
+                    @blur="validateSingleField('jobTitle')"
                   />
                   <span v-if="errors.jobTitle" class="form-error">{{
                     errors.jobTitle
@@ -177,7 +178,7 @@
                         '',
                       )
                     "
-                    @blur="validateField('phone')"
+                    @blur="validateSingleField('phone')"
                   />
                   <span v-if="errors.phone" class="form-error">{{
                     errors.phone
@@ -190,10 +191,10 @@
                     v-model="form.employee.status"
                     class="form-select"
                     :class="{ 'form-select--error': errors.status }"
-                    @change="validateField('status')"
+                    @change="validateSingleField('status')"
                   >
                     <option value="active">✅ نشط</option>
-                    <option value="inactive">⏸ غير نشط</option>
+                    <option value="inactive">غير نشط</option>
                     <option value="terminated">❌ منتهي الخدمة</option>
                   </select>
                   <span v-if="errors.status" class="form-error">{{
@@ -201,7 +202,7 @@
                   }}</span>
                 </div>
 
-                <!-- ✅ قسم اختيار/إنشاء القسم — نفس فكرة اوقات الدوام -->
+                <!-- ✅ قسم اختيار/إنشاء القسم -->
                 <div class="form-group form-group--full">
                   <label class="form-label required">القسم</label>
                   <div class="role-toggle">
@@ -237,6 +238,7 @@
                         v-model="form.employee.departmentId"
                         class="form-select"
                         :class="{ 'form-select--error': errors.departmentId }"
+                        @change="validateSingleField('departmentId')"
                       >
                         <option value="" disabled>اختر القسم...</option>
                         <option
@@ -268,6 +270,7 @@
                         class="form-input"
                         :class="{ 'form-input--error': errors.departmentName }"
                         placeholder="مثال: تقنية المعلومات"
+                        @blur="validateSingleField('departmentName')"
                       />
                       <span v-if="errors.departmentName" class="form-error">{{
                         errors.departmentName
@@ -277,7 +280,7 @@
                 </div>
               </div>
 
-              <!-- ✅ قسم اوقات الدوام (الدوام) — بنفس أسلوب اختيار الدور تمامًا -->
+              <!-- ✅ قسم اوقات الدوام -->
               <div class="shift-section mt-4">
                 <div class="section-title">
                   <Clock :size="18" />
@@ -327,6 +330,7 @@
                       v-model="form.employee.shiftId"
                       class="form-select"
                       :class="{ 'form-select--error': errors.shiftId }"
+                      @change="validateSingleField('shiftId')"
                     >
                       <option value="" disabled>اختر اوقات الدوام...</option>
                       <option
@@ -361,6 +365,7 @@
                         class="form-input"
                         :class="{ 'form-input--error': errors.shiftName }"
                         placeholder="مثال: اوقات الدوام الصباحي"
+                        @blur="validateSingleField('shiftName')"
                       />
                       <span v-if="errors.shiftName" class="form-error">{{
                         errors.shiftName
@@ -375,6 +380,7 @@
                         type="time"
                         class="form-input"
                         :class="{ 'form-input--error': errors.shiftStartTime }"
+                        @blur="validateSingleField('shiftStartTime')"
                       />
                       <span v-if="errors.shiftStartTime" class="form-error">{{
                         errors.shiftStartTime
@@ -389,6 +395,7 @@
                         type="time"
                         class="form-input"
                         :class="{ 'form-input--error': errors.shiftEndTime }"
+                        @blur="validateSingleField('shiftEndTime')"
                       />
                       <span v-if="errors.shiftEndTime" class="form-error">{{
                         errors.shiftEndTime
@@ -415,16 +422,14 @@
                       <Info :size="15" />
                       <span
                         >سيتم إنشاء الموظف بدون وقت دوام محدد. يمكن تعيين وقت
-                        دوام لاحقًا من صفحة الموظف، ولن يظهر تصنيف
-                        التأخير/الانصراف المبكر في تقارير الحضور له حتى ذلك
-                        الحين.</span
+                        دوام لاحقًا من صفحة الموظف.</span
                       >
                     </div>
                   </div>
                 </Transition>
               </div>
 
-              <!-- ✅ قسم المؤهلات التعليمية (بنفس تصميم الـ Edit Modal) -->
+              <!-- ✅ قسم المؤهلات التعليمية -->
               <div class="education-toggle-section mt-4">
                 <div class="toggle-card">
                   <div class="toggle-card__info">
@@ -442,7 +447,6 @@
 
                 <Transition name="slide-down">
                   <div v-if="showEducationForm" class="mt-4">
-                    <!-- زر إضافة مؤهل جديد -->
                     <div class="add-edu-header">
                       <button
                         type="button"
@@ -453,7 +457,6 @@
                       </button>
                     </div>
 
-                    <!-- قائمة المؤهلات -->
                     <div
                       v-for="(edu, index) in form.educations"
                       :key="index"
@@ -483,6 +486,7 @@
                                 !edu.degree && showEducationErrors,
                             }"
                             placeholder="مثال: بكالوريوس هندسة"
+                            @blur="validateEducationFields()"
                           />
                         </div>
 
@@ -496,7 +500,6 @@
                           />
                         </div>
 
-                        <!-- ✅ حقل جهة الإصدار الجديد -->
                         <div class="form-group">
                           <label class="form-label required"
                             >جهة الإصدار / المصدر</label
@@ -510,6 +513,7 @@
                                 !edu.issuingAuthority && showEducationErrors,
                             }"
                             placeholder="مثال: جامعة الملك سعود"
+                            @blur="validateEducationFields()"
                           />
                         </div>
 
@@ -554,9 +558,8 @@
               </div>
             </div>
 
-            <!-- ── تاب 2: حساب المستخدم ────────────────────────────────── -->
+            <!-- ─ تاب 2: حساب المستخدم ────────────────────────────────── -->
             <div v-show="activeTab === 'user'" class="ob-section">
-              <!-- Toggle: هل تريد ربط مستخدم؟ -->
               <div class="toggle-card">
                 <div class="toggle-card__info">
                   <ShieldCheck :size="20" class="toggle-card__icon" />
@@ -587,7 +590,7 @@
                         :class="{ 'form-input--error': errors.username }"
                         placeholder="ahmed.ali"
                         dir="ltr"
-                        @blur="validateField('username')"
+                        @blur="validateSingleField('username')"
                       />
                       <span v-if="errors.username" class="form-error">{{
                         errors.username
@@ -605,7 +608,7 @@
                         :class="{ 'form-input--error': errors.email }"
                         placeholder="ahmed@company.com"
                         dir="ltr"
-                        @blur="validateField('email')"
+                        @blur="validateSingleField('email')"
                       />
                       <span v-if="errors.email" class="form-error">{{
                         errors.email
@@ -622,7 +625,7 @@
                           :class="{ 'form-input--error': errors.password }"
                           placeholder="••••••••"
                           dir="ltr"
-                          @blur="validateField('password')"
+                          @blur="validateSingleField('password')"
                         />
                         <button
                           type="button"
@@ -650,7 +653,6 @@
                     <div class="form-group form-group--full">
                       <label class="form-label required">الدور الوظيفي</label>
 
-                      <!-- اختيار: دور موجود أم جديد -->
                       <div class="role-toggle">
                         <button
                           type="button"
@@ -689,14 +691,13 @@
                         </button>
                       </div>
 
-                      <!-- دور موجود -->
                       <Transition name="slide-down">
                         <div v-if="form.roleMode === 'existing'" class="mt-3">
                           <select
                             v-model="form.user.roleId"
                             class="form-select"
                             :class="{ 'form-select--error': errors.roleId }"
-                            @change="validateField('roleId')"
+                            @change="validateSingleField('roleId')"
                           >
                             <option value="" disabled>اختر الدور...</option>
                             <option
@@ -714,7 +715,6 @@
                             errors.roleId
                           }}</span>
 
-                          <!-- معاينة صلاحيات الدور المختار -->
                           <div
                             v-if="selectedRolePermissions.length"
                             class="role-preview"
@@ -742,7 +742,6 @@
                         </div>
                       </Transition>
 
-                      <!-- دور جديد -->
                       <Transition name="slide-down">
                         <div v-if="form.roleMode === 'new'" class="mt-3">
                           <div class="form-group">
@@ -757,14 +756,13 @@
                                 'form-input--error': errors.roleName,
                               }"
                               placeholder="مثال: مشرف المبيعات"
-                              @blur="validateField('roleName')"
+                              @blur="validateSingleField('roleName')"
                             />
                             <span v-if="errors.roleName" class="form-error">{{
                               errors.roleName
                             }}</span>
                           </div>
 
-                          <!-- اختيار الصلاحيات -->
                           <div class="form-group">
                             <label class="form-label required"
                               >صلاحيات الدور
@@ -820,7 +818,7 @@
                             <Info :size="15" />
                             <span
                               >سيتم إنشاء المستخدم بدون صلاحيات. يمكن تعيين دور
-                              لاحقاً من صفحة المستخدمين.</span
+                              لاحقاً.</span
                             >
                           </div>
                         </div>
@@ -863,7 +861,7 @@
                       v-model="form.contract.contractType"
                       class="form-select"
                       :class="{ 'form-select--error': errors.contractType }"
-                      @change="validateField('contractType')"
+                      @change="validateSingleField('contractType')"
                     >
                       <option value="" disabled>اختر النوع...</option>
                       <option value="دائم">دائم</option>
@@ -877,7 +875,6 @@
                     }}</span>
                   </div>
 
-                  <!-- ✅ تغيير المدة إلى شهور -->
                   <div class="form-group">
                     <label class="form-label required"
                       >مدة العقد (بالشهور)</label
@@ -892,7 +889,7 @@
                       }"
                       placeholder="مثال: 12"
                       @input="calculateContractDates"
-                      @blur="validateField('contractDurationMonths')"
+                      @blur="validateSingleField('contractDurationMonths')"
                     />
                     <span
                       v-if="errors.contractDurationMonths"
@@ -909,7 +906,7 @@
                       class="form-input"
                       :class="{ 'form-input--error': errors.startDate }"
                       @input="calculateContractDates"
-                      @blur="validateField('startDate')"
+                      @blur="validateSingleField('startDate')"
                     />
                     <span v-if="errors.startDate" class="form-error">{{
                       errors.startDate
@@ -958,7 +955,7 @@
                         max="365"
                         class="form-input"
                         :class="{ 'form-input--error': errors.annualLeaveDays }"
-                        @blur="validateField('annualLeaveDays')"
+                        @blur="validateSingleField('annualLeaveDays')"
                       />
                       <button
                         type="button"
@@ -975,14 +972,13 @@
                     }}</span>
                   </div>
 
-                  <!-- ✅ التأمين الطبي -->
                   <div class="form-group">
                     <label class="form-label required">التأمين الطبي</label>
                     <select
                       v-model="form.contract.medicalInsurance"
                       class="form-select"
                       :class="{ 'form-select--error': errors.medicalInsurance }"
-                      @change="validateField('medicalInsurance')"
+                      @change="validateSingleField('medicalInsurance')"
                     >
                       <option value="بدون">بدون</option>
                       <option value="فردي">فردي</option>
@@ -993,7 +989,6 @@
                     }}</span>
                   </div>
 
-                  <!-- ✅ الجنسية (تظهر فقط لغير السعوديين) -->
                   <div
                     v-if="form.employee.nationalityType === 'non_saudi'"
                     class="form-group"
@@ -1006,7 +1001,7 @@
                         'form-select--error': errors.contractNationality,
                       }"
                       required
-                      @change="validateField('contractNationality')"
+                      @change="validateSingleField('contractNationality')"
                     >
                       <option value="" disabled>اختر الجنسية...</option>
                       <option
@@ -1030,7 +1025,7 @@
                       v-model="form.contract.ticketType"
                       class="form-select"
                       :class="{ 'form-select--error': errors.ticketType }"
-                      @change="validateField('ticketType')"
+                      @change="validateSingleField('ticketType')"
                     >
                       <option value="بدون">بدون</option>
                       <option value="ذهاب فقط">ذهاب فقط</option>
@@ -1048,7 +1043,7 @@
                       class="form-select"
                       :class="{ 'form-select--error': errors.probationPeriod }"
                       @change="calculateContractDates"
-                      @blur="validateField('probationPeriod')"
+                      @blur="validateSingleField('probationPeriod')"
                     >
                       <option value="بدون">بدون</option>
                       <option value="3 شهور">3 شهور</option>
@@ -1059,7 +1054,6 @@
                     }}</span>
                   </div>
 
-                  <!-- ✅ عرض تاريخ نهاية فترة التجربة المحسوب -->
                   <div class="form-group" v-if="calculatedProbationEndDate">
                     <label class="form-label">تاريخ نهاية فترة التجربة</label>
                     <input
@@ -1107,12 +1101,12 @@
                 <FileX :size="36" class="skip-note__icon" />
                 <p>
                   سيتم إنشاء الموظف <strong>بدون عقد</strong>. يمكن إضافة عقد
-                  لاحقاً من صفحة العقود.
+                  لاحقاً.
                 </p>
               </div>
             </div>
 
-            <!-- ── تاب 4: الراتب ──────────────────────────────────────── -->
+            <!-- ── تاب 4: الراتب ─────────────────────────────────────── -->
             <div v-show="activeTab === 'salary'" class="ob-section">
               <div class="toggle-card">
                 <div class="toggle-card__info">
@@ -1144,7 +1138,7 @@
                           }"
                           placeholder="0"
                           dir="ltr"
-                          @blur="validateField('basicSalary')"
+                          @blur="validateSingleField('basicSalary')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
@@ -1166,7 +1160,7 @@
                           }"
                           placeholder="0"
                           dir="ltr"
-                          @blur="validateField('housingAllowance')"
+                          @blur="validateSingleField('housingAllowance')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
@@ -1188,7 +1182,7 @@
                           }"
                           placeholder="0"
                           dir="ltr"
-                          @blur="validateField('transportAllowance')"
+                          @blur="validateSingleField('transportAllowance')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
@@ -1212,7 +1206,7 @@
                           }"
                           placeholder="0"
                           dir="ltr"
-                          @blur="validateField('otherAllowances')"
+                          @blur="validateSingleField('otherAllowances')"
                         />
                         <span class="input-suffix">ر.س</span>
                       </div>
@@ -1222,7 +1216,6 @@
                     </div>
                   </div>
 
-                  <!-- ملخص الراتب -->
                   <div class="salary-summary">
                     <div class="salary-summary__title">ملخص الراتب الشهري</div>
                     <div class="salary-summary__rows">
@@ -1270,7 +1263,7 @@
                 <WalletCards :size="36" class="skip-note__icon" />
                 <p>
                   سيتم إنشاء الموظف <strong>بدون راتب محدد</strong>. يمكن إضافة
-                  الراتب لاحقاً من صفحة الرواتب.
+                  الراتب لاحقاً.
                 </p>
               </div>
             </div>
@@ -1278,7 +1271,6 @@
             <!-- ── تاب 5: مراجعة ─────────────────────────────────────── -->
             <div v-show="activeTab === 'review'" class="ob-section">
               <div class="review-grid">
-                <!-- بيانات الموظف -->
                 <div class="review-card">
                   <div class="review-card__header">
                     <User :size="16" />
@@ -1313,7 +1305,6 @@
                   </div>
                 </div>
 
-                <!-- المؤهلات -->
                 <div class="review-card">
                   <div class="review-card__header">
                     <GraduationCap :size="16" />
@@ -1344,7 +1335,6 @@
                   </div>
                 </div>
 
-                <!-- المستخدم -->
                 <div class="review-card">
                   <div class="review-card__header">
                     <ShieldCheck :size="16" />
@@ -1368,7 +1358,6 @@
                   </div>
                 </div>
 
-                <!-- العقد -->
                 <div class="review-card">
                   <div class="review-card__header">
                     <FileText :size="16" />
@@ -1423,7 +1412,6 @@
                   </div>
                 </div>
 
-                <!-- الراتب -->
                 <div class="review-card">
                   <div class="review-card__header">
                     <Banknote :size="16" />
@@ -1532,18 +1520,15 @@ import {
   Clock,
 } from "lucide-vue-next";
 
-// استيراد مكون الرفع
 import StbUploader from "@/components/global/StbUploader.vue";
-
 import { useEmployeesStore } from "@/stores/employees";
 import { useRolesStore } from "@/stores/roles";
 import { usePermissionsStore } from "@/stores/permissions";
 import { useShiftsStore } from "@/stores/shifts";
-import { useDepartmentsStore } from "@/stores/departments"; // ✅ ستور الأقسام
+import { useDepartmentsStore } from "@/stores/departments";
 import { useToast } from "@/composables/useToast";
 import type { Education } from "@/types";
 
-// ── Props / Emits ────────────────────────────────────────────────────────────
 const props = defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{
   "update:modelValue": [boolean];
@@ -1554,10 +1539,9 @@ const employeesStore = useEmployeesStore();
 const rolesStore = useRolesStore();
 const permissionsStore = usePermissionsStore();
 const shiftsStore = useShiftsStore();
-const departmentsStore = useDepartmentsStore(); // ✅
+const departmentsStore = useDepartmentsStore();
 const toast = useToast();
 
-// ✅ قائمة الجنسيات
 const NATIONALITIES = [
   "مصري",
   "يمني",
@@ -1575,7 +1559,6 @@ const NATIONALITIES = [
   "أخرى",
 ];
 
-// ── Tabs ────────────────────────────────────────────────────────────────────
 type TabKey = "employee" | "user" | "contract" | "salary" | "review";
 
 const tabs = [
@@ -1593,7 +1576,6 @@ const tabs = [
 
 const tabOrder: TabKey[] = tabs.map((t) => t.key);
 const activeTab = ref<TabKey>("employee");
-
 const doneTabs = ref<Set<TabKey>>(new Set());
 const isTabDone = (key: TabKey) => doneTabs.value.has(key);
 
@@ -1627,7 +1609,7 @@ const form = reactive({
   withSalary: false,
   roleMode: "none" as "existing" | "new" | "none",
   shiftMode: "none" as "existing" | "new" | "none",
-  departmentMode: "existing" as "existing" | "new", // ✅ اختيار قسم موجود أو إنشاء جديد
+  departmentMode: "existing" as "existing" | "new",
 
   employee: {
     fullName: "",
@@ -1637,7 +1619,7 @@ const form = reactive({
     nationalIdCardPath: "",
     phone: "",
     jobTitle: "",
-    departmentId: "", // ✅ يستخدم فقط لو departmentMode === 'existing'
+    departmentId: "",
     status: "active" as "active" | "inactive" | "terminated",
     shiftId: "",
   },
@@ -1658,7 +1640,6 @@ const form = reactive({
     gracePeriod: 30,
   },
 
-  // ✅ بيانات إنشاء قسم جديد أثناء الـ onboarding
   newDepartment: {
     name: "",
   },
@@ -1689,37 +1670,29 @@ const form = reactive({
 
 const showEducationForm = ref(false);
 const showEducationErrors = ref(false);
-
 const errors = reactive<Record<string, string>>({});
 const submitting = ref(false);
 const showPassword = ref(false);
 const permSearch = ref("");
-
 const tempNationalIdFile = ref<string>("");
 const tempContractFiles = ref<string[]>([]);
 
-const nationalIdModelValue = computed(() => {
-  return tempNationalIdFile.value || undefined;
-});
-
-const contractFilesModelValue = computed(() => {
-  return tempContractFiles.value.length > 0
+const nationalIdModelValue = computed(
+  () => tempNationalIdFile.value || undefined,
+);
+const contractFilesModelValue = computed(() =>
+  tempContractFiles.value.length > 0
     ? tempContractFiles.value.join(",")
-    : undefined;
-});
+    : undefined,
+);
 
 const handleContractFilesUpdate = (val: string) => {
-  if (!val) {
-    tempContractFiles.value = [];
-  } else {
-    tempContractFiles.value = val.split(",").filter(Boolean);
-  }
+  tempContractFiles.value = val ? val.split(",").filter(Boolean) : [];
 };
 
 watch(tempNationalIdFile, (val) => {
   form.employee.nationalIdCardPath = val;
 });
-
 watch(tempContractFiles, (val) => {
   form.contract.attachmentPaths = val;
 });
@@ -1749,7 +1722,6 @@ const filteredPermissions = computed(() => {
   );
 });
 
-// ✅ نص عرض القسم المختار في تبويب المراجعة
 const selectedDepartmentLabel = computed(() => {
   if (form.departmentMode === "existing") {
     const d = departmentsStore.departments.find(
@@ -1760,7 +1732,6 @@ const selectedDepartmentLabel = computed(() => {
   return form.newDepartment.name || "—";
 });
 
-// ✅ نص عرض اوقات الدوام المختار في تبويب المراجعة
 const selectedShiftLabel = computed(() => {
   if (form.shiftMode === "existing") {
     const s = shiftsStore.shifts.find((sh) => sh.id === form.employee.shiftId);
@@ -1776,22 +1747,16 @@ const selectedShiftLabel = computed(() => {
   return "بدون وقت دوام";
 });
 
-// ✅ حساب تاريخ نهاية فترة التجربة للعرض فقط
 const calculatedProbationEndDate = computed(() => {
   if (!form.contract.startDate || form.contract.probationPeriod === "بدون")
     return "";
-
   const start = new Date(form.contract.startDate);
   let months = 0;
-
   if (form.contract.probationPeriod === "3 شهور") months = 3;
   else if (form.contract.probationPeriod === "6 شهور") months = 6;
-
   if (months === 0) return "";
-
   const end = new Date(start);
   end.setMonth(end.getMonth() + months);
-
   return end.toISOString().split("T")[0];
 });
 
@@ -1803,7 +1768,7 @@ watch(
       rolesStore.fetchAll();
       permissionsStore.fetchAll();
       shiftsStore.fetchAll();
-      departmentsStore.fetchAll(); // ✅ تحميل الأقسام المتاحة عند فتح المودال
+      departmentsStore.fetchAll();
       calculateContractDates();
     }
   },
@@ -1819,13 +1784,219 @@ const onToggleUser = () => {
   }
 };
 
-// ── Validation ────────────────────────────────────────────────────────────────
-const clearErrors = () => {
-  Object.keys(errors).forEach((k) => delete errors[k]);
+// ── Validation Logic (FIXED) ──────────────────────────────────────────────────
+
+/**
+ * ✅ دالة جديدة: تتحقق من حقل واحد فقط دون مسح باقي الأخطاء
+ * تستخدم عند الخروج من الحقل (blur/change)
+ */
+const validateSingleField = (field: string) => {
+  // نتحقق فقط من الحقل المطلوب ونحدث خطأه فقط
+  switch (field) {
+    case "fullName":
+      if (!form.employee.fullName.trim())
+        errors.fullName = "الاسم الكامل مطلوب";
+      else delete errors.fullName;
+      break;
+    case "nationalityType":
+      if (!form.employee.nationalityType)
+        errors.nationalityType = "نوع الجنسية مطلوب";
+      else delete errors.nationalityType;
+
+      // إذا تغيرت الجنسية لغير سعودي، نتحقق من تاريخ الإقامة فوراً
+      if (
+        form.employee.nationalityType === "non_saudi" &&
+        !form.employee.iqamaExpiryDate
+      ) {
+        errors.iqamaExpiryDate = "تاريخ انتهاء الهوية مطلوب لغير السعوديين";
+      } else if (form.employee.nationalityType !== "non_saudi") {
+        delete errors.iqamaExpiryDate;
+      }
+      break;
+    case "iqamaExpiryDate":
+      if (
+        form.employee.nationalityType === "non_saudi" &&
+        !form.employee.iqamaExpiryDate
+      ) {
+        errors.iqamaExpiryDate = "تاريخ انتهاء الهوية مطلوب لغير السعوديين";
+      } else delete errors.iqamaExpiryDate;
+      break;
+    case "jobTitle":
+      if (!form.employee.jobTitle.trim())
+        errors.jobTitle = "المسمى الوظيفي مطلوب";
+      else delete errors.jobTitle;
+      break;
+    case "phone":
+      if (!form.employee.phone || form.employee.phone.length !== 10) {
+        errors.phone = "رقم الهاتف مطلوب ويجب أن يكون 10 أرقام";
+      } else delete errors.phone;
+      break;
+    case "status":
+      if (!form.employee.status) errors.status = "الحالة الوظيفية مطلوبة";
+      else delete errors.status;
+      break;
+    case "departmentId":
+      if (form.departmentMode === "existing" && !form.employee.departmentId) {
+        errors.departmentId = "يرجى اختيار قسم";
+      } else delete errors.departmentId;
+      break;
+    case "departmentName":
+      if (form.departmentMode === "new" && !form.newDepartment.name.trim()) {
+        errors.departmentName = "اسم القسم مطلوب";
+      } else delete errors.departmentName;
+      break;
+    case "shiftId":
+      if (form.shiftMode === "existing" && !form.employee.shiftId) {
+        errors.shiftId = "يرجى اختيار وقت دوام";
+      } else delete errors.shiftId;
+      break;
+    case "shiftName":
+      if (form.shiftMode === "new" && !form.newShift.name.trim()) {
+        errors.shiftName = "اسم اوقات الدوام مطلوب";
+      } else delete errors.shiftName;
+      break;
+    case "shiftStartTime":
+      if (form.shiftMode === "new" && !form.newShift.startTime) {
+        errors.shiftStartTime = "وقت بداية الدوام مطلوب";
+      } else delete errors.shiftStartTime;
+      break;
+    case "shiftEndTime":
+      if (form.shiftMode === "new" && !form.newShift.endTime) {
+        errors.shiftEndTime = "وقت نهاية الدوام مطلوب";
+      } else delete errors.shiftEndTime;
+      break;
+
+    // User Fields
+    case "username":
+      if (!form.user.username.trim()) errors.username = "اسم المستخدم مطلوب";
+      else delete errors.username;
+      break;
+    case "email":
+      if (!form.user.email || !/\S+@\S+\.\S+/.test(form.user.email)) {
+        errors.email = "بريد إلكتروني غير صالح";
+      } else delete errors.email;
+      break;
+    case "password":
+      if (!form.user.password || form.user.password.length < 8) {
+        errors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
+      } else delete errors.password;
+      break;
+    case "roleId":
+      if (form.roleMode === "existing" && !form.user.roleId) {
+        errors.roleId = "يرجى اختيار دور";
+      } else delete errors.roleId;
+      break;
+    case "roleName":
+      if (form.roleMode === "new" && !form.user.roleName.trim()) {
+        errors.roleName = "اسم الدور الجديد مطلوب";
+      } else delete errors.roleName;
+      break;
+
+    // Contract Fields
+    case "contractType":
+      if (!form.contract.contractType)
+        errors.contractType = "يرجى اختيار نوع العقد";
+      else delete errors.contractType;
+      break;
+    case "startDate":
+      if (!form.contract.startDate)
+        errors.startDate = "تاريخ بداية العقد مطلوب";
+      else delete errors.startDate;
+      break;
+    case "contractDurationMonths":
+      if (
+        !form.contract.contractDurationMonths ||
+        form.contract.contractDurationMonths < 1
+      ) {
+        errors.contractDurationMonths =
+          "مدة العقد مطلوبة ويجب أن تكون أكبر من 0";
+      } else delete errors.contractDurationMonths;
+      break;
+    case "annualLeaveDays":
+      if (
+        form.contract.annualLeaveDays === undefined ||
+        form.contract.annualLeaveDays < 0
+      ) {
+        errors.annualLeaveDays = "أيام الإجازة مطلوبة";
+      } else delete errors.annualLeaveDays;
+      break;
+    case "medicalInsurance":
+      if (!form.contract.medicalInsurance)
+        errors.medicalInsurance = "يرجى تحديد حالة التأمين الطبي";
+      else delete errors.medicalInsurance;
+      break;
+    case "ticketType":
+      if (!form.contract.ticketType)
+        errors.ticketType = "يرجى تحديد حالة التذكرة";
+      else delete errors.ticketType;
+      break;
+    case "probationPeriod":
+      if (!form.contract.probationPeriod)
+        errors.probationPeriod = "يرجى تحديد فترة التجربة";
+      else delete errors.probationPeriod;
+      break;
+    case "contractNationality":
+      if (
+        form.employee.nationalityType === "non_saudi" &&
+        !form.contract.nationality
+      ) {
+        errors.contractNationality = "يرجى تحديد جنسية الموظف في العقد";
+      } else delete errors.contractNationality;
+      break;
+
+    // Salary Fields
+    case "basicSalary":
+      if (!form.salary.basicSalary || form.salary.basicSalary <= 0) {
+        errors.basicSalary = "الراتب الأساسي مطلوب ويجب أن يكون أكبر من صفر";
+      } else delete errors.basicSalary;
+      break;
+    case "housingAllowance":
+      if (
+        form.salary.housingAllowance === undefined ||
+        form.salary.housingAllowance < 0
+      ) {
+        errors.housingAllowance = "بدل السكن مطلوب";
+      } else delete errors.housingAllowance;
+      break;
+    case "transportAllowance":
+      if (
+        form.salary.transportAllowance === undefined ||
+        form.salary.transportAllowance < 0
+      ) {
+        errors.transportAllowance = "بدل النقل مطلوب";
+      } else delete errors.transportAllowance;
+      break;
+    case "otherAllowances":
+      if (
+        form.salary.otherAllowances === undefined ||
+        form.salary.otherAllowances < 0
+      ) {
+        errors.otherAllowances = "البدلات الأخرى مطلوبة";
+      } else delete errors.otherAllowances;
+      break;
+  }
 };
 
-const validateField = (field: string) => {
-  validateCurrentTab(true);
+/**
+ * ✅ دالة التحقق من المؤهلات بشكل منفصل
+ */
+const validateEducationFields = () => {
+  if (showEducationForm.value && form.educations.length > 0) {
+    const invalidEdu = form.educations.some(
+      (e) => !e.degree || !e.issuingAuthority,
+    );
+    showEducationErrors.value = invalidEdu;
+  } else {
+    showEducationErrors.value = false;
+  }
+};
+
+/**
+ * ✅ دالة التحقق الشاملة: تمسح الأخطاء وتفحص كل شيء
+ * تستخدم فقط عند الضغط على زر "التالي" أو "إنشاء الموظف"
+ */
+const clearErrors = () => {
+  Object.keys(errors).forEach((k) => delete errors[k]);
 };
 
 const validateCurrentTab = (silent: boolean = false): boolean => {
@@ -1868,7 +2039,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       errors.status = "الحالة الوظيفية مطلوبة";
       isValid = false;
     }
-
     if (form.shiftMode === "existing" && !form.employee.shiftId) {
       errors.shiftId = "يرجى اختيار وقت دوام";
       isValid = false;
@@ -1887,22 +2057,8 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
         isValid = false;
       }
     }
-
-    if (showEducationForm.value && form.educations.length > 0) {
-      const invalidEdu = form.educations.some(
-        (e) => !e.degree || !e.issuingAuthority,
-      );
-      if (invalidEdu) {
-        showEducationErrors.value = true;
-        if (!silent)
-          toast.error(
-            "يرجى إكمال بيانات المؤهلات المضافة (النوع وجهة الإصدار)",
-          );
-        isValid = false;
-      } else {
-        showEducationErrors.value = false;
-      }
-    }
+    validateEducationFields();
+    if (showEducationErrors.value) isValid = false;
   }
 
   if (activeTab.value === "user" && form.withUser) {
@@ -1918,7 +2074,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       errors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
       isValid = false;
     }
-
     if (form.roleMode === "existing" && !form.user.roleId) {
       errors.roleId = "يرجى اختيار دور";
       isValid = false;
@@ -1942,7 +2097,7 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       !form.contract.contractDurationMonths ||
       form.contract.contractDurationMonths < 1
     ) {
-      errors.contractDurationMonths = "مدة العقد مطلوبة ويجب أن تكون أكبر من 0";
+      errors.contractDurationMonths = "مدة العقد مطلوبة";
       isValid = false;
     }
     if (
@@ -1953,30 +2108,29 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       isValid = false;
     }
     if (!form.contract.medicalInsurance) {
-      errors.medicalInsurance = "يرجى تحديد حالة التأمين الطبي";
+      errors.medicalInsurance = "يرجى تحديد التأمين الطبي";
       isValid = false;
     }
     if (!form.contract.ticketType) {
-      errors.ticketType = "يرجى تحديد حالة التذكرة";
+      errors.ticketType = "يرجى تحديد التذكرة";
       isValid = false;
     }
     if (!form.contract.probationPeriod) {
       errors.probationPeriod = "يرجى تحديد فترة التجربة";
       isValid = false;
     }
-
     if (
       form.employee.nationalityType === "non_saudi" &&
       !form.contract.nationality
     ) {
-      errors.contractNationality = "يرجى تحديد جنسية الموظف في العقد";
+      errors.contractNationality = "يرجى تحديد الجنسية في العقد";
       isValid = false;
     }
   }
 
   if (activeTab.value === "salary" && form.withSalary) {
     if (!form.salary.basicSalary || form.salary.basicSalary <= 0) {
-      errors.basicSalary = "الراتب الأساسي مطلوب ويجب أن يكون أكبر من صفر";
+      errors.basicSalary = "الراتب الأساسي مطلوب";
       isValid = false;
     }
     if (
@@ -2015,7 +2169,7 @@ const generatePassword = () => {
   showPassword.value = true;
 };
 
-// ── Education Handlers ────────────────────────────────────────────────────────
+// ── Education Handlers ───────────────────────────────────────────────────────
 const addEducationRow = () => {
   form.educations.push({
     degree: "",
@@ -2033,38 +2187,31 @@ const removeEducationRow = (index: number) => {
 // ── Close Modal & Reset Form ────────────────────────────────────────────────
 const handleClose = () => {
   emit("update:modelValue", false);
-
   setTimeout(() => {
     activeTab.value = "employee";
     doneTabs.value.clear();
     clearErrors();
     showEducationForm.value = false;
     showEducationErrors.value = false;
-
     tempNationalIdFile.value = "";
     tempContractFiles.value = [];
-
     Object.assign(form, {
       withUser: false,
       withContract: false,
       withSalary: false,
       roleMode: "none",
       shiftMode: "none",
-      departmentMode: "existing", // ✅ إعادة تعيين
+      departmentMode: "existing",
       employee: {
         fullName: "",
-        nationalityType: "" as
-          | "saudi"
-          | "non_saudi"
-          | "outside_sponsorship"
-          | "",
+        nationalityType: "" as any,
         iqamaExpiryDate: "",
         nationalId: "",
         nationalIdCardPath: "",
         phone: "",
         jobTitle: "",
         departmentId: "",
-        status: "active" as "active" | "inactive" | "terminated",
+        status: "active",
         shiftId: "",
       },
       user: {
@@ -2073,17 +2220,10 @@ const handleClose = () => {
         password: "",
         roleId: "",
         roleName: "",
-        permissionIds: [] as string[],
+        permissionIds: [],
       },
-      newShift: {
-        name: "",
-        startTime: "",
-        endTime: "",
-        gracePeriod: 30,
-      },
-      newDepartment: {
-        name: "",
-      },
+      newShift: { name: "", startTime: "", endTime: "", gracePeriod: 30 },
+      newDepartment: { name: "" },
       contract: {
         contractType: "",
         startDate: new Date().toISOString().split("T")[0],
@@ -2095,7 +2235,7 @@ const handleClose = () => {
         medicalInsurance: "بدون",
         nationality: "",
         notes: "",
-        attachmentPaths: [] as string[],
+        attachmentPaths: [],
       },
       salary: {
         basicSalary: 0,
@@ -2111,47 +2251,38 @@ const handleClose = () => {
 // ── Submit Onboarding ───────────────────────────────────────────────────────
 const handleSubmit = async () => {
   clearErrors();
-
   let allValid = true;
 
+  // تحقق شامل قبل الإرسال
   if (
     !form.employee.fullName.trim() ||
     !form.employee.nationalityType ||
     !form.employee.jobTitle ||
     !form.employee.phone ||
     !form.employee.status
-  ) {
+  )
     allValid = false;
-  }
   if (
     form.employee.nationalityType === "non_saudi" &&
     !form.employee.iqamaExpiryDate
-  ) {
+  )
     allValid = false;
-  }
-  if (form.departmentMode === "existing" && !form.employee.departmentId) {
+  if (form.departmentMode === "existing" && !form.employee.departmentId)
     allValid = false;
-  }
-  if (form.departmentMode === "new" && !form.newDepartment.name.trim()) {
+  if (form.departmentMode === "new" && !form.newDepartment.name.trim())
     allValid = false;
-  }
   if (showEducationForm.value && form.educations.length > 0) {
     if (form.educations.some((e) => !e.degree || !e.issuingAuthority))
       allValid = false;
   }
-
-  if (form.shiftMode === "existing" && !form.employee.shiftId) {
-    allValid = false;
-  }
+  if (form.shiftMode === "existing" && !form.employee.shiftId) allValid = false;
   if (
     form.shiftMode === "new" &&
     (!form.newShift.name.trim() ||
       !form.newShift.startTime ||
       !form.newShift.endTime)
-  ) {
+  )
     allValid = false;
-  }
-
   if (form.withUser) {
     if (
       !form.user.username ||
@@ -2162,7 +2293,6 @@ const handleSubmit = async () => {
     if (form.roleMode === "existing" && !form.user.roleId) allValid = false;
     if (form.roleMode === "new" && !form.user.roleName) allValid = false;
   }
-
   if (form.withContract) {
     if (
       !form.contract.contractType ||
@@ -2171,16 +2301,14 @@ const handleSubmit = async () => {
       !form.contract.medicalInsurance ||
       !form.contract.ticketType ||
       !form.contract.probationPeriod
-    ) {
+    )
       allValid = false;
-    }
     if (
       form.employee.nationalityType === "non_saudi" &&
       !form.contract.nationality
     )
       allValid = false;
   }
-
   if (form.withSalary) {
     if (!form.salary.basicSalary || form.salary.basicSalary <= 0)
       allValid = false;
@@ -2209,7 +2337,6 @@ const handleSubmit = async () => {
   }
 
   submitting.value = true;
-
   try {
     const payload: any = {
       fullName: form.employee.fullName,
@@ -2240,7 +2367,6 @@ const handleSubmit = async () => {
         }));
     }
 
-    // ✅ ربط اوقات الدوام
     if (form.shiftMode === "existing" && form.employee.shiftId) {
       payload.shiftId = form.employee.shiftId;
     } else if (form.shiftMode === "new") {
@@ -2253,7 +2379,6 @@ const handleSubmit = async () => {
       payload.shiftId = createdShift.id;
     }
 
-    // ✅ ربط القسم — إما قسم موجود، أو إنشاء قسم جديد أولاً ثم استخدام الـ id بتاعه
     if (form.departmentMode === "existing" && form.employee.departmentId) {
       payload.departmentId = form.employee.departmentId;
     } else if (
@@ -2272,14 +2397,12 @@ const handleSubmit = async () => {
         email: form.user.email,
         password: form.user.password,
       };
-
       if (form.roleMode === "existing" && form.user.roleId) {
         payload.user.roleId = form.user.roleId;
       } else if (form.roleMode === "new" && form.user.roleName) {
         payload.user.roleName = form.user.roleName;
-        if (form.user.permissionIds.length) {
+        if (form.user.permissionIds.length)
           payload.user.permissionIds = form.user.permissionIds;
-        }
       }
     }
 
@@ -2315,7 +2438,6 @@ const handleSubmit = async () => {
     employeesStore.employees.unshift(res.data.employee);
     toast.success(`تم إنشاء ملف الموظف "${form.employee.fullName}" بنجاح ✅`);
     emit("created", res.data);
-
     handleClose();
   } catch (e: any) {
     toast.error(e.message || "فشل في إنشاء الموظف");
@@ -2324,24 +2446,20 @@ const handleSubmit = async () => {
   }
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ─ Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
   (n || 0).toLocaleString("ar-SA", { maximumFractionDigits: 0 });
-
 const nationalityLabel = (type: string) => {
   const map: Record<string, string> = {
-    saudi: "🇸 سعودي",
+    saudi: "🇸🇦 سعودي",
     non_saudi: "🌍 غير سعودي",
     outside_sponsorship: "📄 خارج الكفالة",
   };
   return map[type] ?? "—";
 };
-
 const calculateContractDates = () => {
   if (!form.contract.startDate) return;
-
   const startDate = new Date(form.contract.startDate);
-
   if (
     form.contract.contractDurationMonths &&
     form.contract.contractDurationMonths > 0
@@ -2359,7 +2477,6 @@ const calculateContractDates = () => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ══ Overlay / Panel ══════════════════════════════════════════════════════════
 .ob-overlay {
   position: fixed;
   inset: 0;
@@ -2371,7 +2488,6 @@ const calculateContractDates = () => {
   justify-content: center;
   padding: $space-4;
 }
-
 .ob-panel {
   background: $stb-surface;
   border: 1px solid $stb-border;
@@ -2384,36 +2500,29 @@ const calculateContractDates = () => {
   overflow: hidden;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
 }
-
-// ══ Header ═══════════════════════════════════════════════════════════════════
 .ob-header {
   @include flex(row, center, space-between);
   padding: $space-4 $space-5;
   border-bottom: 1px solid $stb-border;
   background: $stb-surface-2;
-
   &__title {
     @include flex(row, center, flex-start, $space-4);
-
     h2 {
       font-size: $font-size-lg;
       font-weight: 700;
       margin: 0;
     }
-
     p {
       font-size: $font-size-xs;
       color: $stb-text-muted;
       margin: 0;
     }
   }
-
   &__icon {
     color: $stb-accent;
     flex-shrink: 0;
   }
 }
-
 .ob-close {
   @include flex(row, center, center);
   width: 36px;
@@ -2424,14 +2533,11 @@ const calculateContractDates = () => {
   color: $stb-text-muted;
   cursor: pointer;
   transition: all $transition-fast;
-
   &:hover {
     background: $stb-surface-3;
     color: $stb-text-primary;
   }
 }
-
-// ══ Tabs ══════════════════════════════════════════════════════════════════════
 .ob-tabs {
   display: flex;
   padding: 0 $space-5;
@@ -2439,12 +2545,10 @@ const calculateContractDates = () => {
   background: $stb-surface-2;
   gap: 2px;
   overflow-x: auto;
-
   &::-webkit-scrollbar {
     display: none;
   }
 }
-
 .ob-tab {
   @include flex(row, center, center, $space-2);
   padding: $space-4 $space-4;
@@ -2459,27 +2563,22 @@ const calculateContractDates = () => {
   white-space: nowrap;
   transition: all $transition-fast;
   position: relative;
-
   &:hover:not(.ob-tab--active) {
     color: $stb-text-secondary;
     background: rgba($stb-accent, 0.04);
   }
-
   &--active {
     color: $stb-accent;
     border-bottom-color: $stb-accent;
     background: rgba($stb-accent, 0.06);
   }
-
   &--done:not(.ob-tab--active) {
     color: $stb-success;
   }
-
   &__icon {
     @include flex(row, center, center);
     opacity: 0.7;
   }
-
   &__badge {
     font-size: 10px;
     padding: 1px 5px;
@@ -2488,35 +2587,28 @@ const calculateContractDates = () => {
     color: $stb-accent;
     font-weight: 600;
   }
-
   &__check {
     color: $stb-success;
     flex-shrink: 0;
   }
 }
-
-// ══ Body ═════════════════════════════════════════════════════════════════════
 .ob-body {
   flex: 1;
   overflow-y: auto;
   padding: $space-5;
-
   &::-webkit-scrollbar {
     width: 4px;
   }
-
   &::-webkit-scrollbar-thumb {
     background: $stb-border;
     border-radius: 4px;
   }
 }
-
 .ob-section {
   display: flex;
   flex-direction: column;
   gap: $space-4;
 }
-
 .section-title {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-sm;
@@ -2528,109 +2620,88 @@ const calculateContractDates = () => {
   border-bottom: 1px solid $stb-border;
   margin-bottom: $space-2;
 }
-
-// ══ Form Grid ════════════════════════════════════════════════════════════════
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-4;
-
   @include respond-to("md") {
     grid-template-columns: 1fr;
   }
 }
-
 .form-group {
   display: flex;
   flex-direction: column;
   gap: $space-1;
-
   &--full {
     grid-column: span 2;
-
     @include respond-to("md") {
       grid-column: span 1;
     }
   }
 }
-
 .form-label {
   font-size: $font-size-sm;
   font-weight: 600;
   color: $stb-text-secondary;
-
   &.required::after {
     content: " *";
     color: $stb-danger;
   }
 }
-
 .label-optional {
   font-size: $font-size-xs;
   color: $stb-text-muted;
   font-weight: 400;
 }
-
 .label-count {
   font-size: $font-size-xs;
   color: $stb-accent;
   font-weight: 400;
 }
-
 .form-error {
   font-size: $font-size-xs;
   color: $stb-danger;
 }
-
 .form-input--error,
 .form-select--error {
   border-color: $stb-danger !important;
 }
-
-// ══ Toggle Card ═══════════════════════════════════════════════════════════════
 .toggle-card {
   @include flex(row, center, space-between);
   padding: $space-4;
   background: $stb-surface-2;
   border: 1px solid $stb-border;
   border-radius: $radius-lg;
-
   &__info {
     @include flex(row, center, flex-start, $space-3);
-
     strong {
       display: block;
       font-size: $font-size-sm;
       font-weight: 700;
     }
-
     p {
       font-size: $font-size-xs;
       color: $stb-text-muted;
       margin: 0;
     }
   }
-
   &__icon {
     color: $stb-accent;
     flex-shrink: 0;
   }
 }
-
 .toggle-switch {
   position: relative;
   display: inline-block;
   width: 44px;
   height: 24px;
   cursor: pointer;
-
   input {
     opacity: 0;
     width: 0;
     height: 0;
     position: absolute;
   }
-
   &__track {
     position: absolute;
     inset: 0;
@@ -2638,7 +2709,6 @@ const calculateContractDates = () => {
     border-radius: 24px;
     border: 1px solid $stb-border;
     transition: all $transition-base;
-
     &::before {
       content: "";
       position: absolute;
@@ -2651,23 +2721,18 @@ const calculateContractDates = () => {
       transition: all $transition-base;
     }
   }
-
   input:checked + .toggle-switch__track {
     background: $stb-accent;
     border-color: $stb-accent;
-
     &::before {
       background: #fff;
       right: calc(100% - 20px);
     }
   }
 }
-
-// ══ Role Toggle ═══════════════════════════════════════════════════════════════
 .role-toggle {
   @include flex(row, center, flex-start, $space-2);
   flex-wrap: wrap;
-
   &__btn {
     @include flex(row, center, center, $space-1);
     padding: $space-2 $space-3;
@@ -2679,12 +2744,10 @@ const calculateContractDates = () => {
     font-weight: 600;
     cursor: pointer;
     transition: all $transition-fast;
-
     &:hover {
       border-color: $stb-accent;
       color: $stb-accent;
     }
-
     &--active {
       background: rgba($stb-accent, 0.12);
       border-color: $stb-accent;
@@ -2692,33 +2755,27 @@ const calculateContractDates = () => {
     }
   }
 }
-
 .shift-section {
   padding-top: $space-2;
 }
-
-// ══ Role Preview ══════════════════════════════════════════════════════════════
 .role-preview {
   margin-top: $space-3;
   padding: $space-3;
   background: rgba($stb-accent, 0.05);
   border: 1px solid rgba($stb-accent, 0.2);
   border-radius: $radius-md;
-
   &__title {
     font-size: $font-size-xs;
     color: $stb-text-muted;
     margin-bottom: $space-2;
     font-weight: 600;
   }
-
   &__tags {
     display: flex;
     flex-wrap: wrap;
     gap: $space-2;
   }
 }
-
 .perm-tag {
   font-size: 11px;
   padding: 2px 8px;
@@ -2730,14 +2787,11 @@ const calculateContractDates = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 120px;
-
   &--more {
     background: rgba($stb-text-muted, 0.1);
     color: $stb-text-muted;
   }
 }
-
-// ══ Permissions Grid ══════════════════════════════════════════════════════════
 .perm-search {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;
@@ -2746,7 +2800,6 @@ const calculateContractDates = () => {
   border-radius: $radius-md;
   margin-bottom: $space-3;
   color: $stb-text-muted;
-
   input {
     flex: 1;
     background: transparent;
@@ -2756,7 +2809,6 @@ const calculateContractDates = () => {
     font-size: $font-size-sm;
   }
 }
-
 .perm-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -2764,17 +2816,14 @@ const calculateContractDates = () => {
   max-height: 220px;
   overflow-y: auto;
   padding: $space-1;
-
   &::-webkit-scrollbar {
     width: 4px;
   }
-
   &::-webkit-scrollbar-thumb {
     background: $stb-border;
     border-radius: 4px;
   }
 }
-
 .perm-checkbox {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;
@@ -2786,37 +2835,31 @@ const calculateContractDates = () => {
   transition: all $transition-fast;
   color: $stb-text-secondary;
   align-items: flex-start;
-
   input {
     accent-color: $stb-accent;
     flex-shrink: 0;
     margin-top: 3px;
   }
-
   &--checked {
     background: rgba($stb-accent, 0.08);
     border-color: rgba($stb-accent, 0.4);
     color: $stb-accent;
   }
-
   &:hover:not(.perm-checkbox--checked) {
     border-color: $stb-accent;
   }
 }
-
 .perm-label-content {
   display: flex;
   flex-direction: column;
   gap: 2px;
   line-height: 1.2;
 }
-
 .perm-name-ar {
   font-weight: 600;
   color: $stb-text-primary;
   font-size: $font-size-xs;
 }
-
 .perm-tech-name {
   font-family: monospace;
   font-size: 10px;
@@ -2825,19 +2868,15 @@ const calculateContractDates = () => {
   direction: ltr;
   text-align: right;
 }
-
-// ══ Number Stepper ════════════════════════════════════════════════════════════
 .number-stepper {
   @include flex(row, stretch, flex-start);
   gap: 0;
-
   input {
     text-align: center;
     border-radius: 0;
     flex: 1;
     min-width: 0;
   }
-
   button {
     @include flex(row, center, center);
     width: 38px;
@@ -2847,15 +2886,12 @@ const calculateContractDates = () => {
     color: $stb-text-secondary;
     cursor: pointer;
     transition: all $transition-fast;
-
     &:first-child {
       border-radius: 0 $radius-md $radius-md 0;
     }
-
     &:last-child {
       border-radius: $radius-md 0 0 $radius-md;
     }
-
     &:hover {
       background: $stb-accent;
       color: #fff;
@@ -2863,16 +2899,12 @@ const calculateContractDates = () => {
     }
   }
 }
-
-// ══ Input with suffix ════════════════════════════════════════════════════════
 .input-with-suffix {
   position: relative;
-
   input {
     padding-left: 44px;
   }
 }
-
 .input-suffix {
   position: absolute;
   left: 12px;
@@ -2883,17 +2915,14 @@ const calculateContractDates = () => {
   color: $stb-text-muted;
   pointer-events: none;
 }
-
 .input-with-action {
   display: flex;
   gap: $space-2;
-
   input {
     flex: 1;
     min-width: 0;
   }
 }
-
 .input-action-btn {
   @include flex(row, center, center);
   width: 38px;
@@ -2905,21 +2934,17 @@ const calculateContractDates = () => {
   color: $stb-text-muted;
   cursor: pointer;
   transition: all $transition-fast;
-
   &:hover {
     border-color: $stb-accent;
     color: $stb-accent;
     background: rgba($stb-accent, 0.08);
   }
 }
-
-// ══ Salary Summary ════════════════════════════════════════════════════════════
 .salary-summary {
   margin-top: $space-4;
   border: 1px solid $stb-border;
   border-radius: $radius-lg;
   overflow: hidden;
-
   &__title {
     padding: $space-3 $space-4;
     background: $stb-surface-2;
@@ -2928,18 +2953,15 @@ const calculateContractDates = () => {
     color: $stb-text-secondary;
     border-bottom: 1px solid $stb-border;
   }
-
   &__rows {
     padding: $space-2 0;
   }
 }
-
 .salary-row {
   @include flex(row, center, space-between);
   padding: $space-2 $space-4;
   font-size: $font-size-sm;
   color: $stb-text-secondary;
-
   &--total {
     border-top: 1px solid $stb-border;
     margin-top: $space-2;
@@ -2947,36 +2969,28 @@ const calculateContractDates = () => {
     font-weight: 700;
     color: $stb-text-primary;
     font-size: $font-size-base;
-
     strong {
       color: $stb-accent;
     }
   }
 }
-
-// ══ Skip Note ════════════════════════════════════════════════════════════════
 .skip-note {
   @include flex(column, center, center, $space-3);
   padding: $space-8 $space-4;
   text-align: center;
   color: $stb-text-muted;
-
   &__icon {
     opacity: 0.3;
   }
-
   p {
     font-size: $font-size-sm;
     max-width: 300px;
     line-height: 1.6;
-
     strong {
       color: $stb-text-secondary;
     }
   }
 }
-
-// ══ Info Note ════════════════════════════════════════════════════════════════
 .info-note {
   @include flex(row, flex-start, flex-start, $space-2);
   padding: $space-3;
@@ -2985,30 +2999,24 @@ const calculateContractDates = () => {
   border-radius: $radius-md;
   font-size: $font-size-sm;
   color: $stb-text-secondary;
-
   svg {
     flex-shrink: 0;
     color: $stb-accent;
     margin-top: 1px;
   }
 }
-
-// ══ Review Cards ══════════════════════════════════════════════════════════════
 .review-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-4;
-
   @include respond-to("md") {
     grid-template-columns: 1fr;
   }
 }
-
 .review-card {
   border: 1px solid $stb-border;
   border-radius: $radius-lg;
   overflow: hidden;
-
   &__header {
     @include flex(row, center, flex-start, $space-2);
     padding: $space-3 $space-4;
@@ -3017,17 +3025,14 @@ const calculateContractDates = () => {
     font-size: $font-size-sm;
     font-weight: 700;
     color: $stb-text-secondary;
-
     svg {
       color: $stb-accent;
     }
-
     span {
       flex: 1;
     }
   }
 }
-
 .review-edit-btn {
   @include flex(row, center, center, $space-1);
   padding: 2px $space-2;
@@ -3038,65 +3043,52 @@ const calculateContractDates = () => {
   font-size: $font-size-xs;
   cursor: pointer;
   transition: all $transition-fast;
-
   &:hover {
     border-color: $stb-accent;
     color: $stb-accent;
   }
 }
-
 .review-rows {
   padding: $space-3 0;
 }
-
 .review-row {
   @include flex(row, center, space-between);
   padding: $space-2 $space-4;
   font-size: $font-size-sm;
-
   .review-col {
     display: flex;
     flex-direction: column;
   }
-
   span {
     color: $stb-text-muted;
   }
-
   strong {
     color: $stb-text-primary;
     font-weight: 600;
   }
-
   &--total strong {
     color: $stb-accent;
   }
 }
-
 .text-muted {
   font-size: 10px;
   color: $stb-text-muted;
 }
-
 .review-skip {
   padding: $space-4;
   text-align: center;
   font-size: $font-size-sm;
   color: $stb-text-muted;
 }
-
-// ══ Footer ═══════════════════════════════════════════════════════════════════
 .ob-footer {
   @include flex(row, center, space-between);
   padding: $space-4 $space-5;
   border-top: 1px solid $stb-border;
   background: $stb-surface-2;
 }
-
 .ob-footer__steps {
   @include flex(row, center, center, $space-2);
 }
-
 .step-dot {
   width: 8px;
   height: 8px;
@@ -3104,18 +3096,15 @@ const calculateContractDates = () => {
   background: $stb-border;
   cursor: pointer;
   transition: all $transition-fast;
-
   &--active {
     background: $stb-accent;
     width: 20px;
     border-radius: 4px;
   }
-
   &--done {
     background: $stb-success;
   }
 }
-
 .btn--success {
   @include flex(row, center, center, $space-2);
   background: $stb-success;
@@ -3127,65 +3116,51 @@ const calculateContractDates = () => {
   font-size: $font-size-sm;
   cursor: pointer;
   transition: all $transition-fast;
-
   &:hover:not(:disabled) {
     opacity: 0.9;
     transform: translateY(-1px);
   }
-
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 }
-
 .mt-3 {
   margin-top: $space-3;
 }
 .mt-4 {
   margin-top: $space-4;
 }
-
-// ══ User Form Wrapper ════════════════════════════════════════════════════════
 .user-form-wrapper {
   padding-top: $space-4;
   border-top: 1px solid $stb-border;
   margin-top: $space-4;
 }
-
-// ══ Animations ═══════════════════════════════════════════════════════════════
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.2s ease;
-
   .ob-panel {
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
-
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
-
   .ob-panel {
     transform: scale(0.95) translateY(16px);
   }
 }
-
 .slide-down-enter-active,
 .slide-down-leave-active {
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
 }
-
 .slide-down-enter-from,
 .slide-down-leave-to {
   opacity: 0;
   transform: translateY(-8px);
 }
-
-// ══ Textarea ═════════════════════════════════════════════════════════════════
 .form-textarea {
   width: 100%;
   background: $stb-surface-3;
@@ -3197,14 +3172,11 @@ const calculateContractDates = () => {
   resize: vertical;
   font-family: inherit;
   transition: border-color $transition-fast;
-
   &:focus {
     outline: none;
     border-color: $stb-accent;
   }
 }
-
-/* --- Education Section Styles --- */
 .education-toggle-section {
   .toggle-card {
     @include flex(row, center, space-between);
@@ -3212,43 +3184,36 @@ const calculateContractDates = () => {
     background: $stb-surface-2;
     border: 1px solid $stb-border;
     border-radius: $radius-lg;
-
     &__info {
       @include flex(row, center, flex-start, $space-3);
-
       strong {
         display: block;
         font-size: $font-size-sm;
         font-weight: 700;
       }
-
       p {
         font-size: $font-size-xs;
         color: $stb-text-muted;
         margin: 0;
       }
     }
-
     &__icon {
       color: $stb-accent;
       flex-shrink: 0;
     }
   }
-
   .toggle-switch {
     position: relative;
     display: inline-block;
     width: 44px;
     height: 24px;
     cursor: pointer;
-
     input {
       opacity: 0;
       width: 0;
       height: 0;
       position: absolute;
     }
-
     &__track {
       position: absolute;
       inset: 0;
@@ -3256,7 +3221,6 @@ const calculateContractDates = () => {
       border-radius: 24px;
       border: 1px solid $stb-border;
       transition: all $transition-base;
-
       &::before {
         content: "";
         position: absolute;
@@ -3269,11 +3233,9 @@ const calculateContractDates = () => {
         transition: all $transition-base;
       }
     }
-
     input:checked + .toggle-switch__track {
       background: $stb-accent;
       border-color: $stb-accent;
-
       &::before {
         background: #fff;
         right: calc(100% - 20px);
@@ -3281,25 +3243,21 @@ const calculateContractDates = () => {
     }
   }
 }
-
 .add-edu-header {
   margin-bottom: $space-3;
   display: flex;
   justify-content: flex-end;
 }
-
 .btn--dashed {
   border-style: dashed;
   border-color: $stb-border;
   color: $stb-text-secondary;
-
   &:hover {
     border-color: $stb-accent;
     color: $stb-accent;
     background: rgba($stb-accent, 0.05);
   }
 }
-
 .education-item-card {
   background: $stb-surface-2;
   border: 1px solid $stb-border;
@@ -3307,31 +3265,26 @@ const calculateContractDates = () => {
   padding: $space-4;
   margin-bottom: $space-3;
   position: relative;
-
   .edu-item-header {
     @include flex(row, center, space-between);
     margin-bottom: $space-3;
     padding-bottom: $space-2;
     border-bottom: 1px solid $stb-border;
-
     .edu-index {
       font-size: $font-size-sm;
       font-weight: 700;
       color: $stb-accent;
     }
   }
-
   .edu-item-fields {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: $space-3;
-
     @include respond-to("md") {
       grid-template-columns: 1fr;
     }
   }
 }
-
 .empty-mini {
   text-align: center;
   padding: $space-4;
