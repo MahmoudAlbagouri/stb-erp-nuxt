@@ -160,21 +160,7 @@
                   }}</span>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label required">القسم</label>
-                  <input
-                    v-model="form.employee.department"
-                    type="text"
-                    class="form-input"
-                    :class="{ 'form-input--error': errors.department }"
-                    placeholder="تقنية المعلومات"
-                    @blur="validateField('department')"
-                  />
-                  <span v-if="errors.department" class="form-error">{{
-                    errors.department
-                  }}</span>
-                </div>
-
+                <!-- ✅ حقل رقم الهاتف -->
                 <div class="form-group">
                   <label class="form-label required">رقم الهاتف</label>
                   <input
@@ -213,6 +199,81 @@
                   <span v-if="errors.status" class="form-error">{{
                     errors.status
                   }}</span>
+                </div>
+
+                <!-- ✅ قسم اختيار/إنشاء القسم — نفس فكرة اوقات الدوام -->
+                <div class="form-group form-group--full">
+                  <label class="form-label required">القسم</label>
+                  <div class="role-toggle">
+                    <button
+                      type="button"
+                      class="role-toggle__btn"
+                      :class="{
+                        'role-toggle__btn--active':
+                          form.departmentMode === 'existing',
+                      }"
+                      @click="form.departmentMode = 'existing'"
+                    >
+                      <ListChecks :size="15" />
+                      اختر قسم موجود
+                    </button>
+                    <button
+                      type="button"
+                      class="role-toggle__btn"
+                      :class="{
+                        'role-toggle__btn--active':
+                          form.departmentMode === 'new',
+                      }"
+                      @click="form.departmentMode = 'new'"
+                    >
+                      <Plus :size="15" />
+                      إنشاء قسم جديد
+                    </button>
+                  </div>
+
+                  <Transition name="slide-down">
+                    <div v-if="form.departmentMode === 'existing'" class="mt-3">
+                      <select
+                        v-model="form.employee.departmentId"
+                        class="form-select"
+                        :class="{ 'form-select--error': errors.departmentId }"
+                      >
+                        <option value="" disabled>اختر القسم...</option>
+                        <option
+                          v-for="dept in departmentsStore.departments"
+                          :key="dept.id"
+                          :value="dept.id"
+                        >
+                          {{ dept.name }}
+                        </option>
+                      </select>
+                      <span v-if="errors.departmentId" class="form-error">{{
+                        errors.departmentId
+                      }}</span>
+                      <small
+                        v-if="!departmentsStore.departments.length"
+                        class="form-hint"
+                      >
+                        لا توجد أقسام مسجلة بعد. اختر "إنشاء قسم جديد" بدلاً من
+                        ذلك.
+                      </small>
+                    </div>
+                  </Transition>
+
+                  <Transition name="slide-down">
+                    <div v-if="form.departmentMode === 'new'" class="mt-3">
+                      <input
+                        v-model="form.newDepartment.name"
+                        type="text"
+                        class="form-input"
+                        :class="{ 'form-input--error': errors.departmentName }"
+                        placeholder="مثال: تقنية المعلومات"
+                      />
+                      <span v-if="errors.departmentName" class="form-error">{{
+                        errors.departmentName
+                      }}</span>
+                    </div>
+                  </Transition>
                 </div>
               </div>
 
@@ -1242,6 +1303,10 @@
                       <strong>{{ form.employee.jobTitle }}</strong>
                     </div>
                     <div class="review-row">
+                      <span>القسم</span>
+                      <strong>{{ selectedDepartmentLabel }}</strong>
+                    </div>
+                    <div class="review-row">
                       <span>اوقات الدوام</span>
                       <strong>{{ selectedShiftLabel }}</strong>
                     </div>
@@ -1464,7 +1529,7 @@ import {
   WalletCards,
   GraduationCap,
   Trash2,
-  Clock, // ✅ أيقونة اوقات الدوام
+  Clock,
 } from "lucide-vue-next";
 
 // استيراد مكون الرفع
@@ -1473,7 +1538,8 @@ import StbUploader from "@/components/global/StbUploader.vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useRolesStore } from "@/stores/roles";
 import { usePermissionsStore } from "@/stores/permissions";
-import { useShiftsStore } from "@/stores/shifts"; // ✅ ستور الاوقات العمل
+import { useShiftsStore } from "@/stores/shifts";
+import { useDepartmentsStore } from "@/stores/departments"; // ✅ ستور الأقسام
 import { useToast } from "@/composables/useToast";
 import type { Education } from "@/types";
 
@@ -1487,7 +1553,8 @@ const emit = defineEmits<{
 const employeesStore = useEmployeesStore();
 const rolesStore = useRolesStore();
 const permissionsStore = usePermissionsStore();
-const shiftsStore = useShiftsStore(); // ✅
+const shiftsStore = useShiftsStore();
+const departmentsStore = useDepartmentsStore(); // ✅
 const toast = useToast();
 
 // ✅ قائمة الجنسيات
@@ -1536,7 +1603,6 @@ const goTo = (key: TabKey) => {
 
 const nextTab = () => {
   const idx = tabOrder.indexOf(activeTab.value);
-  // ✅ التحقق الصارم قبل الانتقال
   if (validateCurrentTab()) {
     doneTabs.value.add(activeTab.value);
     const nextKey = tabOrder[idx + 1];
@@ -1556,12 +1622,12 @@ const prevTab = () => {
 
 // ── Form State ────────────────────────────────────────────────────────────────
 const form = reactive({
-  // toggle flags
   withUser: false,
   withContract: false,
   withSalary: false,
   roleMode: "none" as "existing" | "new" | "none",
-  shiftMode: "none" as "existing" | "new" | "none", // ✅ نفس فكرة roleMode
+  shiftMode: "none" as "existing" | "new" | "none",
+  departmentMode: "existing" as "existing" | "new", // ✅ اختيار قسم موجود أو إنشاء جديد
 
   employee: {
     fullName: "",
@@ -1571,9 +1637,9 @@ const form = reactive({
     nationalIdCardPath: "",
     phone: "",
     jobTitle: "",
-    department: "",
+    departmentId: "", // ✅ يستخدم فقط لو departmentMode === 'existing'
     status: "active" as "active" | "inactive" | "terminated",
-    shiftId: "", // ✅ يستخدم فقط لو shiftMode === 'existing'
+    shiftId: "",
   },
 
   user: {
@@ -1585,7 +1651,6 @@ const form = reactive({
     permissionIds: [] as string[],
   },
 
-  // ✅ بيانات إنشاء وقت دوام جديد أثناء الـ onboarding
   newShift: {
     name: "",
     startTime: "",
@@ -1593,17 +1658,21 @@ const form = reactive({
     gracePeriod: 30,
   },
 
+  // ✅ بيانات إنشاء قسم جديد أثناء الـ onboarding
+  newDepartment: {
+    name: "",
+  },
+
   contract: {
     contractType: "" as string,
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
     annualLeaveDays: 30,
-    // ✅ تغيير من سنوات إلى شهور
     contractDurationMonths: 12,
     ticketType: "بدون" as string,
     probationPeriod: "بدون" as string,
-    medicalInsurance: "بدون" as string, // ✅ القيمة الافتراضية
-    nationality: "" as string, // ✅ الجنسية
+    medicalInsurance: "بدون" as string,
+    nationality: "" as string,
     notes: "",
     attachmentPaths: [] as string[],
   },
@@ -1615,23 +1684,20 @@ const form = reactive({
     otherAllowances: 0,
   },
 
-  // ✅ مصفوفة المؤهلات لدعم أكثر من مؤهل
   educations: [] as Education[],
 });
 
-const showEducationForm = ref(false); // ✅ Toggle لإظهار قسم المؤهلات
-const showEducationErrors = ref(false); // ✅ لإظهار أخطاء المؤهلات عند المحاولة
+const showEducationForm = ref(false);
+const showEducationErrors = ref(false);
 
 const errors = reactive<Record<string, string>>({});
 const submitting = ref(false);
 const showPassword = ref(false);
 const permSearch = ref("");
 
-// متغيرات مؤقتة لملفات الرفع
 const tempNationalIdFile = ref<string>("");
 const tempContractFiles = ref<string[]>([]);
 
-// ✅ Computed Properties لحل مشكلة نوع الـ Uploader
 const nationalIdModelValue = computed(() => {
   return tempNationalIdFile.value || undefined;
 });
@@ -1642,7 +1708,6 @@ const contractFilesModelValue = computed(() => {
     : undefined;
 });
 
-// Handlers لتحديث المتغيرات المؤقتة عند تغيير القيمة من الـ Uploader
 const handleContractFilesUpdate = (val: string) => {
   if (!val) {
     tempContractFiles.value = [];
@@ -1651,7 +1716,6 @@ const handleContractFilesUpdate = (val: string) => {
   }
 };
 
-// Watchers إضافية للربط المباشر
 watch(tempNationalIdFile, (val) => {
   form.employee.nationalIdCardPath = val;
 });
@@ -1683,6 +1747,17 @@ const filteredPermissions = computed(() => {
       p.name.toLowerCase().includes(q) ||
       (p.displayNameAr && p.displayNameAr.toLowerCase().includes(q)),
   );
+});
+
+// ✅ نص عرض القسم المختار في تبويب المراجعة
+const selectedDepartmentLabel = computed(() => {
+  if (form.departmentMode === "existing") {
+    const d = departmentsStore.departments.find(
+      (dep) => dep.id === form.employee.departmentId,
+    );
+    return d ? d.name : "—";
+  }
+  return form.newDepartment.name || "—";
 });
 
 // ✅ نص عرض اوقات الدوام المختار في تبويب المراجعة
@@ -1727,8 +1802,9 @@ watch(
     if (v) {
       rolesStore.fetchAll();
       permissionsStore.fetchAll();
-      shiftsStore.fetchAll(); // ✅ تحميل اوقات الدوامات المتاحة عند فتح المودال
-      calculateContractDates(); // حساب أولي عند الفتح
+      shiftsStore.fetchAll();
+      departmentsStore.fetchAll(); // ✅ تحميل الأقسام المتاحة عند فتح المودال
+      calculateContractDates();
     }
   },
 );
@@ -1748,9 +1824,7 @@ const clearErrors = () => {
   Object.keys(errors).forEach((k) => delete errors[k]);
 };
 
-// دالة مساعدة للتحقق من حقل واحد وعرض الخطأ فوراً
 const validateField = (field: string) => {
-  // إعادة تشغيل التحقق العام لتحديث الأخطاء
   validateCurrentTab(true);
 };
 
@@ -1758,7 +1832,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
   clearErrors();
   let isValid = true;
 
-  // 1. تحقق تبويب الموظف (إلزامي دائماً)
   if (activeTab.value === "employee") {
     if (!form.employee.fullName.trim()) {
       errors.fullName = "الاسم الكامل مطلوب";
@@ -1779,8 +1852,12 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       errors.jobTitle = "المسمى الوظيفي مطلوب";
       isValid = false;
     }
-    if (!form.employee.department.trim()) {
-      errors.department = "القسم مطلوب";
+    if (form.departmentMode === "existing" && !form.employee.departmentId) {
+      errors.departmentId = "يرجى اختيار قسم";
+      isValid = false;
+    }
+    if (form.departmentMode === "new" && !form.newDepartment.name.trim()) {
+      errors.departmentName = "اسم القسم مطلوب";
       isValid = false;
     }
     if (!form.employee.phone || form.employee.phone.length !== 10) {
@@ -1792,7 +1869,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       isValid = false;
     }
 
-    // ✅ تحقق قسم اوقات الدوام
     if (form.shiftMode === "existing" && !form.employee.shiftId) {
       errors.shiftId = "يرجى اختيار وقت دوام";
       isValid = false;
@@ -1812,7 +1888,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       }
     }
 
-    // التحقق من المؤهلات إذا كانت مفتوحة
     if (showEducationForm.value && form.educations.length > 0) {
       const invalidEdu = form.educations.some(
         (e) => !e.degree || !e.issuingAuthority,
@@ -1830,7 +1905,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
     }
   }
 
-  // 2. تحقق تبويب المستخدم (إذا كان مفعلاً)
   if (activeTab.value === "user" && form.withUser) {
     if (!form.user.username.trim()) {
       errors.username = "اسم المستخدم مطلوب";
@@ -1845,7 +1919,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       isValid = false;
     }
 
-    // التحقق من الدور
     if (form.roleMode === "existing" && !form.user.roleId) {
       errors.roleId = "يرجى اختيار دور";
       isValid = false;
@@ -1856,7 +1929,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
     }
   }
 
-  // 3. تحقق تبويب العقد (إذا كان مفعلاً)
   if (activeTab.value === "contract" && form.withContract) {
     if (!form.contract.contractType) {
       errors.contractType = "يرجى اختيار نوع العقد";
@@ -1893,7 +1965,6 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       isValid = false;
     }
 
-    // التحقق من الجنسية في العقد لغير السعوديين
     if (
       form.employee.nationalityType === "non_saudi" &&
       !form.contract.nationality
@@ -1903,13 +1974,11 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
     }
   }
 
-  // 4. تحقق تبويب الراتب (إذا كان مفعلاً)
   if (activeTab.value === "salary" && form.withSalary) {
     if (!form.salary.basicSalary || form.salary.basicSalary <= 0) {
       errors.basicSalary = "الراتب الأساسي مطلوب ويجب أن يكون أكبر من صفر";
       isValid = false;
     }
-    // جعل البدلات إجبارية أيضاً حسب الطلب
     if (
       form.salary.housingAllowance === undefined ||
       form.salary.housingAllowance < 0
@@ -1951,7 +2020,7 @@ const addEducationRow = () => {
   form.educations.push({
     degree: "",
     certificateNumber: "",
-    issuingAuthority: "", // ✅ تهيئة الحقل الجديد
+    issuingAuthority: "",
     expiryDate: "",
     attachmentPath: "",
   });
@@ -1969,7 +2038,7 @@ const handleClose = () => {
     activeTab.value = "employee";
     doneTabs.value.clear();
     clearErrors();
-    showEducationForm.value = false; // ✅ إعادة تعيين التوجل
+    showEducationForm.value = false;
     showEducationErrors.value = false;
 
     tempNationalIdFile.value = "";
@@ -1980,7 +2049,8 @@ const handleClose = () => {
       withContract: false,
       withSalary: false,
       roleMode: "none",
-      shiftMode: "none", // ✅ إعادة تعيين
+      shiftMode: "none",
+      departmentMode: "existing", // ✅ إعادة تعيين
       employee: {
         fullName: "",
         nationalityType: "" as
@@ -1993,9 +2063,9 @@ const handleClose = () => {
         nationalIdCardPath: "",
         phone: "",
         jobTitle: "",
-        department: "",
+        departmentId: "",
         status: "active" as "active" | "inactive" | "terminated",
-        shiftId: "", // ✅ إعادة تعيين
+        shiftId: "",
       },
       user: {
         username: "",
@@ -2006,22 +2076,24 @@ const handleClose = () => {
         permissionIds: [] as string[],
       },
       newShift: {
-        // ✅ إعادة تعيين
         name: "",
         startTime: "",
         endTime: "",
         gracePeriod: 30,
+      },
+      newDepartment: {
+        name: "",
       },
       contract: {
         contractType: "",
         startDate: new Date().toISOString().split("T")[0],
         endDate: "",
         annualLeaveDays: 30,
-        contractDurationMonths: 12, // ✅ إعادة التعيين للشهور
+        contractDurationMonths: 12,
         ticketType: "بدون",
         probationPeriod: "بدون",
-        medicalInsurance: "بدون", // ✅ إعادة التعيين
-        nationality: "", // ✅ إعادة التعيين
+        medicalInsurance: "بدون",
+        nationality: "",
         notes: "",
         attachmentPaths: [] as string[],
       },
@@ -2031,7 +2103,7 @@ const handleClose = () => {
         transportAllowance: 0,
         otherAllowances: 0,
       },
-      educations: [], // ✅ تصفير المؤهلات
+      educations: [],
     });
   }, 300);
 };
@@ -2040,15 +2112,12 @@ const handleClose = () => {
 const handleSubmit = async () => {
   clearErrors();
 
-  // تحقق نهائي شامل قبل الإرسال
   let allValid = true;
 
-  // 1. تحقق الموظف (دائماً مطلوب)
   if (
     !form.employee.fullName.trim() ||
     !form.employee.nationalityType ||
     !form.employee.jobTitle ||
-    !form.employee.department ||
     !form.employee.phone ||
     !form.employee.status
   ) {
@@ -2060,13 +2129,17 @@ const handleSubmit = async () => {
   ) {
     allValid = false;
   }
-  // تحقق المؤهلات
+  if (form.departmentMode === "existing" && !form.employee.departmentId) {
+    allValid = false;
+  }
+  if (form.departmentMode === "new" && !form.newDepartment.name.trim()) {
+    allValid = false;
+  }
   if (showEducationForm.value && form.educations.length > 0) {
     if (form.educations.some((e) => !e.degree || !e.issuingAuthority))
       allValid = false;
   }
 
-  // ✅ تحقق اوقات الدوام
   if (form.shiftMode === "existing" && !form.employee.shiftId) {
     allValid = false;
   }
@@ -2079,7 +2152,6 @@ const handleSubmit = async () => {
     allValid = false;
   }
 
-  // 2. تحقق المستخدم (إذا مفعل)
   if (form.withUser) {
     if (
       !form.user.username ||
@@ -2091,7 +2163,6 @@ const handleSubmit = async () => {
     if (form.roleMode === "new" && !form.user.roleName) allValid = false;
   }
 
-  // 3. تحقق العقد (إذا مفعل)
   if (form.withContract) {
     if (
       !form.contract.contractType ||
@@ -2110,7 +2181,6 @@ const handleSubmit = async () => {
       allValid = false;
   }
 
-  // 4. تحقق الراتب (إذا مفعل)
   if (form.withSalary) {
     if (!form.salary.basicSalary || form.salary.basicSalary <= 0)
       allValid = false;
@@ -2148,7 +2218,6 @@ const handleSubmit = async () => {
       nationalIdCardPath: form.employee.nationalIdCardPath || undefined,
       phone: form.employee.phone || undefined,
       jobTitle: form.employee.jobTitle || undefined,
-      department: form.employee.department || undefined,
       status: form.employee.status,
     };
 
@@ -2159,21 +2228,19 @@ const handleSubmit = async () => {
       payload.iqamaExpiryDate = form.employee.iqamaExpiryDate;
     }
 
-    // ✅ إضافة جميع المؤهلات المدخلة
     if (form.educations.length > 0) {
       payload.educations = form.educations
-        .filter((edu) => edu.degree) // إرسال فقط المؤهلات التي لها نوع
+        .filter((edu) => edu.degree)
         .map((edu) => ({
           degree: edu.degree,
           certificateNumber: edu.certificateNumber || undefined,
-          issuingAuthority: edu.issuingAuthority || undefined, // ✅ إرسال مصدر الشهادة
+          issuingAuthority: edu.issuingAuthority || undefined,
           expiryDate: edu.expiryDate || undefined,
           attachmentPath: edu.attachmentPath || undefined,
         }));
     }
 
-    // ✅ ربط اوقات الدوام — نفس فكرة الدور: إما وقت دوام موجود، أو إنشاء وقت دوام جديد أولاً
-    // ثم استخدام الـ id بتاعه، أو من غير وقت دوام خالص
+    // ✅ ربط اوقات الدوام
     if (form.shiftMode === "existing" && form.employee.shiftId) {
       payload.shiftId = form.employee.shiftId;
     } else if (form.shiftMode === "new") {
@@ -2184,6 +2251,19 @@ const handleSubmit = async () => {
         gracePeriod: form.newShift.gracePeriod,
       });
       payload.shiftId = createdShift.id;
+    }
+
+    // ✅ ربط القسم — إما قسم موجود، أو إنشاء قسم جديد أولاً ثم استخدام الـ id بتاعه
+    if (form.departmentMode === "existing" && form.employee.departmentId) {
+      payload.departmentId = form.employee.departmentId;
+    } else if (
+      form.departmentMode === "new" &&
+      form.newDepartment.name.trim()
+    ) {
+      const createdDepartment = await departmentsStore.create({
+        name: form.newDepartment.name.trim(),
+      });
+      payload.departmentId = createdDepartment.id;
     }
 
     if (form.withUser) {
@@ -2209,15 +2289,11 @@ const handleSubmit = async () => {
         startDate: form.contract.startDate,
         endDate: form.contract.endDate || undefined,
         annualLeaveDays: form.contract.annualLeaveDays,
-        // ✅ إرسال المدة بالشهور
         contractDurationMonths: form.contract.contractDurationMonths,
         ticketType: form.contract.ticketType,
         probationPeriod: form.contract.probationPeriod,
-
-        // ✅ إضافة الحقول الجديدة
         medicalInsurance: form.contract.medicalInsurance,
         nationality: form.contract.nationality || undefined,
-
         notes: form.contract.notes || undefined,
         attachmentPaths: form.contract.attachmentPaths,
       };
@@ -2261,13 +2337,11 @@ const nationalityLabel = (type: string) => {
   return map[type] ?? "—";
 };
 
-// ✅ دالة حساب تواريخ العقد والتجربة
 const calculateContractDates = () => {
   if (!form.contract.startDate) return;
 
   const startDate = new Date(form.contract.startDate);
 
-  // 1. حساب تاريخ نهاية العقد
   if (
     form.contract.contractDurationMonths &&
     form.contract.contractDurationMonths > 0
@@ -2573,7 +2647,7 @@ const calculateContractDates = () => {
       border-radius: 50%;
       background: $stb-text-muted;
       top: 2px;
-      right: 2px; // RTL
+      right: 2px;
       transition: all $transition-base;
     }
   }
@@ -2589,7 +2663,7 @@ const calculateContractDates = () => {
   }
 }
 
-// ══ Role Toggle (يُعاد استخدامها لقسم اوقات الدوام أيضاً) ═══════════════════════════
+// ══ Role Toggle ═══════════════════════════════════════════════════════════════
 .role-toggle {
   @include flex(row, center, flex-start, $space-2);
   flex-wrap: wrap;
@@ -3130,7 +3204,7 @@ const calculateContractDates = () => {
   }
 }
 
-/* --- Education Section Styles (Matching Edit Page) --- */
+/* --- Education Section Styles --- */
 .education-toggle-section {
   .toggle-card {
     @include flex(row, center, space-between);
@@ -3191,7 +3265,7 @@ const calculateContractDates = () => {
         border-radius: 50%;
         background: $stb-text-muted;
         top: 2px;
-        right: 2px; // RTL
+        right: 2px;
         transition: all $transition-base;
       }
     }

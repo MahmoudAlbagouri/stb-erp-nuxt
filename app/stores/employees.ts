@@ -81,7 +81,6 @@ export const useEmployeesStore = defineStore("employees", () => {
     }
   };
 
-  // ✅ دالة تصدير موظف واحد
   const exportSingle = async (id: string, type: "excel" | "pdf") => {
     try {
       const blob = await api.get<Blob>(
@@ -109,6 +108,55 @@ export const useEmployeesStore = defineStore("employees", () => {
     }
   };
 
+  // ✅ جلب نتائج فلترة متقدمة من السيرفر (اختياري استخدامه)
+  const fetchFiltered = async (filters: Record<string, any>) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "")
+        params.append(k, String(v));
+    });
+    const res = await api.get<Employee[]>(
+      `/employees/filter?${params.toString()}`,
+    );
+    return res.data;
+  };
+
+  // ✅ تصدير نتائج الفلترة المتقدمة
+  const exportFiltered = async (
+    type: "excel" | "pdf",
+    filters: Record<string, any>,
+  ) => {
+    try {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "")
+          params.append(k, String(v));
+      });
+      const blob = await api.get<Blob>(
+        `/employees/export-filtered/${type}?${params.toString()}`,
+        true,
+        "blob",
+      );
+      if (!blob || blob.size === 0)
+        throw new Error("الملف المستلم فارغ أو تالف");
+      const extension = type === "excel" ? "xlsx" : "pdf";
+      const fileName = `employees_filtered_${new Date().toISOString().split("T")[0]}.${extension}`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e: any) {
+      console.error("Filtered Export Error:", e);
+      throw e;
+    }
+  };
+
   const reset = () => {
     employees.value = [];
     loading.value = false;
@@ -126,6 +174,8 @@ export const useEmployeesStore = defineStore("employees", () => {
     remove,
     exportData,
     exportSingle,
+    fetchFiltered,
+    exportFiltered,
     reset,
   };
 });

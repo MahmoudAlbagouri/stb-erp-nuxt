@@ -195,6 +195,38 @@
         </div>
       </div>
     </div>
+    <!-- ✅ Departments Overview -->
+    <div
+      class="card mt-6"
+      v-if="!loading && departmentsStore.departmentsWithCounts.length"
+    >
+      <div class="card__header">
+        <h2 class="card__title">الأقسام وعدد الموظفين</h2>
+        <NuxtLink to="/dashboard/employees" class="btn btn--ghost btn--sm">
+          عرض الموظفين
+          <ArrowLeft :size="16" />
+        </NuxtLink>
+      </div>
+      <div class="dept-grid">
+        <div
+          v-for="dept in departmentsStore.departmentsWithCounts"
+          :key="dept.id"
+          class="dept-card"
+        >
+          <div class="dept-card__icon">
+            <Building2 :size="20" />
+          </div>
+          <div class="dept-card__info">
+            <div class="dept-card__name">{{ dept.name }}</div>
+            <div class="dept-card__count">
+              {{ dept.employeesCount ?? 0 }} موظف
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Users Table -->
 
     <!-- Recent Users Table -->
     <div class="card mt-6">
@@ -276,6 +308,7 @@ import { useLoansStore } from "@/stores/loans";
 import { useProfileStore } from "@/stores/profile";
 // ✅ استيراد Stores الرواتب والتسويات والمكافآت والخصومات
 import { useSalariesStore } from "@/stores/salaries";
+import { useDepartmentsStore } from "@/stores/departments";
 import { useSettlementsStore } from "@/stores/settlements";
 import { useBonusStore } from "@/stores/bonuses"; // ✅ جديد
 import { useDeductionStore } from "@/stores/deductions"; // ✅ جديد
@@ -298,6 +331,7 @@ import {
   Wallet,
   Gift, // ✅ أيقونة المكافآت
   MinusCircle, // ✅ أيقونة الخصومات
+  Building2,
 } from "lucide-vue-next";
 
 type StatItem = {
@@ -318,6 +352,7 @@ const loansStore = useLoansStore();
 const profileStore = useProfileStore();
 const salariesStore = useSalariesStore();
 const settlementsStore = useSettlementsStore();
+const departmentsStore = useDepartmentsStore();
 // ✅ تهيئة المتغيرات الجديدة
 const bonusesStore = useBonusStore();
 const deductionsStore = useDeductionStore();
@@ -360,6 +395,7 @@ onMounted(async () => {
     settlementsStore.fetchAll(),
     bonusesStore.fetchAll(), // ✅ جلب المكافآت
     deductionsStore.fetchAll(), // ✅ جلب الخصومات
+    departmentsStore.fetchStats(), // ✅ جلب الأقسام بعدد الموظفين
   ]);
 
   loading.value = false;
@@ -737,6 +773,38 @@ const statusLabel = (s: string) =>
 
 .mt-6 {
   margin-top: $space-6 !important;
+}
+.dept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: $space-3;
+  padding: $space-4;
+}
+.dept-card {
+  @include flex(row, center, flex-start, $space-3);
+  padding: $space-3 $space-4;
+  background: $stb-surface-2;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  &__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-md;
+    background: rgba($stb-accent, 0.12);
+    color: $stb-accent;
+    @include flex(row, center, center);
+    flex-shrink: 0;
+  }
+  &__name {
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $stb-text-primary;
+  }
+  &__count {
+    font-size: $font-size-xs;
+    color: $stb-text-muted;
+    margin-top: 2px;
+  }
 }
 .py-8 {
   padding-top: $space-8;

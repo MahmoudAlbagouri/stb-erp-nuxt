@@ -192,7 +192,7 @@
               active-class="is-active"
             >
               <Clock class="sidebar-nav__icon" />
-              <span>الشيفتات</span>
+              <span>أ</span>
             </NuxtLink>
 
             <NuxtLink

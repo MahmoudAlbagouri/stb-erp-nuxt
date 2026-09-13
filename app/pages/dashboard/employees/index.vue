@@ -88,6 +88,118 @@
         </select>
       </div>
     </div>
+    <!-- ══ Advanced Filters ═══════════════════════════════════════════════════ -->
+    <div class="card filters-card advanced-filters-card">
+      <button
+        type="button"
+        class="advanced-filters-toggle"
+        @click="showAdvancedFilters = !showAdvancedFilters"
+      >
+        <SlidersHorizontal :size="16" />
+        <span>فلترة متقدمة</span>
+        <ChevronDown
+          :size="16"
+          class="chevron"
+          :class="{ 'chevron--open': showAdvancedFilters }"
+        />
+      </button>
+
+      <Transition name="slide-down">
+        <div v-if="showAdvancedFilters" class="advanced-filters-body">
+          <div class="advanced-filters-grid">
+            <div class="form-group">
+              <label>القسم</label>
+              <select v-model="advFilters.departmentId" class="form-select">
+                <option value="">كل الأقسام</option>
+                <option
+                  v-for="dept in departmentsStore.departments"
+                  :key="dept.id"
+                  :value="dept.id"
+                >
+                  {{ dept.name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>اوقات الدوام</label>
+              <select v-model="advFilters.shiftId" class="form-select">
+                <option value="">كل الأوقات</option>
+                <option
+                  v-for="shift in shiftsStore.shifts"
+                  :key="shift.id"
+                  :value="shift.id"
+                >
+                  {{ shift.name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>حساب المستخدم</label>
+              <select v-model="advFilters.hasUser" class="form-select">
+                <option value="">الكل</option>
+                <option value="true">لديه حساب</option>
+                <option value="false">بدون حساب</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>عقد العمل</label>
+              <select v-model="advFilters.hasContract" class="form-select">
+                <option value="">الكل</option>
+                <option value="true">لديه عقد</option>
+                <option value="false">بدون عقد</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>الإقامة</label>
+              <select
+                v-model="advFilters.iqamaExpiringSoon"
+                class="form-select"
+              >
+                <option value="">الكل</option>
+                <option value="true">قاربت على الانتهاء (60 يوم)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="advanced-filters-actions">
+            <button
+              class="btn btn--ghost btn--sm"
+              @click="resetAdvancedFilters"
+            >
+              <X :size="14" /> إعادة تعيين
+            </button>
+            <div class="advanced-filters-export">
+              <button
+                class="btn btn--outline btn--sm"
+                :disabled="!!exportingFiltered"
+                @click="handleExportFiltered('excel')"
+              >
+                <span
+                  v-if="exportingFiltered === 'excel'"
+                  class="spinner spinner--sm"
+                />
+                <FileSpreadsheet v-else :size="14" />
+                تصدير النتائج (Excel)
+              </button>
+              <button
+                class="btn btn--outline btn--sm"
+                :disabled="!!exportingFiltered"
+                @click="handleExportFiltered('pdf')"
+              >
+                <span
+                  v-if="exportingFiltered === 'pdf'"
+                  class="spinner spinner--sm"
+                />
+                <FileText v-else :size="14" />
+                تصدير النتائج (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </div>
+
+    <!-- ══ Loading ══════════════════════════════════════════════════════════ -->
 
     <!-- ══ Loading ══════════════════════════════════════════════════════════ -->
     <div v-if="store.loading" class="loading-grid">
@@ -151,7 +263,7 @@
           >
             <Briefcase :size="13" class="detail-icon" />
             <span>{{
-              [emp.jobTitle, emp.department].filter(Boolean).join(" — ")
+              [emp.jobTitle, emp.department?.name].filter(Boolean).join(" — ")
             }}</span>
           </div>
           <div class="emp-detail">
@@ -335,12 +447,17 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label>القسم</label
-                  ><input
-                    v-model="editForm.department"
-                    type="text"
-                    class="form-input"
-                  />
+                  <label>القسم</label>
+                  <select v-model="editForm.departmentId" class="form-select">
+                    <option value="">بدون قسم</option>
+                    <option
+                      v-for="dept in departmentsStore.departments"
+                      :key="dept.id"
+                      :value="dept.id"
+                    >
+                      {{ dept.name }}
+                    </option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label>رقم الهاتف</label
@@ -654,6 +771,8 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useUsersStore } from "@/stores/users";
+import { useDepartmentsStore } from "@/stores/departments";
+import { useShiftsStore } from "@/stores/shifts";
 import { useToast } from "@/composables/useToast";
 import type { Employee, User, Education } from "@/types";
 import OnboardingModal from "@/components/employees/OnboardingModal.vue";
@@ -680,12 +799,16 @@ import {
   Download,
   GraduationCap,
   Plus,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useEmployeesStore();
 const usersStore = useUsersStore();
+const departmentsStore = useDepartmentsStore();
+const shiftsStore = useShiftsStore();
 const toast = useToast();
 const showOnboarding = ref(false);
 const onEmployeeCreated = (result: any) =>
@@ -732,6 +855,31 @@ onMounted(() => {
 const search = ref("");
 const statusFilter = ref("");
 const nationalityFilter = ref("");
+
+// ✅ الفلترة المتقدمة
+const showAdvancedFilters = ref(false);
+const advFilters = reactive({
+  departmentId: "",
+  shiftId: "",
+  hasUser: "" as "" | "true" | "false",
+  hasContract: "" as "" | "true" | "false",
+  iqamaExpiringSoon: "" as "" | "true",
+});
+
+const resetAdvancedFilters = () => {
+  advFilters.departmentId = "";
+  advFilters.shiftId = "";
+  advFilters.hasUser = "";
+  advFilters.hasContract = "";
+  advFilters.iqamaExpiringSoon = "";
+};
+
+const isIqamaWithin60Days = (date?: string) => {
+  if (!date) return false;
+  const diff = new Date(date).getTime() - Date.now();
+  return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
+};
+
 const filtered = computed(() =>
   store.employees.filter((e: Employee) => {
     const q = search.value.toLowerCase();
@@ -744,11 +892,57 @@ const filtered = computed(() =>
     const matchStatus = !statusFilter.value || e.status === statusFilter.value;
     const matchNat =
       !nationalityFilter.value || e.nationalityType === nationalityFilter.value;
-    return matchSearch && matchStatus && matchNat;
+    const matchDept =
+      !advFilters.departmentId ||
+      (e.department as any)?.id === advFilters.departmentId;
+    const matchShift =
+      !advFilters.shiftId || (e as any).shiftId === advFilters.shiftId;
+    const matchUser =
+      !advFilters.hasUser ||
+      (advFilters.hasUser === "true" ? !!e.user : !e.user);
+    const matchContract =
+      !advFilters.hasContract ||
+      (advFilters.hasContract === "true" ? !!e.contract : !e.contract);
+    const matchIqama =
+      !advFilters.iqamaExpiringSoon ||
+      isIqamaWithin60Days(e.iqamaExpiryDate as any);
+    return (
+      matchSearch &&
+      matchStatus &&
+      matchNat &&
+      matchDept &&
+      matchShift &&
+      matchUser &&
+      matchContract &&
+      matchIqama
+    );
   }),
 );
 const countByStatus = (s: string) =>
   store.employees.filter((e: Employee) => e.status === s).length;
+
+// ✅ تصدير نتائج الفلترة عبر السيرفر
+const exportingFiltered = ref<"excel" | "pdf" | null>(null);
+const handleExportFiltered = async (type: "excel" | "pdf") => {
+  exportingFiltered.value = type;
+  try {
+    await store.exportFiltered(type, {
+      status: statusFilter.value || undefined,
+      nationalityType: nationalityFilter.value || undefined,
+      departmentId: advFilters.departmentId || undefined,
+      shiftId: advFilters.shiftId || undefined,
+      hasUser: advFilters.hasUser || undefined,
+      hasContract: advFilters.hasContract || undefined,
+      iqamaExpiringSoon: advFilters.iqamaExpiringSoon || undefined,
+      search: search.value || undefined,
+    });
+    toast.success("تم تصدير نتائج الفلترة بنجاح");
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تصدير النتائج");
+  } finally {
+    exportingFiltered.value = null;
+  }
+};
 
 // ─── Universal File Viewer Logic ──────────────────────────────────────────
 const showFileViewer = ref(false);
@@ -810,7 +1004,7 @@ interface EditFormType {
   nationalIdCardPath: string;
   phone: string;
   jobTitle: string;
-  department: string;
+  departmentId: string;
   status: "active" | "inactive" | "terminated";
   userId: string | null;
   educations: Education[];
@@ -823,7 +1017,7 @@ const editForm = reactive<EditFormType>({
   nationalIdCardPath: "",
   phone: "",
   jobTitle: "",
-  department: "",
+  departmentId: "",
   status: "active",
   userId: null,
   educations: [],
@@ -862,7 +1056,7 @@ const openEdit = async (emp: Employee) => {
     nationalIdCardPath: emp.nationalIdCardPath ?? "",
     phone: emp.phone ?? "",
     jobTitle: emp.jobTitle ?? "",
-    department: emp.department ?? "",
+    departmentId: emp.department?.id ?? "",
     status: emp.status,
     userId: emp.user?.id ?? null,
     educations: emp.educations
@@ -895,7 +1089,7 @@ const handleUpdate = async () => {
       nationalIdCardPath: editForm.nationalIdCardPath || undefined,
       phone: editForm.phone || undefined,
       jobTitle: editForm.jobTitle || undefined,
-      department: editForm.department || undefined,
+      departmentId: editForm.departmentId || undefined,
       status: editForm.status,
       userId: editForm.userId || undefined,
       educations: cleanEducations,
@@ -955,6 +1149,8 @@ const isIqamaExpiringSoon = (date: string) => {
 onMounted(() => {
   store.fetchAll();
   usersStore.fetchAll();
+  departmentsStore.fetchAll();
+  shiftsStore.fetchAll();
 });
 </script>
 
@@ -1017,6 +1213,7 @@ onMounted(() => {
   padding: $space-4 $space-5;
   margin-bottom: $space-5;
 }
+
 .filters-row {
   @include flex(row, center, flex-start, $space-3);
   width: 100%;
