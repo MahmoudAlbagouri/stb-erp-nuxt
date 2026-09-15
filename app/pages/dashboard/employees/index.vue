@@ -255,6 +255,7 @@
         v-for="emp in filtered"
         :key="emp.id"
         class="emp-card"
+        :data-expiry="getExpiryStatus(emp)"
         @click="openDetail(emp)"
       >
         <div class="emp-card__header">
@@ -830,9 +831,13 @@ const departmentsStore = useDepartmentsStore();
 const shiftsStore = useShiftsStore();
 const toast = useToast();
 const showOnboarding = ref(false);
-const onEmployeeCreated = (result: any) =>
+const onEmployeeCreated = async (result: any) => {
   toast.success(`✅ تم إضافة الموظف "${result.employee.fullName}" بنجاح`);
-
+  // إغلاق النافذة المنبثقة
+  showOnboarding.value = false;
+  // إعادة جلب البيانات المحدثة من السيرفر لتظهر فوراً
+  await applyFilters();
+};
 const exporting = ref<"excel" | "pdf" | null>(null);
 const handleExport = async (type: "excel" | "pdf") => {
   exporting.value = type;
@@ -1150,6 +1155,31 @@ const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const isIqamaExpiringSoon = (date: string) => {
   const diff = new Date(date).getTime() - Date.now();
   return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
+};
+
+// ✅ حالة انتهاء الكارت (الإقامة والعقد معاً)
+// expired  → أحمر: تاريخ الإقامة أو العقد فات بالفعل
+// warning  → أصفر: باقي 60 يوم أو أقل على انتهاء الإقامة أو العقد
+// ""       → طبيعي: لا يوجد تواريخ قريبة
+const isDatePast = (date?: string | null) => {
+  if (!date) return false;
+  return new Date(date).getTime() < Date.now();
+};
+
+const isDateWithinDays = (date?: string | null, days = 60) => {
+  if (!date) return false;
+  const diff = new Date(date).getTime() - Date.now();
+  return diff > 0 && diff < days * 24 * 60 * 60 * 1000;
+};
+
+const getExpiryStatus = (emp: Employee): "expired" | "warning" | "" => {
+  const iqama = emp.iqamaExpiryDate;
+  const contractEnd = emp.contract?.endDate;
+
+  if (isDatePast(iqama) || isDatePast(contractEnd)) return "expired";
+  if (isDateWithinDays(iqama) || isDateWithinDays(contractEnd))
+    return "warning";
+  return "";
 };
 
 onMounted(() => {
@@ -1583,6 +1613,35 @@ onMounted(() => {
     transform: translateY(-2px);
     border-color: $stb-accent;
     box-shadow: $shadow-md;
+  }
+
+  // ✅ تلوين الكارت بناءً على حالة انتهاء الإقامة/العقد
+  &[data-expiry="warning"] {
+    border-color: rgba($stb-warning, 0.5);
+    background: linear-gradient(
+      180deg,
+      rgba($stb-warning, 0.06),
+      transparent 40%
+    );
+    box-shadow: 0 0 0 1px rgba($stb-warning, 0.15);
+
+    &:hover {
+      border-color: $stb-warning;
+    }
+  }
+
+  &[data-expiry="expired"] {
+    border-color: rgba($stb-danger, 0.5);
+    background: linear-gradient(
+      180deg,
+      rgba($stb-danger, 0.06),
+      transparent 40%
+    );
+    box-shadow: 0 0 0 1px rgba($stb-danger, 0.15);
+
+    &:hover {
+      border-color: $stb-danger;
+    }
   }
 
   &__header {

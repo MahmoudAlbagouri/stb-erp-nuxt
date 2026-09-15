@@ -192,7 +192,7 @@
               active-class="is-active"
             >
               <Clock class="sidebar-nav__icon" />
-              <span>أ</span>
+              <span>أوقات العمل</span>
             </NuxtLink>
 
             <NuxtLink
