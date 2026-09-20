@@ -54,6 +54,17 @@ export const useAdvancesStore = defineStore("advances", () => {
     return res.data;
   };
 
+  // ✅ تأكيد الصرف الاستثنائي المباشر (Off-Cycle Disbursement) — تسليم
+  // مبلغ السلفة للموظف فعلياً خارج دورة المسير. لا يغيّر موعد أو قيمة
+  // خصم السداد الشهري في المسير.
+  const disburseAdvance = async (id: string) => {
+    const res = await api.patch<Advance>(`/advances/${id}/disburse`);
+    const idx = advances.value.findIndex((a) => a.id === id);
+    if (idx !== -1)
+      advances.value[idx] = { ...advances.value[idx], ...res.data };
+    return res.data;
+  };
+
   // ✅ التصدير الجماعي
   const exportData = async (type: "excel" | "pdf") => {
     try {
@@ -122,6 +133,7 @@ export const useAdvancesStore = defineStore("advances", () => {
     createMyAdvance,
     createForEmployee,
     updateStatus,
+    disburseAdvance, // ✅ تصدير الدالة الجديدة
     exportData,
     exportSingle,
     reset,

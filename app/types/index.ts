@@ -473,6 +473,7 @@ export interface DecodedToken {
   isSystemAdmin: boolean;
   employeeId?: string;
   role?: JwtRole;
+  isDisclaimerAccepted?: boolean;
   permissions: JwtPermission[];
 }
 

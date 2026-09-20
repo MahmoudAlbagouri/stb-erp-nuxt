@@ -69,6 +69,11 @@ export const useAuthStore = defineStore("auth", () => {
     () => decodedToken.value?.isSystemAdmin ?? false,
   );
 
+  // ✅ حالة الإقرار (أي توكن بدون الحقل يُعتبر لم يوافق)
+  const isDisclaimerAccepted = computed(
+    () => decodedToken.value?.isDisclaimerAccepted === true,
+  );
+
   const role = computed(() => decodedToken.value?.role ?? null);
   const permissions = computed(() => decodedToken.value?.permissions ?? []);
   const employeeId = computed(() => decodedToken.value?.employeeId);
@@ -106,6 +111,11 @@ export const useAuthStore = defineStore("auth", () => {
     refreshTokenCookie.value = null;
   };
 
+  // ✅ التوجيه بعد الدخول/التسجيل حسب حالة الإقرار
+  const goAfterAuth = () => {
+    router.push(isDisclaimerAccepted.value ? "/dashboard" : "/disclaimer");
+  };
+
   // ✅ قائمة مركزية بجميع المتاجر التي يجب تفريغها
   const storesToReset = [
     useUsersStore,
@@ -131,7 +141,7 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const res = await api.post<AuthTokens>("/auth/login", payload, false);
       persist(res.data);
-      router.push("/dashboard");
+      goAfterAuth();
     } catch (e: any) {
       error.value = e.message || "خطأ في تسجيل الدخول";
       throw e;
@@ -144,10 +154,32 @@ export const useAuthStore = defineStore("auth", () => {
     loading.value = true;
     error.value = null;
     try {
-      await api.post("/auth/register", payload, false);
-      router.push("/auth/login");
+      // ✅ التسجيل يعيد Tokens: نحفظها ونوجّه المستخدم لمرحلة الإقرار
+      const res = await api.post<AuthTokens>("/auth/register", payload, false);
+      persist(res.data);
+      goAfterAuth();
     } catch (e: any) {
       error.value = e.message || "خطأ في إنشاء الحساب";
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // ✅ قبول الإقرار: نستبدل التوكنز بالجديدة (isDisclaimerAccepted = true) ثم الداشبورد
+  const acceptDisclaimer = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const res = await api.post<AuthTokens>(
+        "/auth/accept-disclaimer",
+        {},
+        true,
+      );
+      persist(res.data);
+      await router.push("/dashboard");
+    } catch (e: any) {
+      error.value = e.message || "تعذر تسجيل الإقرار، حاول مرة أخرى";
       throw e;
     } finally {
       loading.value = false;
@@ -217,9 +249,11 @@ export const useAuthStore = defineStore("auth", () => {
     isAuthenticated,
     isSuperAdmin,
     isSystemAdmin,
+    isDisclaimerAccepted,
     hydrate,
     login,
     register,
+    acceptDisclaimer,
     logout,
     forgotPassword,
     resetPassword,

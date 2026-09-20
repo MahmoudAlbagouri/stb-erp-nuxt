@@ -1,4 +1,3 @@
-// stores/payroll.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
@@ -16,20 +15,43 @@ export interface Employee {
   status: string;
 }
 
+// ✅ تم تحديث الحقول لتطابق التفصيل الجديد في PayrollItem (الباك إند)
 export interface PayrollItem {
   id: string;
   payrollId: string;
   employeeId: string;
+
+  // المستحقات
   basicSalary: string;
-  allowances: string;
+  housingAllowance: string;
+  transportAllowance: string;
+  otherAllowances: string;
   overtimeAmount: string;
+  bonusesAmount: string; // إجمالي المكافآت المستحقة (مصروفة سلفاً + غير مصروفة)
+  settlementsAmount: string; // إجمالي التسويات/بدل الإجازات المستحقة
+  eosAmount: string; // مكافأة نهاية الخدمة المستحقة هذا الشهر
+
+  // المدفوعات المسبقة (تُخصم من الصافي لمنع الازدواجية)
+  prepaidBonuses: string;
+  prepaidSettlements: string;
+  prepaidAllowances: string;
+
+  // الخصومات
   loanDeduction: string;
   advanceDeduction: string;
   unpaidLeaveDeduction: string;
   otherDeductions: string;
+
   netSalary: string;
   notes: string | null;
   employee: Employee;
+}
+
+// ✅ تم إضافة حقول الصرف
+export interface DisbursedByUser {
+  id: string;
+  username: string; // ← كان fullName
+  email?: string;
 }
 
 export interface PayrollDetail {
@@ -40,6 +62,9 @@ export interface PayrollDetail {
   paymentDate: string;
   tenantId: string;
   generatedAt: string;
+  isDisbursed: boolean;
+  disbursedAt?: string;
+  disbursedBy?: DisbursedByUser;
   items: PayrollItem[];
 }
 
@@ -50,6 +75,9 @@ export interface PayrollSummary {
   totalNetSalary: string;
   paymentDate: string;
   generatedAt: string;
+  isDisbursed: boolean;
+  disbursedAt?: string;
+  disbursedBy?: DisbursedByUser;
   items?: any[];
 }
 
@@ -59,7 +87,6 @@ export const usePayrollStore = defineStore("payroll", () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  // جلب كل المسيرات
   const fetchAll = async (year?: number, month?: number) => {
     loading.value = true;
     error.value = null;
@@ -71,7 +98,6 @@ export const usePayrollStore = defineStore("payroll", () => {
       if (params.toString()) url += `?${params.toString()}`;
 
       const res = await api.get<any>(url);
-      // التعامل الآمن مع هيكلية الرد سواء كانت مصفوفة مباشرة أو داخل data
       payrolls.value = Array.isArray(res.data)
         ? res.data
         : res.data?.data || [];
@@ -82,7 +108,6 @@ export const usePayrollStore = defineStore("payroll", () => {
     }
   };
 
-  // توليد مسير جديد
   const generate = async (month: number, year: number) => {
     const res = await api.post<any>(`/payroll/generate/${month}/${year}`);
     const newItem = res.data?.data || res.data;
@@ -90,7 +115,19 @@ export const usePayrollStore = defineStore("payroll", () => {
     return newItem;
   };
 
-  // التصدير
+  // ✅ دالة جديدة لتأكيد الصرف
+  const disburse = async (id: string) => {
+    const res = await api.patch<any>(`/payroll/${id}/disburse`);
+    const updated = res.data?.data || res.data;
+
+    // تحديث السجل في القائمة المحلية
+    const idx = payrolls.value.findIndex((p) => p.id === id);
+    if (idx !== -1) {
+      payrolls.value[idx] = { ...payrolls.value[idx], ...updated };
+    }
+    return updated;
+  };
+
   const exportData = async (
     type: "excel" | "pdf",
     month: number,
@@ -123,19 +160,12 @@ export const usePayrollStore = defineStore("payroll", () => {
     }
   };
 
-  // ✅ دالة جلب تفاصيل مسير محدد (مصححة)
   const fetchById = async (id: string): Promise<PayrollDetail> => {
     loading.value = true;
     try {
-      // نستخدم any هنا لتجنب تعارض الأنواع لأن الـ API يرجع wrapper
       const res: any = await api.get(`/payroll/${id}`);
-
-      // التحقق من مكان البيانات: هل هي في res.data.data أم res.data مباشرة؟
-      // بناءً على الـ JSON المرفق، البيانات داخل res.data.data
       const payload = res.data?.data || res.data;
-
       if (!payload) throw new Error("بيانات المسير غير متوفرة");
-
       return payload as PayrollDetail;
     } catch (e: any) {
       error.value = e.message;
@@ -157,6 +187,7 @@ export const usePayrollStore = defineStore("payroll", () => {
     error,
     fetchAll,
     generate,
+    disburse, // ✅ تصدير الدالة الجديدة
     exportData,
     fetchById,
     reset,

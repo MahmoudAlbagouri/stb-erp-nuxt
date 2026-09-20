@@ -100,10 +100,14 @@
               <th>الموظف</th>
               <th>تاريخ التسوية</th>
               <th>الأيام غير المستخدمة</th>
-              <!-- <th>أجر اليوم</th> -->
               <th>إجمالي المستحق</th>
+              <th>حالة الصرف</th>
+              <!-- ✅ عمود جديد -->
+              <th>صرف بواسطة</th>
+              <!-- ✅ عمود جديد -->
               <th>ملاحظات</th>
-              <th>تاريخ الأرشفة</th>
+              <th>الإجراءات</th>
+              <!-- ✅ عمود جديد للإجراءات -->
             </tr>
           </thead>
           <tbody>
@@ -134,10 +138,53 @@
                   {{ s.unusedLeaveDays }} يوم
                 </span>
               </td>
-              <!-- <td class="text-accent">{{ formatCurrency(s.dailyRate) }}</td> -->
               <td class="total-cell">{{ formatCurrency(s.totalAmount) }}</td>
+
+              <!-- ✅ حالة الصرف -->
+              <td>
+                <span
+                  :class="[
+                    'status-badge',
+                    s.isDisbursed
+                      ? 'status-badge--done'
+                      : 'status-badge--pending',
+                  ]"
+                >
+                  {{ s.isDisbursed ? "تم الصرف ✅" : "غير مصروف" }}
+                </span>
+              </td>
+
+              <!-- ✅ من قام بالصرف -->
+              <td>
+                <div
+                  v-if="s.isDisbursed && s.disbursedBy"
+                  class="disbursed-by-cell"
+                >
+                  <span class="name">{{ s.disbursedBy.username }}</span>
+                  <span class="date">{{ formatDate(s.disbursedAt!) }}</span>
+                </div>
+                <span v-else class="text-muted">—</span>
+              </td>
+
               <td class="notes-cell">{{ s.notes || "—" }}</td>
-              <td>{{ formatDate(s.createdAt) }}</td>
+
+              <!-- ✅ زر الصرف -->
+              <td>
+                <button
+                  v-if="!s.isDisbursed"
+                  class="btn btn--success btn--sm"
+                  @click="handleDisburse(s)"
+                  :disabled="disbursingId === s.id"
+                >
+                  <span
+                    v-if="disbursingId === s.id"
+                    class="spinner spinner--xs"
+                  />
+                  <CheckCircle v-else :size="14" />
+                  صرف
+                </button>
+                <span v-else class="text-success text-xs font-bold">تم ✓</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -178,11 +225,9 @@
                     v-for="emp in activeEmployees"
                     :key="emp.id"
                     :value="emp.id"
-                    :disabled="emp.alreadySettled"
                   >
                     {{ emp.fullName }}
                     ({{ emp.employeeCode }})
-                    {{ emp.alreadySettled ? "— تسوية مسبقة" : "" }}
                   </option>
                 </select>
               </div>
@@ -215,7 +260,7 @@
     </Teleport>
 
     <!-- ══════════════════════════════════════════════════════════════════════
-         STEP 2 — Modal: عرض نتائج الحساب والتأكيد (مع دعم التسوية الجزئية)
+         STEP 2 — Modal: عرض نتائج الحساب والتأكيد
     ════════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="fade">
@@ -267,15 +312,6 @@
                     >{{ preview.availableDays.toFixed(2) }} يوم</span
                   >
                 </div>
-                <!-- <div class="calc-row">
-                  <span class="calc-label">
-                    <Banknote :size="15" />
-                    أجر اليوم الواحد
-                  </span>
-                  <span class="calc-value text-accent">
-                    {{ formatCurrency(preview.dailyRate) }}
-                  </span>
-                </div> -->
 
                 <!-- خيار التسوية الجزئية -->
                 <div class="form-group full-width mt-4">
@@ -399,7 +435,7 @@ import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "@/composables/useToast";
 import { SettlementType, type SettlementPreview } from "@/types";
 
-// ✅ استيراد الأيقونات الجديدة للتصدير
+// ✅ استيراد الأيقونات الجديدة
 import {
   Calculator,
   Wallet,
@@ -414,8 +450,9 @@ import {
   AlertTriangle,
   Check,
   ChevronRight,
-  FileSpreadsheet, // Excel Icon
-  FileText, // PDF Icon
+  FileSpreadsheet,
+  FileText,
+  CheckCircle,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -424,8 +461,9 @@ const store = useSettlementsStore();
 const employeesStore = useEmployeesStore();
 const toast = useToast();
 
-// ─── Export State ───────────────────────────────────────────────────────────
+// ─── Export & Disburse State ───────────────────────────────────────────────
 const exporting = ref<"excel" | "pdf" | null>(null);
+const disbursingId = ref<string | null>(null);
 
 const handleExport = async (type: "excel" | "pdf") => {
   exporting.value = type;
@@ -436,6 +474,21 @@ const handleExport = async (type: "excel" | "pdf") => {
     toast.error(e.message || "فشل في التصدير");
   } finally {
     exporting.value = null;
+  }
+};
+
+// ✅ دالة تأكيد الصرف
+const handleDisburse = async (settlement: any) => {
+  disbursingId.value = settlement.id;
+  try {
+    await store.disburse(settlement.id);
+    toast.success(
+      `✅ تم تأكيد صرف تسوية "${settlement.employee?.fullName}" بنجاح`,
+    );
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تأكيد الصرف");
+  } finally {
+    disbursingId.value = null;
   }
 };
 
@@ -462,35 +515,12 @@ const totalUnusedDays = computed(() =>
   store.settlements.reduce((sum, s) => sum + s.unusedLeaveDays, 0),
 );
 
-const activeEmployees = computed(() => {
-  // تجميع إجمالي الأيام التي تم تسويتها لكل موظف
-  const settledDaysMap = new Map<string, number>();
-  store.settlements.forEach((s) => {
-    const current = settledDaysMap.get(s.employeeId) || 0;
-    settledDaysMap.set(s.employeeId, current + s.unusedLeaveDays);
-  });
-
-  return employeesStore.employees
+const activeEmployees = computed(() =>
+  employeesStore.employees
     .filter((e) => e.status === "active" || e.status === "terminated")
-    .map((e) => {
-      // هنا نفترض أن الـ Backend يرسل الرصيد الحالي في كائن الموظف
-      // أو يمكنك حسابها بناءً على العقود والإجازات إذا لم تكن متوفرة
-      // للتبسيط الآن، سنسمح للجميع بالظهور وسيعتمد التحقق على الرصيد الفعلي عند الاحتساب
-      const totalSettledForEmp = settledDaysMap.get(e.id) || 0;
+    .map((e) => ({ ...e })),
+);
 
-      // ملاحظة: لتحديد "alreadySettled" بدقة، يفضل الاعتماد على الرصيد المتاح
-      // لكن بما أننا لا نجلب الرصيد هنا، سنعتمد على منطق بسيط:
-      // إذا كان الموظف "terminated" ولديه تسويات، نفترض أنه انتهى إلا إذا كان الرصيد > 0
-      // الأفضل هو إزالة خاصية alreadySettled من الـ select والاعتماد على رسالة خطأ عند الاحتساب
-      // أو جلب الرصيد ديناميكياً.
-
-      // الحل العملي للفرونت إند حالياً: السماح بالاختيار والتحقق عند الضغط على "احتساب"
-      return {
-        ...e,
-        alreadySettled: false, // ✅ تم إلغاء المنع المطلق
-      };
-    });
-});
 const selectedEmployee = computed(() =>
   employeesStore.employees.find((e) => e.id === selectedEmployeeId.value),
 );
@@ -523,12 +553,10 @@ const runCalculation = async () => {
   if (!selectedEmployeeId.value) return;
   try {
     preview.value = await store.calculate(selectedEmployeeId.value);
-    // Reset form
     confirmForm.settlementDate = new Date().toISOString().split("T")[0];
     confirmForm.notes = "";
     confirmForm.settlementType = SettlementType.FULL;
     confirmForm.daysToSettle = undefined;
-
     showCalculatorModal.value = false;
     showPreviewModal.value = true;
   } catch (e: any) {
@@ -538,21 +566,15 @@ const runCalculation = async () => {
 
 const calculateTotalAmount = () => {
   if (!preview.value) return 0;
-
-  let days = 0;
-  if (confirmForm.settlementType === SettlementType.FULL) {
-    days = Math.ceil(preview.value.availableDays);
-  } else {
-    days = confirmForm.daysToSettle || 0;
-  }
-
+  let days =
+    confirmForm.settlementType === SettlementType.FULL
+      ? Math.ceil(preview.value.availableDays)
+      : confirmForm.daysToSettle || 0;
   return days * preview.value.dailyRate;
 };
 
 const handleConfirm = async () => {
   if (!preview.value || !confirmForm.settlementDate) return;
-
-  // Validation for partial
   if (confirmForm.settlementType === SettlementType.PARTIAL) {
     if (!confirmForm.daysToSettle || confirmForm.daysToSettle <= 0) {
       toast.error("يرجى إدخال عدد أيام صحيح للتسوية الجزئية");
@@ -563,7 +585,6 @@ const handleConfirm = async () => {
       return;
     }
   }
-
   confirming.value = true;
   try {
     await store.confirm({
@@ -611,7 +632,6 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ✅ تنسيق أزرار الهيدر مثل صفحة الموظفين
 .page-header__actions {
   display: flex;
   gap: $space-2;
@@ -621,7 +641,6 @@ onMounted(() => {
     justify-content: space-between;
   }
 }
-
 .stats-row {
   margin-bottom: $space-6;
 }
@@ -653,7 +672,6 @@ onMounted(() => {
   overflow-x: auto;
   @include scrollbar;
 }
-
 .employee-cell {
   @include flex(row, center, flex-start, $space-3);
 }
@@ -685,7 +703,6 @@ onMounted(() => {
   font-size: $font-size-xs;
   color: $stb-text-muted;
 }
-
 .days-badge {
   @include flex(row, center, flex-start, $space-1);
   display: inline-flex;
@@ -707,6 +724,56 @@ onMounted(() => {
   @include truncate;
   font-size: $font-size-xs;
   color: $stb-text-muted;
+}
+
+// ✅ تنسيقات حالة الصرف
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: $space-1 $space-3;
+  border-radius: $radius-full;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  &--done {
+    background: rgba($stb-success, 0.12);
+    color: $stb-success;
+    border: 1px solid rgba($stb-success, 0.2);
+  }
+  &--pending {
+    background: rgba($stb-warning, 0.12);
+    color: $stb-warning;
+    border: 1px solid rgba($stb-warning, 0.2);
+  }
+}
+.disbursed-by-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  .name {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $stb-accent;
+  }
+  .date {
+    font-size: 10px;
+    color: $stb-text-muted;
+  }
+}
+.btn--success {
+  background: $stb-success;
+  color: #fff;
+  border: none;
+  &:hover:not(:disabled) {
+    background: rgba($stb-success, 8%);
+  }
+}
+.spinner--xs {
+  width: 12px;
+  height: 12px;
+}
+.text-xs {
+  font-size: $font-size-xs;
 }
 
 .modal-md {
@@ -749,7 +816,6 @@ onMounted(() => {
     grid-column: span 1;
   }
 }
-
 .info-banner {
   @include flex(row, flex-start, flex-start, $space-3);
   padding: $space-3 $space-4;
@@ -769,19 +835,7 @@ onMounted(() => {
   strong {
     color: $stb-text-primary;
   }
-  .formula {
-    display: inline-block;
-    margin-top: $space-1;
-    padding: 1px $space-2;
-    background: rgba($stb-accent, 0.1);
-    border-radius: $radius-sm;
-    color: $stb-accent;
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.03em;
-  }
 }
-
 .warning-banner {
   @include flex(row, flex-start, flex-start, $space-3);
   padding: $space-3 $space-4;
@@ -802,7 +856,6 @@ onMounted(() => {
     color: $stb-danger;
   }
 }
-
 .employee-preview-card {
   @include flex(row, center, flex-start, $space-4);
   padding: $space-4;
@@ -849,7 +902,6 @@ onMounted(() => {
   color: $stb-accent;
   flex-shrink: 0;
 }
-
 .calc-breakdown {
   background: $stb-surface;
   border: 1px solid $stb-border;
@@ -889,7 +941,6 @@ onMounted(() => {
 .text-accent {
   color: $stb-accent !important;
 }
-
 .radio-group {
   display: flex;
   gap: $space-4;

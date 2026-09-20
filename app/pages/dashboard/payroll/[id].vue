@@ -1,4 +1,3 @@
-<!-- pages/payroll/[id].vue -->
 <template>
   <div class="page-container">
     <!-- Loading State -->
@@ -16,8 +15,7 @@
             class="btn btn--ghost btn--sm mb-2"
             @click="navigateTo('/dashboard/payroll')"
           >
-            <ArrowLeft :size="16" />
-            العودة للقائمة
+            <ArrowLeft :size="16" /> العودة للقائمة
           </button>
           <h1>تفاصيل المسير</h1>
           <p>
@@ -28,14 +26,37 @@
           </p>
         </div>
         <div class="page-header__actions">
+          <!-- ✅ زر تأكيد الصرف -->
+          <button
+            v-if="!payroll.isDisbursed"
+            class="btn btn--success"
+            @click="handleDisburse"
+            :disabled="disbursing"
+          >
+            <span v-if="disbursing" class="spinner spinner--sm" />
+            <CheckCircle v-else :size="16" />
+            {{ disbursing ? "جاري التأكيد..." : "تأكيد الصرف" }}
+          </button>
+
+          <!-- ✅ معلومات الصرف إذا تم بالفعل -->
+          <div v-else class="disbursed-info">
+            <CheckCircle :size="16" class="text-success" />
+            <span
+              >تم الصرف بواسطة:
+              <strong>{{ payroll.disbursedBy?.username }}</strong></span
+            >
+            <span class="text-muted"
+              >({{ formatDate(payroll.disbursedAt!) }})</span
+            >
+          </div>
+
           <button
             class="btn btn--outline"
             @click="handleExport('excel')"
             :disabled="!!exporting"
           >
             <FileSpreadsheet v-if="!exporting" :size="16" />
-            <span v-else class="spinner spinner--sm" />
-            Excel
+            <span v-else class="spinner spinner--sm" /> Excel
           </button>
           <button
             class="btn btn--outline"
@@ -43,8 +64,7 @@
             :disabled="!!exporting"
           >
             <FileText v-if="!exporting" :size="16" />
-            <span v-else class="spinner spinner--sm" />
-            PDF
+            <span v-else class="spinner spinner--sm" /> PDF
           </button>
         </div>
       </div>
@@ -58,7 +78,6 @@
             <span class="stat-value">{{ payroll.items?.length ?? 0 }}</span>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-icon stat-icon--green"><Banknote :size="20" /></div>
           <div class="stat-content">
@@ -68,19 +87,17 @@
             }}</span>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-icon stat-icon--amber">
             <PlusCircle :size="20" />
           </div>
           <div class="stat-content">
-            <span class="stat-label">إجمالي البدلات</span>
+            <span class="stat-label">إجمالي البدلات والمستحقات</span>
             <span class="stat-value text-success">{{
               formatCurrency(stats.totalAllowances)
             }}</span>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-icon stat-icon--red"><MinusCircle :size="20" /></div>
           <div class="stat-content">
@@ -100,8 +117,18 @@
             <span class="value">{{ formatDate(payroll.generatedAt) }}</span>
           </div>
           <div class="info-item">
-            <span class="label">تاريخ الصرف المستهدف</span>
-            <span class="value">{{ formatDate(payroll.paymentDate) }}</span>
+            <span class="label">{{
+              payroll.isDisbursed
+                ? "تاريخ الصرف الفعلي"
+                : "تاريخ الصرف المستهدف"
+            }}</span>
+            <span class="value">{{
+              formatDate(
+                payroll.isDisbursed
+                  ? payroll.disbursedAt!
+                  : payroll.paymentDate,
+              )
+            }}</span>
           </div>
           <div class="info-item">
             <span class="label">معرف المسير</span>
@@ -133,7 +160,7 @@
                 <th>الموظف</th>
                 <th>الوظيفة / القسم</th>
                 <th class="text-right">الراتب الأساسي</th>
-                <th class="text-right">البدلات</th>
+                <th class="text-right">البدلات والمستحقات</th>
                 <th class="text-right">الخصومات</th>
                 <th class="text-right">الصافي</th>
               </tr>
@@ -171,7 +198,14 @@
                   {{ formatCurrency(item.basicSalary) }}
                 </td>
                 <td class="text-right text-success">
-                  {{ formatCurrency(item.allowances) }}
+                  {{ formatCurrency(calculateItemAllowances(item)) }}
+                  <!-- ✅ إشارة صغيرة لو جزء منها مصروف سلفاً -->
+                  <span
+                    v-if="calculateItemPrepaid(item) > 0"
+                    class="prepaid-hint"
+                    :title="`منها ${formatCurrency(calculateItemPrepaid(item))} مصروفة سلفاً`"
+                    >*</span
+                  >
                 </td>
                 <td class="text-right text-danger">
                   {{ formatCurrency(calculateItemDeductions(item)) }}
@@ -210,7 +244,6 @@ import { useRoute, navigateTo } from "#app";
 import { usePayrollStore } from "@/stores/payroll";
 import { useToast } from "@/composables/useToast";
 import type { PayrollDetail, PayrollItem } from "@/stores/payroll";
-
 import {
   ArrowLeft,
   FileSpreadsheet,
@@ -220,6 +253,7 @@ import {
   PlusCircle,
   MinusCircle,
   Search,
+  CheckCircle,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -231,8 +265,8 @@ const toast = useToast();
 const payroll = ref<PayrollDetail | null>(null);
 const searchQuery = ref("");
 const exporting = ref<"excel" | "pdf" | null>(null);
+const disbursing = ref(false);
 
-// ── Fetch Data ──────────────────────────────────────────────────────────────
 onMounted(async () => {
   const id = route.params.id as string;
   if (id) {
@@ -245,11 +279,9 @@ onMounted(async () => {
   }
 });
 
-// ─── Computeds ───────────────────────────────────────────────────────────────
 const filteredItems = computed(() => {
   if (!payroll.value?.items) return [];
   if (!searchQuery.value) return payroll.value.items;
-
   const q = searchQuery.value.toLowerCase();
   return payroll.value.items.filter(
     (item) =>
@@ -258,33 +290,59 @@ const filteredItems = computed(() => {
   );
 });
 
+// ✅ البدلات + المستحقات الإضافية (بدلات ثابتة + مكافآت + تسويات + نهاية خدمة)
+const calculateItemAllowances = (item: PayrollItem) =>
+  Number(item.housingAllowance) +
+  Number(item.transportAllowance) +
+  Number(item.otherAllowances) +
+  Number(item.overtimeAmount) +
+  Number(item.bonusesAmount) +
+  Number(item.settlementsAmount) +
+  Number(item.eosAmount);
+
+// ✅ الجزء المصروف سلفاً ضمن البدلات أعلاه (للتوضيح فقط)
+const calculateItemPrepaid = (item: PayrollItem) =>
+  Number(item.prepaidBonuses) +
+  Number(item.prepaidSettlements) +
+  Number(item.prepaidAllowances);
+
+// ✅ إجمالي الخصومات — شامل المبالغ المصروفة سلفاً (لمنع ازدواجية الصرف)
+const calculateItemDeductions = (item: PayrollItem) =>
+  Number(item.loanDeduction) +
+  Number(item.advanceDeduction) +
+  Number(item.unpaidLeaveDeduction) +
+  Number(item.otherDeductions) +
+  calculateItemPrepaid(item);
+
 const stats = computed(() => {
   if (!payroll.value?.items)
     return { totalBasic: 0, totalAllowances: 0, totalDeductions: 0 };
-
-  let totalBasic = 0;
-  let totalAllowances = 0;
-  let totalDeductions = 0;
-
+  let totalBasic = 0,
+    totalAllowances = 0,
+    totalDeductions = 0;
   payroll.value.items.forEach((item) => {
     totalBasic += Number(item.basicSalary);
-    totalAllowances += Number(item.allowances);
+    totalAllowances += calculateItemAllowances(item);
     totalDeductions += calculateItemDeductions(item);
   });
-
   return { totalBasic, totalAllowances, totalDeductions };
 });
 
-const calculateItemDeductions = (item: PayrollItem) => {
-  return (
-    Number(item.loanDeduction) +
-    Number(item.advanceDeduction) +
-    Number(item.unpaidLeaveDeduction) +
-    Number(item.otherDeductions)
-  );
+// ✅ دالة تأكيد الصرف
+const handleDisburse = async () => {
+  if (!payroll.value) return;
+  disbursing.value = true;
+  try {
+    const updated = await store.disburse(payroll.value.id);
+    payroll.value = { ...payroll.value, ...updated };
+    toast.success("✅ تم تأكيد صرف المسير بنجاح");
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تأكيد الصرف");
+  } finally {
+    disbursing.value = false;
+  }
 };
 
-// ─── Actions ─────────────────────────────────────────────────────────────────
 const handleExport = async (type: "excel" | "pdf") => {
   if (!payroll.value) return;
   exporting.value = type;
@@ -298,7 +356,6 @@ const handleExport = async (type: "excel" | "pdf") => {
   }
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const getMonthName = (m: number) =>
   [
     "",
@@ -315,10 +372,8 @@ const getMonthName = (m: number) =>
     "نوفمبر",
     "ديسمبر",
   ][m] ?? "";
-
 const formatDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("ar-SA") : "—";
-
 const formatCurrency = (val: string | number) =>
   Number(val).toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -333,7 +388,6 @@ const formatCurrency = (val: string | number) =>
 .content-wrapper {
   animation: fadeIn 0.3s ease-in-out;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -344,20 +398,17 @@ const formatCurrency = (val: string | number) =>
     transform: translateY(0);
   }
 }
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: $space-4;
   margin-bottom: $space-5;
 }
-
 .stat-card {
   @include glass-card;
   padding: $space-4;
   @include flex(row, center, flex-start, $space-3);
 }
-
 .stat-icon {
   width: 40px;
   height: 40px;
@@ -380,7 +431,6 @@ const formatCurrency = (val: string | number) =>
     color: $stb-danger;
   }
 }
-
 .stat-content {
   display: flex;
   flex-direction: column;
@@ -394,7 +444,6 @@ const formatCurrency = (val: string | number) =>
   font-weight: 700;
   color: $stb-text-primary;
 }
-
 .info-card {
   padding: $space-4 $space-5;
   margin-bottom: $space-5;
@@ -418,7 +467,6 @@ const formatCurrency = (val: string | number) =>
   font-weight: 600;
   color: $stb-text-secondary;
 }
-
 .table-card {
   padding: 0;
   overflow: hidden;
@@ -432,7 +480,6 @@ const formatCurrency = (val: string | number) =>
     font-weight: 700;
   }
 }
-
 .search-box {
   position: relative;
   width: 250px;
@@ -457,7 +504,6 @@ const formatCurrency = (val: string | number) =>
     border-color: $stb-accent;
   }
 }
-
 .table-wrapper {
   overflow-x: auto;
 }
@@ -486,7 +532,6 @@ const formatCurrency = (val: string | number) =>
 .data-table tr:hover td {
   background: rgba($stb-accent, 0.03);
 }
-
 .emp-cell {
   @include flex(row, center, flex-start, $space-3);
 }
@@ -523,7 +568,6 @@ const formatCurrency = (val: string | number) =>
   font-size: $font-size-xs;
   color: $stb-text-muted;
 }
-
 .dept-cell {
   display: flex;
   flex-direction: column;
@@ -536,13 +580,11 @@ const formatCurrency = (val: string | number) =>
   font-size: $font-size-xs;
   color: $stb-text-muted;
 }
-
 .empty-table {
   text-align: center;
   padding: $space-8 !important;
   color: $stb-text-muted;
 }
-
 .text-accent {
   color: $stb-accent;
 }
@@ -564,10 +606,45 @@ const formatCurrency = (val: string | number) =>
 .mt-4 {
   margin-top: $space-4;
 }
-
 .loading-full {
   min-height: 400px;
   @include flex(column, center, center, $space-4);
   color: $stb-text-muted;
+}
+
+// ✅ تنسيق زر ومعلومات الصرف
+.btn--success {
+  background: $stb-success;
+  color: #fff;
+  border: none;
+  &:hover:not(:disabled) {
+    background: rgba($stb-success, 8%);
+  }
+}
+.disbursed-info {
+  @include flex(row, center, flex-start, $space-2);
+  padding: $space-2 $space-3;
+  background: rgba($stb-success, 0.08);
+  border: 1px solid rgba($stb-success, 0.2);
+  border-radius: $radius-md;
+  font-size: $font-size-xs;
+  color: $stb-text-secondary;
+
+  strong {
+    color: $stb-success;
+    font-weight: 700;
+  }
+  .text-muted {
+    color: $stb-text-muted;
+    margin-right: $space-1;
+  }
+}
+
+// ✅ إشارة المبلغ المصروف سلفاً
+.prepaid-hint {
+  color: $stb-warning;
+  font-weight: 700;
+  cursor: help;
+  margin-right: 2px;
 }
 </style>

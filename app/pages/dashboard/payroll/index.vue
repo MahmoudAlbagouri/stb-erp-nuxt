@@ -1,4 +1,3 @@
-<!-- pages/payroll/index.vue -->
 <template>
   <div class="page-container">
     <!-- ══ Page Header ══════════════════════════════════════════════════════ -->
@@ -8,24 +7,6 @@
         <p>إدارة وإنشاء وتصدير كشوف الرواتب الشهرية</p>
       </div>
       <div class="page-header__actions">
-        <!-- <button
-          class="btn btn--outline"
-          @click="handleExport('excel')"
-          :disabled="!!exporting"
-        >
-          <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
-          <FileSpreadsheet v-else :size="16" />
-          Excel
-        </button>
-        <button
-          class="btn btn--outline"
-          @click="handleExport('pdf')"
-          :disabled="!!exporting"
-        >
-          <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
-          <FileText v-else :size="16" />
-          PDF
-        </button> -->
         <button class="btn btn--primary" @click="showGenerateModal = true">
           <CalendarPlus :size="16" />
           إنشاء مسير جديد
@@ -83,9 +64,7 @@
       </div>
 
       <div class="summary-card">
-        <div class="summary-icon summary-icon--green">
-          <Users :size="22" />
-        </div>
+        <div class="summary-icon summary-icon--green"><Users :size="22" /></div>
         <div class="summary-info">
           <div class="summary-value">{{ lastPayrollEmployees }}</div>
           <div class="summary-label">موظف نشط في المسير</div>
@@ -137,8 +116,7 @@
           :disabled="!!exporting"
         >
           <span v-if="exporting === 'excel'" class="spinner spinner--sm" />
-          <FileSpreadsheet v-else :size="15" />
-          تصدير Excel
+          <FileSpreadsheet v-else :size="15" /> تصدير Excel
         </button>
 
         <button
@@ -148,8 +126,7 @@
           :disabled="!!exporting"
         >
           <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
-          <FileText v-else :size="15" />
-          تصدير PDF
+          <FileText v-else :size="15" /> تصدير PDF
         </button>
       </div>
     </div>
@@ -165,9 +142,7 @@
     <!-- ══ Empty State ══════════════════════════════════════════════════════ -->
     <div v-else-if="!filteredPayrolls.length" class="empty-wrapper">
       <div class="empty-state">
-        <div class="empty-state__illustration">
-          <FileText :size="32" />
-        </div>
+        <div class="empty-state__illustration"><FileText :size="32" /></div>
         <div class="empty-state__title">لا توجد مسيرات رواتب</div>
         <div class="empty-state__text">
           {{
@@ -181,8 +156,7 @@
           class="btn btn--primary mt-4"
           @click="showGenerateModal = true"
         >
-          <CalendarPlus :size="15" />
-          إنشاء مسير جديد
+          <CalendarPlus :size="15" /> إنشاء مسير جديد
         </button>
       </div>
     </div>
@@ -197,69 +171,81 @@
       >
         <!-- Card Header -->
         <div class="payroll-card__header">
-          <div class="payroll-icon">
-            <CalendarDays :size="22" />
-          </div>
+          <div class="payroll-icon"><CalendarDays :size="22" /></div>
           <div class="payroll-card__meta">
             <h3>{{ getMonthName(payroll.month) }} {{ payroll.year }}</h3>
             <span class="payroll-card__sub"
               >تم الإنشاء: {{ formatDate(payroll.generatedAt) }}</span
             >
           </div>
+
+          <!-- ✅ Badge حالة الصرف -->
           <span
             :class="[
               'payroll-badge',
-              (payroll as any).status === 'finalized'
+              payroll.isDisbursed
                 ? 'payroll-badge--final'
                 : 'payroll-badge--draft',
             ]"
           >
             <span class="dot"></span>
-            {{ (payroll as any).status === "finalized" ? "مُعتمد" : "مسودة" }}
+            {{ payroll.isDisbursed ? "تم الصرف" : "غير مصروف" }}
           </span>
         </div>
 
         <!-- Card Body -->
         <div class="payroll-card__body">
           <div class="payroll-stat">
-            <span class="label">
-              <Banknote :size="12" />
-              إجمالي الصافي
-            </span>
+            <span class="label"><Banknote :size="12" /> إجمالي الصافي</span>
             <span class="value value--accent">{{
               formatCurrency(payroll.totalNetSalary)
             }}</span>
           </div>
 
           <div class="payroll-stat">
-            <span class="label">
-              <Users :size="12" />
-              عدد الموظفين
-            </span>
+            <span class="label"><Users :size="12" /> عدد الموظفين</span>
             <span class="value value--success"
               >{{ payroll.items?.length ?? "—" }} موظف</span
             >
           </div>
 
           <div class="payroll-stat">
-            <span class="label">
-              <CircleMinus :size="12" />
-              إجمالي الخصومات
-            </span>
+            <span class="label"
+              ><CircleMinus :size="12" /> إجمالي الخصومات</span
+            >
             <span class="value value--danger">{{
               formatCurrency((payroll as any).totalDeductions ?? 0)
             }}</span>
           </div>
 
+          <!-- ✅ عرض معلومات الصرف بدلاً من تاريخ الصرف المستهدف فقط -->
           <div class="payroll-stat">
-            <span class="label">
-              <Clock :size="12" />
-              تاريخ الصرف
-            </span>
-            <span class="value">{{ formatDate(payroll.paymentDate) }}</span>
+            <span class="label"
+              ><Clock :size="12" />
+              {{
+                payroll.isDisbursed ? "تاريخ الصرف" : "تاريخ الاستحقاق"
+              }}</span
+            >
+            <span class="value">{{
+              formatDate(
+                payroll.isDisbursed
+                  ? payroll.disbursedAt!
+                  : payroll.paymentDate,
+              )
+            }}</span>
           </div>
 
-          <!-- Progress bar -->
+          <!-- ✅ اسم الشخص الذي قام بالصرف -->
+          <div
+            v-if="payroll.isDisbursed && payroll.disbursedBy"
+            class="payroll-stat"
+          >
+            <span class="label"><UserCheck :size="12" /> صرف بواسطة</span>
+            <span class="value text-accent">{{
+              payroll.disbursedBy.username
+            }}</span>
+          </div>
+
           <div class="payroll-progress">
             <div
               class="payroll-progress__fill"
@@ -309,7 +295,6 @@
                 <X :size="18" />
               </button>
             </div>
-
             <form @submit.prevent="handleGenerate" class="modal-form">
               <div class="form-group">
                 <label>السنة *</label>
@@ -327,7 +312,6 @@
                   </option>
                 </select>
               </div>
-
               <div class="form-group">
                 <label>الشهر *</label>
                 <select
@@ -340,7 +324,6 @@
                   </option>
                 </select>
               </div>
-
               <div class="alert-info">
                 <Info :size="14" />
                 <span
@@ -348,7 +331,6 @@
                   المستحقة لهذا الشهر فقط.</span
                 >
               </div>
-
               <div class="modal__footer">
                 <button
                   type="button"
@@ -362,8 +344,9 @@
                   class="btn btn--primary"
                   :disabled="generating"
                 >
-                  <span v-if="generating" class="spinner" />
-                  <span v-else>تأكيد الإنشاء</span>
+                  <span v-if="generating" class="spinner" /><span v-else
+                    >تأكيد الإنشاء</span
+                  >
                 </button>
               </div>
             </form>
@@ -378,7 +361,6 @@
 import { ref, computed, reactive, onMounted } from "vue";
 import { usePayrollStore } from "@/stores/payroll";
 import { useToast } from "@/composables/useToast";
-
 import {
   CalendarDays,
   CalendarPlus,
@@ -390,6 +372,7 @@ import {
   Clock,
   Info,
   X,
+  UserCheck,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -398,11 +381,10 @@ const store = usePayrollStore();
 const toast = useToast();
 type Payroll = (typeof store.payrolls)[number];
 
-// ─── Filters ─────────────────────────────────────────────────────────────────
 const filterYear = ref<number | "">("");
 const filterMonth = ref<number | "">("");
-
 const currentYear = new Date().getFullYear();
+
 const availableYears = computed(() => {
   const years = new Set<number>();
   store.payrolls.forEach((p) => years.add(p.year));
@@ -418,7 +400,6 @@ const filteredPayrolls = computed(() =>
   }),
 );
 
-// ─── Summary computeds ───────────────────────────────────────────────────────
 const lastPayroll = computed(() => store.payrolls[0]);
 const lastPayrollTotal = computed(() => lastPayroll.value?.totalNetSalary ?? 0);
 const lastPayrollPeriod = computed(() =>
@@ -429,7 +410,6 @@ const lastPayrollPeriod = computed(() =>
 const lastPayrollEmployees = computed(
   () => lastPayroll.value?.items?.length ?? "—",
 );
-
 const lastPayrollDeductions = computed(
   () => (lastPayroll.value as any)?.totalDeductions ?? 0,
 );
@@ -443,19 +423,13 @@ const salaryChange = computed(() => {
 });
 
 const todayLabel = new Date().toLocaleDateString("ar-SA");
-
-// ─── Progress bar ────────────────────────────────────────────────────────────
-const MAX_NET = computed(() => {
-  const vals = store.payrolls.map((p) => Number(p.totalNetSalary));
-  return Math.max(...vals, 1);
-});
-
+const MAX_NET = computed(() =>
+  Math.max(...store.payrolls.map((p) => Number(p.totalNetSalary)), 1),
+);
 const payrollProgressPct = (p: Payroll) =>
   Math.round((Number(p.totalNetSalary) / MAX_NET.value) * 100);
 
-// ─── Export ──────────────────────────────────────────────────────────────────
 const exporting = ref<"excel" | "pdf" | null>(null);
-
 const handleExport = async (type: "excel" | "pdf") => {
   if (!filterYear.value) {
     toast.error("يرجى تحديد السنة أولاً للتصدير");
@@ -489,7 +463,6 @@ const handleExportForItem = async (type: "excel" | "pdf", payroll: Payroll) => {
   }
 };
 
-// ─── Generate Modal ──────────────────────────────────────────────────────────
 const showGenerateModal = ref(false);
 const generating = ref(false);
 const genForm = reactive({
@@ -510,11 +483,9 @@ const handleGenerate = async () => {
   }
 };
 
-// ─── Detail ──────────────────────────────────────────────────────────────────
 const openDetail = (payroll: Payroll) =>
   navigateTo(`/dashboard/payroll/${payroll.id}`);
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const getMonthName = (m: number) =>
   [
     "",
@@ -531,17 +502,14 @@ const getMonthName = (m: number) =>
     "نوفمبر",
     "ديسمبر",
   ][m] ?? "";
-
 const formatDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("ar-SA") : "—";
-
 const formatCurrency = (val: string | number) =>
   Number(val).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }) + " ر.س";
 
-// ─── Init ────────────────────────────────────────────────────────────────────
 onMounted(() => {
   store.fetchAll();
 });
@@ -551,14 +519,12 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// ── Stats Bar ──────────────────────────────────────────────────────────────
 .stats-bar {
   display: flex;
   gap: $space-3;
   flex-wrap: wrap;
   margin-bottom: $space-4;
 }
-
 .stat-pill {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;
@@ -567,12 +533,10 @@ onMounted(() => {
   border-radius: $radius-full;
   font-size: $font-size-xs;
   color: $stb-text-secondary;
-
   strong {
     color: $stb-text-primary;
     font-weight: 700;
   }
-
   &--accent {
     border-color: rgba($stb-accent, 0.3);
     strong {
@@ -580,14 +544,11 @@ onMounted(() => {
     }
   }
 }
-
-// ── Summary Cards ──────────────────────────────────────────────────────────
 .summary-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: $space-4;
   margin-bottom: $space-5;
-
   @include respond-to("lg") {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -595,13 +556,11 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 }
-
 .summary-card {
   @include glass-card;
   padding: $space-5;
   @include flex(row, center, flex-start, $space-4);
   transition: all $transition-base;
-
   &:hover {
     transform: translateY(-2px);
     border-color: rgba($stb-accent, 0.25);
@@ -610,14 +569,12 @@ onMounted(() => {
       $shadow-card;
   }
 }
-
 .summary-icon {
   width: 46px;
   height: 46px;
   border-radius: $radius-lg;
   @include flex(row, center, center);
   flex-shrink: 0;
-
   &--blue {
     background: rgba($stb-primary, 0.15);
     color: $stb-accent;
@@ -631,25 +588,21 @@ onMounted(() => {
     color: $stb-warning;
   }
 }
-
 .summary-info {
   flex: 1;
   min-width: 0;
 }
-
 .summary-value {
   font-size: $font-size-xl;
   font-weight: 800;
   color: $stb-text-primary;
   line-height: 1.2;
 }
-
 .summary-label {
   font-size: $font-size-xs;
   color: $stb-text-muted;
   margin-top: $space-1;
 }
-
 .summary-badge {
   font-size: 0.688rem;
   font-weight: 600;
@@ -657,7 +610,6 @@ onMounted(() => {
   border-radius: $radius-full;
   white-space: nowrap;
   flex-shrink: 0;
-
   &.badge--up {
     background: rgba($stb-success, 0.12);
     color: $stb-success;
@@ -675,52 +627,40 @@ onMounted(() => {
     color: $stb-warning;
   }
 }
-
-// ── Filters Card ───────────────────────────────────────────────────────────
 .filters-card {
   padding: $space-4 $space-5;
   margin-bottom: $space-5;
 }
-
 .filters-row {
   @include flex(row, center, flex-start, $space-3);
   width: 100%;
   flex-wrap: wrap;
-
   @include respond-to("md") {
     flex-direction: column;
     align-items: stretch;
   }
 }
-
 .status-select {
   width: 150px;
   @include respond-to("md") {
     width: 100%;
   }
 }
-
 .spacer {
   flex: 1;
 }
-
-// ── Loading ────────────────────────────────────────────────────────────────
 .loading-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
-
-// ── Empty ──────────────────────────────────────────────────────────────────
 .empty-wrapper {
   @include flex(row, center, center);
   min-height: 280px;
 }
-
 .empty-state {
   @include flex(column, center, center, $space-3);
   text-align: center;
-
   &__illustration {
     width: 72px;
     height: 72px;
@@ -732,28 +672,22 @@ onMounted(() => {
     opacity: 0.55;
     margin-bottom: $space-2;
   }
-
   &__title {
     font-size: $font-size-lg;
     font-weight: 700;
     color: $stb-text-secondary;
   }
-
   &__text {
     font-size: $font-size-sm;
     color: $stb-text-muted;
     max-width: 280px;
   }
 }
-
-// ── Payroll Grid ───────────────────────────────────────────────────────────
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $space-4;
 }
-
-// ── Payroll Card ───────────────────────────────────────────────────────────
 .payroll-card {
   @include glass-card;
   padding: 0;
@@ -763,8 +697,6 @@ onMounted(() => {
   transition: all $transition-base;
   overflow: hidden;
   position: relative;
-
-  // Accent top bar on hover
   &::before {
     content: "";
     position: absolute;
@@ -776,20 +708,16 @@ onMounted(() => {
     opacity: 0;
     transition: opacity $transition-base;
   }
-
   &:hover {
     transform: translateY(-3px);
     border-color: rgba($stb-accent, 0.35);
     box-shadow:
       0 0 16px rgba($stb-accent, 0.12),
       0 8px 24px rgba(0, 0, 0, 0.5);
-
     &::before {
       opacity: 1;
     }
   }
-
-  // ── Card Header
   &__header {
     @include flex(row, center, flex-start, $space-3);
     padding: $space-5 $space-5 $space-4;
@@ -800,11 +728,9 @@ onMounted(() => {
       transparent 100%
     );
   }
-
   &__meta {
     flex: 1;
     min-width: 0;
-
     h3 {
       font-size: $font-size-base;
       font-weight: 700;
@@ -812,13 +738,10 @@ onMounted(() => {
       margin-bottom: 2px;
     }
   }
-
   &__sub {
     font-size: $font-size-xs;
     color: $stb-text-muted;
   }
-
-  // ── Card Body
   &__body {
     display: flex;
     flex-direction: column;
@@ -826,21 +749,16 @@ onMounted(() => {
     gap: 0;
     flex: 1;
   }
-
-  // ── Card Footer
   &__footer {
     @include flex(row, center, space-between);
     padding: $space-3 $space-5;
     border-top: 1px solid rgba($stb-border, 0.5);
     background: rgba($stb-dark, 0.3);
   }
-
   &__pct {
     font-size: 0.688rem;
     color: $stb-text-muted;
   }
-
-  // Skeleton state
   &--skeleton {
     @include flex(row, center, flex-start, $space-3);
     padding: $space-5;
@@ -848,8 +766,6 @@ onMounted(() => {
     min-height: 80px;
   }
 }
-
-// ── Payroll Icon ───────────────────────────────────────────────────────────
 .payroll-icon {
   width: 46px;
   height: 46px;
@@ -860,8 +776,6 @@ onMounted(() => {
   @include flex(row, center, center);
   flex-shrink: 0;
 }
-
-// ── Payroll Badge (status) ─────────────────────────────────────────────────
 .payroll-badge {
   @include flex(row, center, center, $space-1);
   padding: $space-1 $space-2;
@@ -870,47 +784,38 @@ onMounted(() => {
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
-
   .dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
     background: currentColor;
   }
-
   &--final {
     background: rgba($stb-success, 0.12);
     color: $stb-success;
     border: 1px solid rgba($stb-success, 0.2);
   }
-
   &--draft {
     background: rgba($stb-warning, 0.12);
     color: $stb-warning;
     border: 1px solid rgba($stb-warning, 0.2);
   }
 }
-
-// ── Payroll Stat Row ───────────────────────────────────────────────────────
 .payroll-stat {
   @include flex(row, center, space-between);
   padding: $space-2 + 0.125rem 0;
   border-bottom: 1px solid rgba($stb-border, 0.4);
   font-size: $font-size-xs;
-
   &:last-of-type {
     border-bottom: none;
   }
-
   .label {
     @include flex(row, center, flex-start, $space-1);
     color: $stb-text-muted;
   }
-
   .value {
     font-weight: 600;
     color: $stb-text-primary;
-
     &--accent {
       color: $stb-accent;
       font-size: $font-size-sm;
@@ -923,15 +828,12 @@ onMounted(() => {
     }
   }
 }
-
-// ── Progress Bar ───────────────────────────────────────────────────────────
 .payroll-progress {
   height: 3px;
   background: $stb-border;
   border-radius: $radius-full;
   overflow: hidden;
   margin-top: $space-3;
-
   &__fill {
     height: 100%;
     border-radius: $radius-full;
@@ -939,24 +841,18 @@ onMounted(() => {
     transition: width 0.5s ease;
   }
 }
-
-// ── Export Buttons ─────────────────────────────────────────────────────────
 .export-btns {
   @include flex(row, center, flex-end, $space-2);
 }
-
 .btn--accent-outline {
   background: transparent;
   color: $stb-accent;
   border: 1px solid rgba($stb-accent, 0.3);
-
   &:hover:not(:disabled) {
     background: rgba($stb-accent, 0.08);
     border-color: $stb-accent;
   }
 }
-
-// ── Alert Info ─────────────────────────────────────────────────────────────
 .alert-info {
   @include flex(row, flex-start, flex-start, $space-2);
   padding: $space-3;
@@ -965,23 +861,18 @@ onMounted(() => {
   border-radius: $radius-md;
   font-size: $font-size-xs;
   color: $stb-text-secondary;
-
   svg {
     flex-shrink: 0;
     color: $stb-accent;
     margin-top: 1px;
   }
 }
-
-// ── Modal Form ─────────────────────────────────────────────────────────────
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: $space-4;
   padding: $space-5;
 }
-
-// ── Skeleton ───────────────────────────────────────────────────────────────
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -992,7 +883,6 @@ onMounted(() => {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: $radius-md;
-
   &--line {
     height: 14px;
     width: 70%;
@@ -1003,7 +893,6 @@ onMounted(() => {
     width: 40%;
   }
 }
-
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
@@ -1012,8 +901,6 @@ onMounted(() => {
     background-position: -200% 0;
   }
 }
-
-// ── Utilities ──────────────────────────────────────────────────────────────
 .mt-4 {
   margin-top: $space-4 !important;
 }
@@ -1021,7 +908,6 @@ onMounted(() => {
   display: flex;
   gap: $space-2;
   flex-wrap: wrap;
-
   @include respond-to("md") {
     width: 100%;
     justify-content: space-between;

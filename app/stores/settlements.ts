@@ -7,18 +7,32 @@ import type {
   ConfirmSettlementPayload,
 } from "@/types";
 
+// ✅ تعريف واجهة المستخدم الذي قام بالصرف (متطابقة مع Payroll)
+export interface DisbursedByUser {
+  id: string;
+  username: string;
+  email?: string;
+}
+
+// ✅ تحديث نوع Settlement ليشمل حقول الصرف
+export interface SettlementWithDisbursement extends Settlement {
+  isDisbursed?: boolean;
+  disbursedAt?: string;
+  disbursedBy?: DisbursedByUser;
+}
+
 export const useSettlementsStore = defineStore("settlements", () => {
   const api = useApi();
 
-  const settlements = ref<Settlement[]>([]);
+  // ✅ استخدام النوع المحدث
+  const settlements = ref<SettlementWithDisbursement[]>([]);
   const loading = ref(false);
   const calculating = ref(false);
 
-  // ── جلب كل التسويات المؤرشفة ─────────────────────────────────────────────
   const fetchAll = async () => {
     loading.value = true;
     try {
-      const res = await api.get<Settlement[]>("/settlements");
+      const res = await api.get<SettlementWithDisbursement[]>("/settlements");
       settlements.value = res.data;
     } catch (e: any) {
       console.error("Failed to fetch settlements:", e);
@@ -28,7 +42,6 @@ export const useSettlementsStore = defineStore("settlements", () => {
     }
   };
 
-  // ── حساب مستحقات موظف (للعرض فقط، لا يُحفظ) ─────────────────────────────
   const calculate = async (employeeId: string): Promise<SettlementPreview> => {
     calculating.value = true;
     try {
@@ -41,22 +54,37 @@ export const useSettlementsStore = defineStore("settlements", () => {
     }
   };
 
-  // ── تأكيد التسوية وأرشفتها ────────────────────────────────────────────────
   const confirm = async (
     payload: ConfirmSettlementPayload,
-  ): Promise<Settlement> => {
-    const res = await api.post<Settlement>("/settlements/confirm", payload);
-    // أضف السجل الجديد في أول القائمة بدون إعادة جلب كاملة
+  ): Promise<SettlementWithDisbursement> => {
+    const res = await api.post<SettlementWithDisbursement>(
+      "/settlements/confirm",
+      payload,
+    );
     settlements.value.unshift(res.data);
     return res.data;
   };
 
-  // ── جلب تسوية موظف محدد ──────────────────────────────────────────────────
+  // ✅ دالة جديدة لتأكيد الصرف
+  const disburse = async (id: string): Promise<SettlementWithDisbursement> => {
+    const res = await api.patch<SettlementWithDisbursement>(
+      `/settlements/${id}/disburse`,
+    );
+    const updated = res.data;
+
+    // تحديث السجل في القائمة المحلية
+    const idx = settlements.value.findIndex((s) => s.id === id);
+    if (idx !== -1) {
+      settlements.value[idx] = updated;
+    }
+    return updated;
+  };
+
   const getByEmployee = async (
     employeeId: string,
-  ): Promise<Settlement | null> => {
+  ): Promise<SettlementWithDisbursement | null> => {
     try {
-      const res = await api.get<Settlement>(
+      const res = await api.get<SettlementWithDisbursement>(
         `/settlements/employee/${employeeId}`,
       );
       return res.data;
@@ -65,10 +93,8 @@ export const useSettlementsStore = defineStore("settlements", () => {
     }
   };
 
-  // ✅ دالة تصدير التقارير (Excel / PDF)
   const exportData = async (type: "excel" | "pdf") => {
     try {
-      // هنا TypeScript يعرف أن النتيجة Blob مباشرة
       const blob = await api.get<Blob>(
         `/settlements/export/${type}`,
         true,
@@ -112,8 +138,9 @@ export const useSettlementsStore = defineStore("settlements", () => {
     fetchAll,
     calculate,
     confirm,
+    disburse, // ✅ تصدير الدالة الجديدة
     getByEmployee,
-    exportData, // ✅ تم التصدير
+    exportData,
     reset,
   };
 });

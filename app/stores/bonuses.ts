@@ -11,13 +11,23 @@ export enum BonusStatus {
   PAID = "paid",
 }
 
+export interface DisbursedByUser {
+  id: string;
+  username: string;
+  email?: string;
+}
+
 export interface Bonus {
   id: string;
   employeeId: string;
   amount: number;
   payoutDate: string;
   notes?: string;
-  status?: BonusStatus; // ✅ إضافة الحقل
+  status?: BonusStatus;
+  // ✅ حقول الصرف الاستثنائي المباشر
+  isDisbursed?: boolean;
+  disbursedAt?: string;
+  disbursedBy?: DisbursedByUser;
   createdAt: string;
   employee?: { id: string; fullName: string; employeeCode: string };
 }
@@ -55,6 +65,15 @@ export const useBonusStore = defineStore("bonuses", () => {
     const res = await api.patch<Bonus>(`/bonuses/${id}/status`, { status });
     const index = bonuses.value.findIndex((b) => b.id === id);
     if (index !== -1) bonuses.value[index] = res.data;
+    return res.data;
+  };
+
+  // ✅ تأكيد الصرف الاستثنائي المباشر (Off-Cycle Disbursement)
+  const disburseBonus = async (id: string) => {
+    const res = await api.patch<Bonus>(`/bonuses/${id}/disburse`);
+    const index = bonuses.value.findIndex((b) => b.id === id);
+    if (index !== -1)
+      bonuses.value[index] = { ...bonuses.value[index], ...res.data };
     return res.data;
   };
 
@@ -121,7 +140,8 @@ export const useBonusStore = defineStore("bonuses", () => {
     fetchAll,
     create,
     update,
-    updateStatus, // ✅ تصدير الدالة
+    updateStatus,
+    disburseBonus, // ✅ تصدير الدالة الجديدة
     remove,
     exportData,
     exportSingle,

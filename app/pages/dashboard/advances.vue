@@ -124,9 +124,22 @@
                 ><span v-else class="text-muted text-xs">غير محدد</span>
               </td>
               <td>
-                <span :class="`badge badge--${adv.status}`">{{
-                  getStatusLabel(adv.status)
-                }}</span>
+                <div class="status-cell">
+                  <span :class="`badge badge--${adv.status}`">{{
+                    getStatusLabel(adv.status)
+                  }}</span>
+                  <!-- ✅ إشارة الصرف الاستثنائي المباشر -->
+                  <span
+                    v-if="(adv as any).isDisbursed"
+                    class="badge badge--disbursed"
+                    :title="
+                      (adv as any).disbursedAt
+                        ? `صُرف بتاريخ ${formatDate((adv as any).disbursedAt)}`
+                        : ''
+                    "
+                    ><Zap :size="10" /> صرف استثنائي</span
+                  >
+                </div>
               </td>
               <td>{{ formatDate(adv.createdAt) }}</td>
 
@@ -172,6 +185,23 @@
                       <X :size="14" />
                     </button>
                   </template>
+
+                  <!-- ✅ زر الصرف الاستثنائي المباشر: سلف معتمدة وغير مصروفة سلفاً -->
+                  <button
+                    v-if="
+                      adv.status === 'approved' && !(adv as any).isDisbursed
+                    "
+                    class="btn btn--warning-outline btn--sm"
+                    @click="handleDisburse(adv.id)"
+                    :disabled="disbursingId === adv.id"
+                    title="صرف استثنائي مباشر"
+                  >
+                    <span
+                      v-if="disbursingId === adv.id"
+                      class="spinner spinner--sm"
+                    />
+                    <Zap v-else :size="14" />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -311,7 +341,8 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
-  UserPlus, // ✅ أيقونة جديدة
+  UserPlus,
+  Zap, // ✅ أيقونة الصرف الاستثنائي
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -327,6 +358,7 @@ const showApproveConfirm = ref(false);
 const showRejectConfirm = ref(false);
 const actionLoading = ref(false);
 const currentAdvanceTarget = ref<any | null>(null);
+const disbursingId = ref<string | null>(null);
 
 // ✅ حالة التصدير
 const exporting = ref<"excel" | "pdf" | null>(null);
@@ -467,6 +499,19 @@ const executeReject = async () => {
   }
 };
 
+// ✅ تأكيد الصرف الاستثنائي المباشر
+const handleDisburse = async (id: string) => {
+  disbursingId.value = id;
+  try {
+    await store.disburseAdvance(id);
+    toast.success("✅ تم تسجيل صرف السلفة استثنائياً بنجاح");
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تأكيد الصرف");
+  } finally {
+    disbursingId.value = null;
+  }
+};
+
 const getEmployeeName = (id: string) =>
   employeesStore.employees.find((e) => e.id === id)?.fullName || "-";
 const getStatusLabel = (status: string) =>
@@ -600,8 +645,37 @@ onMounted(() => {
   direction: ltr;
   display: inline-flex;
 }
+.status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+// ✅ شارة الصرف الاستثنائي
+.badge--disbursed {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  background: rgba($stb-warning, 0.12);
+  color: $stb-warning;
+  white-space: nowrap;
+}
 .actions-cell {
   @include flex(row, center, flex-start, $space-2);
+}
+
+// ✅ زر الصرف الاستثنائي
+.btn--warning-outline {
+  background: transparent;
+  color: $stb-warning;
+  border: 1px solid rgba($stb-warning, 0.35);
+  &:hover:not(:disabled) {
+    background: rgba($stb-warning, 0.1);
+    border-color: $stb-warning;
+  }
 }
 
 // ✅ تنسيق قائمة التصدير

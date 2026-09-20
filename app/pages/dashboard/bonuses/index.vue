@@ -110,6 +110,17 @@
               truncateNotes(bonus.notes)
             }}</span>
           </div>
+
+          <!-- ✅ حالة الصرف الاستثنائي المباشر -->
+          <div v-if="bonus.isDisbursed" class="bonus-stat">
+            <span class="label"><Zap :size="12" /> صرف استثنائي</span>
+            <span class="value value--disbursed"
+              >{{ formatDate(bonus.disbursedAt!) }}
+              <template v-if="bonus.disbursedBy"
+                >— {{ bonus.disbursedBy.username }}</template
+              ></span
+            >
+          </div>
         </div>
 
         <div class="bonus-card__footer">
@@ -152,6 +163,22 @@
                 <XCircle :size="13" />
               </button>
             </template>
+
+            <!-- ✅ زر الصرف الاستثنائي المباشر: يظهر فقط للمكافآت المعتمدة وغير المصروفة سلفاً -->
+            <button
+              v-if="bonus.status === BonusStatus.APPROVED && !bonus.isDisbursed"
+              class="btn btn--warning-outline btn--sm"
+              @click="handleDisburse(bonus.id)"
+              :disabled="disbursingId === bonus.id"
+              title="صرف استثنائي مباشر"
+            >
+              <span
+                v-if="disbursingId === bonus.id"
+                class="spinner spinner--sm"
+              />
+              <Zap v-else :size="13" />
+              صرف استثنائي
+            </button>
 
             <button class="btn btn--ghost btn--sm" @click="openModal(bonus)">
               <Edit :size="13" /> تعديل
@@ -296,6 +323,7 @@ import {
   Download,
   Check, // ✅ أيقونة الموافقة
   XCircle, // ✅ أيقونة الرفض
+  Zap, // ✅ أيقونة الصرف الاستثنائي
 } from "lucide-vue-next";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
@@ -310,6 +338,7 @@ const showDeleteConfirm = ref(false);
 const submitting = ref(false);
 const isEditing = ref(false);
 const currentId = ref<string | null>(null);
+const disbursingId = ref<string | null>(null);
 
 // ✅ حالة التصدير
 const exporting = ref<"excel" | "pdf" | null>(null);
@@ -400,6 +429,19 @@ const handleStatusChange = async (id: string, status: BonusStatus) => {
     toast.success(`تم تغيير حالة المكافأة إلى: ${getStatusLabel(status)}`);
   } catch (e: any) {
     toast.error(e.message);
+  }
+};
+
+// ✅ تأكيد الصرف الاستثنائي المباشر
+const handleDisburse = async (id: string) => {
+  disbursingId.value = id;
+  try {
+    await store.disburseBonus(id);
+    toast.success("✅ تم صرف المكافأة استثنائياً بنجاح");
+  } catch (e: any) {
+    toast.error(e.message || "فشل في تأكيد الصرف");
+  } finally {
+    disbursingId.value = null;
   }
 };
 
@@ -623,6 +665,8 @@ onMounted(() => {
     padding: $space-3 $space-5;
     border-top: 1px solid rgba($stb-border, 0.5);
     background: rgba($stb-dark, 0.3);
+    flex-wrap: wrap;
+    gap: $space-2;
   }
   &--skeleton {
     @include flex(row, center, flex-start, $space-3);
@@ -691,6 +735,22 @@ onMounted(() => {
       color: $stb-success;
       font-weight: 700;
     }
+    &--disbursed {
+      color: $stb-warning;
+      font-weight: 600;
+      font-size: $font-size-xs;
+    }
+  }
+}
+
+// ✅ زر الصرف الاستثنائي
+.btn--warning-outline {
+  background: transparent;
+  color: $stb-warning;
+  border: 1px solid rgba($stb-warning, 0.35);
+  &:hover:not(:disabled) {
+    background: rgba($stb-warning, 0.1);
+    border-color: $stb-warning;
   }
 }
 
@@ -801,5 +861,6 @@ onMounted(() => {
 .action-buttons {
   display: flex;
   gap: $space-2;
+  flex-wrap: wrap;
 }
 </style>
