@@ -1,5 +1,5 @@
 // ============================================
-// STB ERP - Type Definitions (Updated for New Logic)
+// STB ERP - Type Definitions (Updated for Payment Method & IBAN)
 // ============================================
 
 export interface ApiResponse<T> {
@@ -73,7 +73,7 @@ export interface Education {
   attachmentPath?: string; // مسار المرفق
 }
 
-// ✅ تعريفات الجداول المرتبطة بالموظف (لإصلاح خطأ TypeScript)
+// ✅ تعريفات الجداول المرتبطة بالموظف
 export interface Advance {
   id: string;
   amount: number;
@@ -156,6 +156,10 @@ export interface ResignationRequest {
   employeeId: string;
 }
 
+// ✅ نوع طريقة الدفع
+export type PaymentMethod = "CASH" | "BANK";
+
+// ✅ تحديث واجهة Salary
 export interface Salary {
   id: string;
   basicSalary: number;
@@ -163,6 +167,11 @@ export interface Salary {
   transportAllowance: number;
   otherAllowances: number;
   totalSalary: number;
+
+  // ✅ الحقول الجديدة
+  paymentMethod: PaymentMethod;
+  iban?: string | null;
+
   createdAt: string;
   employeeId: string;
 }
@@ -174,7 +183,7 @@ export interface Shift {
   endTime?: string;
 }
 
-// ✅ تحديث واجهة Employee لتشمل الجنسية والمؤهلات وجميع العلاقات
+// ✅ تحديث واجهة Employee
 export interface Employee {
   id: string;
   fullName: string;
@@ -203,7 +212,7 @@ export interface Employee {
   educations?: Education[];
   shift?: Shift | null;
 
-  // ✅ العلاقات الجديدة التي تسبب الخطأ
+  // ✅ العلاقات الجديدة
   advances?: Advance[];
   loans?: Loan[];
   bonuses?: Bonus[];
@@ -276,7 +285,7 @@ export interface CreatePermissionPayload {
   scope?: "system" | "tenant";
 }
 
-// ✅ تحديث بايلودات الموظفين لتتوافق مع الواجهة الجديدة وتشمل المؤهلات
+// ✅ تحديث بايلودات الموظفين
 export interface CreateEmployeePayload {
   fullName: string;
   employeeCode?: string;
@@ -311,7 +320,7 @@ export interface UpdateEmployeePayload {
   educations?: Education[];
 }
 
-// --- Leaves (Legacy Interfaces kept for compatibility if needed) ---
+// --- Leaves ---
 export interface LeaveBalance {
   id: string;
   employeeId: string;
@@ -398,13 +407,17 @@ export interface CreateLoanPayload {
   reason?: string;
 }
 
-// --- Salaries Payloads ---
+// --- Salaries Payloads (✅ محدثة لتشمل طريقة الدفع والآيبان) ---
 export interface CreateSalaryPayload {
   employeeId: string;
   basicSalary: number;
   housingAllowance?: number;
   transportAllowance?: number;
   otherAllowances?: number;
+
+  // ✅ الحقول الجديدة
+  paymentMethod: PaymentMethod;
+  iban?: string;
 }
 
 export interface UpdateSalaryPayload {
@@ -412,6 +425,10 @@ export interface UpdateSalaryPayload {
   housingAllowance?: number;
   transportAllowance?: number;
   otherAllowances?: number;
+
+  // ✅ الحقول الجديدة
+  paymentMethod?: PaymentMethod;
+  iban?: string;
 }
 
 // --- Biometric / Attendance ---
@@ -487,7 +504,7 @@ export interface Toast {
 }
 
 // ============================================
-// Settlements (Updated for Partial/Full Logic)
+// Settlements
 // ============================================
 
 export enum SettlementType {
@@ -511,6 +528,7 @@ export interface ConfirmSettlementPayload {
   daysToSettle?: number;
   notes?: string;
 }
+
 export enum NotificationCategory {
   CONTRACT_EXPIRY = "contract_expiry",
   ID_EXPIRY = "id_expiry",
@@ -535,7 +553,7 @@ export interface Notification {
   createdAt: string;
   recipient?: {
     id: string;
-    fullName?: string; // قد يأتي من الـ join في الـ admin endpoint
+    fullName?: string;
     username?: string;
   };
 }

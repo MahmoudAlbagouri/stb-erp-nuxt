@@ -1214,6 +1214,46 @@
                         errors.otherAllowances
                       }}</span>
                     </div>
+
+                    <!-- ✅ طريقة الدفع -->
+                    <div class="form-group form-group--full">
+                      <label class="form-label required">طريقة الدفع</label>
+                      <select
+                        v-model="form.salary.paymentMethod"
+                        class="form-select"
+                        @change="onPaymentMethodChange"
+                      >
+                        <option value="CASH">نقدي (CASH)</option>
+                        <option value="BANK">بنكي (BANK)</option>
+                      </select>
+                    </div>
+
+                    <!-- ✅ الآيبان: يظهر فقط عند الدفع البنكي -->
+                    <Transition name="slide-down">
+                      <div
+                        v-if="form.salary.paymentMethod === 'BANK'"
+                        class="form-group form-group--full"
+                      >
+                        <label class="form-label required"
+                          >رقم الآيبان (IBAN)</label
+                        >
+                        <input
+                          v-model="form.salary.iban"
+                          type="text"
+                          class="form-input"
+                          :class="{ 'form-input--error': errors.iban }"
+                          placeholder="SA00 0000 0000 0000 0000 0000"
+                          dir="ltr"
+                          maxlength="42"
+                          autocomplete="off"
+                          @input="onIbanInput"
+                          @blur="validateSingleField('iban')"
+                        />
+                        <span v-if="errors.iban" class="form-error">{{
+                          errors.iban
+                        }}</span>
+                      </div>
+                    </Transition>
                   </div>
 
                   <div class="salary-summary">
@@ -1425,6 +1465,21 @@
                       <span>الراتب الأساسي</span>
                       <strong>{{ fmt(form.salary.basicSalary) }} ر.س</strong>
                     </div>
+                    <div class="review-row">
+                      <span>طريقة الدفع</span>
+                      <strong>{{
+                        form.salary.paymentMethod === "BANK" ? "بنكي" : "نقدي"
+                      }}</strong>
+                    </div>
+                    <div
+                      v-if="form.salary.paymentMethod === 'BANK'"
+                      class="review-row"
+                    >
+                      <span>الآيبان</span>
+                      <strong dir="ltr">{{
+                        formatIban(form.salary.iban) || "—"
+                      }}</strong>
+                    </div>
                     <div class="review-row review-row--total">
                       <span>الإجمالي</span>
                       <strong>{{ fmt(totalSalary) }} ر.س</strong>
@@ -1528,6 +1583,7 @@ import { useShiftsStore } from "@/stores/shifts";
 import { useDepartmentsStore } from "@/stores/departments";
 import { useToast } from "@/composables/useToast";
 import type { Education } from "@/types";
+import { normalizeIban, isValidIban, formatIban } from "@/utils/payment";
 
 const props = defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{
@@ -1663,6 +1719,8 @@ const form = reactive({
     housingAllowance: 0,
     transportAllowance: 0,
     otherAllowances: 0,
+    paymentMethod: "CASH" as "CASH" | "BANK",
+    iban: "",
   },
 
   educations: [] as Education[],
@@ -1974,6 +2032,12 @@ const validateSingleField = (field: string) => {
         errors.otherAllowances = "البدلات الأخرى مطلوبة";
       } else delete errors.otherAllowances;
       break;
+    case "iban": {
+      const msg = getIbanError();
+      if (msg) errors.iban = msg;
+      else delete errors.iban;
+      break;
+    }
   }
 };
 
@@ -2154,6 +2218,11 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       errors.otherAllowances = "البدلات الأخرى مطلوبة";
       isValid = false;
     }
+    const ibanError = getIbanError();
+    if (ibanError) {
+      errors.iban = ibanError;
+      isValid = false;
+    }
   }
 
   return isValid;
@@ -2167,6 +2236,26 @@ const generatePassword = () => {
     () => chars[Math.floor(Math.random() * chars.length)],
   ).join("");
   showPassword.value = true;
+};
+// ── Payment Method / IBAN ─────────────────────────────────────────────────────
+const getIbanError = (): string => {
+  if (form.salary.paymentMethod !== "BANK") return "";
+  if (!normalizeIban(form.salary.iban))
+    return "رقم الآيبان مطلوب عند الدفع البنكي";
+  if (!isValidIban(form.salary.iban)) return "رقم الآيبان غير صالح";
+  return "";
+};
+
+const onIbanInput = () => {
+  form.salary.iban = form.salary.iban.toUpperCase().replace(/[^A-Z0-9\s]/g, "");
+  if (errors.iban) validateSingleField("iban");
+};
+
+const onPaymentMethodChange = () => {
+  if (form.salary.paymentMethod !== "BANK") {
+    form.salary.iban = "";
+    delete errors.iban;
+  }
 };
 
 // ── Education Handlers ───────────────────────────────────────────────────────
@@ -2242,6 +2331,8 @@ const handleClose = () => {
         housingAllowance: 0,
         transportAllowance: 0,
         otherAllowances: 0,
+        paymentMethod: "CASH",
+        iban: "",
       },
       educations: [],
     });
@@ -2327,6 +2418,7 @@ const handleSubmit = async () => {
       form.salary.otherAllowances < 0
     )
       allValid = false;
+    if (getIbanError()) allValid = false;
   }
 
   if (!allValid) {
@@ -2428,6 +2520,10 @@ const handleSubmit = async () => {
         housingAllowance: form.salary.housingAllowance || 0,
         transportAllowance: form.salary.transportAllowance || 0,
         otherAllowances: form.salary.otherAllowances || 0,
+        paymentMethod: form.salary.paymentMethod,
+        ...(form.salary.paymentMethod === "BANK" && {
+          iban: normalizeIban(form.salary.iban),
+        }),
       };
     }
 

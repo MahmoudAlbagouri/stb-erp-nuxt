@@ -84,6 +84,7 @@
               <th>بدل النقل</th>
               <th>بدلات أخرى</th>
               <th>إجمالي الأجر</th>
+              <th>طريقة الدفع</th>
               <th>الإجراءات</th>
             </tr>
           </thead>
@@ -104,6 +105,28 @@
               <td>{{ formatCurrency(sal.transportAllowance) }}</td>
               <td>{{ formatCurrency(sal.otherAllowances) }}</td>
               <td class="total-cell">{{ formatCurrency(sal.totalSalary) }}</td>
+              <td>
+                <div class="payment-cell">
+                  <span
+                    class="payment-badge"
+                    :class="
+                      sal.paymentMethod === 'BANK'
+                        ? 'payment-badge--bank'
+                        : 'payment-badge--cash'
+                    "
+                  >
+                    <Landmark v-if="sal.paymentMethod === 'BANK'" :size="12" />
+                    <Banknote v-else :size="12" />
+                    {{ paymentMethodLabel(sal.paymentMethod) }}
+                  </span>
+                  <span
+                    v-if="sal.paymentMethod === 'BANK' && sal.iban"
+                    class="payment-iban"
+                    dir="ltr"
+                    >{{ formatIban(sal.iban) }}</span
+                  >
+                </div>
+              </td>
               <td>
                 <div class="actions-cell">
                   <div class="export-dropdown">
@@ -228,6 +251,48 @@
                     step="50"
                   />
                 </div>
+
+                <!-- ✅ طريقة الدفع -->
+                <div class="form-group full-width">
+                  <label>طريقة الدفع *</label>
+                  <select
+                    v-model="form.paymentMethod"
+                    class="form-select"
+                    required
+                  >
+                    <option
+                      v-for="opt in PAYMENT_METHOD_OPTIONS"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- ✅ الآيبان: يظهر فقط عند الدفع البنكي -->
+                <div
+                  v-if="form.paymentMethod === 'BANK'"
+                  class="form-group full-width"
+                >
+                  <label>رقم الآيبان (IBAN) *</label>
+                  <input
+                    v-model="form.iban"
+                    type="text"
+                    class="form-input"
+                    :class="{ 'form-input--error': ibanError }"
+                    placeholder="SA00 0000 0000 0000 0000 0000"
+                    dir="ltr"
+                    maxlength="42"
+                    autocomplete="off"
+                    @input="onIbanInput"
+                    @blur="validateIban"
+                  />
+                  <span v-if="ibanError" class="form-error">{{
+                    ibanError
+                  }}</span>
+                </div>
+
                 <div class="summary-card full-width">
                   <div class="summary-content">
                     <span class="summary-label">إجمالي الأجر:</span
@@ -265,14 +330,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useSalariesStore } from "@/stores/salaries";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
 import type { CreateSalaryPayload, UpdateSalaryPayload, Salary } from "@/types";
 import {
+  PAYMENT_METHOD_OPTIONS,
+  paymentMethodLabel,
+  normalizeIban,
+  formatIban,
+  isValidIban,
+} from "@/utils/payment";
+import {
   Plus,
   Banknote,
+  Landmark,
   Users,
   TrendingUp,
   Wallet,
@@ -295,6 +368,7 @@ const isEditing = ref(false);
 const editingId = ref<string | null>(null);
 const exporting = ref<"excel" | "pdf" | null>(null);
 const activeExportMenu = ref<string | null>(null);
+const ibanError = ref("");
 
 const EMPTY_FORM: CreateSalaryPayload = {
   employeeId: "",
@@ -302,6 +376,8 @@ const EMPTY_FORM: CreateSalaryPayload = {
   housingAllowance: 0,
   transportAllowance: 0,
   otherAllowances: 0,
+  paymentMethod: "CASH",
+  iban: "",
 };
 const form = reactive({ ...EMPTY_FORM });
 
@@ -329,10 +405,32 @@ const availableEmployees = computed(() => {
   return employeesStore.employees.filter((e) => !ids.has(e.id));
 });
 
+// ── IBAN Validation ───────────────────────────────────────────────────────────
+const getIbanError = (): string => {
+  if (form.paymentMethod !== "BANK") return "";
+  if (!normalizeIban(form.iban)) return "رقم الآيبان مطلوب عند الدفع البنكي";
+  if (!isValidIban(form.iban)) return "رقم الآيبان غير صالح";
+  return "";
+};
+const validateIban = () => {
+  ibanError.value = getIbanError();
+};
+const onIbanInput = () => {
+  form.iban = (form.iban ?? "").toUpperCase().replace(/[^A-Z0-9\s]/g, "");
+  if (ibanError.value) validateIban();
+};
+watch(
+  () => form.paymentMethod,
+  (method) => {
+    if (method !== "BANK") ibanError.value = "";
+  },
+);
+
 const openCreateModal = () => {
   isEditing.value = false;
   editingId.value = null;
   Object.assign(form, EMPTY_FORM);
+  ibanError.value = "";
   showModal.value = true;
 };
 const openEditModal = (salary: Salary) => {
@@ -344,27 +442,42 @@ const openEditModal = (salary: Salary) => {
     housingAllowance: salary.housingAllowance,
     transportAllowance: salary.transportAllowance,
     otherAllowances: salary.otherAllowances,
+    paymentMethod: salary.paymentMethod || "CASH",
+    iban: salary.iban ? formatIban(salary.iban) : "",
   });
+  ibanError.value = "";
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
+  // ✅ منع الإرسال إذا كان الدفع بنكياً والآيبان فارغاً/غير صالح
+  if (form.paymentMethod === "BANK") {
+    validateIban();
+    if (ibanError.value) return;
+  }
+
   submitting.value = true;
   try {
+    // الآيبان يُرسل فقط عند الدفع البنكي
+    const iban =
+      form.paymentMethod === "BANK" ? normalizeIban(form.iban) : undefined;
+
     if (isEditing.value && editingId.value) {
       await store.update(editingId.value, {
         basicSalary: form.basicSalary,
         housingAllowance: form.housingAllowance,
         transportAllowance: form.transportAllowance,
         otherAllowances: form.otherAllowances,
-      });
+        paymentMethod: form.paymentMethod,
+        iban,
+      } as UpdateSalaryPayload);
       toast.success("تم تحديث الأجر بنجاح");
     } else {
       if (!form.employeeId) {
         toast.error("يرجى اختيار الموظف");
         return;
       }
-      await store.create(form as CreateSalaryPayload);
+      await store.create({ ...form, iban } as CreateSalaryPayload);
       toast.success("تم تعيين الأجر بنجاح");
     }
     showModal.value = false;
@@ -479,6 +592,44 @@ onMounted(() => {
   font-weight: 700;
   color: $stb-success;
   font-size: $font-size-base;
+}
+.payment-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-1;
+}
+.payment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+  padding: 2px $space-2;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  white-space: nowrap;
+  &--cash {
+    background: rgba($stb-warning, 0.12);
+    color: $stb-warning;
+  }
+  &--bank {
+    background: rgba($stb-info, 0.12);
+    color: $stb-info;
+  }
+}
+.payment-iban {
+  font-family: monospace;
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.form-error {
+  font-size: $font-size-xs;
+  color: $stb-danger;
+}
+.form-input--error {
+  border-color: $stb-danger !important;
 }
 .actions-cell {
   display: flex;
