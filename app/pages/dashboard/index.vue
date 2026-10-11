@@ -360,18 +360,19 @@ const deductionsStore = useDeductionStore();
 const loading = ref(true);
 const saudiTime = ref("");
 const currentDate = ref("");
-let timeInterval: any = null;
+let timeInterval: ReturnType<typeof setInterval> | null = null;
 
 const updateSaudiTime = () => {
   const now = new Date();
-  saudiTime.value = now.toLocaleTimeString("en-US", {
+  saudiTime.value = now.toLocaleTimeString(DISPLAY_LOCALE, {
     timeZone: "Asia/Riyadh",
     hour12: true,
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
   });
-  currentDate.value = now.toLocaleDateString("ar-SA", {
+  // أسماء اليوم/الشهر بالعربية، والأرقام لاتينية بالتقويم الميلادي
+  currentDate.value = now.toLocaleDateString("ar-u-nu-latn-ca-gregory", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -405,7 +406,7 @@ onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval);
 });
 
-const countPending = (items: any[]) => {
+const countPending = (items: { status?: string }[]) => {
   // التحقق من وجود حقل الحالة، وإذا لم يوجد نفترض أنها غير معلقة إلا إذا كان هناك منطق آخر
   return items.filter((item) => item.status === "pending").length;
 };
@@ -441,13 +442,6 @@ const welcomeMessage = computed(() => {
 });
 
 // دالة مساعدة لتنسيق العملة
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat("ar-SA", {
-    style: "currency",
-    currency: "SAR",
-    maximumFractionDigits: 0,
-  }).format(val);
-};
 
 // حساب القيم الإجمالية
 const totalPayrollValue = computed(() => {
@@ -507,35 +501,35 @@ const stats = computed<
   {
     icon: Banknote,
     label: "إجمالي الرواتب",
-    value: formatCurrency(totalPayrollValue.value),
+    value: formatCurrency(totalPayrollValue.value, 0),
     color: "#8b5cf6",
     colorRgb: "139,92,246",
   },
   {
     icon: TrendingUp,
     label: "متوسط الراتب",
-    value: formatCurrency(avgSalaryValue.value),
+    value: formatCurrency(avgSalaryValue.value, 0),
     color: "#f59e0b",
     colorRgb: "245,158,11",
   },
   {
     icon: Wallet,
     label: "إجمالي التسويات",
-    value: formatCurrency(totalSettlementsValue.value),
+    value: formatCurrency(totalSettlementsValue.value, 0),
     color: "#ef4444",
     colorRgb: "239,68,68",
   },
   {
     icon: Gift,
     label: "إجمالي المكافآت",
-    value: formatCurrency(totalBonusesValue.value),
+    value: formatCurrency(totalBonusesValue.value, 0),
     color: "#ec4899", // لون وردي للمكافآت
     colorRgb: "236,72,153",
   },
   {
     icon: MinusCircle,
     label: "إجمالي الخصومات",
-    value: formatCurrency(totalDeductionsValue.value),
+    value: formatCurrency(totalDeductionsValue.value, 0),
     color: "#64748b", // لون رمادي مزرق للخصومات
     colorRgb: "100,116,139",
   },

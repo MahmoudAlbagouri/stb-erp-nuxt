@@ -2,17 +2,18 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { useApi } from "@/composables/useApi";
+import type { SubscriptionSummary } from "@/types";
 
 export const useSubscriptionStore = defineStore("subscription", () => {
   const api = useApi();
-  const subscription = ref<any>(null);
+  const subscription = ref<SubscriptionSummary | null>(null);
   const loading = ref(false);
 
   // ✅ دالة لجلب بيانات الاشتراك
   const fetchMySubscription = async () => {
     loading.value = true;
     try {
-      const res = await api.get("/subscriptions/me");
+      const res = await api.get<SubscriptionSummary>("/subscriptions/me");
       subscription.value = res.data;
     } catch (e) {
       console.error("Failed to fetch subscription:", e);
@@ -38,17 +39,17 @@ export const useSubscriptionStore = defineStore("subscription", () => {
   });
 
   // ✅ تنسيق السعر لتجنب NaN
-  const formattedPrice = computed(() => {
-    const price = subscription.value?.plan?.price;
-    if (!price && price !== 0) return "مجاناً";
+  const formattedPrice = computed(() =>
+    formatPrice(subscription.value?.plan?.price),
+  );
 
-    const numPrice = Number(price);
-    return isNaN(numPrice)
-      ? "0 ر.س"
-      : `${numPrice.toLocaleString("ar-SA")} ر.س`;
-  });
+  const reset = () => {
+    subscription.value = null;
+    loading.value = false;
+  };
 
   return {
+    reset,
     subscription,
     loading,
     daysRemaining,

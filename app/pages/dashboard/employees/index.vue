@@ -429,7 +429,7 @@
                   class="form-group"
                 >
                   <label>تاريخ انتهاء *</label
-                  ><input
+                  ><StbDateInput
                     v-model="editForm.iqamaExpiryDate"
                     type="date"
                     class="form-input"
@@ -615,7 +615,7 @@
                           <div class="form-group">
                             <label class="form-label"
                               >تاريخ الانتهاء (اختياري)</label
-                            ><input
+                            ><StbDateInput
                               v-model="edu.expiryDate"
                               type="date"
                               class="form-input"
@@ -788,7 +788,13 @@ import { useUsersStore } from "@/stores/users";
 import { useDepartmentsStore } from "@/stores/departments";
 import { useShiftsStore } from "@/stores/shifts";
 import { useToast } from "@/composables/useToast";
-import type { Employee, User, Education } from "@/types";
+import type {
+  Employee,
+  User,
+  Education,
+  OnboardingResult,
+  UpdateEmployeePayload,
+} from "@/types";
 import OnboardingModal from "@/components/employees/OnboardingModal.vue";
 import {
   FileSpreadsheet,
@@ -831,7 +837,7 @@ const departmentsStore = useDepartmentsStore();
 const shiftsStore = useShiftsStore();
 const toast = useToast();
 const showOnboarding = ref(false);
-const onEmployeeCreated = async (result: any) => {
+const onEmployeeCreated = async (result: OnboardingResult) => {
   toast.success(`✅ تم إضافة الموظف "${result.employee.fullName}" بنجاح`);
   // إغلاق النافذة المنبثقة
   showOnboarding.value = false;
@@ -844,8 +850,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير تقرير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   } finally {
     exporting.value = null;
   }
@@ -862,8 +868,8 @@ const downloadProfile = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير ملف الموظف بصيغة ${type.toUpperCase()} بنجاح`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   }
 };
 
@@ -952,8 +958,8 @@ const handleExportFiltered = async (type: "excel" | "pdf") => {
       search: search.value || undefined,
     });
     toast.success("تم تصدير نتائج الفلترة بنجاح");
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تصدير النتائج");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تصدير النتائج"));
   } finally {
     exportingFiltered.value = null;
   }
@@ -1082,7 +1088,7 @@ const handleUpdate = async () => {
   updating.value = true;
   try {
     const cleanEducations = editForm.educations.map((edu) => {
-      const cleanEdu: any = {
+      const cleanEdu: Education = {
         degree: edu.degree,
         certificateNumber: edu.certificateNumber || undefined,
         issuingAuthority: edu.issuingAuthority || undefined,
@@ -1092,7 +1098,7 @@ const handleUpdate = async () => {
       if (edu.id) cleanEdu.id = edu.id;
       return cleanEdu;
     });
-    const payload: any = {
+    const payload: UpdateEmployeePayload = {
       fullName: editForm.fullName,
       nationalityType: editForm.nationalityType,
       nationalId: editForm.nationalId || undefined,
@@ -1111,9 +1117,9 @@ const handleUpdate = async () => {
     showEditModal.value = false;
     // إعادة تطبيق الفلاتر لتحديث القائمة
     await applyFilters();
-  } catch (e: any) {
+  } catch (e) {
     console.error(e);
-    toast.error(e.message || "حدث خطأ أثناء التحديث");
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء التحديث"));
   } finally {
     updating.value = false;
   }
@@ -1136,8 +1142,8 @@ const doDelete = async () => {
     await store.remove(deleteTarget.value.id);
     toast.success("تم حذف الموظف");
     showConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     deleting.value = false;
   }
@@ -1151,7 +1157,6 @@ const getNationalityLabel = (type?: string) =>
     non_saudi: " غير سعودي",
     outside_sponsorship: "📄 خارج الكفالة",
   })[type ?? ""] ?? "—";
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const isIqamaExpiringSoon = (date: string) => {
   const diff = new Date(date).getTime() - Date.now();
   return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;

@@ -109,11 +109,11 @@
         <div class="filters-grid">
           <div class="form-group">
             <label>من تاريخ</label>
-            <input v-model="filters.from" type="date" class="form-input" />
+            <StbDateInput v-model="filters.from" type="date" class="form-input" />
           </div>
           <div class="form-group">
             <label>إلى تاريخ</label>
-            <input v-model="filters.to" type="date" class="form-input" />
+            <StbDateInput v-model="filters.to" type="date" class="form-input" />
           </div>
           <div class="form-group">
             <label>نوع البصمة</label>
@@ -484,7 +484,7 @@
 
               <div class="form-group">
                 <label>التاريخ والوقت *</label>
-                <input
+                <StbDateInput
                   v-model="manualLogForm.punchTime"
                   type="datetime-local"
                   class="form-input"
@@ -576,7 +576,7 @@
 
               <div class="form-group">
                 <label>التاريخ والوقت *</label>
-                <input
+                <StbDateInput
                   v-model="editLogForm.punchTime"
                   type="datetime-local"
                   class="form-input"
@@ -734,8 +734,8 @@ const handleAddDevice = async () => {
     await store.createDevice(deviceForm);
     toast.success("تم إضافة الجهاز بنجاح");
     showDeviceModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -746,8 +746,8 @@ const confirmDeleteDevice = async (id: string) => {
   try {
     await store.deleteDevice(id);
     toast.success("تم حذف الجهاز");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
@@ -767,8 +767,8 @@ const handlePushUser = async () => {
     );
     toast.success("تم إرسال أمر ربط الموظف بالجهاز بنجاح");
     showPushModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في إرسال البيانات");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في إرسال البيانات"));
   } finally {
     submitting.value = false;
   }
@@ -795,8 +795,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportLogs(activeFilters.value, type);
     toast.success(`تم تصدير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   } finally {
     exporting.value = null;
   }
@@ -833,8 +833,8 @@ const handleCreateManualLog = async () => {
     toast.success("تم تسجيل البصمة بنجاح");
     showManualLogModal.value = false;
     loadLogs();
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تسجيل البصمة");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تسجيل البصمة"));
   } finally {
     submitting.value = false;
   }
@@ -879,18 +879,14 @@ const handleUpdateLog = async () => {
     });
     toast.success("تم تعديل البصمة بنجاح");
     showEditLogModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تعديل البصمة");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تعديل البصمة"));
   } finally {
     submitting.value = false;
   }
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-const formatDateTime = (dateStr: string) => {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleString("ar-SA");
-};
 
 const punchTypeLabel = (type: PunchType) => {
   const map: Record<string, string> = {

@@ -214,7 +214,7 @@
               ><CircleMinus :size="12" /> إجمالي الخصومات</span
             >
             <span class="value value--danger">{{
-              formatCurrency((payroll as any).totalDeductions ?? 0)
+              formatCurrency(payroll.totalDeductions ?? 0)
             }}</span>
           </div>
 
@@ -411,7 +411,7 @@ const lastPayrollEmployees = computed(
   () => lastPayroll.value?.items?.length ?? "—",
 );
 const lastPayrollDeductions = computed(
-  () => (lastPayroll.value as any)?.totalDeductions ?? 0,
+  () => lastPayroll.value?.totalDeductions ?? 0,
 );
 
 const salaryChange = computed(() => {
@@ -422,7 +422,7 @@ const salaryChange = computed(() => {
   return ((cur - prev) / prev) * 100;
 });
 
-const todayLabel = new Date().toLocaleDateString("ar-SA");
+const todayLabel = formatDate(new Date());
 const MAX_NET = computed(() =>
   Math.max(...store.payrolls.map((p) => Number(p.totalNetSalary)), 1),
 );
@@ -444,8 +444,8 @@ const handleExport = async (type: "excel" | "pdf") => {
     }
     await store.exportData(type, targetMonth, filterYear.value as number);
     toast.success(`تم تصدير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   } finally {
     exporting.value = null;
   }
@@ -456,8 +456,8 @@ const handleExportForItem = async (type: "excel" | "pdf", payroll: Payroll) => {
   try {
     await store.exportData(type, payroll.month, payroll.year);
     toast.success("تم التصدير بنجاح");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -476,8 +476,8 @@ const handleGenerate = async () => {
     await store.generate(genForm.month, genForm.year);
     toast.success("تم إنشاء مسير الرواتب بنجاح");
     showGenerateModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     generating.value = false;
   }
@@ -502,13 +502,6 @@ const getMonthName = (m: number) =>
     "نوفمبر",
     "ديسمبر",
   ][m] ?? "";
-const formatDate = (d: string) =>
-  d ? new Date(d).toLocaleDateString("ar-SA") : "—";
-const formatCurrency = (val: string | number) =>
-  Number(val).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " ر.س";
 
 onMounted(() => {
   store.fetchAll();

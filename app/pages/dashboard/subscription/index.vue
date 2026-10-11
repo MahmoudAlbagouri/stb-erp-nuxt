@@ -140,13 +140,14 @@
 import { onMounted } from "vue";
 import { useSubscriptionStore } from "@/stores/subscription"; // ✅ استيراد الـ Store الجديد
 import { Gem, ShieldCheck, AlertCircle, Clock } from "lucide-vue-next";
+import type { QuotaUsage } from "@/types";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useSubscriptionStore();
 
 const getStatusLabel = (s: string) => {
-  const map: any = {
+  const map: Record<string, string> = {
     active: "نشط",
     trial: "تجريبي",
     expired: "منتهي",
@@ -157,12 +158,11 @@ const getStatusLabel = (s: string) => {
   return map[s] || s;
 };
 
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
-const getBillingLabel = (c: string) =>
+const getBillingLabel = (c?: string) =>
   c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
 const getQuotaLabel = (k: string) =>
   k === "max_users" ? "المستخدمين" : k === "max_employees" ? "الموظفين" : k;
-const getPercentage = (q: any) =>
+const getPercentage = (q: QuotaUsage) =>
   q.limit === null ? 0 : Math.min(100, Math.round((q.used / q.limit) * 100));
 
 onMounted(() => store.fetchMySubscription());

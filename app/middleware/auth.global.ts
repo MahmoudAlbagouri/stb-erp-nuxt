@@ -1,9 +1,14 @@
 // middleware/auth.global.ts
 import { defineNuxtRouteMiddleware, navigateTo, useCookie } from "nuxt/app";
-
-const LOGIN_PATH = "/auth/login";
-const DISCLAIMER_PATH = "/disclaimer";
-const DASHBOARD_PATH = "/dashboard";
+import type { DecodedToken } from "@/types";
+import {
+  ACCESS_TOKEN_COOKIE,
+  DASHBOARD_PATH,
+  DISCLAIMER_PATH,
+  LOGIN_PATH,
+  REFRESH_TOKEN_COOKIE,
+  decodeJwt,
+} from "@/utils/auth";
 
 /**
  * يقرأ حقل isDisclaimerAccepted من الـ JWT.
@@ -11,26 +16,13 @@ const DASHBOARD_PATH = "/dashboard";
  * - null       → تعذر فك التوكن (لا نحجب، والـ API هو خط الدفاع)
  */
 function readDisclaimerClaim(token: string): boolean | null {
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join(""),
-    );
-    return JSON.parse(json)?.isDisclaimerAccepted === true;
-  } catch {
-    return null;
-  }
+  const payload = decodeJwt<DecodedToken>(token);
+  return payload ? payload.isDisclaimerAccepted === true : null;
 }
 
 export default defineNuxtRouteMiddleware((to) => {
-  const accessToken = useCookie<string | null>("stb_access_token");
-  const refreshToken = useCookie<string | null>("stb_refresh_token");
+  const accessToken = useCookie<string | null>(ACCESS_TOKEN_COOKIE);
+  const refreshToken = useCookie<string | null>(REFRESH_TOKEN_COOKIE);
 
   const hasSession = !!accessToken.value || !!refreshToken.value;
 

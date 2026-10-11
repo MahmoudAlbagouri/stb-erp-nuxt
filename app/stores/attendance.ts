@@ -6,48 +6,11 @@ import type {
   BiometricDevice,
   CreateDevicePayload,
   DeviceStatus,
+  AttendanceLog,
+  PunchType,
 } from "@/types";
 
-export type PunchType =
-  | "check_in"
-  | "check_out"
-  | "break_out"
-  | "break_in"
-  | "overtime_in"
-  | "overtime_out"
-  | "leave";
-
-export interface AttendanceLog {
-  id: string;
-  deviceUserId: string;
-  employeeId?: string;
-  employee?: {
-    id: string;
-    fullName: string;
-    employeeCode: string;
-  };
-  deviceId?: string;
-  device?: {
-    id: string;
-    alias?: string;
-    serialNumber: string;
-    location?: string;
-  };
-  punchTime: string;
-  punchType: PunchType;
-  verifyMode: string;
-  deviceSn?: string;
-  isManualEntry: boolean;
-  isEdited: boolean;
-  editedByName?: string;
-  editedAt?: string;
-  createdByName?: string;
-  originalPunchTime?: string;
-  leaveReason?: string;
-  workHours?: number;
-  overtimeHours?: number;
-  createdAt: string;
-}
+export type { AttendanceLog, PunchType };
 
 export interface AttendanceLogFilters {
   from?: string;
@@ -123,23 +86,13 @@ export const useAttendanceStore = defineStore("attendance", () => {
 
   // --- Logs Management ---
 
-  const buildQuery = (filters?: AttendanceLogFilters): string => {
-    const params = new URLSearchParams();
-    if (filters?.from) params.set("from", filters.from);
-    if (filters?.to) params.set("to", filters.to);
-    if (filters?.punchType) params.set("punchType", filters.punchType);
-    if (filters?.employeeId) params.set("employeeId", filters.employeeId);
-    if (filters?.employeeName) params.set("employeeName", filters.employeeName);
-    if (filters?.page) params.set("page", String(filters.page));
-    if (filters?.limit) params.set("limit", String(filters.limit));
-    return params.toString();
-  };
 
   const fetchLogs = async (filters?: AttendanceLogFilters) => {
     loading.value = true;
     try {
-      const qs = buildQuery(filters);
-      const res = await api.get<any>(`/attendance/logs${qs ? `?${qs}` : ""}`);
+      const res = await api.get<{ data: AttendanceLog[]; total: number }>(
+        `/attendance/logs${toQueryString(filters)}`,
+      );
       logs.value = res.data.data || [];
       logsTotal.value = res.data.total || 0;
     } catch (error) {
@@ -171,26 +124,10 @@ export const useAttendanceStore = defineStore("attendance", () => {
     filters: AttendanceLogFilters | undefined,
     type: "excel" | "pdf",
   ) => {
-    const qs = buildQuery(filters);
-    const blob = await api.get<Blob>(
-      `/attendance/logs/export/${type}${qs ? `?${qs}` : ""}`,
-      true,
-      "blob",
+    await api.download(
+      `/attendance/logs/export/${type}${toQueryString(filters)}`,
+      `attendance_logs_${todayStamp()}.${reportExtension(type)}`,
     );
-    if (!blob || blob.size === 0) throw new Error("الملف المستلم فارغ أو تالف");
-
-    const extension = type === "excel" ? "xlsx" : "pdf";
-    const fileName = `attendance_logs_${new Date().toISOString().split("T")[0]}.${extension}`;
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    }, 100);
   };
 
   const reset = () => {

@@ -153,7 +153,7 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>تاريخ انتهاء الخدمة *</label>
-                  <input
+                  <StbDateInput
                     v-model="form.terminationDate"
                     type="date"
                     class="form-input"
@@ -178,7 +178,7 @@
 
               <div class="form-group">
                 <label>تاريخ صرف المكافأة *</label>
-                <input
+                <StbDateInput
                   v-model="form.payoutDate"
                   type="date"
                   class="form-input"
@@ -242,6 +242,7 @@
 </template>
 
 <script setup lang="ts">
+import type { EndOfService } from "@/types";
 import { ref, reactive, computed, onMounted } from "vue";
 import { useEOSStore, EOSReason } from "@/stores/eos";
 import { useEmployeesStore } from "@/stores/employees";
@@ -301,17 +302,17 @@ const lastPayoutLabel = computed(() => {
 
 // ✅ دالة لعرض النص العربي في البطاقات بناءً على المفتاح الإنجليزي
 const getReasonLabel = (key: string) => {
-  return (EOSReason as any)[key] || key;
+  return (EOSReason as Record<string, string>)[key] || key;
 };
 
-const openModal = (record?: any) => {
+const openModal = (record?: EndOfService) => {
   if (record) {
     isEditing.value = true;
     currentId.value = record.id;
     form.employeeId = record.employeeId;
     form.terminationDate = record.terminationDate.split("T")[0];
     // ✅ التأكد من تعيين النص العربي الصحيح عند التعديل
-    form.reason = getReasonLabel(record.reason);
+    form.reason = getReasonLabel(record.reason) as EOSReason;
     form.payoutDate = record.payoutDate.split("T")[0];
     form.notes = record.notes || "";
   } else {
@@ -335,8 +336,8 @@ const handleSubmit = async () => {
       isEditing.value ? "تم تحديث السجل بنجاح" : "تم تسجيل نهاية الخدمة بنجاح",
     );
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -353,20 +354,14 @@ const handleDelete = async () => {
     toast.success("تم حذف السجل");
     // ✅ إغلاق المودال يدوياً بعد النجاح لضمان اختفائه
     showDeleteConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
 const closeModal = () => (showModal.value = false);
 
-const formatCurrency = (val: number | string) =>
-  Number(val).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " ر.س";
 
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;
 

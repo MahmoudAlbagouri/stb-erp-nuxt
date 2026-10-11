@@ -7,19 +7,10 @@ import type {
   ConfirmSettlementPayload,
 } from "@/types";
 
-// ✅ تعريف واجهة المستخدم الذي قام بالصرف (متطابقة مع Payroll)
-export interface DisbursedByUser {
-  id: string;
-  username: string;
-  email?: string;
-}
+export type { DisbursedByUser } from "@/types";
 
-// ✅ تحديث نوع Settlement ليشمل حقول الصرف
-export interface SettlementWithDisbursement extends Settlement {
-  isDisbursed?: boolean;
-  disbursedAt?: string;
-  disbursedBy?: DisbursedByUser;
-}
+/** حقول الصرف أصبحت جزءاً من Settlement نفسه — الاسم باقٍ للتوافق */
+export type SettlementWithDisbursement = Settlement;
 
 export const useSettlementsStore = defineStore("settlements", () => {
   const api = useApi();
@@ -34,7 +25,7 @@ export const useSettlementsStore = defineStore("settlements", () => {
     try {
       const res = await api.get<SettlementWithDisbursement[]>("/settlements");
       settlements.value = res.data;
-    } catch (e: any) {
+    } catch (e) {
       console.error("Failed to fetch settlements:", e);
       throw e;
     } finally {
@@ -94,35 +85,10 @@ export const useSettlementsStore = defineStore("settlements", () => {
   };
 
   const exportData = async (type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(
-        `/settlements/export/${type}`,
-        true,
-        "blob",
-      );
-
-      if (!blob || blob.size === 0) {
-        throw new Error("الملف المستلم فارغ أو تالف");
-      }
-
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `settlements_report_${new Date().toISOString().split("T")[0]}.${extension}`;
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/settlements/export/${type}`,
+      `settlements_report_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   const reset = () => {

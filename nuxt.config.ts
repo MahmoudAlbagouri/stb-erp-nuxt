@@ -24,7 +24,12 @@ export default defineNuxtConfig({
       },
     },
     optimizeDeps: {
-      include: ["@vue/devtools-core", "@vue/devtools-kit", "pinia"],
+      include: [
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+        "@vueuse/core",
+        "pinia",
+      ],
     },
   },
 

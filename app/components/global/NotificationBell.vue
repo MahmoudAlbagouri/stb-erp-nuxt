@@ -83,18 +83,28 @@ import {
   Info,
   AlertTriangle,
 } from "lucide-vue-next";
+import type { Directive } from "vue";
 import type { Notification, NotificationCategory } from "@/types";
 
-const vClickOutside = {
-  mounted: (el: any, binding: any) => {
+type ClickOutsideEl = HTMLElement & {
+  clickOutsideEvent?: (event: Event) => void;
+};
+
+const vClickOutside: Directive<
+  ClickOutsideEl,
+  (event: Event, el: HTMLElement) => void
+> = {
+  mounted: (el, binding) => {
     el.clickOutsideEvent = (event: Event) => {
-      if (!(el === event.target || el.contains(event.target)))
+      if (!(el === event.target || el.contains(event.target as Node)))
         binding.value(event, el);
     };
     document.addEventListener("click", el.clickOutsideEvent);
   },
-  unmounted: (el: any) =>
-    document.removeEventListener("click", el.clickOutsideEvent),
+  unmounted: (el) => {
+    if (el.clickOutsideEvent)
+      document.removeEventListener("click", el.clickOutsideEvent);
+  },
 };
 
 const store = useNotificationsStore();
@@ -120,8 +130,8 @@ const handleMarkAllRead = async () => {
   try {
     await store.markAllAsRead();
     toast.success("تم تحديد جميع الإشعارات كمقروءة");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }

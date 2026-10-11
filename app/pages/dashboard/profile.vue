@@ -494,21 +494,13 @@ const refreshData = async () => {
   try {
     await store.refreshProfile();
     toast.success("تم تحديث البيانات بنجاح");
-  } catch (e: any) {
-    toast.error(e.message || "فشل تحديث البيانات");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل تحديث البيانات"));
   }
 };
 
-const formatDate = (date?: string | null) =>
-  date ? new Date(date).toLocaleDateString("ar-SA") : "-";
 
 // ✅ إصلاح دالة تنسيق العملة لتعمل مع الأرقام والنصوص بشكل صحيح
-const formatCurrency = (val?: number | string) => {
-  if (!val && val !== 0) return "0 ر.س";
-  const num = Number(val);
-  if (isNaN(num)) return "0 ر.س";
-  return `${num.toLocaleString("ar-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
-};
 
 onMounted(() => {
   if (!store.isLoaded) store.fetchProfile();

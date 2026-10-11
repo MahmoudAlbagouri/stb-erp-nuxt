@@ -35,8 +35,8 @@ export const useShiftsStore = defineStore("shifts", () => {
     try {
       const res = await api.get<Shift[]>("/shifts");
       shifts.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }

@@ -14,26 +14,21 @@ export interface Tenant {
   companyName: string;
   logo_url: string | null;
   domain: string | null;
-  phone: string;
-  address: string;
+  phone: string | null;
+  address: string | null;
   country: string | null;
-  subscription_plan: "free" | "basic" | "pro" | "enterprise";
-  status: "trial" | "active" | "suspended" | "expired";
-  trial_ends_at: string | null;
-  subscription_ends_at: string | null;
-  max_users: number;
-  storage_limit_mb: number;
+  status: "active" | "trial" | "inactive";
   language: string;
   timezone: string;
   is_verified: boolean;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
 }
 
 export interface Permission {
   id: string;
   name: string;
+  displayNameAr?: string | null;
   scope: "system" | "tenant";
   tenantId: string | null;
 }
@@ -73,36 +68,73 @@ export interface Education {
   attachmentPath?: string; // مسار المرفق
 }
 
+// ✅ بيانات من قام بالصرف (مشتركة بين المسير / التسويات / المكافآت / السلف)
+export interface DisbursedByUser {
+  id: string;
+  username: string;
+  email?: string;
+}
+
+/** حقول الصرف الاستثنائي المباشر (Off-Cycle Disbursement) */
+export interface Disbursable {
+  isDisbursed?: boolean;
+  disbursedAt?: string;
+  disbursedBy?: DisbursedByUser;
+}
+
 // ✅ تعريفات الجداول المرتبطة بالموظف
-export interface Advance {
+export type AdvanceStatus = "pending" | "approved" | "rejected" | "paid";
+
+export interface Advance extends Disbursable {
   id: string;
   amount: number;
   reason?: string | null;
-  status: "pending" | "approved" | "rejected" | "paid";
+  status: AdvanceStatus;
   repaymentDate: string;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
 }
+
+export type LoanStatus = "pending" | "approved" | "rejected" | "completed";
 
 export interface Loan {
   id: string;
   totalAmount: number;
   installmentsCount: number;
+  paidInstallments?: number;
   monthlyInstallment: number;
   startDate: string;
   reason?: string | null;
-  status: "pending" | "approved" | "rejected" | "completed";
+  status: LoanStatus;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
 }
 
-export interface Bonus {
+export enum BonusStatus {
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  PAID = "paid",
+}
+
+export interface Bonus extends Disbursable {
   id: string;
   amount: number;
   payoutDate: string;
   notes?: string | null;
+  status?: BonusStatus;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
+}
+
+export enum DeductionStatus {
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled",
 }
 
 export interface Deduction {
@@ -113,29 +145,38 @@ export interface Deduction {
   paidInstallments: number;
   installmentsCount: number;
   startDate: string;
+  notes?: string | null;
+  status?: DeductionStatus;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
 }
+
+export type LeaveType = "annual" | "unpaid" | "other";
+export type LeaveStatus = "pending" | "approved" | "rejected";
 
 export interface LeaveRequest {
   id: string;
-  type: "annual" | "unpaid" | "other";
+  type: LeaveType;
   startDate: string;
   endDate: string;
-  status: "pending" | "approved" | "rejected";
+  status: LeaveStatus;
   reason?: string | null;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
 }
 
-export interface Settlement {
+export interface Settlement extends Disbursable {
   id: string;
   unusedLeaveDays: number;
+  dailyRate?: number;
   totalAmount: number;
   settlementDate: string;
   notes?: string | null;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
 }
 
 export interface EndOfService {
@@ -143,8 +184,13 @@ export interface EndOfService {
   eosAmount: number;
   terminationDate: string;
   reason: string;
+  serviceYears: number;
+  lastBasicSalary: number;
+  payoutDate: string;
+  notes?: string | null;
   createdAt: string;
   employeeId: string;
+  employee?: Employee;
 }
 
 export interface ResignationRequest {
@@ -173,7 +219,17 @@ export interface Salary {
   iban?: string | null;
 
   createdAt: string;
+  updatedAt?: string;
   employeeId: string;
+  employee?: Employee;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  tenantId: string;
+  createdAt: string;
+  employeesCount?: number;
 }
 
 export interface Shift {
@@ -183,6 +239,8 @@ export interface Shift {
   endTime?: string;
 }
 
+export type NationalityType = "saudi" | "non_saudi" | "outside_sponsorship";
+
 // ✅ تحديث واجهة Employee
 export interface Employee {
   id: string;
@@ -190,14 +248,16 @@ export interface Employee {
   employeeCode: string;
 
   // حقول الجنسية والجواز/الإقامة
-  nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
+  nationalityType: NationalityType;
   iqamaExpiryDate?: string | null;
 
   nationalId?: string | null;
   nationalIdCardPath?: string | null;
   phone: string | null;
   jobTitle?: string | null;
-  department?: string | null;
+  // ✅ القسم علاقة (كائن) وليس نصاً حراً
+  departmentId?: string | null;
+  department?: Department | null;
 
   status: "active" | "inactive" | "terminated";
   tenantId: string;
@@ -208,7 +268,7 @@ export interface Employee {
 
   // العلاقات الأساسية
   user?: User | null;
-  contract?: any; // يمكن استبداله بواجهة Contract لاحقاً
+  contract?: Contract | null;
   educations?: Education[];
   shift?: Shift | null;
 
@@ -239,12 +299,10 @@ export interface RegisterPayload {
   password: string;
 }
 
+/** استجابة login / register / accept-disclaimer */
 export interface AuthTokens {
-  userId: string;
-  email: string;
-  tenantId: string;
-  isSuperAdmin: boolean;
-  isSystemAdmin: boolean;
+  userId?: string;
+  message?: string;
   accessToken: string;
   refreshToken: string;
 }
@@ -295,7 +353,8 @@ export interface CreateEmployeePayload {
   nationalIdCardPath?: string;
   phone?: string;
   jobTitle?: string;
-  department?: string;
+  departmentId?: string;
+  shiftId?: string;
   status?: "active" | "inactive" | "terminated";
   userId?: string;
 
@@ -312,9 +371,10 @@ export interface UpdateEmployeePayload {
   nationalIdCardPath?: string;
   phone?: string;
   jobTitle?: string;
-  department?: string;
+  departmentId?: string | null;
+  shiftId?: string | null;
   status?: "active" | "inactive" | "terminated";
-  userId?: string;
+  userId?: string | null;
 
   // ✅ إضافة المؤهلات عند التحديث
   educations?: Education[];
@@ -335,7 +395,7 @@ export interface LeaveBalance {
 export interface CreateLeavePayload {
   startDate: string;
   endDate: string;
-  type: "annual" | "unpaid" | "other";
+  type: LeaveType;
   reason?: string;
 }
 
@@ -343,6 +403,25 @@ export interface SetBalancePayload {
   employeeId: string;
   year: number;
   amount: number;
+}
+
+/** ملخص إجازات الموظف (GET /leaves/summary/:employeeId) */
+export interface EmployeeLeaveSummary {
+  totalAllowance: number;
+  carriedOverDays: number;
+  earnedDays: number;
+  consumedAnnualDays: number;
+  availableDays: number;
+  allowedRequestLimit: number;
+  requests: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    type: LeaveType;
+    status: LeaveStatus;
+    days: number;
+    reason?: string | null;
+  }[];
 }
 
 // --- Contracts ---
@@ -360,6 +439,9 @@ export interface Contract {
   contractDurationYears?: number | null;
   ticketType?: TicketType | null;
   probationPeriod?: ProbationPeriod | null;
+  probationEndDate?: string | null;
+  medicalInsurance?: string | null;
+  nationality?: string | null;
   notes?: string | null;
   attachmentPaths?: string[] | null;
   tenantId: string;
@@ -433,8 +515,14 @@ export interface UpdateSalaryPayload {
 
 // --- Biometric / Attendance ---
 export type DeviceStatus = "online" | "offline" | "disabled";
-export type PunchType = "check_in" | "check_out" | "break_out" | "break_in";
-export type VerifyMode = "fingerprint" | "card" | "password" | "face";
+export type PunchType =
+  | "check_in"
+  | "check_out"
+  | "break_out"
+  | "break_in"
+  | "overtime_in"
+  | "overtime_out"
+  | "leave";
 
 export interface BiometricDevice {
   id: string;
@@ -453,13 +541,23 @@ export interface AttendanceLog {
   id: string;
   deviceUserId: string;
   employeeId?: string;
+  employee?: Pick<Employee, "id" | "fullName" | "employeeCode">;
   deviceId?: string;
+  device?: Pick<BiometricDevice, "id" | "alias" | "serialNumber" | "location">;
   punchTime: string;
   punchType: PunchType;
-  verifyMode: VerifyMode;
+  verifyMode: string;
   deviceSn?: string;
-  employee?: Employee;
-  device?: BiometricDevice;
+  isManualEntry: boolean;
+  isEdited: boolean;
+  editedByName?: string;
+  editedAt?: string;
+  createdByName?: string;
+  originalPunchTime?: string;
+  leaveReason?: string;
+  workHours?: number | null;
+  overtimeHours?: number | null;
+  createdAt: string;
 }
 
 export interface CreateDevicePayload {
@@ -469,29 +567,63 @@ export interface CreateDevicePayload {
   model?: string;
 }
 
+// --- Subscriptions ---
+export interface QuotaUsage {
+  allowed: boolean;
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+}
+
+/** ملخص الاشتراك (GET /subscriptions/me و /subscriptions/tenant/:id) */
+export interface SubscriptionSummary {
+  isSuperSystem?: boolean;
+  plan: {
+    id?: string;
+    name: string;
+    nameAr: string;
+    price?: string | number | null;
+    billingCycle?: string;
+  };
+  status: string;
+  startDate?: string;
+  endDate?: string | null;
+  quotas: Record<string, QuotaUsage> | null;
+  message?: string;
+}
+
+/** نتيجة POST /employees/onboard */
+export interface OnboardingResult {
+  employee: Employee;
+  user?: User;
+  role?: Role;
+  contract?: Contract;
+  salary?: Salary;
+}
+
 // --- JWT & Security ---
 export interface JwtPermission {
   name: string;
-  scope: "system" | "tenant";
+  scope?: "system" | "tenant";
   tenantId?: string | null;
 }
 
 export interface JwtRole {
   id: string;
   name: string;
-  scope: "system" | "tenant";
+  scope?: "system" | "tenant";
   permissions?: JwtPermission[];
 }
 
+/** محتوى الـ JWT كما يوقّعه الباك إند (AuthService.getTokens) */
 export interface DecodedToken {
-  id: string;
-  tenantId?: string;
+  sub: string;
+  tenantId?: string | null;
   isSuperAdmin: boolean;
   isSystemAdmin: boolean;
   employeeId?: string;
-  role?: JwtRole;
+  role?: JwtRole | null;
   isDisclaimerAccepted?: boolean;
-  permissions: JwtPermission[];
 }
 
 // --- Toast ---
@@ -549,7 +681,7 @@ export interface Notification {
   referenceType?: string;
   isRead: boolean;
   actionUrl?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   recipient?: {
     id: string;

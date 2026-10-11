@@ -95,7 +95,7 @@
                     <label class="form-label required"
                       >تاريخ انتهاء الهوية</label
                     >
-                    <input
+                    <StbDateInput
                       v-model="form.employee.iqamaExpiryDate"
                       type="date"
                       class="form-input"
@@ -375,7 +375,7 @@
                       <label class="form-label required"
                         >وقت بداية الدوام</label
                       >
-                      <input
+                      <StbDateInput
                         v-model="form.newShift.startTime"
                         type="time"
                         class="form-input"
@@ -390,7 +390,7 @@
                       <label class="form-label required"
                         >وقت نهاية الدوام</label
                       >
-                      <input
+                      <StbDateInput
                         v-model="form.newShift.endTime"
                         type="time"
                         class="form-input"
@@ -405,9 +405,8 @@
                       <label class="form-label required"
                         >فترة السماحية (دقائق)</label
                       >
-                      <input
+                      <StbNumberInput
                         v-model.number="form.newShift.gracePeriod"
-                        type="number"
                         min="0"
                         class="form-input"
                         placeholder="30"
@@ -521,7 +520,7 @@
                           <label class="form-label"
                             >تاريخ الانتهاء (اختياري)</label
                           >
-                          <input
+                          <StbDateInput
                             v-model="edu.expiryDate"
                             type="date"
                             class="form-input"
@@ -705,7 +704,7 @@
                               :key="role.id"
                               :value="role.id"
                             >
-                              {{ role.displayNameAr || role.name }}
+                              {{ role.name }}
                               <span v-if="role.permissions?.length">
                                 ({{ role.permissions.length }} صلاحية)
                               </span>
@@ -879,9 +878,8 @@
                     <label class="form-label required"
                       >مدة العقد (بالشهور)</label
                     >
-                    <input
+                    <StbNumberInput
                       v-model.number="form.contract.contractDurationMonths"
-                      type="number"
                       min="1"
                       class="form-input"
                       :class="{
@@ -900,7 +898,7 @@
 
                   <div class="form-group">
                     <label class="form-label required">تاريخ بداية العقد</label>
-                    <input
+                    <StbDateInput
                       v-model="form.contract.startDate"
                       type="date"
                       class="form-input"
@@ -920,7 +918,7 @@
                         >(محسوب تلقائياً)</span
                       ></label
                     >
-                    <input
+                    <StbDateInput
                       v-model="form.contract.endDate"
                       type="date"
                       class="form-input"
@@ -948,9 +946,8 @@
                       >
                         <Minus :size="14" />
                       </button>
-                      <input
+                      <StbNumberInput
                         v-model.number="form.contract.annualLeaveDays"
-                        type="number"
                         min="0"
                         max="365"
                         class="form-input"
@@ -1128,9 +1125,8 @@
                     <div class="form-group">
                       <label class="form-label required">الراتب الأساسي</label>
                       <div class="input-with-suffix">
-                        <input
+                        <StbNumberInput
                           v-model.number="form.salary.basicSalary"
-                          type="number"
                           min="0"
                           class="form-input"
                           :class="{
@@ -1150,9 +1146,8 @@
                     <div class="form-group">
                       <label class="form-label required">بدل السكن</label>
                       <div class="input-with-suffix">
-                        <input
+                        <StbNumberInput
                           v-model.number="form.salary.housingAllowance"
-                          type="number"
                           min="0"
                           class="form-input"
                           :class="{
@@ -1172,9 +1167,8 @@
                     <div class="form-group">
                       <label class="form-label required">بدل النقل</label>
                       <div class="input-with-suffix">
-                        <input
+                        <StbNumberInput
                           v-model.number="form.salary.transportAllowance"
-                          type="number"
                           min="0"
                           class="form-input"
                           :class="{
@@ -1196,9 +1190,8 @@
                     <div class="form-group">
                       <label class="form-label required">بدلات أخرى</label>
                       <div class="input-with-suffix">
-                        <input
+                        <StbNumberInput
                           v-model.number="form.salary.otherAllowances"
-                          type="number"
                           min="0"
                           class="form-input"
                           :class="{
@@ -1582,13 +1575,13 @@ import { usePermissionsStore } from "@/stores/permissions";
 import { useShiftsStore } from "@/stores/shifts";
 import { useDepartmentsStore } from "@/stores/departments";
 import { useToast } from "@/composables/useToast";
-import type { Education } from "@/types";
+import type { Education, NationalityType, OnboardingResult } from "@/types";
 import { normalizeIban, isValidIban, formatIban } from "@/utils/payment";
 
 const props = defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{
   "update:modelValue": [boolean];
-  created: [result: any];
+  created: [result: OnboardingResult];
 }>();
 
 const employeesStore = useEmployeesStore();
@@ -2293,7 +2286,7 @@ const handleClose = () => {
       departmentMode: "existing",
       employee: {
         fullName: "",
-        nationalityType: "" as any,
+        nationalityType: "" as NationalityType | "",
         iqamaExpiryDate: "",
         nationalId: "",
         nationalIdCardPath: "",
@@ -2430,7 +2423,7 @@ const handleSubmit = async () => {
 
   submitting.value = true;
   try {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       fullName: form.employee.fullName,
       nationalityType: form.employee.nationalityType,
       nationalId: form.employee.nationalId || undefined,
@@ -2484,18 +2477,19 @@ const handleSubmit = async () => {
     }
 
     if (form.withUser) {
-      payload.user = {
+      const user: Record<string, unknown> = {
         username: form.user.username,
         email: form.user.email,
         password: form.user.password,
       };
       if (form.roleMode === "existing" && form.user.roleId) {
-        payload.user.roleId = form.user.roleId;
+        user.roleId = form.user.roleId;
       } else if (form.roleMode === "new" && form.user.roleName) {
-        payload.user.roleName = form.user.roleName;
+        user.roleName = form.user.roleName;
         if (form.user.permissionIds.length)
-          payload.user.permissionIds = form.user.permissionIds;
+          user.permissionIds = form.user.permissionIds;
       }
+      payload.user = user;
     }
 
     if (form.withContract && form.contract.contractType) {
@@ -2529,22 +2523,24 @@ const handleSubmit = async () => {
 
     const { useApi } = await import("@/composables/useApi");
     const api = useApi();
-    const res = await api.post<any>("/employees/onboard", payload);
+    const res = await api.post<OnboardingResult>(
+      "/employees/onboard",
+      payload,
+    );
 
     employeesStore.employees.unshift(res.data.employee);
     toast.success(`تم إنشاء ملف الموظف "${form.employee.fullName}" بنجاح ✅`);
     emit("created", res.data);
     handleClose();
-  } catch (e: any) {
-    toast.error(e.message || "فشل في إنشاء الموظف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في إنشاء الموظف"));
   } finally {
     submitting.value = false;
   }
 };
 
 // ─ Helpers ───────────────────────────────────────────────────────────────────
-const fmt = (n: number) =>
-  (n || 0).toLocaleString("ar-SA", { maximumFractionDigits: 0 });
+const fmt = (n: number) => formatNumber(Math.round(n || 0));
 const nationalityLabel = (type: string) => {
   const map: Record<string, string> = {
     saudi: "🇸🇦 سعودي",

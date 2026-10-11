@@ -191,7 +191,7 @@ const filtered = computed(() =>
     const matchesSearch =
       !q ||
       p.name.toLowerCase().includes(q) ||
-      p.displayNameAr.toLowerCase().includes(q);
+      (p.displayNameAr ?? "").toLowerCase().includes(q);
 
     const matchesScope = !scopeFilter.value || p.scope === scopeFilter.value;
 
@@ -212,7 +212,7 @@ const openEdit = (p: Permission) => {
 
   editing.value = p;
   form.name = p.name;
-  form.displayNameAr = p.displayNameAr;
+  form.displayNameAr = p.displayNameAr ?? "";
   showModal.value = true;
 };
 
@@ -232,8 +232,8 @@ const handleSubmit = async () => {
       toast.success("تم إنشاء الصلاحية بنجاح");
     }
     showModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء العملية");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء العملية"));
   } finally {
     submitting.value = false;
   }
@@ -255,8 +255,8 @@ const doDelete = async () => {
     toast.success("تم حذف الصلاحية بنجاح");
     showConfirm.value = false;
     deleteTarget.value = null;
-  } catch (e: any) {
-    toast.error(e.message || "فشل الحذف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل الحذف"));
   } finally {
     deleting.value = false;
   }

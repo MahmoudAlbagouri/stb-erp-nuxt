@@ -8,6 +8,9 @@ import type {
   UpdateEmployeePayload,
 } from "@/types";
 
+/** فلاتر صفحة الموظفين (تُرسل كـ query params) */
+export type EmployeeFilters = Record<string, QueryValue>;
+
 export const useEmployeesStore = defineStore("employees", () => {
   const api = useApi();
   const employees = ref<Employee[]>([]);
@@ -24,36 +27,26 @@ export const useEmployeesStore = defineStore("employees", () => {
       employees.value = res.data;
       // عند جلب الكل، نفترض أن القائمة المفلترة هي نفسها الكل مبدئياً
       filteredEmployees.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }
   };
 
   // ✅ دالة جديدة لجلب البيانات المفلترة من الـ Backend
-  const fetchFilteredFromBackend = async (filters: Record<string, any>) => {
+  const fetchFilteredFromBackend = async (filters: EmployeeFilters) => {
     loading.value = true;
     error.value = null;
     try {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== "") {
-          params.append(k, String(v));
-        }
-      });
-
-      const queryString = params.toString();
       // نستخدم endpoint الفلترة الموجود في الـ Controller
-      const url = queryString
-        ? `/employees/filter?${queryString}`
-        : "/employees/filter";
-
-      const res = await api.get<Employee[]>(url);
+      const res = await api.get<Employee[]>(
+        `/employees/filter${toQueryString(filters)}`,
+      );
       filteredEmployees.value = res.data;
       return res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
       filteredEmployees.value = []; // تفريغ القائمة في حالة الخطأ
       throw e;
     } finally {
@@ -67,8 +60,8 @@ export const useEmployeesStore = defineStore("employees", () => {
   };
 
   const create = async (payload: CreateEmployeePayload) => {
-    const cleanPayload = { ...payload };
-    delete (cleanPayload as any).employeeCode;
+    // كود الموظف يولّده الباك إند
+    const { employeeCode: _code, ...cleanPayload } = payload;
     const res = await api.post<Employee>("/employees", cleanPayload);
     employees.value.unshift(res.data);
     // تحديث القائمة المفلترة أيضاً
@@ -77,8 +70,7 @@ export const useEmployeesStore = defineStore("employees", () => {
   };
 
   const update = async (id: string, payload: UpdateEmployeePayload) => {
-    const cleanPayload = { ...payload };
-    delete (cleanPayload as any).employeeCode;
+    const { employeeCode: _code, ...cleanPayload } = payload;
     const res = await api.patch<Employee>(`/employees/${id}`, cleanPayload);
 
     const idx = employees.value.findIndex((e: Employee) => e.id === id);
@@ -101,92 +93,27 @@ export const useEmployeesStore = defineStore("employees", () => {
   };
 
   const exportData = async (type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(
-        `/employees/export/${type}`,
-        true,
-        "blob",
-      );
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `employees_report_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/employees/export/${type}`,
+      `employees_report_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   const exportSingle = async (id: string, type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(
-        `/employees/${id}/export/${type}`,
-        true,
-        "blob",
-      );
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `employee_profile_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Single Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/employees/${id}/export/${type}`,
+      `employee_profile_${id}_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   const exportFiltered = async (
     type: "excel" | "pdf",
-    filters: Record<string, any>,
+    filters: EmployeeFilters,
   ) => {
-    try {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== "")
-          params.append(k, String(v));
-      });
-      const blob = await api.get<Blob>(
-        `/employees/export-filtered/${type}?${params.toString()}`,
-        true,
-        "blob",
-      );
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `employees_filtered_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Filtered Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/employees/export-filtered/${type}${toQueryString(filters)}`,
+      `employees_filtered_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   const reset = () => {

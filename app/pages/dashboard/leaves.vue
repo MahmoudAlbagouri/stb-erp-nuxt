@@ -216,7 +216,7 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>تاريخ البداية *</label>
-                  <input
+                  <StbDateInput
                     v-model="createForm.startDate"
                     type="date"
                     class="form-input"
@@ -225,7 +225,7 @@
                 </div>
                 <div class="form-group">
                   <label>تاريخ النهاية *</label>
-                  <input
+                  <StbDateInput
                     v-model="createForm.endDate"
                     type="date"
                     class="form-input"
@@ -308,7 +308,7 @@ import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "../../composables/useToast";
 import { useApi } from "../../composables/useApi"; // ✅ استيراد useApi
 import { useAuthStore } from "@/stores/auth"; // ✅ افترض وجود AuthStore للتحقق من الصلاحيات
-import type { CreateLeavePayload, LeaveRequest } from "@/types";
+import type { CreateLeavePayload, Employee, LeaveRequest } from "@/types";
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 import {
   Plus,
@@ -345,7 +345,7 @@ const activeExportMenu = ref<string | null>(null);
 
 // ✅ متغيرات الوضع الإداري
 const isAdminMode = ref(false);
-const employeesList = ref<any[]>([]);
+const employeesList = ref<Employee[]>([]);
 
 const leaveTypeOptions: { value: CreateLeavePayload["type"]; label: string }[] =
   [
@@ -390,16 +390,13 @@ const rejectedCount = computed(
   () => store.requests.filter((r) => r.status === "rejected").length,
 );
 
-const getEmployeeName = (req: any) =>
-  req.employee?.fullName || req.employeeName || "-";
+const getEmployeeName = (req: LeaveRequest) => req.employee?.fullName || "-";
 const getStatusLabel = (status: string) =>
   ({ pending: "قيد الانتظار", approved: "موافق عليه", rejected: "مرفوض" })[
     status
   ] || status;
 const getTypeLabel = (type?: string) =>
   ({ annual: "سنوية", unpaid: "بدون راتب", other: "أخرى" })[type || ""] || "-";
-const formatDate = (dateStr: string) =>
-  dateStr ? new Date(dateStr).toLocaleDateString("ar-SA") : "-";
 const calculateDays = (start: string, end: string) =>
   start && end
     ? Math.ceil(
@@ -425,9 +422,8 @@ const openCreateModal = async (isAdmin: boolean) => {
     // جلب قائمة الموظفين إذا لم تكون محملة
     if (employeesList.value.length === 0) {
       try {
-        const res = await api.get("/employees"); // تأكد من صحة المسار
-        // res.data may be typed as unknown from generic api wrapper — cast to any[]
-        employeesList.value = (res.data as any[]) || [];
+        const res = await api.get<Employee[]>("/employees");
+        employeesList.value = res.data ?? [];
       } catch (e) {
         toast.error("فشل في جلب قائمة الموظفين");
         return;
@@ -471,8 +467,8 @@ const handleCreateLeave = async () => {
       toast.success("تم إرسال طلب الإجازة بنجاح");
     }
     closeCreateModal();
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الإرسال");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الإرسال"));
   } finally {
     submitting.value = false;
   }
@@ -489,8 +485,8 @@ const executeApprove = async () => {
     await store.updateStatus(currentActionTarget.value.id, "approved");
     toast.success("تمت الموافقة على الإجازة بنجاح");
     showApproveConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تنفيذ الموافقة");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تنفيذ الموافقة"));
   } finally {
     actionLoading.value = false;
   }
@@ -506,8 +502,8 @@ const executeReject = async () => {
     await store.updateStatus(currentActionTarget.value.id, "rejected");
     toast.success("تم رفض الإجازة");
     showRejectConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تنفيذ الرفض");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تنفيذ الرفض"));
   } finally {
     actionLoading.value = false;
   }
@@ -519,8 +515,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -533,8 +529,8 @@ const downloadLeave = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

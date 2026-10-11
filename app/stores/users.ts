@@ -17,8 +17,8 @@ export const useUsersStore = defineStore("users", () => {
     try {
       const res = await api.get<User[]>("/users");
       users.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }

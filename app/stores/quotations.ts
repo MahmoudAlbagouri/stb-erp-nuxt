@@ -33,6 +33,17 @@ export interface Quotation {
   createdAt: string;
 }
 
+export type QuotationPayload = Pick<
+  Quotation,
+  | "customerName"
+  | "customerPhone"
+  | "customerAddress"
+  | "items"
+  | "notes"
+  | "bankAccounts"
+  | "termsAndConditions"
+>;
+
 export const useQuotationsStore = defineStore("quotations", () => {
   const api = useApi();
 
@@ -47,20 +58,20 @@ export const useQuotationsStore = defineStore("quotations", () => {
     try {
       const res = await api.get<Quotation[]>("/quotations");
       quotations.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }
   };
 
-  const create = async (payload: any) => {
+  const create = async (payload: QuotationPayload) => {
     const res = await api.post<Quotation>("/quotations", payload);
     quotations.value.unshift(res.data);
     return res.data;
   };
 
-  const update = async (id: string, payload: any) => {
+  const update = async (id: string, payload: Partial<QuotationPayload>) => {
     const res = await api.patch<Quotation>(`/quotations/${id}`, payload);
     const idx = quotations.value.findIndex((q) => q.id === id);
     if (idx !== -1) quotations.value[idx] = res.data;
@@ -82,8 +93,7 @@ export const useQuotationsStore = defineStore("quotations", () => {
   const downloadQuotationPdf = async (id: string) => {
     pdfLoading.value = id;
     try {
-      const blob = await api.get<Blob>(`/quotations/${id}/pdf`, true, "blob");
-      handleFileDownload(blob, `quotation-${id}.pdf`);
+      await api.download(`/quotations/${id}/pdf`, `quotation-${id}.pdf`);
     } finally {
       pdfLoading.value = null;
     }
@@ -92,28 +102,13 @@ export const useQuotationsStore = defineStore("quotations", () => {
   const downloadInvoicePdf = async (id: string) => {
     pdfLoading.value = id;
     try {
-      const blob = await api.get<Blob>(
+      await api.download(
         `/quotations/${id}/invoice-pdf`,
-        true,
-        "blob",
+        `invoice-${id}.pdf`,
       );
-      handleFileDownload(blob, `invoice-${id}.pdf`);
     } finally {
       pdfLoading.value = null;
     }
-  };
-
-  const handleFileDownload = (blob: Blob, fileName: string) => {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    }, 100);
   };
 
   // ✅ دالة تفريغ المتجر (للاستخدام عند تسجيل الخروج)

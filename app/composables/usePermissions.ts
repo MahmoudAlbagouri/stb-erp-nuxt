@@ -16,7 +16,7 @@ export const usePermissions = () => {
     if (authStore.isSystemAdmin) return true;
 
     // 2) مدير الشركة - بايباس كامل، إلا صلاحيات system:
-    if (authStore.isSuperAdmin && authStore.user?.tenantId) {
+    if (authStore.isSuperAdmin && authStore.tenantId) {
       const hasSystemPermission = requiredPermissions.some((perm) =>
         perm.toLowerCase().startsWith("system:"),
       );

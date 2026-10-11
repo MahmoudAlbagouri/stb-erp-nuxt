@@ -208,9 +208,8 @@
                 </div>
                 <div class="form-group">
                   <label>الأجر الأساسي *</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.basicSalary"
-                    type="number"
                     class="form-input"
                     placeholder="0.00"
                     required
@@ -220,9 +219,8 @@
                 </div>
                 <div class="form-group">
                   <label>بدل السكن</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.housingAllowance"
-                    type="number"
                     class="form-input"
                     placeholder="0.00"
                     min="0"
@@ -231,9 +229,8 @@
                 </div>
                 <div class="form-group">
                   <label>بدل النقل</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.transportAllowance"
-                    type="number"
                     class="form-input"
                     placeholder="0.00"
                     min="0"
@@ -242,9 +239,8 @@
                 </div>
                 <div class="form-group">
                   <label>بدلات أخرى</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.otherAllowances"
-                    type="number"
                     class="form-input"
                     placeholder="0.00"
                     min="0"
@@ -389,16 +385,16 @@ const calculateTotal = computed(
     (Number(form.otherAllowances) || 0),
 );
 const totalPayroll = computed(() =>
-  store.salaries
-    .reduce((sum, s) => sum + Number(s.totalSalary), 0)
-    .toLocaleString("ar-SA"),
+  formatNumber(store.salaries.reduce((sum, s) => sum + Number(s.totalSalary), 0)),
 );
 const avgSalary = computed(() => {
   if (!store.salaries.length) return 0;
-  return Math.round(
-    store.salaries.reduce((sum, s) => sum + Number(s.totalSalary), 0) /
-      store.salaries.length,
-  ).toLocaleString("ar-SA");
+  return formatNumber(
+    Math.round(
+      store.salaries.reduce((sum, s) => sum + Number(s.totalSalary), 0) /
+        store.salaries.length,
+    ),
+  );
 });
 const availableEmployees = computed(() => {
   const ids = new Set(store.salaries.map((s) => s.employeeId));
@@ -481,8 +477,8 @@ const handleSubmit = async () => {
       toast.success("تم تعيين الأجر بنجاح");
     }
     showModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الحفظ");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الحفظ"));
   } finally {
     submitting.value = false;
   }
@@ -490,20 +486,14 @@ const handleSubmit = async () => {
 
 const getEmployeeName = (id: string) =>
   employeesStore.employees.find((e) => e.id === id)?.fullName || "غير محدد";
-const formatCurrency = (val: any) =>
-  new Intl.NumberFormat("ar-SA", {
-    style: "currency",
-    currency: "SAR",
-    minimumFractionDigits: 2,
-  }).format(Number(val) || 0);
 
 const handleExport = async (type: "excel" | "pdf") => {
   exporting.value = type;
   try {
     await store.exportData(type);
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -517,8 +507,8 @@ const downloadSalary = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

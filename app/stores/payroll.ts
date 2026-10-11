@@ -1,19 +1,9 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
+import type { DisbursedByUser, Employee } from "@/types";
 
-export interface Employee {
-  id: string;
-  fullName: string;
-  employeeCode: string;
-  nationalityType: string;
-  nationalId: string;
-  nationalIdCardPath: string | null;
-  phone: string;
-  jobTitle: string;
-  department: string;
-  status: string;
-}
+export type { DisbursedByUser };
 
 // ✅ تم تحديث الحقول لتطابق التفصيل الجديد في PayrollItem (الباك إند)
 export interface PayrollItem {
@@ -47,13 +37,6 @@ export interface PayrollItem {
   employee: Employee;
 }
 
-// ✅ تم إضافة حقول الصرف
-export interface DisbursedByUser {
-  id: string;
-  username: string; // ← كان fullName
-  email?: string;
-}
-
 export interface PayrollDetail {
   id: string;
   month: number;
@@ -78,7 +61,9 @@ export interface PayrollSummary {
   isDisbursed: boolean;
   disbursedAt?: string;
   disbursedBy?: DisbursedByUser;
-  items?: any[];
+  items?: PayrollItem[];
+  /** إجمالي الخصومات (إن أعاده الباك إند) */
+  totalDeductions?: number | string;
 }
 
 export const usePayrollStore = defineStore("payroll", () => {
@@ -91,34 +76,30 @@ export const usePayrollStore = defineStore("payroll", () => {
     loading.value = true;
     error.value = null;
     try {
-      let url = "/payroll";
-      const params = new URLSearchParams();
-      if (year) params.append("year", String(year));
-      if (month && year) params.append("month", String(month));
-      if (params.toString()) url += `?${params.toString()}`;
-
-      const res = await api.get<any>(url);
-      payrolls.value = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data || [];
-    } catch (e: any) {
-      error.value = e.message;
+      const res = await api.get<PayrollSummary[]>(
+        `/payroll${toQueryString({ year, month: year ? month : undefined })}`,
+      );
+      payrolls.value = res.data ?? [];
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }
   };
 
   const generate = async (month: number, year: number) => {
-    const res = await api.post<any>(`/payroll/generate/${month}/${year}`);
-    const newItem = res.data?.data || res.data;
+    const res = await api.post<PayrollSummary>(
+      `/payroll/generate/${month}/${year}`,
+    );
+    const newItem = res.data;
     payrolls.value.unshift(newItem);
     return newItem;
   };
 
   // ✅ دالة جديدة لتأكيد الصرف
   const disburse = async (id: string) => {
-    const res = await api.patch<any>(`/payroll/${id}/disburse`);
-    const updated = res.data?.data || res.data;
+    const res = await api.patch<PayrollSummary>(`/payroll/${id}/disburse`);
+    const updated = res.data;
 
     // تحديث السجل في القائمة المحلية
     const idx = payrolls.value.findIndex((p) => p.id === id);
@@ -133,42 +114,20 @@ export const usePayrollStore = defineStore("payroll", () => {
     month: number,
     year: number,
   ) => {
-    try {
-      const blob = await api.get<Blob>(
-        `/payroll/export/${type}/${month}/${year}`,
-        true,
-        "blob",
-      );
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `payroll_${year}_${month}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/payroll/export/${type}/${month}/${year}`,
+      `payroll_${year}_${month}.${reportExtension(type)}`,
+    );
   };
 
   const fetchById = async (id: string): Promise<PayrollDetail> => {
     loading.value = true;
     try {
-      const res: any = await api.get(`/payroll/${id}`);
-      const payload = res.data?.data || res.data;
-      if (!payload) throw new Error("بيانات المسير غير متوفرة");
-      return payload as PayrollDetail;
-    } catch (e: any) {
-      error.value = e.message;
+      const res = await api.get<PayrollDetail | null>(`/payroll/${id}`);
+      if (!res.data) throw new Error("بيانات المسير غير متوفرة");
+      return res.data;
+    } catch (e) {
+      error.value = getErrorMessage(e);
       throw e;
     } finally {
       loading.value = false;

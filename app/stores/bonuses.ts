@@ -3,34 +3,10 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 
-// ✅ تعريف حالات المكافأة لتطابق الباك إند
-export enum BonusStatus {
-  PENDING = "pending",
-  APPROVED = "approved",
-  REJECTED = "rejected",
-  PAID = "paid",
-}
+import { BonusStatus, type Bonus, type DisbursedByUser } from "@/types";
 
-export interface DisbursedByUser {
-  id: string;
-  username: string;
-  email?: string;
-}
-
-export interface Bonus {
-  id: string;
-  employeeId: string;
-  amount: number;
-  payoutDate: string;
-  notes?: string;
-  status?: BonusStatus;
-  // ✅ حقول الصرف الاستثنائي المباشر
-  isDisbursed?: boolean;
-  disbursedAt?: string;
-  disbursedBy?: DisbursedByUser;
-  createdAt: string;
-  employee?: { id: string; fullName: string; employeeCode: string };
-}
+export { BonusStatus };
+export type { Bonus, DisbursedByUser };
 
 export const useBonusStore = defineStore("bonuses", () => {
   const api = useApi();
@@ -84,57 +60,27 @@ export const useBonusStore = defineStore("bonuses", () => {
 
   // ✅ التصدير الجماعي
   const exportData = async (type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(`/bonuses/export/${type}`, true, "blob");
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `bonuses_report_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/bonuses/export/${type}`,
+      `bonuses_report_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   // ✅ التصدير الفردي
   const exportSingle = async (id: string, type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(
-        `/bonuses/${id}/export/${type}`,
-        true,
-        "blob",
-      );
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `bonus_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Single Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/bonuses/${id}/export/${type}`,
+      `bonus_${id}_${todayStamp()}.${reportExtension(type)}`,
+    );
+  };
+
+  const reset = () => {
+    bonuses.value = [];
+    loading.value = false;
   };
 
   return {
+    reset,
     bonuses,
     loading,
     fetchAll,

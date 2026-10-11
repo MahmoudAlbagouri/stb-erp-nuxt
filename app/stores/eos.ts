@@ -11,23 +11,9 @@ export enum EOSReason {
   OTHER = "أخرى",
 }
 
-export interface EndOfService {
-  id: string;
-  employeeId: string;
-  terminationDate: string;
-  reason: string;
-  serviceYears: number;
-  eosAmount: number;
-  lastBasicSalary: number;
-  payoutDate: string;
-  notes?: string;
-  createdAt: string;
-  employee?: {
-    id: string;
-    fullName: string;
-    employeeCode: string;
-  };
-}
+import type { EndOfService } from "@/types";
+
+export type { EndOfService };
 
 export const useEOSStore = defineStore("eos", () => {
   const api = useApi();
@@ -63,5 +49,10 @@ export const useEOSStore = defineStore("eos", () => {
     records.value = records.value.filter((r) => r.id !== id);
   };
 
-  return { records, loading, fetchAll, create, update, remove };
+  const reset = () => {
+    records.value = [];
+    loading.value = false;
+  };
+
+  return { records, loading, fetchAll, create, update, remove, reset };
 });

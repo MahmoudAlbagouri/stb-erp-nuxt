@@ -341,8 +341,7 @@
                   class="form-group full-width"
                 >
                   <label>عدد الأيام المراد صرفها *</label>
-                  <input
-                    type="number"
+                  <StbNumberInput
                     v-model.number="confirmForm.daysToSettle"
                     class="form-input"
                     :max="Math.ceil(preview.availableDays)"
@@ -370,7 +369,7 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>تاريخ التسوية *</label>
-                  <input
+                  <StbDateInput
                     v-model="confirmForm.settlementDate"
                     type="date"
                     class="form-input"
@@ -429,6 +428,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Settlement } from "@/types";
 import { ref, reactive, computed, onMounted } from "vue";
 import { useSettlementsStore } from "@/stores/settlements";
 import { useEmployeesStore } from "@/stores/employees";
@@ -470,23 +470,23 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير تقرير ${type === "excel" ? "Excel" : "PDF"} بنجاح`);
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   } finally {
     exporting.value = null;
   }
 };
 
 // ✅ دالة تأكيد الصرف
-const handleDisburse = async (settlement: any) => {
+const handleDisburse = async (settlement: Settlement) => {
   disbursingId.value = settlement.id;
   try {
     await store.disburse(settlement.id);
     toast.success(
       `✅ تم تأكيد صرف تسوية "${settlement.employee?.fullName}" بنجاح`,
     );
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تأكيد الصرف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تأكيد الصرف"));
   } finally {
     disbursingId.value = null;
   }
@@ -559,8 +559,8 @@ const runCalculation = async () => {
     confirmForm.daysToSettle = undefined;
     showCalculatorModal.value = false;
     showPreviewModal.value = true;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في احتساب المستحقات");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في احتساب المستحقات"));
   }
 };
 
@@ -601,25 +601,15 @@ const handleConfirm = async () => {
       `✅ تمت أرشفة تسوية "${selectedEmployee.value?.fullName}" بنجاح`,
     );
     closeAll();
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تأكيد التسوية");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تأكيد التسوية"));
   } finally {
     confirming.value = false;
   }
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-const formatCurrency = (val: number | string | null | undefined) => {
-  const n = Number(val) || 0;
-  return new Intl.NumberFormat("ar-SA", {
-    style: "currency",
-    currency: "SAR",
-    minimumFractionDigits: 2,
-  }).format(n);
-};
 
-const formatDate = (d: string) =>
-  d ? new Date(d).toLocaleDateString("ar-SA") : "—";
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 onMounted(() => {

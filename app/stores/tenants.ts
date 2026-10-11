@@ -3,21 +3,9 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 
-export interface Tenant {
-  id: string;
-  companyName: string;
-  logo_url: string | null;
-  domain: string | null;
-  phone: string | null;
-  address: string | null;
-  country: string | null;
-  status: "active" | "trial" | "inactive";
-  language: string;
-  timezone: string;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import type { Tenant } from "@/types";
+
+export type { Tenant };
 
 export const useTenantStore = defineStore("tenants", () => {
   const api = useApi();
@@ -33,8 +21,8 @@ export const useTenantStore = defineStore("tenants", () => {
       // المسار حسب الـ API المرفق: GET /tenants
       const res = await api.get<Tenant[]>("/tenants");
       tenants.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }

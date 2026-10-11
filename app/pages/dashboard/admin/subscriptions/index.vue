@@ -211,9 +211,8 @@
               </div>
               <div class="form-group" v-if="newStatus === 'active'">
                 <label>مدة الاشتراك (أيام) - اختياري للتجديد</label>
-                <input
+                <StbNumberInput
                   v-model.number="statusDurationDays"
-                  type="number"
                   min="1"
                   class="form-input"
                 />
@@ -277,9 +276,8 @@
             <form @submit.prevent="handleRenew" class="modal-form">
               <div class="form-group">
                 <label>عدد الأيام الإضافية</label>
-                <input
+                <StbNumberInput
                   v-model.number="renewDays"
-                  type="number"
                   min="1"
                   class="form-input"
                   required
@@ -341,9 +339,8 @@
               </div>
               <div class="form-group">
                 <label>مدة الاشتراك (أيام)</label>
-                <input
+                <StbNumberInput
                   v-model.number="changeDuration"
-                  type="number"
                   min="1"
                   class="form-input"
                   required
@@ -374,6 +371,7 @@
 </template>
 
 <script setup lang="ts">
+import type { SubscriptionSummary } from "@/types";
 import { ref, computed, onMounted } from "vue";
 import { useTenantStore } from "@/stores/tenants";
 import { usePlanStore } from "@/stores/plans";
@@ -404,7 +402,7 @@ const toast = useToast();
 
 const selectedTenantId = ref("");
 const searchQuery = ref("");
-const subData = ref<any>(null);
+const subData = ref<SubscriptionSummary | null>(null);
 const loadingSub = ref(false);
 const actionLoading = ref(false);
 
@@ -429,14 +427,16 @@ const activeSubsCount = computed(() => {
   return tenantStore.tenants.filter((t) => t.status === "active").length;
 });
 
-const todayLabel = new Date().toLocaleDateString("ar-SA");
+const todayLabel = formatDate(new Date());
 
 const selectTenant = async (id: string) => {
   selectedTenantId.value = id;
   loadingSub.value = true;
   subData.value = null;
   try {
-    const res = await api.get(`/subscriptions/tenant/${id}`);
+    const res = await api.get<SubscriptionSummary>(
+      `/subscriptions/tenant/${id}`,
+    );
     subData.value = res.data;
   } catch (e) {
     subData.value = null;
@@ -455,7 +455,11 @@ const openStatusModal = () => {
 const handleUpdateStatus = async () => {
   actionLoading.value = true;
   try {
-    const payload: any = { newStatus: newStatus.value };
+    const payload: {
+      newStatus: string;
+      durationDays?: number;
+      reason?: string;
+    } = { newStatus: newStatus.value };
     if (newStatus.value === "active" && statusDurationDays.value) {
       payload.durationDays = statusDurationDays.value;
     }
@@ -468,8 +472,8 @@ const handleUpdateStatus = async () => {
     toast.success("تم تحديث حالة الاشتراك بنجاح");
     showStatusModal.value = false;
     selectTenant(selectedTenantId.value);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }
@@ -484,8 +488,8 @@ const handleRenew = async () => {
     toast.success("تم التجديد بنجاح");
     showRenewModal.value = false;
     selectTenant(selectedTenantId.value);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }
@@ -504,15 +508,15 @@ const handleChangePlan = async () => {
     toast.success("تم تغيير الخطة بنجاح");
     showChangePlanModal.value = false;
     selectTenant(selectedTenantId.value);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }
 };
 
 const getStatusLabel = (s: string) => {
-  const map: any = {
+  const map: Record<string, string> = {
     active: "نشط",
     trial: "تجريبي",
     expired: "منتهي الصلاحية", // ✅ تمت الإضافة
@@ -524,16 +528,10 @@ const getStatusLabel = (s: string) => {
 };
 
 // ✅ دالة تنسيق السعر لتجنب NaN
-const formatPrice = (p: string | number | null) => {
-  if (!p && p !== 0) return "مجاناً";
-  const num = Number(p);
-  return isNaN(num) ? "0 ر.س" : `${num.toLocaleString("ar-SA")} ر.س`;
-};
 
-const getBillingLabel = (c: string) =>
+const getBillingLabel = (c?: string) =>
   c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
 
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 
 // ✅ دالة حساب الأيام المتبقية للتجربة
 const getTrialDaysLeft = (endDate: string) => {

@@ -176,18 +176,16 @@
                     style="flex: 3"
                     required
                   />
-                  <input
+                  <StbNumberInput
                     v-model.number="item.qty"
-                    type="number"
                     min="1"
                     placeholder="الكمية"
                     class="form-input"
                     style="flex: 1"
                     required
                   />
-                  <input
+                  <StbNumberInput
                     v-model.number="item.unitPrice"
-                    type="number"
                     min="0"
                     placeholder="سعر الوحدة"
                     class="form-input"
@@ -307,6 +305,11 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  BankAccount,
+  Quotation,
+  QuotationItem,
+} from "@/stores/quotations";
 import { ref, reactive, onMounted } from "vue";
 import { useQuotationsStore } from "@/stores/quotations";
 import { useToast } from "../../composables/useToast";
@@ -329,14 +332,14 @@ const toast = useToast();
 // ─── Modal State ──────────────────────────────────────────────────────────────
 const showModal = ref(false);
 const submitting = ref(false);
-const editing = ref<any>(null);
+const editing = ref<Quotation | null>(null);
 
 const EMPTY_FORM = {
   customerName: "",
   customerPhone: "",
   customerAddress: "",
-  items: [{ description: "", qty: 1, unitPrice: 0 }] as any[],
-  bankAccounts: [] as any[],
+  items: [{ description: "", qty: 1, unitPrice: 0 }] as QuotationItem[],
+  bankAccounts: [] as BankAccount[],
   notes: "",
 };
 
@@ -386,29 +389,29 @@ const handleSubmit = async () => {
     }
 
     showModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
 };
 
 // ─── Approve ──────────────────────────────────────────────────────────────────
-const handleApprove = async (q: any) => {
+const handleApprove = async (q: Quotation) => {
   try {
     await store.approve(q.id);
     toast.success("تمت الموافقة وتحويل العرض إلى فاتورة");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
 const showConfirm = ref(false);
 const deleting = ref(false);
-const deleteTarget = ref<any>(null);
+const deleteTarget = ref<Quotation | null>(null);
 
-const confirmDelete = (q: any) => {
+const confirmDelete = (q: Quotation) => {
   deleteTarget.value = q;
   showConfirm.value = true;
 };
@@ -420,8 +423,8 @@ const doDelete = async () => {
     await store.remove(deleteTarget.value.id);
     toast.success("تم حذف عرض السعر");
     showConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     deleting.value = false;
   }
@@ -436,10 +439,7 @@ const getStatusLabel = (s: string) =>
     rejected: "مرفوض",
   })[s] ?? s;
 
-const formatCurrency = (n: number) =>
-  n.toLocaleString("ar-SA", { style: "currency", currency: "SAR" });
 
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 onMounted(() => {

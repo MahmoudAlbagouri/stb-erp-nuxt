@@ -21,7 +21,7 @@ export interface ProfileData {
       consumedDays: number;
       remaining: number;
       usagePercentage: number;
-      breakdown?: any;
+      breakdown?: Record<string, number>;
     } | null;
     leaveHistory?: Array<{
       id: string;

@@ -130,11 +130,11 @@
                   }}</span>
                   <!-- ✅ إشارة الصرف الاستثنائي المباشر -->
                   <span
-                    v-if="(adv as any).isDisbursed"
+                    v-if="adv.isDisbursed"
                     class="badge badge--disbursed"
                     :title="
-                      (adv as any).disbursedAt
-                        ? `صُرف بتاريخ ${formatDate((adv as any).disbursedAt)}`
+                      adv.disbursedAt
+                        ? `صُرف بتاريخ ${formatDate(adv.disbursedAt)}`
                         : ''
                     "
                     ><Zap :size="10" /> صرف استثنائي</span
@@ -189,7 +189,7 @@
                   <!-- ✅ زر الصرف الاستثنائي المباشر: سلف معتمدة وغير مصروفة سلفاً -->
                   <button
                     v-if="
-                      adv.status === 'approved' && !(adv as any).isDisbursed
+                      adv.status === 'approved' && !adv.isDisbursed
                     "
                     class="btn btn--warning-outline btn--sm"
                     @click="handleDisburse(adv.id)"
@@ -247,9 +247,8 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>مبلغ السلفة *</label>
-                  <input
+                  <StbNumberInput
                     v-model.number="form.amount"
-                    type="number"
                     class="form-input"
                     placeholder="0.00"
                     required
@@ -259,7 +258,7 @@
                 </div>
                 <div class="form-group">
                   <label>تاريخ السداد المتوقع *</label>
-                  <input
+                  <StbDateInput
                     v-model="form.repaymentDate"
                     type="date"
                     class="form-input"
@@ -324,6 +323,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Advance, Employee } from "@/types";
 import { ref, reactive, computed, onMounted } from "vue";
 import { useAdvancesStore } from "@/stores/advances";
 import { useEmployeesStore } from "@/stores/employees";
@@ -366,7 +366,7 @@ const activeExportMenu = ref<string | null>(null);
 
 // ✅ متغيرات الوضع الإداري
 const isAdminMode = ref(false);
-const employeesList = ref<any[]>([]);
+const employeesList = ref<Employee[]>([]);
 
 interface ExtendedAdvancePayload {
   amount: number;
@@ -392,12 +392,13 @@ const canApprove = computed(() => {
 const pendingCount = computed(
   () => store.advances.filter((a) => a.status === "pending").length,
 );
-const totalAmount = computed(() => {
-  return store.advances
-    .filter((a) => a.status === "approved" || a.status === "paid")
-    .reduce((sum, a) => sum + Number(a.amount), 0)
-    .toLocaleString("ar-SA");
-});
+const totalAmount = computed(() =>
+  formatNumber(
+    store.advances
+      .filter((a) => a.status === "approved" || a.status === "paid")
+      .reduce((sum, a) => sum + Number(a.amount), 0),
+  ),
+);
 
 // ✅ فتح المودال مع تحديد الوضع
 const openCreateModal = async (isAdmin: boolean) => {
@@ -415,7 +416,7 @@ const openCreateModal = async (isAdmin: boolean) => {
     // جلب قائمة الموظفين إذا لم تكون محملة
     if (employeesList.value.length === 0) {
       try {
-        const res = await api.get("/employees"); // تأكد من صحة المسار
+        const res = await api.get<Employee[]>("/employees");
         employeesList.value = res.data;
       } catch (e) {
         toast.error("فشل في جلب قائمة الموظفين");
@@ -456,14 +457,14 @@ const handleSubmit = async () => {
       toast.success("تم تقديم طلب السلفة بنجاح");
     }
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الإرسال");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الإرسال"));
   } finally {
     submitting.value = false;
   }
 };
 
-const triggerApprove = (adv: any) => {
+const triggerApprove = (adv: Advance) => {
   currentAdvanceTarget.value = adv;
   showApproveConfirm.value = true;
 };
@@ -474,14 +475,14 @@ const executeApprove = async () => {
     await store.updateStatus(currentAdvanceTarget.value.id, "approved");
     toast.success("تمت الموافقة على السلفة بنجاح");
     showApproveConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تنفيذ الموافقة");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تنفيذ الموافقة"));
   } finally {
     actionLoading.value = false;
   }
 };
 
-const triggerReject = (adv: any) => {
+const triggerReject = (adv: Advance) => {
   currentAdvanceTarget.value = adv;
   showRejectConfirm.value = true;
 };
@@ -492,8 +493,8 @@ const executeReject = async () => {
     await store.updateStatus(currentAdvanceTarget.value.id, "rejected");
     toast.success("تم رفض طلب السلفة");
     showRejectConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تنفيذ الرفض");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تنفيذ الرفض"));
   } finally {
     actionLoading.value = false;
   }
@@ -505,8 +506,8 @@ const handleDisburse = async (id: string) => {
   try {
     await store.disburseAdvance(id);
     toast.success("✅ تم تسجيل صرف السلفة استثنائياً بنجاح");
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تأكيد الصرف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تأكيد الصرف"));
   } finally {
     disbursingId.value = null;
   }
@@ -521,12 +522,6 @@ const getStatusLabel = (status: string) =>
     rejected: "مرفوضة",
     paid: "مدفوعة",
   })[status] || status;
-const formatDate = (dateStr: string | undefined) =>
-  dateStr ? new Date(dateStr).toLocaleDateString("ar-SA") : "-";
-const formatCurrency = (val: number | string) =>
-  new Intl.NumberFormat("ar-SA", { style: "currency", currency: "SAR" }).format(
-    Number(val),
-  );
 const truncateText = (text: string, limit: number) =>
   text?.length > limit ? text.substring(0, limit) + "..." : text || "-";
 
@@ -536,8 +531,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -550,8 +545,8 @@ const downloadAdvance = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

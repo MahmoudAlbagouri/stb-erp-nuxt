@@ -213,9 +213,8 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>مبلغ القرض الإجمالي *</label>
-                  <input
+                  <StbNumberInput
                     v-model.number="form.totalAmount"
-                    type="number"
                     class="form-input"
                     placeholder="0.00"
                     required
@@ -225,9 +224,8 @@
                 </div>
                 <div class="form-group">
                   <label>مدة السداد (شهور) *</label>
-                  <input
+                  <StbNumberInput
                     v-model.number="form.installmentsCount"
-                    type="number"
                     class="form-input"
                     placeholder="مثال: 12"
                     required
@@ -247,7 +245,7 @@
 
               <div class="form-group">
                 <label>تاريخ بداية الخصم *</label>
-                <input
+                <StbDateInput
                   v-model="form.startDate"
                   type="date"
                   class="form-input"
@@ -312,6 +310,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Employee, Loan } from "@/types";
 import { ref, reactive, computed, onMounted } from "vue";
 import { useLoansStore } from "@/stores/loans";
 import { useEmployeesStore } from "@/stores/employees";
@@ -353,7 +352,7 @@ const activeExportMenu = ref<string | null>(null);
 
 // ✅ متغيرات الوضع الإداري
 const isAdminMode = ref(false);
-const employeesList = ref<any[]>([]);
+const employeesList = ref<Employee[]>([]);
 
 interface ExtendedLoanPayload {
   totalAmount: number;
@@ -396,7 +395,7 @@ const calculatedMonthly = computed(() =>
     ? Number((form.totalAmount / form.installmentsCount).toFixed(2))
     : 0,
 );
-const todayLabel = new Date().toLocaleDateString("ar-SA");
+const todayLabel = formatDate(new Date());
 
 // ✅ فتح المودال مع تحديد الوضع
 const openCreateModal = async (isAdmin: boolean) => {
@@ -417,7 +416,7 @@ const openCreateModal = async (isAdmin: boolean) => {
     // جلب قائمة الموظفين إذا لم تكون محملة
     if (employeesList.value.length === 0) {
       try {
-        const res = await api.get("/employees"); // تأكد من صحة المسار
+        const res = await api.get<Employee[]>("/employees");
         employeesList.value = res.data;
       } catch (e) {
         toast.error("فشل في جلب قائمة الموظفين");
@@ -459,14 +458,14 @@ const handleSubmit = async () => {
       toast.success("تم تقديم طلب القرض بنجاح");
     }
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الإرسال");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الإرسال"));
   } finally {
     submitting.value = false;
   }
 };
 
-const triggerApprove = (loan: any) => {
+const triggerApprove = (loan: Loan) => {
   currentLoanTarget.value = loan;
   showApproveConfirm.value = true;
 };
@@ -477,13 +476,13 @@ const executeApprove = async () => {
     await store.updateStatus(currentLoanTarget.value.id, "approved");
     toast.success("تمت الموافقة على القرض");
     showApproveConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }
 };
-const triggerReject = (loan: any) => {
+const triggerReject = (loan: Loan) => {
   currentLoanTarget.value = loan;
   showRejectConfirm.value = true;
 };
@@ -494,8 +493,8 @@ const executeReject = async () => {
     await store.updateStatus(currentLoanTarget.value.id, "rejected");
     toast.success("تم رفض طلب القرض");
     showRejectConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }
@@ -510,24 +509,17 @@ const getStatusLabel = (status: string) =>
     rejected: "مرفوض",
     completed: "تم السداد",
   })[status] || status;
-const formatDate = (d: string | undefined) =>
-  d ? new Date(d).toLocaleDateString("ar-SA") : "-";
-const formatCurrency = (val: number | string) =>
-  Number(val).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " ر.س";
 const truncateText = (text: string, limit: number) =>
   text?.length > limit ? text.substring(0, limit) + "..." : text || "-";
 
 // ✅ دوال حساب التقدم بناءً على الحقل الفعلي paidInstallments
-const getPaidCount = (loan: any) => loan.paidInstallments || 0;
-const getProgressPct = (loan: any) =>
+const getPaidCount = (loan: Loan) => loan.paidInstallments || 0;
+const getProgressPct = (loan: Loan) =>
   Math.min(
     100,
     Math.round((getPaidCount(loan) / loan.installmentsCount) * 100),
   );
-const isCompleted = (loan: any) =>
+const isCompleted = (loan: Loan) =>
   getPaidCount(loan) >= loan.installmentsCount || loan.status === "completed";
 
 const handleExport = async (type: "excel" | "pdf") => {
@@ -535,8 +527,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -549,8 +541,8 @@ const downloadLoan = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

@@ -34,7 +34,7 @@
         <div class="role-card__header">
           <div class="role-card__icon">🛡</div>
           <div class="role-card__info">
-            <h3>{{ role.displayNameAr || role.name }}</h3>
+            <h3>{{ role.name }}</h3>
             <!-- <span :class="`badge badge--${role.scope}`">{{
               role.scope === "system" ? "نظام" : "مستأجر"
             }}</span> -->
@@ -49,7 +49,7 @@
               v-for="p in role.permissions.slice(0, 4)"
               :key="p.id"
               class="perm-tag"
-              :title="p.displayNameAr"
+              :title="p.displayNameAr ?? p.name"
             >
               {{ p.displayNameAr || p.name }}
             </span>
@@ -175,7 +175,7 @@
     <ConfirmDialog
       v-model="showConfirm"
       title="حذف الدور"
-      :message="`هل تريد حذف دور '${deleteTarget?.displayNameAr || deleteTarget?.name}'؟`"
+      :message="`هل تريد حذف دور '${deleteTarget?.name}'؟`"
       confirm-text="حذف"
       :loading="deleting"
       @confirm="doDelete"
@@ -254,8 +254,8 @@ const handleSubmit = async () => {
       toast.success("تم إنشاء الدور");
     }
     showModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -274,8 +274,8 @@ const doDelete = async () => {
     toast.success("تم حذف الدور");
     showConfirm.value = false;
     deleteTarget.value = null; // تنظيف الهدف بعد الحذف
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     deleting.value = false;
   }

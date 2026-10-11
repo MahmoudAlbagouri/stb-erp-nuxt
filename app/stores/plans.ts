@@ -75,7 +75,14 @@ export const usePlanStore = defineStore("plans", () => {
     plans.value = plans.value.filter((p) => p.id !== id);
   };
 
+  const reset = () => {
+    plans.value = [];
+    availableFeatures.value = [];
+    loading.value = false;
+  };
+
   return {
+    reset,
     plans,
     availableFeatures,
     loading,

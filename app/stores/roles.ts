@@ -17,8 +17,8 @@ export const useRolesStore = defineStore("roles", () => {
     try {
       const res = await api.get<Role[]>("/roles");
       roles.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }

@@ -2,14 +2,9 @@
 import { defineStore } from "pinia";
 import { useApi } from "../composables/useApi";
 import { ref } from "vue";
+import type { Permission } from "@/types";
 
-export interface Permission {
-  id: string;
-  name: string;
-  displayNameAr: string;
-  scope: "system" | "tenant";
-  tenantId: string | null;
-}
+export type { Permission };
 
 export interface CreatePermissionPayload {
   name: string;
@@ -27,23 +22,23 @@ export const usePermissionsStore = defineStore("permissions", () => {
     loading.value = true;
     error.value = null;
     try {
-      const res = await api.get<{ data: Permission[] }>("/permissions");
-      permissions.value = res.data.data || res.data;
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message;
+      const res = await api.get<Permission[]>("/permissions");
+      permissions.value = res.data;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }
   };
 
   const getById = async (id: string) => {
-    const res = await api.get<{ data: Permission }>(`/permissions/${id}`);
-    return res.data.data || res.data;
+    const res = await api.get<Permission>(`/permissions/${id}`);
+    return res.data;
   };
 
   const create = async (payload: CreatePermissionPayload) => {
-    const res = await api.post<{ data: Permission }>("/permissions", payload);
-    const newPerm = res.data.data || res.data;
+    const res = await api.post<Permission>("/permissions", payload);
+    const newPerm = res.data;
     permissions.value.unshift(newPerm);
     return newPerm;
   };
@@ -52,11 +47,8 @@ export const usePermissionsStore = defineStore("permissions", () => {
     id: string,
     payload: Partial<CreatePermissionPayload>,
   ) => {
-    const res = await api.patch<{ data: Permission }>(
-      `/permissions/${id}`,
-      payload,
-    );
-    const updatedPerm = res.data.data || res.data;
+    const res = await api.patch<Permission>(`/permissions/${id}`, payload);
+    const updatedPerm = res.data;
     const idx = permissions.value.findIndex((p) => p.id === id);
     if (idx !== -1) permissions.value[idx] = updatedPerm;
     return updatedPerm;

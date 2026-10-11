@@ -234,9 +234,8 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>المبلغ (ر.س) *</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.amount"
-                    type="number"
                     min="0.01"
                     step="0.01"
                     class="form-input"
@@ -245,7 +244,7 @@
                 </div>
                 <div class="form-group">
                   <label>تاريخ الصرف *</label
-                  ><input
+                  ><StbDateInput
                     v-model="form.payoutDate"
                     type="date"
                     class="form-input"
@@ -304,6 +303,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Bonus } from "@/types";
 import { ref, reactive, computed, onMounted } from "vue";
 import { useBonusStore, BonusStatus } from "@/stores/bonuses"; // ✅ استيراد BonusStatus
 import { useEmployeesStore } from "@/stores/employees";
@@ -385,7 +385,7 @@ const getStatusLabel = (status?: BonusStatus) => {
   }
 };
 
-const openModal = (bonus?: any) => {
+const openModal = (bonus?: Bonus) => {
   if (bonus) {
     isEditing.value = true;
     currentId.value = bonus.id;
@@ -415,8 +415,8 @@ const handleSubmit = async () => {
       isEditing.value ? "تم تحديث المكافأة بنجاح" : "تم تسجيل المكافأة بنجاح",
     );
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -427,8 +427,8 @@ const handleStatusChange = async (id: string, status: BonusStatus) => {
   try {
     await store.updateStatus(id, status);
     toast.success(`تم تغيير حالة المكافأة إلى: ${getStatusLabel(status)}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
@@ -438,8 +438,8 @@ const handleDisburse = async (id: string) => {
   try {
     await store.disburseBonus(id);
     toast.success("✅ تم صرف المكافأة استثنائياً بنجاح");
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تأكيد الصرف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تأكيد الصرف"));
   } finally {
     disbursingId.value = null;
   }
@@ -453,19 +453,13 @@ const handleDelete = async () => {
   try {
     await store.remove(currentId.value!);
     toast.success("تم حذف المكافأة");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 const closeModal = () => (showModal.value = false);
 
-const formatCurrency = (val: number | string) =>
-  Number(val).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " ر.س";
 
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;
 
@@ -494,8 +488,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -508,8 +502,8 @@ const downloadBonus = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

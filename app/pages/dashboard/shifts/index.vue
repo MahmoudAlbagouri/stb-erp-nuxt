@@ -116,7 +116,7 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>وقت البداية *</label>
-                  <input
+                  <StbDateInput
                     v-model="form.startTime"
                     type="time"
                     class="form-input"
@@ -125,7 +125,7 @@
                 </div>
                 <div class="form-group">
                   <label>وقت النهاية *</label>
-                  <input
+                  <StbDateInput
                     v-model="form.endTime"
                     type="time"
                     class="form-input"
@@ -136,9 +136,8 @@
 
               <div class="form-group">
                 <label>فترة السماحية (بالدقائق) *</label>
-                <input
+                <StbNumberInput
                   v-model.number="form.gracePeriod"
-                  type="number"
                   min="0"
                   class="form-input"
                   required
@@ -247,8 +246,8 @@ const handleSubmit = async () => {
     }
     showModal.value = false;
     resetForm();
-  } catch (e: any) {
-    toast.error(e.message || "فشل في حفظ اوقات الدوام");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في حفظ اوقات الدوام"));
   } finally {
     submitting.value = false;
   }

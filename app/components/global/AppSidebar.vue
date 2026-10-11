@@ -93,7 +93,7 @@
           to="/dashboard/companies"
           class="sidebar-nav__item"
           active-class="is-active"
-          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+          v-if="auth.isSystemAdmin"
         >
           <Building2 class="sidebar-nav__icon" />
           <span>الشركات</span>
@@ -103,7 +103,7 @@
           to="/dashboard/plans"
           class="sidebar-nav__item"
           active-class="is-active"
-          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+          v-if="auth.isSystemAdmin"
         >
           <Layers class="sidebar-nav__icon" />
           <span>الخطط والاشتراكات</span>
@@ -113,14 +113,14 @@
           to="/dashboard/admin/subscriptions"
           class="sidebar-nav__item"
           active-class="is-active"
-          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+          v-if="auth.isSystemAdmin"
         >
           <RefreshCw class="sidebar-nav__icon" />
           <span>إدارة التجديدات</span>
         </NuxtLink>
 
         <NuxtLink
-          v-if="(profile.data?.personal.user as any)?.isSystemAdmin"
+          v-if="auth.isSystemAdmin"
           to="/dashboard/quotations"
           class="sidebar-nav__item"
           active-class="is-active"

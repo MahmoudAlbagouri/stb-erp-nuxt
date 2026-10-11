@@ -272,9 +272,9 @@ onMounted(async () => {
   if (id) {
     try {
       payroll.value = await store.fetchById(id);
-    } catch (e: any) {
+    } catch (e) {
       console.error("Fetch Error:", e);
-      toast.error(e.message || "فشل في تحميل تفاصيل المسير");
+      toast.error(getErrorMessage(e, "فشل في تحميل تفاصيل المسير"));
     }
   }
 });
@@ -336,8 +336,8 @@ const handleDisburse = async () => {
     const updated = await store.disburse(payroll.value.id);
     payroll.value = { ...payroll.value, ...updated };
     toast.success("✅ تم تأكيد صرف المسير بنجاح");
-  } catch (e: any) {
-    toast.error(e.message || "فشل في تأكيد الصرف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في تأكيد الصرف"));
   } finally {
     disbursing.value = false;
   }
@@ -349,8 +349,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type, payroll.value.month, payroll.value.year);
     toast.success("تم التصدير بنجاح");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -372,13 +372,6 @@ const getMonthName = (m: number) =>
     "نوفمبر",
     "ديسمبر",
   ][m] ?? "";
-const formatDate = (d: string) =>
-  d ? new Date(d).toLocaleDateString("ar-SA") : "—";
-const formatCurrency = (val: string | number) =>
-  Number(val).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " ر.س";
 </script>
 
 <style lang="scss" scoped>

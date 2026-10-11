@@ -317,8 +317,8 @@ const handleSubmit = async () => {
       toast.success("تم إنشاء المستخدم بنجاح");
     }
     showModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ"));
   } finally {
     submitting.value = false;
   }
@@ -336,8 +336,8 @@ const doDelete = async () => {
     await store.remove(deleteTarget.value.id);
     toast.success("تم حذف المستخدم");
     showConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الحذف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الحذف"));
   } finally {
     deleting.value = false;
   }
@@ -345,7 +345,6 @@ const doDelete = async () => {
 
 const statusLabel = (s: string) =>
   ({ active: "نشط", inactive: "غير نشط", suspended: "موقوف" })[s] ?? s;
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 
 onMounted(() => {
   store.fetchAll();

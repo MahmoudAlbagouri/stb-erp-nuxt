@@ -360,8 +360,8 @@ const handleSubmit = async () => {
       toast.success("تم إضافة الشركة بنجاح");
     }
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ ما");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ ما"));
   } finally {
     submitting.value = false;
   }
@@ -379,8 +379,8 @@ const handleDelete = async () => {
     await store.delete(currentTenantId.value);
     toast.success("تم حذف الشركة بنجاح");
     showDeleteConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في الحذف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في الحذف"));
   } finally {
     deleting.value = false;
   }
@@ -388,14 +388,6 @@ const handleDelete = async () => {
 
 // Helpers
 const shortenId = (id: string) => id.split("-")[0];
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
 
 // Badge Helpers
 const getStatusClass = (status: string) => {

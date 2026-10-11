@@ -554,16 +554,16 @@
                 <td>{{ formatDate(eos.terminationDate) }}</td>
                 <td>{{ eos.reason || "—" }}</td>
                 <td>
-                  {{ Number((eos as any).serviceYears ?? 0).toFixed(2) }} سنة
+                  {{ Number(eos.serviceYears ?? 0).toFixed(2) }} سنة
                 </td>
-                <td>{{ formatCurrency((eos as any).lastBasicSalary) }}</td>
+                <td>{{ formatCurrency(eos.lastBasicSalary) }}</td>
                 <td>
                   <strong class="text-success">{{
                     formatCurrency(eos.eosAmount)
                   }}</strong>
                 </td>
-                <td>{{ formatDate((eos as any).payoutDate) }}</td>
-                <td>{{ (eos as any).notes || "—" }}</td>
+                <td>{{ formatDate(eos.payoutDate) }}</td>
+                <td>{{ eos.notes || "—" }}</td>
               </tr>
             </tbody>
           </table>
@@ -586,7 +586,7 @@ import { useEmployeesStore } from "@/stores/employees";
 import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "@/composables/useToast";
 import { useApi } from "@/composables/useApi"; // ✅ استيراد useApi
-import type { Employee } from "@/types";
+import type { Employee, EmployeeLeaveSummary } from "@/types";
 import {
   User,
   Briefcase,
@@ -619,7 +619,7 @@ const employee = ref<Employee | null>(null);
 const loading = ref(true);
 
 // ✅ ملخص رصيد الإجازات (الفعلي / المتبقي / المرحّل...)
-const leaveSummary = ref<any>(null);
+const leaveSummary = ref<EmployeeLeaveSummary | null>(null);
 
 // ✅ منطق التصدير في صفحة التفاصيل
 const showExportMenu = ref(false);
@@ -632,8 +632,8 @@ const downloadProfile = async (type: "excel" | "pdf") => {
     await store.exportSingle(employee.value!.id, type);
     toast.success(`تم تصدير ملف الموظف بصيغة ${type.toUpperCase()} بنجاح`);
     showExportMenu.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   }
 };
 
@@ -655,7 +655,7 @@ const downloadFile = async (url: string, defaultName: string) => {
       blob = await response.blob();
     } else {
       // للروابط الداخلية (النسبية): نستخدم api.get كما هو معتاد
-      blob = await api.get<Blob>(url, true, "blob");
+      blob = await api.get(url, true, "blob");
     }
 
     if (!blob || blob.size === 0) throw new Error("الملف فارغ أو تالف");
@@ -684,14 +684,14 @@ const downloadFile = async (url: string, defaultName: string) => {
     window.URL.revokeObjectURL(blobUrl);
 
     toast.success("تم بدء تحميل الملف");
-  } catch (error: any) {
+  } catch (error) {
     console.error("Download failed:", error);
     // إذا فشل التحميل المباشر للرابط الخارجي، نحاول فتحه في تبويب جديد كبديل
     if (url.startsWith("http")) {
       window.open(url, "_blank");
       toast.warning("تم فتح الملف في تبويب جديد بدلاً من التحميل المباشر");
     } else {
-      toast.error(error.message || "فشل في تحميل الملف");
+      toast.error(getErrorMessage(error, "فشل في تحميل الملف"));
     }
   }
 };
@@ -762,14 +762,6 @@ const isExpiringSoon = computed(() => {
   return diff > 0 && diff < 90 * 24 * 60 * 60 * 1000;
 });
 
-const formatDate = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("ar-SA");
-};
-const formatCurrency = (val?: string | number) => {
-  if (!val) return "0 ر.س";
-  return `${Number(val).toLocaleString("ar-SA")} ر.س`;
-};
 // ✅ تنسيق أرقام أيام الإجازات (لأنها قد تأتي كسورية بسبب حساب الاستحقاق اليومي)
 const formatDays = (val?: string | number) => {
   if (val === undefined || val === null) return "—";

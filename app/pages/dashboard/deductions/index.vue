@@ -235,9 +235,8 @@
               <div class="grid-2">
                 <div class="form-group">
                   <label>إجمالي المبلغ (ر.س) *</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.totalAmount"
-                    type="number"
                     min="0.01"
                     step="0.01"
                     class="form-input"
@@ -246,9 +245,8 @@
                 </div>
                 <div class="form-group">
                   <label>عدد الدفعات *</label
-                  ><input
+                  ><StbNumberInput
                     v-model.number="form.installmentsCount"
-                    type="number"
                     min="1"
                     class="form-input"
                     required
@@ -264,7 +262,7 @@
               </div>
               <div class="form-group">
                 <label>تاريخ بداية الخصم *</label
-                ><input
+                ><StbDateInput
                   v-model="form.startDate"
                   type="date"
                   class="form-input"
@@ -316,6 +314,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Deduction } from "@/types";
 import { ref, reactive, computed, onMounted } from "vue";
 import { useDeductionStore, DeductionStatus } from "@/stores/deductions"; // ✅ استيراد DeductionStatus
 import { useEmployeesStore } from "@/stores/employees";
@@ -380,7 +379,7 @@ const calculatedMonthly = computed(() =>
     ? Number((form.totalAmount / form.installmentsCount).toFixed(2))
     : 0,
 );
-const todayLabel = new Date().toLocaleDateString("ar-SA");
+const todayLabel = formatDate(new Date());
 
 // ✅ دالة لترجمة الحالة
 const getStatusLabel = (status?: DeductionStatus) => {
@@ -398,7 +397,7 @@ const getStatusLabel = (status?: DeductionStatus) => {
   }
 };
 
-const openModal = (deduction?: any) => {
+const openModal = (deduction?: Deduction) => {
   if (deduction) {
     isEditing.value = true;
     currentId.value = deduction.id;
@@ -432,8 +431,8 @@ const handleSubmit = async () => {
       isEditing.value ? "تم تحديث الخصم بنجاح" : "تم تسجيل الخصم بنجاح",
     );
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -444,8 +443,8 @@ const handleStatusChange = async (id: string, status: DeductionStatus) => {
   try {
     await store.updateStatus(id, status);
     toast.success(`تم تغيير حالة الخصم إلى: ${getStatusLabel(status)}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
@@ -457,23 +456,17 @@ const handleDelete = async () => {
   try {
     await store.remove(currentId.value!);
     toast.success("تم حذف الخصم وإيقاف الاستقطاع");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 const closeModal = () => (showModal.value = false);
 
-const formatCurrency = (val: number | string) =>
-  Number(val).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " ر.س";
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;
-const getProgressPct = (d: any) =>
+const getProgressPct = (d: Deduction) =>
   Math.min(100, Math.round((d.paidInstallments / d.installmentsCount) * 100));
-const isCompleted = (d: any) => d.paidInstallments >= d.installmentsCount;
+const isCompleted = (d: Deduction) => d.paidInstallments >= d.installmentsCount;
 
 // ✅ منطق التصدير
 const handleExport = async (type: "excel" | "pdf") => {
@@ -481,8 +474,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()}`);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     exporting.value = null;
   }
@@ -495,8 +488,8 @@ const downloadDeduction = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير الملف بصيغة ${type.toUpperCase()}`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

@@ -257,9 +257,8 @@
                 </div>
                 <div class="form-group">
                   <label>أيام الإجازة السنوية *</label>
-                  <input
+                  <StbNumberInput
                     v-model.number="form.annualLeaveDays"
-                    type="number"
                     class="form-input"
                     required
                     min="0"
@@ -269,9 +268,8 @@
                 <!-- ✅ تغيير المدة إلى شهور -->
                 <div class="form-group">
                   <label>مدة العقد (بالشهور)</label>
-                  <input
+                  <StbNumberInput
                     v-model.number="form.contractDurationMonths"
-                    type="number"
                     class="form-input"
                     min="1"
                     @input="calculateContractDates"
@@ -280,7 +278,7 @@
 
                 <div class="form-group">
                   <label>تاريخ بداية العقد *</label>
-                  <input
+                  <StbDateInput
                     v-model="form.startDate"
                     type="date"
                     class="form-input"
@@ -290,7 +288,7 @@
                 </div>
                 <div class="form-group">
                   <label>تاريخ نهاية العقد (محسوب تلقائياً)</label>
-                  <input
+                  <StbDateInput
                     v-model="form.endDate"
                     type="date"
                     class="form-input"
@@ -631,8 +629,8 @@ const handleSubmit = async () => {
     await store.create(payload);
     toast.success("تم إضافة العقد بنجاح");
     showModal.value = false;
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الحفظ");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الحفظ"));
   } finally {
     submitting.value = false;
   }
@@ -649,8 +647,8 @@ const doDelete = async () => {
     await store.remove(deleteTarget.value.id);
     toast.success("تم حذف العقد");
     showConfirm.value = false;
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     deleting.value = false;
   }
@@ -664,10 +662,6 @@ const openAttachmentsViewer = (contract: Contract) => {
 };
 const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
 const getFileName = (url: string) => url.split("/").pop() || "ملف";
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("ar-SA");
-};
 
 // ✅ منطق التصدير
 const handleExport = async (type: "excel" | "pdf") => {
@@ -675,8 +669,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   try {
     await store.exportData(type);
     toast.success(`تم تصدير تقرير العقود بصيغة ${type.toUpperCase()} بنجاح`);
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   } finally {
     exporting.value = null;
   }
@@ -691,8 +685,8 @@ const downloadContract = async (id: string, type: "excel" | "pdf") => {
     await store.exportSingle(id, type);
     toast.success(`تم تصدير ملف العقد بصيغة ${type.toUpperCase()} بنجاح`);
     activeExportMenu.value = null;
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   }
 };
 

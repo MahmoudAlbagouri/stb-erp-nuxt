@@ -6,6 +6,7 @@ import type {
   LeaveBalance,
   CreateLeavePayload,
   SetBalancePayload,
+  EmployeeLeaveSummary,
 } from "@/types";
 import { ref } from "vue";
 
@@ -72,7 +73,9 @@ export const useLeavesStore = defineStore("leaves", () => {
   // (الفعلي المستهلك + الرصيد المتبقي + عدد أيام كل طلب)
   const getEmployeeLeaveSummary = async (employeeId: string) => {
     try {
-      const res = await api.get(`/leaves/summary/${employeeId}`);
+      const res = await api.get<EmployeeLeaveSummary>(
+        `/leaves/summary/${employeeId}`,
+      );
       return res.data;
     } catch (error) {
       console.error("Failed to fetch employee leave summary:", error);
@@ -82,54 +85,18 @@ export const useLeavesStore = defineStore("leaves", () => {
 
   // ✅ التصدير الجماعي
   const exportData = async (type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(`/leaves/export/${type}`, true, "blob");
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `leaves_report_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/leaves/export/${type}`,
+      `leaves_report_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   // ✅ التصدير الفردي
   const exportSingle = async (id: string, type: "excel" | "pdf") => {
-    try {
-      const blob = await api.get<Blob>(
-        `/leaves/${id}/export/${type}`,
-        true,
-        "blob",
-      );
-      if (!blob || blob.size === 0)
-        throw new Error("الملف المستلم فارغ أو تالف");
-      const extension = type === "excel" ? "xlsx" : "pdf";
-      const fileName = `leave_${id}_${new Date().toISOString().split("T")[0]}.${extension}`;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e: any) {
-      console.error("Single Export Error:", e);
-      throw e;
-    }
+    await api.download(
+      `/leaves/${id}/export/${type}`,
+      `leave_${id}_${todayStamp()}.${reportExtension(type)}`,
+    );
   };
 
   const reset = () => {

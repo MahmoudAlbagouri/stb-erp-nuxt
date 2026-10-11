@@ -265,7 +265,7 @@ const toast = useToast();
 
 const isAdminView = ref(false);
 const actionLoading = ref(false);
-const searchTimeout = ref<any>(null);
+const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const canViewAll = computed(() => true); // Temporarily true for testing
 
@@ -317,8 +317,8 @@ const handleMarkAllRead = async () => {
   try {
     await store.markAllAsRead();
     toast.success("تم تحديد جميع الإشعارات كمقروءة");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     actionLoading.value = false;
   }
@@ -328,8 +328,8 @@ const handleMarkRead = async (id: string) => {
   try {
     if (isAdminView.value) await store.markAsReadByAdmin(id);
     else await store.markAsRead(id);
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
@@ -339,8 +339,8 @@ const handleDelete = async (id: string) => {
     if (isAdminView.value) await store.deleteByAdmin(id);
     else await store.deleteNotification(id);
     toast.success("تم حذف الإشعار");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 

@@ -2,7 +2,7 @@
 // Central upload handler - all file upload logic goes through here
 
 import { ref, computed } from "vue";
-import { useRuntimeConfig } from "nuxt/app";
+import { useApi } from "./useApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +38,13 @@ export interface UploadOptions {
   onError?: (message: string) => void;
 }
 
+interface UploadResponseFile {
+  url: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+}
+
 export interface UploadState {
   status: UploadStatus;
   progress: number; // 0–100
@@ -54,8 +61,9 @@ const DEFAULT_MAX_FILES = 10;
 // ─── Composable ───────────────────────────────────────────────────────────────
 
 export const useUpload = (options: UploadOptions) => {
-  const config = useRuntimeConfig();
-  const BASE_URL = config.public.apiBase as string;
+  // ✅ عبر useApi: نفس التوكن (Cookie) وتجديده التلقائي — كان يقرأ التوكن من
+  // localStorage (غير موجود هناك) فيُرسل الرفع بدون Authorization
+  const api = useApi();
 
   // ── Reactive State ──────────────────────────────────────────────────────────
 
@@ -78,16 +86,6 @@ export const useUpload = (options: UploadOptions) => {
     maxFiles: DEFAULT_MAX_FILES,
     ...options,
   }));
-
-  // ── Auth Header ─────────────────────────────────────────────────────────────
-
-  const getAuthHeader = (): Record<string, string> => {
-    if (!import.meta.client) return {};
-    const token = localStorage.getItem("stb_access_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
-  // ── Validation ──────────────────────────────────────────────────────────────
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
@@ -160,8 +158,7 @@ export const useUpload = (options: UploadOptions) => {
       const results: UploadedFile[] = [];
 
       // Upload each file (sequential to track progress cleanly)
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      for (const [i, file] of files.entries()) {
         const formData = new FormData();
         formData.append(opts.fieldName!, file);
 
@@ -172,22 +169,12 @@ export const useUpload = (options: UploadOptions) => {
           });
         }
 
-        const response = await fetch(`${BASE_URL}${opts.endpoint}`, {
-          method: "POST",
-          headers: getAuthHeader(),
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || `فشل رفع الملف (${response.status})`);
-        }
-
-        const data = await response.json();
-
-        // Build UploadedFile — STB API response shape:
-        // { data: { data: { data: [{ url, filename, mimetype, size }] } } }
-        const fileInfo = data?.data?.data?.[0];
+        // شكل استجابة الرفع: { data: { data: [{ url, filename, mimetype, size }] } }
+        const res = await api.post<{ data?: UploadResponseFile[] }>(
+          opts.endpoint,
+          formData,
+        );
+        const fileInfo = res.data?.data?.[0];
         const uploaded: UploadedFile = {
           id: crypto.randomUUID(),
           name: file.name,

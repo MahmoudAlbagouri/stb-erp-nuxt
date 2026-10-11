@@ -3,13 +3,9 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 
-export interface Department {
-  id: string;
-  name: string;
-  tenantId: string;
-  createdAt: string;
-  employeesCount?: number;
-}
+import type { Department } from "@/types";
+
+export type { Department };
 
 export interface CreateDepartmentPayload {
   name: string;
@@ -31,8 +27,8 @@ export const useDepartmentsStore = defineStore("departments", () => {
     try {
       const res = await api.get<Department[]>("/departments");
       departments.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }
@@ -44,8 +40,8 @@ export const useDepartmentsStore = defineStore("departments", () => {
     try {
       const res = await api.get<Department[]>("/departments/stats");
       departmentsWithCounts.value = res.data;
-    } catch (e: any) {
-      error.value = e.message;
+    } catch (e) {
+      error.value = getErrorMessage(e);
     } finally {
       loading.value = false;
     }

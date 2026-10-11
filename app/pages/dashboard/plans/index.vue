@@ -112,9 +112,8 @@
               <div class="grid-3">
                 <div class="form-group">
                   <label>السعر (ر.س)</label>
-                  <input
+                  <StbNumberInput
                     v-model="form.price"
-                    type="number"
                     class="form-input"
                     required
                   />
@@ -141,34 +140,30 @@
                 <div class="grid-2">
                   <div class="form-group">
                     <label>عدد المستخدمين (Users)</label>
-                    <input
+                    <StbNumberInput
                       v-model.number="form.quotas.max_users"
-                      type="number"
                       class="form-input"
                       placeholder="0 = غير محدود"
                     />
                   </div>
                   <div class="form-group">
                     <label>عدد الموظفين (Employees)</label>
-                    <input
+                    <StbNumberInput
                       v-model.number="form.quotas.max_employees"
-                      type="number"
                       class="form-input"
                     />
                   </div>
                   <div class="form-group">
                     <label>عدد العقود (Contracts)</label>
-                    <input
+                    <StbNumberInput
                       v-model.number="form.quotas.max_contracts"
-                      type="number"
                       class="form-input"
                     />
                   </div>
                   <div class="form-group">
                     <label>أجهزة البصمة (Devices)</label>
-                    <input
+                    <StbNumberInput
                       v-model.number="form.quotas.max_biometric_devices"
-                      type="number"
                       class="form-input"
                     />
                   </div>
@@ -226,6 +221,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Plan } from "@/stores/plans";
 import { ref, reactive, onMounted } from "vue";
 import { usePlanStore } from "@/stores/plans";
 import { useToast } from "@/composables/useToast";
@@ -269,7 +265,7 @@ const form = reactive<{
   quotas: { ...initialQuotas },
 });
 
-const openModal = (plan?: any) => {
+const openModal = (plan?: Plan) => {
   if (plan) {
     isEditing.value = true;
     currentId.value = plan.id;
@@ -307,8 +303,8 @@ const handleSubmit = async () => {
 
     toast.success("تم حفظ الخطة بنجاح");
     closeModal();
-  } catch (e: any) {
-    toast.error(e.message || "حدث خطأ أثناء الحفظ");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "حدث خطأ أثناء الحفظ"));
   } finally {
     submitting.value = false;
   }
@@ -323,15 +319,14 @@ const handleDelete = async () => {
   try {
     await store.deletePlan(currentId.value!);
     toast.success("تم حذف الخطة");
-  } catch (e: any) {
-    toast.error(e.message || "فشل الحذف");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل الحذف"));
   }
 };
 
 const closeModal = () => (showModal.value = false);
 
 // دوال مساعدة للعرض
-const formatPrice = (p: string) => Number(p).toLocaleString("ar-SA") + " ر.س";
 const getBillingLabel = (c: string) => {
   const map: Record<string, string> = {
     monthly: "شهر",

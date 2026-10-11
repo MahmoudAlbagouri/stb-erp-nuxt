@@ -1,8 +1,17 @@
 // stores/auth.ts
-import { defineStore } from "pinia";
+import { defineStore, getActivePinia } from "pinia";
 import { useRouter, useCookie } from "nuxt/app";
 import { computed, ref } from "vue";
 import { useApi } from "../composables/useApi";
+import {
+  ACCESS_TOKEN_COOKIE,
+  DASHBOARD_PATH,
+  DISCLAIMER_PATH,
+  LOGIN_PATH,
+  REFRESH_TOKEN_COOKIE,
+  decodeJwt,
+} from "../utils/auth";
+import { getErrorMessage } from "../utils/errors";
 import type {
   AuthTokens,
   LoginPayload,
@@ -10,49 +19,14 @@ import type {
   DecodedToken,
 } from "@/types";
 
-// ✅ استيراد جميع الـ Stores التي تحتاج إلى تفريغ عند الخروج
-import { useUsersStore } from "./users";
-import { useEmployeesStore } from "./employees";
-import { usePayrollStore } from "./payroll";
-import { useAdvancesStore } from "./advances";
-import { useLoansStore } from "./loans";
-import { useLeavesStore } from "./leaves";
-import { useContractsStore } from "./contracts";
-import { useSalariesStore } from "./salaries";
-import { useQuotationsStore } from "./quotations";
-import { usePermissionsStore } from "./permissions";
-import { useRolesStore } from "./roles";
-import { useProfileStore } from "./profile";
-import { useAttendanceStore } from "./attendance";
-import { useUiStore } from "./ui";
-
-function decodeJwt<T>(token: string): T | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length < 2 || !parts[1]) return null;
-
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join(""),
-    );
-    return JSON.parse(json) as T;
-  } catch {
-    return null;
-  }
-}
-
 export const useAuthStore = defineStore("auth", () => {
   const api = useApi();
   const router = useRouter();
 
-  const accessTokenCookie = useCookie<string | null>("stb_access_token");
-  const refreshTokenCookie = useCookie<string | null>("stb_refresh_token");
+  const accessTokenCookie = useCookie<string | null>(ACCESS_TOKEN_COOKIE);
+  const refreshTokenCookie = useCookie<string | null>(REFRESH_TOKEN_COOKIE);
 
   // --- State ---
-  const user = ref<AuthTokens | null>(null);
   const decodedToken = ref<DecodedToken | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -60,8 +34,9 @@ export const useAuthStore = defineStore("auth", () => {
   // --- Computed ---
   const isAuthenticated = computed(() => !!accessTokenCookie.value);
 
-  // ✅ التعديل الجذري: الاعتماد المباشر على التوكن المفكوك كمصدر وحيد للحقيقة
-  // هذا يضمن تحديث اللقب والصلاحيات فوراً عند تسجيل الدخول دون الحاجة لـ Refresh
+  // ✅ التوكن المفكوك هو المصدر الوحيد للحقيقة لبيانات المستخدم والصلاحيات
+  const userId = computed(() => decodedToken.value?.sub ?? null);
+  const tenantId = computed(() => decodedToken.value?.tenantId ?? null);
   const isSuperAdmin = computed(
     () => decodedToken.value?.isSuperAdmin ?? false,
   );
@@ -75,37 +50,24 @@ export const useAuthStore = defineStore("auth", () => {
   );
 
   const role = computed(() => decodedToken.value?.role ?? null);
-  const permissions = computed(() => decodedToken.value?.permissions ?? []);
+  // الصلاحيات داخل التوكن تأتي ضمن role.permissions
+  const permissions = computed(() => role.value?.permissions ?? []);
   const employeeId = computed(() => decodedToken.value?.employeeId);
 
   // --- Hydrate & Persist ---
   const hydrate = () => {
-    if (accessTokenCookie.value) {
-      try {
-        decodedToken.value = decodeJwt<DecodedToken>(accessTokenCookie.value);
-        user.value = {
-          accessToken: accessTokenCookie.value!,
-          refreshToken: refreshTokenCookie.value!,
-          isSuperAdmin: decodedToken.value?.isSuperAdmin || false,
-          isSystemAdmin: decodedToken.value?.isSystemAdmin || false,
-        } as AuthTokens;
-      } catch {
-        clearAuth();
-      }
-    }
+    if (!accessTokenCookie.value) return;
+    decodedToken.value = decodeJwt<DecodedToken>(accessTokenCookie.value);
+    if (!decodedToken.value) clearAuth();
   };
 
   const persist = (data: AuthTokens) => {
-    // ✅ تحديث التوكن المفكوك أولاً لضمان تزامن المتغيرات المحسوبة
     decodedToken.value = decodeJwt<DecodedToken>(data.accessToken);
-
-    user.value = data;
     accessTokenCookie.value = data.accessToken;
     refreshTokenCookie.value = data.refreshToken;
   };
 
   const clearAuth = () => {
-    user.value = null;
     decodedToken.value = null;
     accessTokenCookie.value = null;
     refreshTokenCookie.value = null;
@@ -113,134 +75,91 @@ export const useAuthStore = defineStore("auth", () => {
 
   // ✅ التوجيه بعد الدخول/التسجيل حسب حالة الإقرار
   const goAfterAuth = () => {
-    router.push(isDisclaimerAccepted.value ? "/dashboard" : "/disclaimer");
+    router.push(isDisclaimerAccepted.value ? DASHBOARD_PATH : DISCLAIMER_PATH);
   };
 
-  // ✅ قائمة مركزية بجميع المتاجر التي يجب تفريغها
-  const storesToReset = [
-    useUsersStore,
-    useEmployeesStore,
-    usePayrollStore,
-    useAdvancesStore,
-    useLoansStore,
-    useLeavesStore,
-    useContractsStore,
-    useSalariesStore,
-    useQuotationsStore,
-    usePermissionsStore,
-    useRolesStore,
-    useProfileStore,
-    useAttendanceStore,
-    useUiStore,
-  ];
-
-  // --- Actions ---
-  const login = async (payload: LoginPayload) => {
+  /** ينفّذ طلب مصادقة مع إدارة موحّدة لحالتي loading / error */
+  const runAuthAction = async <T>(
+    action: () => Promise<T>,
+    fallbackMessage: string,
+  ): Promise<T> => {
     loading.value = true;
     error.value = null;
     try {
+      return await action();
+    } catch (e) {
+      error.value = getErrorMessage(e, fallbackMessage);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // --- Actions ---
+  const login = (payload: LoginPayload) =>
+    runAuthAction(async () => {
       const res = await api.post<AuthTokens>("/auth/login", payload, false);
       persist(res.data);
       goAfterAuth();
-    } catch (e: any) {
-      error.value = e.message || "خطأ في تسجيل الدخول";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
+    }, "خطأ في تسجيل الدخول");
 
-  const register = async (payload: RegisterPayload) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      // ✅ التسجيل يعيد Tokens: نحفظها ونوجّه المستخدم لمرحلة الإقرار
+  // ✅ التسجيل يعيد Tokens: نحفظها ونوجّه المستخدم لمرحلة الإقرار
+  const register = (payload: RegisterPayload) =>
+    runAuthAction(async () => {
       const res = await api.post<AuthTokens>("/auth/register", payload, false);
       persist(res.data);
       goAfterAuth();
-    } catch (e: any) {
-      error.value = e.message || "خطأ في إنشاء الحساب";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
+    }, "خطأ في إنشاء الحساب");
 
   // ✅ قبول الإقرار: نستبدل التوكنز بالجديدة (isDisclaimerAccepted = true) ثم الداشبورد
-  const acceptDisclaimer = async () => {
-    loading.value = true;
-    error.value = null;
-    try {
-      const res = await api.post<AuthTokens>(
-        "/auth/accept-disclaimer",
-        {},
-        true,
-      );
+  const acceptDisclaimer = () =>
+    runAuthAction(async () => {
+      const res = await api.post<AuthTokens>("/auth/accept-disclaimer", {});
       persist(res.data);
-      await router.push("/dashboard");
-    } catch (e: any) {
-      error.value = e.message || "تعذر تسجيل الإقرار، حاول مرة أخرى";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
+      await router.push(DASHBOARD_PATH);
+    }, "تعذر تسجيل الإقرار، حاول مرة أخرى");
 
-  const forgotPassword = async (email: string) => {
-    loading.value = true;
-    error.value = null;
-    try {
+  const forgotPassword = (email: string) =>
+    runAuthAction(async () => {
       await api.post("/auth/forgot-password", { email }, false);
-    } catch (e: any) {
-      error.value = e.message || "حدث خطأ أثناء إرسال الرمز";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
+    }, "حدث خطأ أثناء إرسال الرمز");
 
-  const resetPassword = async (
-    email: string,
-    code: string,
-    newPassword: string,
-  ) => {
-    loading.value = true;
-    error.value = null;
-    try {
+  const resetPassword = (email: string, code: string, newPassword: string) =>
+    runAuthAction(async () => {
       await api.post(
         "/auth/reset-password",
         { email, code, newPassword },
         false,
       );
-      router.push("/auth/login?reset=success");
-    } catch (e: any) {
-      error.value = e.message || "فشل تغيير كلمة المرور";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  };
+      router.push(`${LOGIN_PATH}?reset=success`);
+    }, "فشل تغيير كلمة المرور");
 
-  // ✅ دالة تسجيل الخروج المطورة
-  const logout = () => {
-    // 1. تفريغ جميع المتاجر تلقائياً
-    storesToReset.forEach((storeFn) => {
-      const store = storeFn();
-      if (typeof store.reset === "function") {
+  /**
+   * ✅ تفريغ كل المتاجر المُفعّلة تلقائياً (أي store يعرّف reset) بدل قائمة
+   * يدوية كانت تنسى المتاجر الجديدة — حتى لا تبقى بيانات شركة سابقة في
+   * الذاكرة بعد تسجيل الخروج.
+   */
+  const resetAllStores = () => {
+    const pinia = getActivePinia() as
+      | { _s?: Map<string, { $id: string; reset?: () => void }> }
+      | undefined;
+    pinia?._s?.forEach((store) => {
+      if (store.$id !== "auth" && typeof store.reset === "function") {
         store.reset();
       }
     });
+  };
 
-    // 2. مسح التوكنز والبيانات الشخصية
+  const logout = () => {
+    resetAllStores();
     clearAuth();
-
-    // 3. التوجيه لصفحة الدخول
-    router.push("/auth/login");
+    router.push(LOGIN_PATH);
   };
 
   return {
-    user,
     decodedToken,
+    userId,
+    tenantId,
     role,
     permissions,
     employeeId,

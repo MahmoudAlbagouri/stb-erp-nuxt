@@ -202,14 +202,13 @@
               <div class="form-group">
                 <label>آخر يوم عمل مقترح *</label>
                 <div class="date-input-wrapper">
-                  <input
+                  <StbDateInput
                     v-model="createForm.lastWorkingDay"
                     type="date"
                     class="form-input date-input"
                     required
                     :min="todayStr"
                   />
-                  <Calendar :size="18" class="date-icon" />
                 </div>
               </div>
 
@@ -367,8 +366,8 @@ const handleExport = async (type: "excel" | "pdf") => {
   exporting.value = type;
   try {
     toast.success(`تم تصدير التقرير بصيغة ${type.toUpperCase()} (محاكاة)`);
-  } catch (e: any) {
-    toast.error(e.message || "فشل في التصدير");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "فشل في التصدير"));
   } finally {
     exporting.value = null;
   }
@@ -417,7 +416,10 @@ const openCreateModal = () => {
   showCreateModal.value = true;
 };
 
-const openDecisionModal = (req: any, type: "approved" | "rejected") => {
+const openDecisionModal = (
+  req: { id: string },
+  type: "approved" | "rejected",
+) => {
   currentRequestId.value = req.id;
   decisionType.value = type;
   decisionForm.notes = "";
@@ -445,8 +447,8 @@ const handleCreate = async () => {
     await store.create(createForm);
     toast.success("تم تقديم طلب الاستقالة بنجاح");
     closeAll();
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -468,8 +470,8 @@ const handleDecision = async () => {
         : "تم رفض الطلب",
     );
     closeAll();
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
   }
@@ -479,14 +481,13 @@ const handleCancel = async () => {
   try {
     await store.cancelMyRequest();
     toast.success("تم إلغاء طلب الاستقالة بنجاح");
-  } catch (e: any) {
-    toast.error(e.message);
+  } catch (e) {
+    toast.error(getErrorMessage(e));
   }
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const getStatusLabel = (status: string) => StatusLabels[status] || status;
-const formatDate = (d: string) => new Date(d).toLocaleDateString("ar-SA");
 const truncateText = (text: string, len: number) =>
   text.length > len ? text.slice(0, len) + "..." : text;
 
