@@ -107,4 +107,39 @@ const pageTitle = computed(() => findNavItem(route.path)?.label ?? "الصفحة
   margin-right: auto;
   @include flex(row, center, flex-end, $space-3);
 }
+
+@include respond-to("sm") {
+  .app-topbar {
+    height: 56px;
+    padding: 0 $space-3;
+    gap: $space-2;
+  }
+
+  .topbar-breadcrumb {
+    min-width: 0;
+
+    .breadcrumb-icon,
+    &__sep {
+      display: none;
+    }
+
+    &__current {
+      overflow: hidden;
+      font-size: $font-size-base;
+      font-weight: 700;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .topbar-actions {
+    gap: $space-2;
+    flex-shrink: 0;
+  }
+
+  // صفة المستخدم تظهر في درج القائمة؛ لا حاجة لتكرارها في شريط ضيق
+  .topbar-badge {
+    display: none;
+  }
+}
 </style>

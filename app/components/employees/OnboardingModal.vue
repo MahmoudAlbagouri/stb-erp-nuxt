@@ -3356,4 +3356,37 @@ const calculateContractDates = () => {
   border-radius: $radius-md;
   border: 1px dashed $stb-border;
 }
+
+// ─── فون: النافذة بملء الشاشة والتبويبات تتمرر أفقياً ─────────────────────
+@include respond-to("sm") {
+  .ob-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+  .ob-panel {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+  }
+  .ob-header {
+    padding: $space-4;
+  }
+  .ob-tabs {
+    padding: 0 $space-2;
+  }
+  .ob-tab {
+    flex-shrink: 0;
+    padding: $space-3;
+  }
+  .ob-body {
+    padding: $space-4;
+  }
+  .ob-footer {
+    padding: $space-3 $space-4 calc(#{$space-3} + env(safe-area-inset-bottom, 0px));
+  }
+}
 </style>

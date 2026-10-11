@@ -812,4 +812,15 @@ const statusLabel = (s: string) =>
   height: 16px;
   border-width: 2px;
 }
+
+// ─── فون: الترحيب فوق التاريخ والساعة ────────────────────────────────────
+@media (max-width: 640px) {
+  .welcome-box {
+    flex-direction: column;
+    gap: $space-3;
+  }
+  .welcome-title {
+    font-size: $font-size-xl;
+  }
+}
 </style>

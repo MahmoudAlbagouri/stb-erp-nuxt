@@ -1,6 +1,20 @@
 <template>
-  <div class="app-layout" :class="{ 'sidebar-collapsed': !ui.sidebarOpen }">
+  <div
+    class="app-layout"
+    :class="{
+      'sidebar-collapsed': !ui.sidebarOpen,
+      'mobile-nav-open': ui.mobileNavOpen,
+    }"
+  >
     <AppSidebar />
+    <!-- خلفية معتمة خلف درج القائمة (آيباد/فون) -->
+    <Transition name="fade">
+      <div
+        v-if="ui.mobileNavOpen"
+        class="app-backdrop"
+        @click="ui.closeMobileNav"
+      />
+    </Transition>
     <div class="app-main">
       <AppTopbar />
       <main class="app-content">
@@ -17,6 +31,7 @@
         <slot v-else />
       </main>
     </div>
+    <MobileTabBar />
   </div>
 </template>
 
@@ -41,6 +56,12 @@ const navItem = computed(() => findNavItem(route.path));
 const sessionReady = computed(() => !!auth.decodedToken);
 const pageState = computed(() => resolve(navItem.value));
 
+// إغلاق درج القائمة عند الانتقال لصفحة أخرى
+watch(
+  () => route.fullPath,
+  () => ui.closeMobileNav(),
+);
+
 // بيانات الخطة (المميزات + الحدود) تُحمَّل مرة لكل جلسة، ويُعاد تحميلها عند تغيّر المستخدم
 onMounted(() => accessStore.fetch());
 watch(
@@ -61,29 +82,34 @@ watch(
   background: $stb-dark;
   direction: rtl;
 
-  &.sidebar-collapsed {
-    .app-sidebar {
-      width: $sidebar-collapsed;
-    }
-    .app-main {
-      margin-right: $sidebar-collapsed;
-    }
-    .sidebar-label,
-    .sidebar-logo__text,
-    .sidebar-footer__info {
-      display: none;
-    }
-    .sidebar-nav__item span {
-      display: none;
-    }
-    .sidebar-nav__item {
-      justify-content: center;
-      padding: $space-3;
-    }
-    .sidebar-section__title {
-      display: none;
+  // حالة الطي خاصة باللاب فقط — في الشاشات الأصغر القائمة درج كامل العرض
+  @media (min-width: 1025px) {
+    &.sidebar-collapsed {
+      .app-sidebar {
+        width: $sidebar-collapsed;
+      }
+      .app-main {
+        margin-right: $sidebar-collapsed;
+      }
+      .sidebar-label,
+      .sidebar-logo__text,
+      .sidebar-footer__info,
+      .sidebar-section__title,
+      .sidebar-nav__lock,
+      .sidebar-badge,
+      .sidebar-section__arrow {
+        display: none;
+      }
+      .sidebar-nav__item span {
+        display: none;
+      }
+      .sidebar-nav__item {
+        justify-content: center;
+        padding: $space-3;
+      }
     }
   }
+
 }
 
 .app-main {
@@ -109,9 +135,46 @@ watch(
   @include scrollbar;
 }
 
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: $z-sidebar - 1;
+  background: rgba($stb-dark, 0.7);
+  backdrop-filter: blur(3px);
+}
+
+// ─── آيباد/فون: القائمة الجانبية درج ينزلق من اليمين ───────────────────────
 @include respond-to("lg") {
   .app-main {
     margin-right: 0;
+  }
+
+  .app-sidebar {
+    width: min(86vw, 320px) !important;
+    height: 100vh;
+    height: 100dvh;
+    transform: translateX(105%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: none;
+  }
+
+  .mobile-nav-open .app-sidebar {
+    transform: translateX(0);
+    box-shadow: -16px 0 48px rgba(0, 0, 0, 0.55);
+  }
+
+  // منع تمرير الصفحة خلف الدرج
+  .mobile-nav-open {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+@include respond-to("sm") {
+  // الدرج يقف فوق شريط التنقل السفلي
+  .app-sidebar {
+    height: calc(100dvh - var(--tabbar-height) - var(--safe-bottom));
   }
 }
 </style>

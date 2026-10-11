@@ -1,0 +1,433 @@
+// ============================================
+// STB ERP — طبقة التجاوب العامة (لاب · آيباد · فون)
+// ============================================
+// تُحمَّل في نهاية main.scss وتغطي العناصر المشتركة بين كل الصفحات:
+// رأس الصفحة، الجداول، النوافذ (modals)، الشبكات، الإشعارات.
+//
+//   لاب    > 1024px : القائمة الجانبية ثابتة (قابلة للطي)
+//   آيباد  ≤ 1024px : القائمة تتحول لدرج جانبي (drawer) + الجداول تتمرر أفقياً
+//   فون    ≤ 640px  : شريط تنقل سفلي + الجداول تتحول لكروت + النوافذ bottom-sheet
+//
+// بعض القواعد تستخدم !important عمداً لأن تنسيقات الصفحات scoped وأعلى أولوية.
+
+@use "variables" as *;
+@use "mixins" as *;
+
+// ارتفاع شريط التنقل السفلي في الفون (يُستخدم لحجز مساحة أسفل المحتوى)
+:root {
+  --tabbar-height: 0px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+// لا تمرير أفقي للصفحة نفسها أبداً — أي عنصر عريض يتمرر داخل حاويته
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+// ─── الجداول: أي حاوية مباشرة لجدول تتمرر أفقياً بدل كسر الصفحة ─────────────
+.table-responsive,
+.table-wrapper,
+.table-card,
+:where(.card, section, div):has(> table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+// ============================================
+// آيباد وأصغر (≤ 1024px)
+// ============================================
+@include respond-to("lg") {
+  .page-container {
+    padding: $space-5;
+  }
+
+  // الأهداف اللمسية: 40px على الأقل
+  .btn:not(.btn--sm):not(.btn--icon) {
+    min-height: 40px;
+  }
+  .btn--icon {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+  .btn--sm {
+    min-height: 34px;
+  }
+
+  // الجداول العريضة تحتفظ بعرض مقروء وتتمرر داخل حاويتها
+  .data-table,
+  .simple-table {
+    min-width: 860px;
+  }
+
+  // لا تأثيرات hover "لاصقة" على الشاشات اللمسية
+  @media (hover: none) {
+    .stat-card:hover,
+    .btn:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+// ============================================
+// فون (≤ 640px)
+// ============================================
+@include respond-to("sm") {
+  :root {
+    --tabbar-height: 64px;
+  }
+
+  // مساحة أسفل المحتوى حتى لا يغطيه شريط التنقل السفلي
+  .app-content {
+    padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + #{$space-4});
+  }
+
+  .page-container {
+    padding: $space-4 $space-3;
+  }
+
+  // ─── رأس الصفحة: العنوان ثم الأزرار بعرض كامل ───────────────────────────
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $space-3;
+    margin-bottom: $space-4;
+
+    &__title h1 {
+      font-size: $font-size-lg;
+    }
+
+    &__actions {
+      display: flex !important;
+      flex-wrap: wrap;
+      gap: $space-2;
+      width: 100%;
+
+      // الأزرار تتقاسم العرض، والإجراء الرئيسي يأخذ سطراً كاملاً
+      > .btn,
+      > a,
+      > div {
+        flex: 1 1 calc(50% - #{$space-2});
+        min-width: 0;
+      }
+      > .btn--primary {
+        flex-basis: 100%;
+        order: -1;
+      }
+    }
+  }
+
+  // ─── الشبكات العامة ─────────────────────────────────────────────────────
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  // ─── شريط الإحصائيات: تمرير أفقي بالسحب (carousel) بدل تكدّس طويل ─────────
+  .stats-bar,
+  .stats-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: $space-3 !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: $space-2;
+    margin-inline: -#{$space-3};
+    padding-inline: $space-3;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    > * {
+      flex: 0 0 72% !important;
+      min-width: 0;
+      scroll-snap-align: start;
+    }
+  }
+
+  // الشرائح الصغيرة (pills) تأخذ عرض محتواها فقط
+  .stats-bar > * {
+    flex: 0 0 auto !important;
+    min-width: 44%;
+  }
+
+  // ─── كروت الإحصائيات: شبكة من عمودين ببلاطات مدمجة ───────────────────────
+  .stats-grid-responsive,
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: $space-3 !important;
+  }
+
+  .stat-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: $space-3 !important;
+    padding: $space-4 $space-3 !important;
+    min-width: 0;
+
+    &__icon {
+      width: 40px;
+      height: 40px;
+    }
+    &__value {
+      font-size: $font-size-lg;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  // ─── التبويبات: سطر واحد يتمرر أفقياً بدل انكسار النص ────────────────────
+  .tabs,
+  .tabs-bar,
+  .tabs-nav,
+  .page-tabs,
+  .tab-nav {
+    display: flex;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+  .tab-btn,
+  .tab-item,
+  .tab {
+    flex: 1 0 auto;
+    white-space: nowrap;
+  }
+
+  // مجموعات الأزرار (تبديل العرض) في رأس الصفحة: سطر كامل بأزرار متساوية
+  .page-header__actions > .view-toggle {
+    flex-basis: 100%;
+
+    .btn {
+      flex: 1;
+    }
+  }
+
+  // ─── الجداول → كروت ─────────────────────────────────────────────────────
+  // كل صف يصبح كارت، وكل خانة تعرض اسم عمودها (data-label يضيفه
+  // plugins/table-labels.client.ts تلقائياً من رأس الجدول)
+  .data-table,
+  .simple-table {
+    min-width: 0 !important;
+    border-collapse: separate;
+
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    tbody,
+    tr,
+    td {
+      display: block;
+      width: 100% !important;
+    }
+
+    tbody tr {
+      margin-bottom: $space-3;
+      padding: $space-2 $space-4;
+      background: $gradient-card;
+      border: 1px solid $stb-border;
+      border-radius: $radius-lg;
+      box-shadow: $shadow-sm;
+
+      &:hover td {
+        background: transparent;
+      }
+    }
+
+    tbody td {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $space-4;
+      min-height: 42px;
+      padding: $space-2 0 !important;
+      border-bottom: 1px dashed rgba($stb-border, 0.7) !important;
+      text-align: left !important;
+      white-space: normal !important;
+
+      &::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        max-width: 45%;
+        font-size: $font-size-xs;
+        font-weight: 700;
+        color: $stb-text-muted;
+        text-align: right;
+      }
+
+      // بدون عنوان عمود (أو خانة ممتدة مثل "لا توجد بيانات"): محتوى فقط
+      &:not([data-label]),
+      &[data-label=""],
+      &[colspan] {
+        justify-content: center;
+        text-align: center !important;
+
+        &::before {
+          display: none;
+        }
+      }
+
+      &:last-child {
+        border-bottom: none !important;
+      }
+
+      // محتوى الخانة لا يتجاوز عرضه
+      > * {
+        min-width: 0;
+      }
+    }
+  }
+
+  // حاوية الجدول لم تعد تحتاج إطار الكارت (الصفوف نفسها كروت)
+  .table-responsive,
+  .table-wrapper,
+  .table-card {
+    overflow-x: visible;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  // ─── النوافذ → bottom sheet ─────────────────────────────────────────────
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal {
+    position: relative;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh;
+    max-height: 92dvh;
+    margin: 0 !important;
+    padding: $space-6 $space-4 calc(#{$space-4} + var(--safe-bottom)) !important;
+    border-radius: $radius-2xl $radius-2xl 0 0 !important;
+    border-bottom: none;
+    animation: sheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    // مقبض السحب
+    &::before {
+      content: "";
+      position: absolute;
+      top: $space-2;
+      left: 50%;
+      width: 44px;
+      height: 4px;
+      margin-left: -22px;
+      border-radius: $radius-full;
+      background: $stb-border-light;
+    }
+
+    &__header {
+      margin-bottom: $space-4;
+
+      h3 {
+        font-size: $font-size-lg;
+      }
+    }
+
+    // أزرار التذييل ثابتة أسفل النافذة وبعرض كامل
+    &__footer {
+      position: sticky;
+      bottom: calc(-1 * (#{$space-4} + var(--safe-bottom)));
+      z-index: 2;
+      margin-inline: -#{$space-4};
+      margin-bottom: calc(-1 * (#{$space-4} + var(--safe-bottom)));
+      padding: $space-3 $space-4 calc(#{$space-3} + var(--safe-bottom));
+      background: $stb-surface-2;
+      flex-direction: row-reverse;
+
+      .btn {
+        flex: 1;
+      }
+    }
+  }
+
+  // حقول النماذج داخل النوافذ: عمود واحد
+  .modal .form-grid,
+  .modal .form-row,
+  .modal .grid-2,
+  .modal .grid-3 {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+  .modal .full-width {
+    grid-column: auto !important;
+  }
+
+  // 16px تمنع iOS من تكبير الصفحة عند التركيز على الحقل
+  .form-input,
+  .form-select,
+  textarea.form-input,
+  .stb-date-input {
+    font-size: 16px !important;
+  }
+
+  // أثناء فتح أي نافذة: نخفي شريط التنقل حتى لا يغطي أزرارها
+  body:has(.modal-overlay, .ob-overlay) .mobile-tabbar {
+    display: none;
+  }
+
+  // ─── الإشعارات (Toasts): بعرض الشاشة فوق شريط التنقل ─────────────────────
+  .toast-container {
+    left: $space-3;
+    right: $space-3;
+    bottom: calc(var(--tabbar-height) + var(--safe-bottom) + #{$space-3});
+    align-items: stretch;
+  }
+  .toast {
+    min-width: 0;
+  }
+
+  .empty-state {
+    padding: $space-8 $space-4;
+  }
+}
+
+@keyframes sheetIn {
+  from {
+    opacity: 0.6;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// احترام إعداد "تقليل الحركة" في النظام
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

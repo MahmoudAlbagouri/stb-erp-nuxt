@@ -2,6 +2,7 @@
 // STB ERP - Main Stylesheet
 // ============================================
 
+@use "sass:meta";
 @use "variables" as *;
 @use "mixins" as *;
 
@@ -825,3 +826,5 @@ a:hover {
   transform: translateY(-10px);
 }
 
+// --- Responsive layer (يجب أن تبقى آخر شيء) ---
+@include meta.load-css("responsive");
