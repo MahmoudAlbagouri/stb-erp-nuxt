@@ -30,7 +30,7 @@
           <span>PDF</span>
         </button>
 
-        <button class="btn btn--primary" @click="openCreateModal">
+        <button v-can="'request_resignation_self'" class="btn btn--primary" @click="openCreateModal">
           <FilePlus :size="18" />
           <span>تقديم طلب استقالة</span>
         </button>
@@ -85,7 +85,7 @@
         <div class="empty-state__text">
           ابدأ بتقديم طلب استقالة جديد أو انتظر وصول طلبات من الموظفين
         </div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal">
+        <button v-can="'request_resignation_self'" class="btn btn--primary mt-4" @click="openCreateModal">
           <FilePlus :size="16" />
           تقديم طلب جديد
         </button>
@@ -144,6 +144,7 @@
                 <div class="actions-cell">
                   <!-- زر الإلغاء -->
                   <button
+                    v-can="'request_resignation_self'"
                     v-if="req.status === 'pending'"
                     class="btn btn--danger-outline btn--sm"
                     @click="confirmCancel(req.id)"
@@ -155,6 +156,7 @@
                   <!-- أزرار القرار -->
                   <template v-if="req.status === 'pending'">
                     <button
+                      v-can="'approve_resignation'"
                       class="btn btn--success-outline btn--sm"
                       @click="openDecisionModal(req, 'approved')"
                       title="موافقة"
@@ -162,6 +164,7 @@
                       <CheckCircle :size="14" />
                     </button>
                     <button
+                      v-can="'approve_resignation'"
                       class="btn btn--danger-outline btn--sm"
                       @click="openDecisionModal(req, 'rejected')"
                       title="رفض"

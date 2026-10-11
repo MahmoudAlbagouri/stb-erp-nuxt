@@ -613,17 +613,6 @@ onMounted(() => {
   background: $stb-border;
 }
 
-.btn--danger-outline {
-  background: transparent;
-  color: $stb-danger;
-  border: 1px solid rgba($stb-danger, 0.3);
-
-  &:hover:not(:disabled) {
-    background: rgba($stb-danger, 0.1);
-    border-color: $stb-danger;
-  }
-}
-
 .grid-2-modal {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -5,7 +5,7 @@
         <h1>الصلاحيات</h1>
         <p>إدارة صلاحيات النظام والأدوار المخصصة</p>
       </div>
-      <!-- <button class="btn btn--primary" @click="openCreate">
+      <!-- <button v-can="'create_permission'" class="btn btn--primary" @click="openCreate">
         <span>+</span> إضافة صلاحية مخصصة
       </button> -->
     </div>
@@ -61,12 +61,14 @@
               <div style="display: flex; gap: 0.5rem; align-items: center">
               <template v-if="perm.tenantId">
                   <button
+                    v-can="'update_permission'"
                     class="btn btn--ghost btn--sm"
                     @click="openEdit(perm)"
                   >
                     تعديل
                   </button>
                   <button
+                    v-can="'delete_permission'"
                     class="btn btn--danger btn--sm"
                     @click="confirmDelete(perm)"
                   >

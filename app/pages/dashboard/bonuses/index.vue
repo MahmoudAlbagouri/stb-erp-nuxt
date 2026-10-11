@@ -10,6 +10,8 @@
       <div class="page-header__actions">
         <!-- ✅ أزرار التصدير الجماعي -->
         <button
+          v-can="'view_bonuses'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -18,6 +20,8 @@
           <FileSpreadsheet v-else :size="18" /><span>Excel</span>
         </button>
         <button
+          v-can="'view_bonuses'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -26,7 +30,7 @@
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
 
-        <button class="btn btn--primary" @click="openModal()">
+        <button v-can="'create_bonus'" class="btn btn--primary" @click="openModal()">
           <Plus :size="16" /> تسجيل مكافأة جديدة
         </button>
       </div>
@@ -68,7 +72,7 @@
         <div class="empty-state__text">
           ابدأ بتسجيل أول مكافأة تشجيعية لموظفيك
         </div>
-        <button class="btn btn--primary mt-4" @click="openModal()">
+        <button v-can="'create_bonus'" class="btn btn--primary mt-4" @click="openModal()">
           <Plus :size="15" /> تسجيل مكافأة
         </button>
       </div>
@@ -127,6 +131,8 @@
           <!-- ✅ زر التصدير الفردي -->
           <div class="export-dropdown">
             <button
+              v-can="'view_bonuses'"
+              v-feature="'reports_export'"
               class="btn btn--ghost btn--sm export-btn"
               @click="toggleExportMenu(bonus.id)"
               title="تصدير التقرير"
@@ -135,10 +141,10 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === bonus.id" class="dropdown-menu">
-                <button @click="downloadBonus(bonus.id, 'pdf')">
+                <button v-can="'view_bonuses'" v-feature="'reports_export'" @click="downloadBonus(bonus.id, 'pdf')">
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button @click="downloadBonus(bonus.id, 'excel')">
+                <button v-can="'view_bonuses'" v-feature="'reports_export'" @click="downloadBonus(bonus.id, 'excel')">
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>
@@ -149,6 +155,7 @@
             <!-- ✅ أزرار الموافقة والرفض تظهر فقط للمكافآت المعلقة -->
             <template v-if="bonus.status === BonusStatus.PENDING">
               <button
+                v-can="'update_bonus'"
                 class="btn btn--success-outline btn--sm"
                 @click="handleStatusChange(bonus.id, BonusStatus.APPROVED)"
                 title="موافقة"
@@ -156,6 +163,7 @@
                 <Check :size="13" />
               </button>
               <button
+                v-can="'update_bonus'"
                 class="btn btn--danger-outline btn--sm"
                 @click="handleStatusChange(bonus.id, BonusStatus.REJECTED)"
                 title="رفض"
@@ -166,6 +174,7 @@
 
             <!-- ✅ زر الصرف الاستثنائي المباشر: يظهر فقط للمكافآت المعتمدة وغير المصروفة سلفاً -->
             <button
+              v-can="'update_bonus'"
               v-if="bonus.status === BonusStatus.APPROVED && !bonus.isDisbursed"
               class="btn btn--warning-outline btn--sm"
               @click="handleDisburse(bonus.id)"
@@ -180,10 +189,11 @@
               صرف استثنائي
             </button>
 
-            <button class="btn btn--ghost btn--sm" @click="openModal(bonus)">
+            <button v-can="'update_bonus'" class="btn btn--ghost btn--sm" @click="openModal(bonus)">
               <Edit :size="13" /> تعديل
             </button>
             <button
+              v-can="'delete_bonus'"
               class="btn btn--danger-outline btn--sm"
               @click="confirmDelete(bonus.id)"
             >
@@ -738,16 +748,6 @@ onMounted(() => {
 }
 
 // ✅ زر الصرف الاستثنائي
-.btn--warning-outline {
-  background: transparent;
-  color: $stb-warning;
-  border: 1px solid rgba($stb-warning, 0.35);
-  &:hover:not(:disabled) {
-    background: rgba($stb-warning, 0.1);
-    border-color: $stb-warning;
-  }
-}
-
 .alert-info {
   @include flex(row, flex-start, flex-start, $space-2);
   padding: $space-3;

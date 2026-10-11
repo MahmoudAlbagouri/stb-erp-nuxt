@@ -7,7 +7,7 @@
         <p>إدارة وإنشاء وتصدير كشوف الرواتب الشهرية</p>
       </div>
       <div class="page-header__actions">
-        <button class="btn btn--primary" @click="showGenerateModal = true">
+        <button v-can="'generate_payroll'" class="btn btn--primary" @click="showGenerateModal = true">
           <CalendarPlus :size="16" />
           إنشاء مسير جديد
         </button>
@@ -152,6 +152,7 @@
           }}
         </div>
         <button
+          v-can="'generate_payroll'"
           v-if="!filterYear"
           class="btn btn--primary mt-4"
           @click="showGenerateModal = true"
@@ -261,12 +262,16 @@
           >
           <div class="export-btns">
             <button
+              v-can="'export_payroll'"
+              v-feature="'reports_export'"
               class="btn btn--ghost btn--sm"
               @click="handleExportForItem('excel', payroll)"
             >
               <FileSpreadsheet :size="13" /> Excel
             </button>
             <button
+              v-can="'export_payroll'"
+              v-feature="'reports_export'"
               class="btn btn--accent-outline btn--sm"
               @click="handleExportForItem('pdf', payroll)"
             >
@@ -836,15 +841,6 @@ onMounted(() => {
 }
 .export-btns {
   @include flex(row, center, flex-end, $space-2);
-}
-.btn--accent-outline {
-  background: transparent;
-  color: $stb-accent;
-  border: 1px solid rgba($stb-accent, 0.3);
-  &:hover:not(:disabled) {
-    background: rgba($stb-accent, 0.08);
-    border-color: $stb-accent;
-  }
 }
 .alert-info {
   @include flex(row, flex-start, flex-start, $space-2);

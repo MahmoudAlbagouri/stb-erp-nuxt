@@ -8,6 +8,8 @@
       </div>
       <div class="page-header__actions">
         <button
+          v-can="'view_advances'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -16,6 +18,8 @@
           <FileSpreadsheet v-else :size="18" /><span>Excel</span>
         </button>
         <button
+          v-can="'view_advances'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -25,12 +29,13 @@
         </button>
 
         <!-- زر طلب سلفة شخصي -->
-        <button class="btn btn--primary" @click="openCreateModal(false)">
+        <button v-can="'request_advance_self'" class="btn btn--primary" @click="openCreateModal(false)">
           <Plus :size="18" /><span>طلب سلفة جديدة</span>
         </button>
 
         <!-- ✅ زر جديد: إنشاء سلفة لموظف (للمدراء) -->
         <button
+          v-can="'create_advance_admin'"
           v-if="canCreateForOthers"
           class="btn btn--secondary"
           @click="openCreateModal(true)"
@@ -76,7 +81,7 @@
         <HandCoins :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات سلف</div>
         <div class="empty-state__text">ابدأ بتقديم طلب سلفة جديد</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal(false)">
+        <button v-can="'request_advance_self'" class="btn btn--primary mt-4" @click="openCreateModal(false)">
           <Plus :size="16" /> طلب سلفة
         </button>
       </div>
@@ -148,6 +153,8 @@
                 <div class="actions-cell">
                   <div class="export-dropdown">
                     <button
+                      v-can="'view_advances'"
+                      v-feature="'reports_export'"
                       class="btn btn--ghost btn--sm export-btn"
                       @click="toggleExportMenu(adv.id)"
                       title="تصدير التقرير"
@@ -159,10 +166,10 @@
                         v-if="activeExportMenu === adv.id"
                         class="dropdown-menu"
                       >
-                        <button @click="downloadAdvance(adv.id, 'pdf')">
+                        <button v-can="'view_advances'" v-feature="'reports_export'" @click="downloadAdvance(adv.id, 'pdf')">
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button @click="downloadAdvance(adv.id, 'excel')">
+                        <button v-can="'view_advances'" v-feature="'reports_export'" @click="downloadAdvance(adv.id, 'excel')">
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>
@@ -171,6 +178,7 @@
 
                   <template v-if="adv.status === 'pending' && canApprove">
                     <button
+                      v-can="'approve_advance'"
                       class="btn btn--success btn--sm"
                       @click="triggerApprove(adv)"
                       title="موافقة"
@@ -178,6 +186,7 @@
                       <Check :size="14" />
                     </button>
                     <button
+                      v-can="'approve_advance'"
                       class="btn btn--danger btn--sm"
                       @click="triggerReject(adv)"
                       title="رفض"
@@ -188,6 +197,7 @@
 
                   <!-- ✅ زر الصرف الاستثنائي المباشر: سلف معتمدة وغير مصروفة سلفاً -->
                   <button
+                    v-can="'approve_advance'"
                     v-if="
                       adv.status === 'approved' && !adv.isDisbursed
                     "
@@ -571,15 +581,6 @@ onMounted(() => {
   align-items: center;
 }
 
-.btn--secondary {
-  background-color: $stb-surface-2;
-  color: $stb-text-primary;
-  border: 1px solid $stb-border;
-  &:hover {
-    background-color: $stb-surface-3;
-  }
-}
-
 .stats-row {
   margin-bottom: $space-6;
 }
@@ -663,16 +664,6 @@ onMounted(() => {
 }
 
 // ✅ زر الصرف الاستثنائي
-.btn--warning-outline {
-  background: transparent;
-  color: $stb-warning;
-  border: 1px solid rgba($stb-warning, 0.35);
-  &:hover:not(:disabled) {
-    background: rgba($stb-warning, 0.1);
-    border-color: $stb-warning;
-  }
-}
-
 // ✅ تنسيق قائمة التصدير
 .export-dropdown {
   position: relative;

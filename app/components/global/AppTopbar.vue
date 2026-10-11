@@ -39,27 +39,14 @@ import { useRoute } from "nuxt/app";
 import { computed } from "vue";
 // ✅ استيراد الأيقونات
 import { Menu, Home } from "lucide-vue-next";
+import { findNavItem } from "@/utils/navigation";
 
 const ui = useUiStore();
 const auth = useAuthStore();
 const route = useRoute();
 
-const pageTitles: Record<string, string> = {
-  "/dashboard": "الصفحة الرئيسية",
-  "/dashboard/profile": "الملف الشخصي",
-  "/dashboard/users": "المستخدمون",
-  "/dashboard/roles": "المسمى الوظيفي",
-  "/dashboard/permissions": "الصلاحيات",
-  "/dashboard/employees": "الموظفون",
-  "/dashboard/contracts": "العقود",
-  "/dashboard/salaries": "الرواتب",
-  "/dashboard/leaves": "الإجازات",
-  "/dashboard/attendance": "البصمة والحضور",
-  "/dashboard/advances": "السلف",
-  "/dashboard/loans": "القروض",
-};
-
-const pageTitle = computed(() => pageTitles[route.path] ?? "الصفحة");
+// العنوان من خريطة التنقل (المصدر الوحيد لأسماء الصفحات)
+const pageTitle = computed(() => findNavItem(route.path)?.label ?? "الصفحة");
 </script>
 
 <style lang="scss">

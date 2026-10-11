@@ -7,7 +7,7 @@
         <p>إدارة عروض الأسعار وتحويلها إلى فواتير ضريبية</p>
       </div>
       <div class="page-header__actions">
-        <button class="btn btn--primary" @click="openCreate">
+        <button v-can="'system:create_quotation'" class="btn btn--primary" @click="openCreate">
           <Plus :size="18" />
           <span>إنشاء عرض سعر جديد</span>
         </button>
@@ -26,7 +26,7 @@
         <div class="empty-state__text">
           أنشئ عرض سعر جديد لبدء إدارة المبيعات والفواتير
         </div>
-        <button class="btn btn--primary mt-4" @click="openCreate">
+        <button v-can="'system:create_quotation'" class="btn btn--primary mt-4" @click="openCreate">
           <Plus :size="16" />
           إنشاء عرض سعر
         </button>
@@ -65,6 +65,7 @@
             <td class="actions-cell">
               <!-- ✅ طباعة عرض السعر مع حالة التحميل -->
               <button
+                v-can="'system:export_quotation_pdf'"
                 class="btn btn--ghost btn--sm"
                 @click="store.downloadQuotationPdf(q.id)"
                 :disabled="store.pdfLoading === q.id"
@@ -80,6 +81,7 @@
 
               <!-- ✅ طباعة الفاتورة مع حالة التحميل -->
               <button
+                v-can="'system:export_quotation_pdf'"
                 v-if="q.status === 'approved'"
                 class="btn btn--ghost btn--sm"
                 @click="store.downloadInvoicePdf(q.id)"
@@ -96,6 +98,7 @@
 
               <!-- الموافقة وتحويل لفاتورة -->
               <button
+                v-can="'system:approve_quotation'"
                 v-if="q.status !== 'approved'"
                 class="btn btn--success btn--sm"
                 @click="handleApprove(q)"
@@ -106,6 +109,7 @@
 
               <!-- حذف -->
               <button
+                v-can="'system:delete_quotation'"
                 class="btn btn--danger btn--sm"
                 @click="confirmDelete(q)"
                 title="حذف"

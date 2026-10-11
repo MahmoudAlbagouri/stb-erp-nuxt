@@ -30,7 +30,7 @@
     <!-- ══ Tab Content: Devices ═════════════════════════════════════════════ -->
     <div v-if="activeTab === 'devices'" class="tab-content">
       <div class="action-bar">
-        <button class="btn btn--primary" @click="openDeviceModal">
+        <button v-can="'create_biometric_device'" v-feature="'biometric_integration'" v-quota="'max_biometric_devices'" class="btn btn--primary" @click="openDeviceModal">
           <Plus :size="18" />
           إضافة جهاز جديد
         </button>
@@ -44,7 +44,7 @@
         <div class="empty-state">
           <WifiOff :size="40" class="empty-icon" />
           <div class="empty-state__title">لا توجد أجهزة مسجلة</div>
-          <button class="btn btn--primary mt-4" @click="openDeviceModal">
+          <button v-can="'create_biometric_device'" v-feature="'biometric_integration'" v-quota="'max_biometric_devices'" class="btn btn--primary mt-4" @click="openDeviceModal">
             <Plus :size="16" />
             إضافة جهاز
           </button>
@@ -84,6 +84,7 @@
           </div>
           <div class="device-card__footer">
             <button
+              v-can="'sync_biometric_device'"
               class="btn btn--sm btn--ghost"
               @click="openPushUserModal(dev)"
             >
@@ -91,6 +92,7 @@
               ربط موظف
             </button>
             <button
+              v-can="'delete_biometric_device'"
               class="btn btn--sm btn--danger"
               @click="confirmDeleteDevice(dev.id)"
             >
@@ -149,6 +151,7 @@
           </button>
           <div class="filters-actions__spacer" />
           <button
+            v-can="'view_attendance_logs'"
             class="btn btn--outline"
             :disabled="exporting === 'excel'"
             @click="handleExport('excel')"
@@ -158,6 +161,7 @@
             Excel
           </button>
           <button
+            v-can="'view_attendance_logs'"
             class="btn btn--outline"
             :disabled="exporting === 'pdf'"
             @click="handleExport('pdf')"
@@ -166,7 +170,7 @@
             <FileText v-else :size="16" />
             PDF
           </button>
-          <button class="btn btn--primary" @click="openManualLogModal">
+          <button v-can="'create_attendance_log'" class="btn btn--primary" @click="openManualLogModal">
             <Plus :size="16" />
             تسجيل بصمة يدوية
           </button>
@@ -252,6 +256,7 @@
                 </td>
                 <td>
                   <button
+                    v-can="'update_attendance_log'"
                     v-if="canEditLog(log)"
                     class="btn btn--sm btn--ghost"
                     @click="openEditLogModal(log)"

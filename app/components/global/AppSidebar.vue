@@ -11,262 +11,54 @@
       </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Navigation: تُبنى من utils/navigation.ts حسب الصلاحيات ومميزات الخطة -->
     <nav class="sidebar-nav">
-      <!-- الرئيسية -->
-      <div class="sidebar-section">
-        <span class="sidebar-section__title">الرئيسية</span>
-
-        <NuxtLink
-          to="/dashboard"
-          class="sidebar-nav__item"
-          active-class="is-active"
+      <div
+        v-for="section in visibleSections"
+        :key="section.id"
+        class="sidebar-section"
+      >
+        <div
+          v-if="section.collapsible"
+          class="sidebar-section__header"
+          @click="toggleSection(section.id)"
         >
-          <LayoutDashboard class="sidebar-nav__icon" />
-          <span>الصفحة الرئيسية</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/subscription"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <CreditCard class="sidebar-nav__icon" />
-          <span>اشتراكي الحالي</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/profile"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <User class="sidebar-nav__icon" />
-          <span>ملفي الشخصي</span>
-        </NuxtLink>
-      </div>
-
-      <!-- ✅ إدارة النظام (خاص بـ System Admin فقط) -->
-      <div class="sidebar-section">
-        <span class="sidebar-section__title">إدارة النظام</span>
-
-        <NuxtLink
-          to="/dashboard/users"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <Users class="sidebar-nav__icon" />
-          <span>المستخدمون</span>
-        </NuxtLink>
-        <NuxtLink
-          to="/dashboard/notifications"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <Bell :size="18" class="sidebar-nav__icon" />
-          <!-- Import Bell from lucide -->
-          <span>الإشعارات</span>
-          <!-- Optional: Show badge in sidebar too -->
-          <span v-if="notificationsStore.hasUnread" class="sidebar-badge">{{
-            notificationsStore.unreadCount
-          }}</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/roles"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <ShieldCheck class="sidebar-nav__icon" />
-          <span>المسمى الوظيفي</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/permissions"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <KeyRound class="sidebar-nav__icon" />
-          <span>الصلاحيات</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/companies"
-          class="sidebar-nav__item"
-          active-class="is-active"
-          v-if="auth.isSystemAdmin"
-        >
-          <Building2 class="sidebar-nav__icon" />
-          <span>الشركات</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/plans"
-          class="sidebar-nav__item"
-          active-class="is-active"
-          v-if="auth.isSystemAdmin"
-        >
-          <Layers class="sidebar-nav__icon" />
-          <span>الخطط والاشتراكات</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/dashboard/admin/subscriptions"
-          class="sidebar-nav__item"
-          active-class="is-active"
-          v-if="auth.isSystemAdmin"
-        >
-          <RefreshCw class="sidebar-nav__icon" />
-          <span>إدارة التجديدات</span>
-        </NuxtLink>
-
-        <NuxtLink
-          v-if="auth.isSystemAdmin"
-          to="/dashboard/quotations"
-          class="sidebar-nav__item"
-          active-class="is-active"
-        >
-          <FileText class="sidebar-nav__icon" />
-          <span>عروض الأسعار والفواتير</span>
-        </NuxtLink>
-      </div>
-
-      <!-- ✅ الموارد البشرية (قائمة منسدلة) -->
-      <div class="sidebar-section">
-        <div class="sidebar-section__header" @click="toggleHrMenu">
-          <span class="sidebar-section__title">الموارد البشرية</span>
+          <span class="sidebar-section__title">{{ section.title }}</span>
           <ChevronDown
             class="sidebar-section__arrow"
-            :class="{ 'is-rotated': isHrOpen }"
+            :class="{ 'is-rotated': !collapsed[section.id] }"
           />
         </div>
+        <span v-else class="sidebar-section__title">{{ section.title }}</span>
 
         <Transition name="slide-down">
-          <div v-if="isHrOpen" class="sidebar-submenu">
+          <div
+            v-if="!section.collapsible || !collapsed[section.id]"
+            :class="{ 'sidebar-submenu': section.collapsible }"
+          >
             <NuxtLink
-              to="/dashboard/employees"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
+              v-for="item in section.items"
+              :key="item.to"
+              :to="item.to"
+              class="sidebar-nav__item"
+              :class="{
+                'sidebar-nav__item--sub': section.collapsible,
+                'sidebar-nav__item--locked': item.locked,
+                'is-active': isActive(item.to),
+              }"
+              :title="item.locked ? 'غير متاح في خطتك الحالية — اضغط للتفاصيل' : undefined"
             >
-              <Users class="sidebar-nav__icon" />
-              <span>الموظفون</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/contracts"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <FileText class="sidebar-nav__icon" />
-              <span>العقود</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/salaries"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Banknote class="sidebar-nav__icon" />
-              <span>الرواتب</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/leaves"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <CalendarDays class="sidebar-nav__icon" />
-              <span>الإجازات</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/attendance"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Fingerprint class="sidebar-nav__icon" />
-              <span>البصمة والحضور</span>
-            </NuxtLink>
-            <NuxtLink
-              to="/dashboard/shifts"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Clock class="sidebar-nav__icon" />
-              <span>أوقات العمل</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/advances"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <HandCoins class="sidebar-nav__icon" />
-              <span>السلف</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/loans"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Landmark class="sidebar-nav__icon" />
-              <span>القروض</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/bonuses"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Gift class="sidebar-nav__icon" />
-              <span>المكافآت</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/deductions"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <MinusCircle class="sidebar-nav__icon" />
-              <span>الخصومات</span>
-            </NuxtLink>
-
-            <!-- ✅ رابط طلبات الاستقالة الجديد -->
-            <NuxtLink
-              to="/dashboard/resignations"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <FilePlus class="sidebar-nav__icon" />
-              <span>طلبات الاستقالة</span>
-            </NuxtLink>
-
-            <!-- ✅ رابط نهاية الخدمة الجديد -->
-            <NuxtLink
-              to="/dashboard/eos"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <FileCheck class="sidebar-nav__icon" />
-              <span>نهاية الخدمة</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/payroll"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Calculator class="sidebar-nav__icon" />
-              <span>مسيرات الرواتب</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard/settlements"
-              class="sidebar-nav__item sidebar-nav__item--sub"
-              active-class="is-active"
-            >
-              <Receipt class="sidebar-nav__icon" />
-              <span>تسويات الإجازات</span>
+              <component :is="item.icon" class="sidebar-nav__icon" />
+              <span>{{ item.label }}</span>
+              <Lock v-if="item.locked" :size="13" class="sidebar-nav__lock" />
+              <span
+                v-else-if="
+                  item.to === '/dashboard/notifications' &&
+                  notificationsStore.hasUnread
+                "
+                class="sidebar-badge"
+                >{{ notificationsStore.unreadCount }}</span
+              >
             </NuxtLink>
           </div>
         </Transition>
@@ -283,17 +75,15 @@
           <span class="sidebar-footer__name">{{
             profile.fullName || "جاري التحميل..."
           }}</span>
-          <span class="sidebar-footer__role">{{
-            profile.data?.personal.user.role || "مالك الشركة"
-          }}</span>
+          <span class="sidebar-footer__role">{{ roleLabel }}</span>
         </div>
       </div>
     </NuxtLink>
 
     <button
       class="sidebar-logout-btn"
-      @click="handleLogout"
       title="تسجيل الخروج"
+      @click="handleLogout"
     >
       <LogOut :size="16" />
     </button>
@@ -301,83 +91,61 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
+import { ChevronDown, Lock, LogOut } from "lucide-vue-next";
 import { useUiStore } from "@/stores/ui";
 import { useAuthStore } from "@/stores/auth";
 import { useProfileStore } from "@/stores/profile";
 import { useNotificationsStore } from "@/stores/notifications";
-
-// ✅ استيراد أيقونات Lucide المستخدمة
-import {
-  LayoutDashboard,
-  User,
-  Users,
-  Bell,
-  ShieldCheck,
-  KeyRound,
-  ChevronDown,
-  FileText,
-  Banknote,
-  CalendarDays,
-  Fingerprint,
-  Calculator,
-  HandCoins,
-  Landmark,
-  LogOut,
-  Building2,
-  CreditCard,
-  Layers,
-  Clock,
-  RefreshCw,
-  Gift,
-  MinusCircle,
-  FilePlus, // ✅ أيقونة طلبات الاستقالة
-  FileCheck, // ✅ أيقونة نهاية الخدمة
-  Receipt, // ✅ أيقونة تسويات الإجازات
-} from "lucide-vue-next";
+import { useAccess } from "@/composables/useAccess";
+import { NAV_SECTIONS } from "@/utils/navigation";
 
 const ui = useUiStore();
 const auth = useAuthStore();
 const profile = useProfileStore();
 const notificationsStore = useNotificationsStore();
 const route = useRoute();
+const { resolve } = useAccess();
 
-const isHrOpen = ref(true);
-
-const toggleHrMenu = () => {
-  isHrOpen.value = !isHrOpen.value;
+// الأقسام القابلة للطي (مفتوحة افتراضياً)
+const collapsed = reactive<Record<string, boolean>>({});
+const toggleSection = (id: string) => {
+  collapsed[id] = !collapsed[id];
 };
+
+/**
+ * بدون صلاحية → العنصر لا يظهر. خارج الخطة → يظهر مقفولاً (دعوة للترقية).
+ * القسم الذي لا يبقى فيه أي عنصر يختفي بالكامل.
+ */
+const visibleSections = computed(() =>
+  NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items
+      .map((item) => ({ ...item, state: resolve(item) }))
+      .filter((item) => item.state !== "denied")
+      .map((item) => ({ ...item, locked: item.state === "locked" })),
+  })).filter((section) => section.items.length > 0),
+);
+
+const isActive = (to: string) =>
+  to === "/dashboard"
+    ? route.path === to
+    : route.path === to || route.path.startsWith(`${to}/`);
+
+const roleLabel = computed(() => {
+  if (auth.isSystemAdmin) return "مالك النظام";
+  if (auth.isSuperAdmin) return "مالك الشركة";
+  return auth.role?.name || profile.data?.personal?.user?.role || "مستخدم";
+});
 
 onMounted(async () => {
   if (auth.isAuthenticated && !profile.isLoaded) {
     await profile.fetchProfile();
   }
-
-  // ✅ قائمة مسارات الموارد البشرية لتشغيل الفتح التلقائي للقائمة
-  const hrRoutes = [
-    "/dashboard/employees",
-    "/dashboard/contracts",
-    "/dashboard/salaries",
-    "/dashboard/advances",
-    "/dashboard/loans",
-    "/dashboard/leaves",
-    "/dashboard/payroll",
-    "/dashboard/settlements",
-    "/dashboard/attendance",
-    "/dashboard/bonuses",
-    "/dashboard/deductions",
-    "/dashboard/resignations", // ✅ إضافة مسار طلبات الاستقالة
-    "/dashboard/eos", // ✅ إضافة مسار نهاية الخدمة
-  ];
-
-  if (hrRoutes.includes(route.path)) {
-    isHrOpen.value = true;
-  }
 });
 
 const handleLogout = () => {
-  profile.reset();
   auth.logout();
 };
 </script>
@@ -639,5 +407,23 @@ const handleLogout = () => {
   opacity: 0;
   padding-top: 0;
   padding-bottom: 0;
+}
+
+// ✅ عنصر خارج الخطة: يظهر مقفولاً (ينقل لصفحة الترقية عند الضغط)
+.sidebar-nav__item--locked {
+  opacity: 0.55;
+
+  .sidebar-nav__icon {
+    opacity: 0.7;
+  }
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.sidebar-nav__lock {
+  margin-right: auto;
+  flex-shrink: 0;
+  color: $stb-warning;
 }
 </style>

@@ -8,7 +8,7 @@
         <p>تحديد أوقات الدوام وفترات السماحية لكل وقت دوام</p>
       </div>
       <div class="page-header__actions">
-        <button class="btn btn--primary" @click="openCreateModal">
+        <button v-can="'create_shift'" class="btn btn--primary" @click="openCreateModal">
           <Plus :size="18" />
           <span>إضافة وقد دوام جديد</span>
         </button>
@@ -25,7 +25,7 @@
       <div class="empty-state">
         <Clock :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد اوقات دوام مسجلة بعد</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal">
+        <button v-can="'create_shift'" class="btn btn--primary mt-4" @click="openCreateModal">
           <Plus :size="16" />
           إضافة وقت دوام جديد
         </button>
@@ -67,6 +67,7 @@
               <td>{{ shift.gracePeriod }} دقيقة</td>
               <td>
                 <button
+                  v-can="'update_shift'"
                   class="btn btn--sm btn--ghost"
                   @click="openEditModal(shift)"
                 >

@@ -56,19 +56,70 @@ a:hover {
 @include scrollbar;
 
 // --- Buttons ---
+// ✅ نظام الأزرار الموحّد — المصدر الوحيد لكل أشكال الأزرار في المشروع.
+// لا تُعرَّف أي .btn--* داخل الصفحات؛ أضف الشكل الجديد هنا.
+//
+//   الأساسية : primary (الإجراء الرئيسي) · accent · secondary · ghost · outline
+//   الدلالية : success · danger · warning  (+ ‎-outline لكل منها)
+//   الأحجام  : sm · (افتراضي) · lg      الأشكال: icon · full · dashed
+//   الحالات  : :disabled · --loading · .is-plan-locked · .is-quota-reached
+
+/// زر "مصمت خفيف": خلفية شفافة من اللون تتحول لمصمتة عند المرور
+@mixin btn-tone($color) {
+  color: $color;
+  background: rgba($color, 0.12);
+  border-color: rgba($color, 0.35);
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    background: $color;
+    border-color: $color;
+    box-shadow: 0 4px 14px rgba($color, 0.35);
+  }
+}
+
+/// زر بإطار فقط
+@mixin btn-outline($color) {
+  color: $color;
+  background: transparent;
+  border-color: rgba($color, 0.45);
+
+  &:hover:not(:disabled) {
+    background: rgba($color, 0.12);
+    border-color: $color;
+  }
+}
+
 .btn {
   @include btn-base;
+  min-height: 38px;
+  border: 1px solid transparent;
+  line-height: 1.4;
+  user-select: none;
 
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba($stb-accent, 0.7);
+    outline-offset: 2px;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+
+  // ── الأساسية ──────────────────────────────────────────────
   &--primary {
     background: $gradient-primary;
     color: #fff;
     box-shadow: 0 4px 14px rgba($stb-primary, 0.4);
+
     &:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba($stb-primary, 0.5);
-    }
-    &:active:not(:disabled) {
-      transform: translateY(0);
+      box-shadow: 0 6px 20px rgba($stb-primary, 0.55);
+      filter: brightness(1.1);
     }
   }
 
@@ -77,16 +128,29 @@ a:hover {
     color: $stb-dark;
     font-weight: 700;
     box-shadow: 0 4px 14px rgba($stb-accent, 0.35);
+
     &:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: $shadow-glow;
     }
   }
 
+  &--secondary {
+    color: $stb-text-primary;
+    background: $stb-surface-2;
+    border-color: $stb-border-light;
+
+    &:hover:not(:disabled) {
+      background: $stb-surface-3;
+      border-color: $stb-accent;
+    }
+  }
+
   &--ghost {
     background: transparent;
     color: $stb-text-secondary;
-    border: 1px solid $stb-border;
+    border-color: $stb-border;
+
     &:hover:not(:disabled) {
       background: $stb-surface-3;
       color: $stb-text-primary;
@@ -94,36 +158,127 @@ a:hover {
     }
   }
 
+  &--outline {
+    @include btn-outline($stb-accent);
+  }
+
+  // ── الدلالية ──────────────────────────────────────────────
+  &--success {
+    @include btn-tone($stb-success);
+  }
   &--danger {
-    // background: rgba($stb-danger, 0.15);
-    color: $stb-danger;
-    border: 1px solid rgba($stb-danger, 0.3);
+    @include btn-tone($stb-danger);
+  }
+  &--warning {
+    @include btn-tone($stb-warning);
+  }
+
+  &--accent-outline {
+    @include btn-outline($stb-accent);
+  }
+  &--success-outline {
+    @include btn-outline($stb-success);
+  }
+  &--danger-outline {
+    @include btn-outline($stb-danger);
+  }
+  &--warning-outline {
+    @include btn-outline($stb-warning);
+  }
+
+  &--dashed {
+    color: $stb-text-secondary;
+    background: transparent;
+    border: 1px dashed $stb-border-light;
+
     &:hover:not(:disabled) {
-      background: $stb-danger;
-      color: #fff;
+      color: $stb-accent;
+      border-color: $stb-accent;
+      background: rgba($stb-accent, 0.06);
     }
   }
 
+  // ── الأحجام والأشكال ───────────────────────────────────────
   &--sm {
+    min-height: 30px;
     padding: $space-1 $space-3;
     font-size: $font-size-xs;
+    border-radius: $radius-sm + 2px;
   }
   &--lg {
+    min-height: 46px;
     padding: $space-3 $space-8;
     font-size: $font-size-base;
   }
   &--icon {
-    padding: $space-2;
+    padding: 0;
     width: 36px;
     height: 36px;
+    min-height: 36px;
+
+    &.btn--sm {
+      width: 30px;
+      height: 30px;
+      min-height: 30px;
+    }
   }
   &--full {
     width: 100%;
   }
+
+  // ── الحالات ───────────────────────────────────────────────
   &--loading {
     position: relative;
     color: transparent !important;
+    pointer-events: none;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border: 2px solid rgba(#fff, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
   }
+}
+
+// ✅ عنصر خارج خطة الشركة (v-feature): يظهر مقفولاً، والضغط ينقل لصفحة الترقية
+.is-plan-locked {
+  position: relative;
+  opacity: 0.6;
+  filter: saturate(0.5);
+  cursor: pointer;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: $stb-warning
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230d1117' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E")
+      center / 10px no-repeat;
+    box-shadow: 0 2px 6px rgba($stb-warning, 0.5);
+    pointer-events: none;
+  }
+
+  &:hover {
+    opacity: 0.8;
+    transform: none !important;
+  }
+}
+
+// ✅ بلوغ حد الخطة (v-quota): الزر معطّل مع توضيح في title
+.is-quota-reached {
+  cursor: not-allowed !important;
 }
 
 // --- Form Elements ---

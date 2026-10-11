@@ -9,6 +9,8 @@
       </div>
       <div class="page-header__actions">
         <button
+          v-can="'export_employees'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -18,6 +20,8 @@
           <span>Excel</span>
         </button>
         <button
+          v-can="'export_employees'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -26,7 +30,7 @@
           <FileText v-else :size="18" />
           <span>PDF</span>
         </button>
-        <button class="btn btn--primary" @click="showOnboarding = true">
+        <button v-can="'onboard_employee'" v-quota="'max_employees'" class="btn btn--primary" @click="showOnboarding = true">
           <UserPlus :size="18" />
           <span>إضافة موظف</span>
         </button>
@@ -181,6 +185,8 @@
             <div class="export-actions-group">
               <span class="export-label">تصدير النتائج الحالية:</span>
               <button
+                v-can="'export_employees'"
+                v-feature="'reports_export'"
                 class="btn btn--success btn--sm"
                 :disabled="!!exportingFiltered"
                 @click="handleExportFiltered('excel')"
@@ -193,6 +199,8 @@
                 Excel
               </button>
               <button
+                v-can="'export_employees'"
+                v-feature="'reports_export'"
                 class="btn btn--danger btn--sm"
                 :disabled="!!exportingFiltered"
                 @click="handleExportFiltered('pdf')"
@@ -240,6 +248,8 @@
           }}
         </div>
         <button
+          v-can="'onboard_employee'"
+          v-quota="'max_employees'"
           v-if="!search && !statusFilter && !advFilters.departmentId"
           class="btn btn--primary mt-4"
           @click="showOnboarding = true"
@@ -352,6 +362,8 @@
         <div class="emp-card__footer" @click.stop>
           <div class="export-dropdown" ref="exportDropdownRef">
             <button
+              v-can="'export_employees'"
+              v-feature="'reports_export'"
               class="btn btn--ghost btn--sm export-btn"
               @click="toggleExportMenu(emp.id)"
             >
@@ -359,10 +371,10 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === emp.id" class="dropdown-menu">
-                <button @click="downloadProfile(emp.id, 'pdf')">
+                <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile(emp.id, 'pdf')">
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button @click="downloadProfile(emp.id, 'excel')">
+                <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile(emp.id, 'excel')">
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>
@@ -370,10 +382,10 @@
           </div>
 
           <div class="footer-actions">
-            <button class="btn btn--ghost btn--sm" @click="openEdit(emp)">
+            <button v-can="'update_employee'" class="btn btn--ghost btn--sm" @click="openEdit(emp)">
               <Pencil :size="14" /> تعديل
             </button>
-            <button class="btn btn--danger btn--sm" @click="confirmDelete(emp)">
+            <button v-can="'delete_employee'" class="btn btn--danger btn--sm" @click="confirmDelete(emp)">
               <Trash2 :size="14" /> حذف
             </button>
           </div>
@@ -1488,26 +1500,6 @@ onMounted(() => {
   }
 }
 
-.btn--success {
-  background: rgba($stb-success, 0.1);
-  color: $stb-success;
-  border: 1px solid rgba($stb-success, 0.2);
-  &:hover:not(:disabled) {
-    background: $stb-success;
-    color: #fff;
-  }
-}
-
-.btn--danger {
-  background: rgba($stb-danger, 0.1);
-  color: $stb-danger;
-  border: 1px solid rgba($stb-danger, 0.2);
-  &:hover:not(:disabled) {
-    background: $stb-danger;
-    color: #fff;
-  }
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    LOADING & EMPTY STATES
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -2016,17 +2008,6 @@ onMounted(() => {
   margin-bottom: $space-3;
   display: flex;
   justify-content: flex-end;
-}
-
-.btn--dashed {
-  border-style: dashed;
-  border-color: $stb-border;
-  color: $stb-text-secondary;
-  &:hover {
-    border-color: $stb-accent;
-    color: $stb-accent;
-    background: rgba($stb-accent, 0.05);
-  }
 }
 
 .education-item-card {

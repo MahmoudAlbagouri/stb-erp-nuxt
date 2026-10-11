@@ -27,7 +27,13 @@ export const useAuthStore = defineStore("auth", () => {
   const refreshTokenCookie = useCookie<string | null>(REFRESH_TOKEN_COOKIE);
 
   // --- State ---
-  const decodedToken = ref<DecodedToken | null>(null);
+  // يُفك التوكن فور إنشاء المتجر (على السيرفر والمتصفح) حتى تكون الصلاحيات
+  // متاحة من أول رسم للصفحة — بدون وميض "غير مصرح"
+  const decodedToken = ref<DecodedToken | null>(
+    accessTokenCookie.value
+      ? decodeJwt<DecodedToken>(accessTokenCookie.value)
+      : null,
+  );
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -170,6 +176,7 @@ export const useAuthStore = defineStore("auth", () => {
     isSystemAdmin,
     isDisclaimerAccepted,
     hydrate,
+    applyTokens: persist,
     login,
     register,
     acceptDisclaimer,

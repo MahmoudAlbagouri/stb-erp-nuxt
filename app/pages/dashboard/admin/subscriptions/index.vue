@@ -121,16 +121,18 @@
 
           <!-- Actions Toolbar -->
           <div class="actions-toolbar">
-            <button class="btn btn--outline btn--sm" @click="openStatusModal">
+            <button v-can="'system:subscriptions:manage'" class="btn btn--outline btn--sm" @click="openStatusModal">
               <SlidersHorizontal :size="14" /> إدارة الحالة
             </button>
             <button
+              v-can="'system:subscriptions:manage'"
               class="btn btn--accent-outline btn--sm"
               @click="showRenewModal = true"
             >
               <RefreshCw :size="14" /> تجديد
             </button>
             <button
+              v-can="'system:subscriptions:manage'"
               class="btn btn--primary btn--sm"
               @click="showChangePlanModal = true"
             >
@@ -161,6 +163,7 @@
           <div class="empty-illustration"><AlertCircle :size="32" /></div>
           <p>لا يوجد اشتراك نشط لهذه الشركة حالياً.</p>
           <button
+            v-can="'system:subscriptions:manage'"
             class="btn btn--primary btn--sm mt-3"
             @click="openStatusModal"
           >
@@ -889,16 +892,6 @@ onMounted(() => {
     flex-shrink: 0;
     color: $stb-accent;
     margin-top: 1px;
-  }
-}
-
-.btn--accent-outline {
-  background: transparent;
-  color: $stb-accent;
-  border: 1px solid rgba($stb-accent, 0.3);
-  &:hover:not(:disabled) {
-    background: rgba($stb-accent, 0.08);
-    border-color: $stb-accent;
   }
 }
 

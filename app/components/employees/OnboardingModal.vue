@@ -3197,26 +3197,6 @@ const calculateContractDates = () => {
     background: $stb-success;
   }
 }
-.btn--success {
-  @include flex(row, center, center, $space-2);
-  background: $stb-success;
-  color: #fff;
-  border: none;
-  padding: $space-2 $space-5;
-  border-radius: $radius-md;
-  font-weight: 700;
-  font-size: $font-size-sm;
-  cursor: pointer;
-  transition: all $transition-fast;
-  &:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
 .mt-3 {
   margin-top: $space-3;
 }
@@ -3339,16 +3319,6 @@ const calculateContractDates = () => {
   margin-bottom: $space-3;
   display: flex;
   justify-content: flex-end;
-}
-.btn--dashed {
-  border-style: dashed;
-  border-color: $stb-border;
-  color: $stb-text-secondary;
-  &:hover {
-    border-color: $stb-accent;
-    color: $stb-accent;
-    background: rgba($stb-accent, 0.05);
-  }
 }
 .education-item-card {
   background: $stb-surface-2;

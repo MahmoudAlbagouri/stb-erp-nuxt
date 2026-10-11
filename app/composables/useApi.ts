@@ -108,6 +108,8 @@ export const useApi = () => {
       if (tokens?.accessToken && tokens?.refreshToken) {
         accessTokenCookie.value = tokens.accessToken;
         refreshTokenCookie.value = tokens.refreshToken;
+        // ✅ تحديث التوكن المفكوك أيضاً: الصلاحيات الجديدة تظهر فوراً في الواجهة
+        useAuthStore().applyTokens(tokens);
         return true;
       }
       return false;

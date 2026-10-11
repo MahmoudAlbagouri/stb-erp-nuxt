@@ -10,6 +10,8 @@
       <!-- ✅ أزرار التصدير والعمليات -->
       <div class="page-header__actions">
         <button
+          v-can="'export_settlements'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -20,6 +22,8 @@
         </button>
 
         <button
+          v-can="'export_settlements'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -171,6 +175,7 @@
               <!-- ✅ زر الصرف -->
               <td>
                 <button
+                  v-can="'create_settlements'"
                   v-if="!s.isDisbursed"
                   class="btn btn--success btn--sm"
                   @click="handleDisburse(s)"
@@ -408,6 +413,7 @@
                   رجوع
                 </button>
                 <button
+                  v-can="'create_settlements'"
                   class="btn btn--primary"
                   :disabled="!isFormValid || confirming"
                   @click="handleConfirm"
@@ -748,14 +754,6 @@ onMounted(() => {
   .date {
     font-size: 10px;
     color: $stb-text-muted;
-  }
-}
-.btn--success {
-  background: $stb-success;
-  color: #fff;
-  border: none;
-  &:hover:not(:disabled) {
-    background: rgba($stb-success, 8%);
   }
 }
 .spinner--xs {

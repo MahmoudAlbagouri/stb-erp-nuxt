@@ -28,6 +28,7 @@
         <div class="page-header__actions">
           <!-- ✅ زر تأكيد الصرف -->
           <button
+            v-can="'generate_payroll'"
             v-if="!payroll.isDisbursed"
             class="btn btn--success"
             @click="handleDisburse"
@@ -51,6 +52,8 @@
           </div>
 
           <button
+            v-can="'export_payroll'"
+            v-feature="'reports_export'"
             class="btn btn--outline"
             @click="handleExport('excel')"
             :disabled="!!exporting"
@@ -59,6 +62,8 @@
             <span v-else class="spinner spinner--sm" /> Excel
           </button>
           <button
+            v-can="'export_payroll'"
+            v-feature="'reports_export'"
             class="btn btn--outline"
             @click="handleExport('pdf')"
             :disabled="!!exporting"
@@ -606,14 +611,6 @@ const getMonthName = (m: number) =>
 }
 
 // ✅ تنسيق زر ومعلومات الصرف
-.btn--success {
-  background: $stb-success;
-  color: #fff;
-  border: none;
-  &:hover:not(:disabled) {
-    background: rgba($stb-success, 8%);
-  }
-}
 .disbursed-info {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;

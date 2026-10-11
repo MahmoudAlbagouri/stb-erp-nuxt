@@ -9,6 +9,8 @@
       </div>
       <div class="page-header__actions">
         <button
+          v-can="'view_salaries'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -17,6 +19,8 @@
           <FileSpreadsheet v-else :size="18" /><span>Excel</span>
         </button>
         <button
+          v-can="'view_salaries'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -24,7 +28,7 @@
           <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
-        <button class="btn btn--primary" @click="openCreateModal">
+        <button v-can="'manage_salary'" class="btn btn--primary" @click="openCreateModal">
           <Plus :size="18" /><span>تعيين الأجر جديد</span>
         </button>
       </div>
@@ -66,7 +70,7 @@
         <Wallet :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد بيانات رواتب</div>
         <div class="empty-state__text">قم بتعيين الأجور للموظفين للبدء</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal">
+        <button v-can="'manage_salary'" class="btn btn--primary mt-4" @click="openCreateModal">
           <Plus :size="16" /> تعيين أجر
         </button>
       </div>
@@ -131,6 +135,8 @@
                 <div class="actions-cell">
                   <div class="export-dropdown">
                     <button
+                      v-can="'view_salaries'"
+                      v-feature="'reports_export'"
                       class="btn btn--ghost btn--sm export-btn"
                       @click="toggleExportMenu(sal.id)"
                     >
@@ -141,16 +147,17 @@
                         v-if="activeExportMenu === sal.id"
                         class="dropdown-menu"
                       >
-                        <button @click="downloadSalary(sal.id, 'pdf')">
+                        <button v-can="'view_salaries'" v-feature="'reports_export'" @click="downloadSalary(sal.id, 'pdf')">
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button @click="downloadSalary(sal.id, 'excel')">
+                        <button v-can="'view_salaries'" v-feature="'reports_export'" @click="downloadSalary(sal.id, 'excel')">
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>
                     </Transition>
                   </div>
                   <button
+                    v-can="'manage_salary'"
                     class="btn btn--accent btn--sm"
                     @click="openEditModal(sal)"
                     title="تعديل الأجر"

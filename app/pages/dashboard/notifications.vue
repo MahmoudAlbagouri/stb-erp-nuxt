@@ -26,6 +26,7 @@
             <Bell :size="14" /><span>إشعاراتي</span>
           </button>
           <button
+            v-can="'view_all_notifications'"
             class="btn btn--sm"
             :class="isAdminView ? 'btn--primary' : 'btn--ghost'"
             @click="switchToAdminView"
@@ -185,6 +186,7 @@
 
           <div class="notif-card__actions">
             <button
+              v-can="'update_notification_status'"
               v-if="!notif.isRead"
               class="btn btn--ghost btn--sm btn--icon"
               @click="handleMarkRead(notif.id)"
@@ -193,6 +195,7 @@
               <Check :size="16" />
             </button>
             <button
+              v-can="'delete_notification'"
               class="btn btn--ghost btn--sm btn--icon text-danger"
               @click="handleDelete(notif.id)"
               title="حذف"
@@ -267,7 +270,8 @@ const isAdminView = ref(false);
 const actionLoading = ref(false);
 const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
-const canViewAll = computed(() => true); // Temporarily true for testing
+const { can, P } = useAccess();
+const canViewAll = computed(() => can(P.NOTIFICATION_VIEW_ALL));
 
 const filters = reactive({
   isRead: undefined as boolean | undefined,

@@ -23,15 +23,15 @@
 
         <!-- ✅ زر التصدير في صفحة التفاصيل -->
         <div class="export-dropdown" ref="exportDropdownRef">
-          <button class="btn btn--outline" @click="toggleExportMenu">
+          <button v-can="'export_employees'" v-feature="'reports_export'" class="btn btn--outline" @click="toggleExportMenu">
             <Download :size="16" /> تصدير الملف
           </button>
           <Transition name="fade">
             <div v-if="showExportMenu" class="dropdown-menu">
-              <button @click="downloadProfile('pdf')">
+              <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile('pdf')">
                 <FileText :size="14" /> ملف PDF
               </button>
-              <button @click="downloadProfile('excel')">
+              <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile('excel')">
                 <FileSpreadsheet :size="14" /> ملف Excel
               </button>
             </div>

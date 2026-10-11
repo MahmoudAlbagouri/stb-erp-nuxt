@@ -6,7 +6,7 @@
         <h1>المستخدمون</h1>
         <p>إدارة مستخدمي النظام وصلاحياتهم</p>
       </div>
-      <button class="btn btn--primary" @click="openCreate">
+      <button v-can="'create_user'" v-quota="'max_users'" class="btn btn--primary" @click="openCreate">
         <Plus :size="18" />
         <span>إضافة مستخدم</span>
       </button>
@@ -96,6 +96,7 @@
               <td>
                 <div class="actions-cell">
                   <button
+                    v-can="'update_user'"
                     class="btn btn--ghost btn--sm"
                     @click="openEdit(user)"
                     title="تعديل"
@@ -103,6 +104,7 @@
                     <Pencil :size="16" />
                   </button>
                   <button
+                    v-can="'delete_user'"
                     class="btn btn--danger btn--sm"
                     @click="confirmDelete(user)"
                     title="حذف"

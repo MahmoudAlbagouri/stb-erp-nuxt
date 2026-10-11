@@ -8,6 +8,8 @@
       </div>
       <div class="page-header__actions">
         <button
+          v-can="'view_leaves'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -16,6 +18,8 @@
           <FileSpreadsheet v-else :size="18" /><span>Excel</span>
         </button>
         <button
+          v-can="'view_leaves'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -25,12 +29,13 @@
         </button>
 
         <!-- زر طلب إجازة شخصي -->
-        <button class="btn btn--primary" @click="openCreateModal(false)">
+        <button v-can="'request_leave_self'" class="btn btn--primary" @click="openCreateModal(false)">
           <Plus :size="18" /><span>طلب إجازة جديد</span>
         </button>
 
         <!-- ✅ زر جديد: إنشاء إجازة لموظف (للمدراء) -->
         <button
+          v-can="'create_leave_admin'"
           v-if="canCreateForOthers"
           class="btn btn--secondary"
           @click="openCreateModal(true)"
@@ -78,7 +83,7 @@
         <CalendarDays :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات إجازات</div>
         <div class="empty-state__text">ابدأ بتقديم طلب إجازة جديد</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal(false)">
+        <button v-can="'request_leave_self'" class="btn btn--primary mt-4" @click="openCreateModal(false)">
           <Plus :size="16" /> طلب إجازة
         </button>
       </div>
@@ -124,6 +129,8 @@
                   <!-- ✅ قائمة التصدير المنسدلة -->
                   <div class="export-dropdown">
                     <button
+                      v-can="'view_leaves'"
+                      v-feature="'reports_export'"
                       class="btn btn--ghost btn--sm export-btn"
                       @click="toggleExportMenu(req.id)"
                     >
@@ -134,10 +141,10 @@
                         v-if="activeExportMenu === req.id"
                         class="dropdown-menu"
                       >
-                        <button @click="downloadLeave(req.id, 'pdf')">
+                        <button v-can="'view_leaves'" v-feature="'reports_export'" @click="downloadLeave(req.id, 'pdf')">
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button @click="downloadLeave(req.id, 'excel')">
+                        <button v-can="'view_leaves'" v-feature="'reports_export'" @click="downloadLeave(req.id, 'excel')">
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>
@@ -149,6 +156,7 @@
                     class="approval-actions"
                   >
                     <button
+                      v-can="'approve_leave'"
                       class="btn btn--success btn--sm"
                       @click="triggerApprove(req)"
                       title="موافقة"
@@ -156,6 +164,7 @@
                       <Check :size="14" />
                     </button>
                     <button
+                      v-can="'approve_leave'"
                       class="btn btn--danger btn--sm"
                       @click="triggerReject(req)"
                       title="رفض"
@@ -552,15 +561,6 @@ onMounted(() => {
   gap: $space-2;
   flex-wrap: wrap;
   align-items: center;
-}
-
-.btn--secondary {
-  background-color: $stb-surface-2; // أو لون ثانوي مناسب
-  color: $stb-text-primary;
-  border: 1px solid $stb-border;
-  &:hover {
-    background-color: $stb-surface-3;
-  }
 }
 
 .stats-row {

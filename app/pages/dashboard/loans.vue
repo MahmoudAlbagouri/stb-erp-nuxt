@@ -8,6 +8,8 @@
       </div>
       <div class="page-header__actions">
         <button
+          v-can="'view_loans'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('excel')"
           :disabled="!!exporting"
@@ -16,6 +18,8 @@
           <FileSpreadsheet v-else :size="18" /><span>Excel</span>
         </button>
         <button
+          v-can="'view_loans'"
+          v-feature="'reports_export'"
           class="btn btn--outline"
           @click="handleExport('pdf')"
           :disabled="!!exporting"
@@ -25,12 +29,13 @@
         </button>
 
         <!-- زر طلب قرض شخصي -->
-        <button class="btn btn--primary" @click="openCreateModal(false)">
+        <button v-can="'request_loan_self'" class="btn btn--primary" @click="openCreateModal(false)">
           <Plus :size="16" /> طلب قرض جديد
         </button>
 
         <!-- ✅ زر جديد: إنشاء قرض لموظف (للمدراء) -->
         <button
+          v-can="'create_loan_admin'"
           v-if="canCreateForOthers"
           class="btn btn--secondary"
           @click="openCreateModal(true)"
@@ -74,7 +79,7 @@
         <div class="empty-state__illustration"><Landmark :size="32" /></div>
         <div class="empty-state__title">لا توجد طلبات قروض</div>
         <div class="empty-state__text">ابدأ بتقديم طلب قرض جديد</div>
-        <button class="btn btn--primary mt-4" @click="openCreateModal(false)">
+        <button v-can="'request_loan_self'" class="btn btn--primary mt-4" @click="openCreateModal(false)">
           <Plus :size="15" /> طلب قرض
         </button>
       </div>
@@ -139,6 +144,8 @@
         <div class="loan-card__footer">
           <div class="export-dropdown">
             <button
+              v-can="'view_loans'"
+              v-feature="'reports_export'"
               class="btn btn--ghost btn--sm export-btn"
               @click="toggleExportMenu(loan.id)"
               title="تصدير التقرير"
@@ -147,10 +154,10 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === loan.id" class="dropdown-menu">
-                <button @click="downloadLoan(loan.id, 'pdf')">
+                <button v-can="'view_loans'" v-feature="'reports_export'" @click="downloadLoan(loan.id, 'pdf')">
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button @click="downloadLoan(loan.id, 'excel')">
+                <button v-can="'view_loans'" v-feature="'reports_export'" @click="downloadLoan(loan.id, 'excel')">
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>
@@ -162,6 +169,7 @@
             v-if="loan.status === 'pending' && canApprove"
           >
             <button
+              v-can="'approve_loan'"
               class="btn btn--success-outline btn--sm"
               @click="triggerApprove(loan)"
               title="موافقة"
@@ -169,6 +177,7 @@
               <Check :size="13" />
             </button>
             <button
+              v-can="'approve_loan'"
               class="btn btn--danger-outline btn--sm"
               @click="triggerReject(loan)"
               title="رفض"
@@ -565,15 +574,6 @@ onMounted(() => {
   gap: $space-2;
   flex-wrap: wrap;
   align-items: center;
-}
-
-.btn--secondary {
-  background-color: $stb-surface-2;
-  color: $stb-text-primary;
-  border: 1px solid $stb-border;
-  &:hover {
-    background-color: $stb-surface-3;
-  }
 }
 
 .stats-bar {
