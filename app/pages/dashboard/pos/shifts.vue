@@ -95,6 +95,10 @@
                     <span class="doc-cell__sub doc-money">
                       {{ formatCurrency(s.cardTotal) }}
                     </span>
+                    <span v-if="s.returnsCount" class="doc-cell__sub text-danger">
+                      مرتجعات {{ formatNumber(s.returnsCount) }} ·
+                      {{ formatNumber(s.returnsTotal, 2) }}
+                    </span>
                   </div>
                 </td>
                 <td>
@@ -102,6 +106,12 @@
                     <span class="doc-money">{{ formatCurrency(s.expectedCash) }}</span>
                     <span class="doc-cell__sub">
                       عهدة {{ formatNumber(s.openingCash, 2) }}
+                    </span>
+                    <span v-if="s.cashRefunds" class="doc-cell__sub">
+                      رُدّ نقداً {{ formatNumber(s.cashRefunds, 2) }}
+                    </span>
+                    <span v-if="s.drawerOpens" class="doc-cell__sub">
+                      فتح الدرج بلا بيع: {{ formatNumber(s.drawerOpens) }}
                     </span>
                   </div>
                 </td>

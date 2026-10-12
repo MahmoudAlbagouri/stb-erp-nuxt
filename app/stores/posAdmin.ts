@@ -19,6 +19,10 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
   const updateDevice = async (id: string, payload: Partial<PosDevicePayload>) =>
     (await api.patch<PosDevice>(`${BASE}/devices/${id}`, payload)).data;
 
+  /** يفكّ ربط الجهاز بشاشته ليُربط بشاشة أخرى */
+  const unbindDevice = async (id: string) =>
+    (await api.post<PosDevice>(`${BASE}/devices/${id}/unbind`, {})).data;
+
   const removeDevice = async (id: string) => {
     await api.del(`${BASE}/devices/${id}`);
   };
@@ -32,5 +36,12 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
       )
     ).data;
 
-  return { fetchDevices, createDevice, updateDevice, removeDevice, fetchShifts };
+  return {
+    fetchDevices,
+    createDevice,
+    updateDevice,
+    unbindDevice,
+    removeDevice,
+    fetchShifts,
+  };
 });

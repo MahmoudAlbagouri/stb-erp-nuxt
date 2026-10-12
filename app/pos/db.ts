@@ -4,6 +4,7 @@
 // والعملاء، حالة الجهاز (meta)، المبيعات المحلية، وطابور الرفع (outbox).
 // IndexedDB يبقى بعد إغلاق المتصفح وإعادة تشغيل الجهاز.
 import type {
+  LocalReturn,
   LocalSale,
   OutboxEntry,
   PosCategory,
@@ -12,13 +13,14 @@ import type {
 } from "./types";
 
 const DB_NAME = "stb-pos";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface StoreMap {
   products: PosProduct;
   customers: PosCustomer;
   categories: PosCategory;
   sales: LocalSale;
+  returns: LocalReturn;
   outbox: OutboxEntry;
   meta: { key: string; value: unknown };
 }
@@ -32,13 +34,18 @@ const open = (): Promise<IDBDatabase> => {
 
     request.onupgradeneeded = () => {
       const db = request.result;
-      db.createObjectStore("products", { keyPath: "id" });
-      db.createObjectStore("customers", { keyPath: "id" });
-      db.createObjectStore("categories", { keyPath: "id" });
-      db.createObjectStore("sales", { keyPath: "uuid" });
+      // جهاز يعمل بنسخة أقدم يحتفظ ببياناته: نضيف ما ينقصه فقط
+      const ensure = (name: StoreName, options: IDBObjectStoreParameters) => {
+        if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, options);
+      };
+      ensure("products", { keyPath: "id" });
+      ensure("customers", { keyPath: "id" });
+      ensure("categories", { keyPath: "id" });
+      ensure("sales", { keyPath: "uuid" });
+      ensure("returns", { keyPath: "uuid" }); // النسخة 2
       // seq تلقائي: الطابور يُرفع بنفس ترتيب إدخاله
-      db.createObjectStore("outbox", { keyPath: "seq", autoIncrement: true });
-      db.createObjectStore("meta", { keyPath: "key" });
+      ensure("outbox", { keyPath: "seq", autoIncrement: true });
+      ensure("meta", { keyPath: "key" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => {
@@ -141,6 +148,14 @@ export const posDb = {
     });
   },
 
+  /** يحفظ مرتجعاً مع عملية رفعه في معاملة واحدة */
+  saveReturn(salesReturn: LocalReturn, entry: OutboxEntry): Promise<void> {
+    return transact(["returns", "outbox"], (get) => {
+      get("returns").put(JSON.parse(JSON.stringify(salesReturn)));
+      get("outbox").add(JSON.parse(JSON.stringify(entry)));
+    });
+  },
+
   /** يضيف عملية للطابور مع تحديث حالة الجهاز (فتح/تقفيل وردية) */
   enqueue(entry: OutboxEntry, meta: Record<string, unknown> = {}): Promise<void> {
     return transact(["outbox", "meta"], (get) => {
@@ -161,7 +176,13 @@ export const posDb = {
         const result = results.get(entry.id);
         if (!result || entry.seq === undefined) continue;
         if (result.ok) get("outbox").delete(entry.seq);
-        else get("outbox").put({ ...entry, error: result.message ?? "رُفضت" });
+        else {
+          // نسخة عادية: العملية هنا كائن تفاعلي (Vue proxy) لا يقبله IndexedDB
+          get("outbox").put({
+            ...JSON.parse(JSON.stringify(entry)),
+            error: result.message ?? "رُفضت",
+          });
+        }
       }
     });
   },
@@ -177,14 +198,20 @@ export const posDb = {
     });
   },
 
-  /** يمسح بيانات الجهاز كلها (عند ربطه بجهاز كاشير آخر) */
-  reset(): Promise<void> {
+  /**
+   * يمسح بيانات الجهاز كلها (عند ربطه بجهاز كاشير آخر) ويُبقي `keep` في
+   * نفس المعاملة — معرّف الشاشة لا يضيع ولو انقطعت الكهرباء في منتصفها.
+   */
+  reset(keep: Record<string, unknown> = {}): Promise<void> {
     return transact(
-      ["products", "customers", "categories", "sales", "outbox", "meta"],
+      ["products", "customers", "categories", "sales", "returns", "outbox", "meta"],
       (get) => {
         (
-          ["products", "customers", "categories", "sales", "outbox", "meta"] as const
+          ["products", "customers", "categories", "sales", "returns", "outbox", "meta"] as const
         ).forEach((name) => get(name).clear());
+        for (const [key, value] of Object.entries(keep)) {
+          get("meta").put({ key, value: JSON.parse(JSON.stringify(value ?? null)) });
+        }
       },
     );
   },

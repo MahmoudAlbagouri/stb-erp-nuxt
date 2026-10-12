@@ -78,6 +78,20 @@ export const toSaleLine = (line: CartLine): SaleLine => ({
   ...lineAmounts({ ...line, taxRate: line.product.taxRate }),
 });
 
+/**
+ * نصيب كمية مُرجعة من مبالغ سطر الفاتورة — نفس حساب السيرفر
+ * (computeReturnShare): ما قبل الضريبة والضريبة كلٌّ بنسبة الكمية.
+ */
+export const returnShare = (
+  line: { quantity: number; subtotal: number; taxAmount: number },
+  quantity: number,
+): { subtotal: number; taxAmount: number; total: number } => {
+  const share = quantity / line.quantity;
+  const subtotal = round2(line.subtotal * share);
+  const taxAmount = round2(line.taxAmount * share);
+  return { subtotal, taxAmount, total: round2(subtotal + taxAmount) };
+};
+
 // ─── رمز QR لهيئة الزكاة والضريبة (المرحلة الأولى) ───────────────────────────
 const tlv = (tag: number, value: string): number[] => {
   const bytes = Array.from(new TextEncoder().encode(value));

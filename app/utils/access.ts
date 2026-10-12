@@ -130,6 +130,7 @@ export const PERMS = {
   SALES_SETTINGS_MANAGE: "manage_sales_settings",
   POS_VIEW: "view_pos",
   POS_USE: "use_pos",
+  POS_RETURN: "process_pos_returns",
   POS_DEVICE_MANAGE: "manage_pos_devices",
   SYSTEM_STATS: "system:view_platform_stats",
 } as const;

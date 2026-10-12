@@ -48,6 +48,9 @@ export interface PosDevice {
   lastSeenAt?: string | null;
   isActive: boolean;
   hasOpenShift?: boolean;
+  /** الشاشة (المتصفح) المربوطة بالجهاز — واحدة فقط */
+  installationId?: string | null;
+  boundAt?: string | null;
 }
 
 export interface PosDevicePayload {
@@ -70,6 +73,12 @@ export interface PosShiftRecord {
   salesTotal: number;
   cashTotal: number;
   cardTotal: number;
+  returnsCount: number;
+  returnsTotal: number;
+  /** ما رُدّ نقداً من الدرج */
+  cashRefunds: number;
+  /** مرات فتح الدرج يدوياً بلا بيع */
+  drawerOpens: number;
   expectedCash: number;
   closingCash?: number | null;
   cashDifference: number;
@@ -95,6 +104,8 @@ export interface LocalShift {
   openedAt: string;
   openingCash: number;
   cashierName: string;
+  /** مرات فتح الدرج يدوياً بلا بيع (تُرفع مع التقفيل) */
+  drawerOpens?: number;
 }
 
 export interface CartLine {
@@ -150,7 +161,52 @@ export interface LocalSale {
   qrCode: string | null;
 }
 
-export type OutboxType = "shift.open" | "sale" | "shift.close";
+// ─── المرتجع ─────────────────────────────────────────────────────────────────
+export interface ReturnableLine {
+  /** ترتيب السطر في الفاتورة: به يشير المرتجع إليه */
+  lineIndex: number;
+  productName: string;
+  unitName: string;
+  quantity: number;
+  returnedQuantity: number;
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+}
+
+/** فاتورة معروضة لاختيار ما يُرجَع منها (من السيرفر، أو من نسخة الجهاز) */
+export interface ReturnableInvoice {
+  number: string;
+  issuedAt: string | null;
+  customerName: string | null;
+  total: number;
+  paidAmount: number;
+  returnedAmount: number;
+  lines: ReturnableLine[];
+  /** true = من نسخة الجهاز لأن السيرفر غير متاح */
+  local: boolean;
+}
+
+/** مرتجع سُجّل على الجهاز — يُحفظ محلياً (لحساب الدرج) ويُرفع للسيرفر */
+export interface LocalReturn {
+  uuid: string;
+  invoiceNumber: string;
+  issuedAt: string;
+  shiftId: string;
+  lines: {
+    lineIndex: number;
+    productName: string;
+    unitName: string;
+    quantity: number;
+    total: number;
+  }[];
+  total: number;
+  refundMethod: SalesPaymentMethod;
+  refundAmount: number;
+  reason: string | null;
+}
+
+export type OutboxType = "shift.open" | "sale" | "return" | "shift.close";
 
 /** عملية في طابور الرفع: تبقى حتى يؤكد السيرفر استلامها */
 export interface OutboxEntry {

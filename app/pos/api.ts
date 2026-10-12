@@ -28,6 +28,16 @@ export class SessionExpiredError extends Error {
   }
 }
 
+/** السيرفر رفض الطلب. 409 في المزامنة = هذه الشاشة ليست المربوطة بالجهاز */
+export class PosRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 /** مهلة الطلب: شبكة معلّقة تُعامل كانقطاع بدل أن تجمّد المزامنة */
 const TIMEOUT_MS = 15_000;
 
@@ -142,7 +152,10 @@ export const usePosApi = () => {
       const message = Array.isArray(payload?.message)
         ? payload.message[0]
         : payload?.message;
-      throw new Error(message || `تعذر تنفيذ الطلب (${res.status})`);
+      throw new PosRequestError(
+        message || `تعذر تنفيذ الطلب (${res.status})`,
+        res.status,
+      );
     }
     return payload?.data as T;
   };

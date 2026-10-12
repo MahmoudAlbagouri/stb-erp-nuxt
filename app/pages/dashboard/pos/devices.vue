@@ -88,6 +88,9 @@
                       {{ d.isActive ? "نشط" : "موقوف" }}
                     </span>
                   </span>
+                  <span class="doc-cell__sub">
+                    {{ d.installationId ? "مربوط بشاشة" : "غير مربوط" }}
+                  </span>
                   <span v-if="d.hasOpenShift" class="doc-cell__sub">وردية مفتوحة</span>
                 </div>
               </td>
@@ -99,6 +102,15 @@
                   >
                     <ClipboardList :size="14" /> الورديات
                   </NuxtLink>
+                  <button
+                    v-if="d.installationId"
+                    v-can="'manage_pos_devices'"
+                    class="btn btn--sm btn--ghost"
+                    title="فكّ ربط الجهاز بشاشته ليُربط بشاشة أخرى"
+                    @click="askUnbind(d)"
+                  >
+                    <Unlink :size="14" /> فك الربط
+                  </button>
                   <button
                     v-can="'manage_pos_devices'"
                     class="btn btn--sm btn--ghost btn--icon"
@@ -219,6 +231,15 @@
     </Teleport>
 
     <ConfirmDialog
+      v-model="showUnbind"
+      title="فك ربط الجهاز"
+      :message="`فك ربط '${unbindTarget?.name}' يسمح بربطه بشاشة أخرى. الشاشة الحالية لن ترفع عليه بعدها — تأكد أنها رفعت كل مبيعاتها وقفلت ورديتها أولاً.`"
+      confirm-text="فك الربط"
+      :loading="unbinding"
+      @confirm="doUnbind"
+    />
+
+    <ConfirmDialog
       v-model="showConfirm"
       title="حذف جهاز الكاشير"
       :message="`هل تريد حذف الجهاز '${deleteTarget?.name}'؟ فواتيره وورديّاته تبقى، وكوده '${deleteTarget?.code}' لا يُستخدم لجهاز آخر.`"
@@ -239,6 +260,7 @@ import {
   Plus,
   Store,
   Trash2,
+  Unlink,
   X,
 } from "lucide-vue-next";
 import { useToast } from "@/composables/useToast";
@@ -330,6 +352,31 @@ const handleSubmit = async () => {
     toast.error(getErrorMessage(e, "تعذر حفظ الجهاز"));
   } finally {
     submitting.value = false;
+  }
+};
+
+// ─── فك الربط ─────────────────────────────────────────────────────────────────
+const showUnbind = ref(false);
+const unbinding = ref(false);
+const unbindTarget = ref<PosDevice | null>(null);
+
+const askUnbind = (device: PosDevice) => {
+  unbindTarget.value = device;
+  showUnbind.value = true;
+};
+
+const doUnbind = async () => {
+  if (!unbindTarget.value) return;
+  unbinding.value = true;
+  try {
+    await store.unbindDevice(unbindTarget.value.id);
+    toast.success("تم فك ربط الجهاز");
+    showUnbind.value = false;
+    await load();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر فك ربط الجهاز"));
+  } finally {
+    unbinding.value = false;
   }
 };
 

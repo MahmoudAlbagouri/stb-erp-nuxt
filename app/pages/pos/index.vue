@@ -48,6 +48,21 @@
         </button>
 
         <button
+          v-if="pos.shift && canReturn"
+          class="btn btn--sm btn--ghost pos-return-btn"
+          @click="showReturn = true"
+        >
+          <Undo2 :size="15" /> <span class="pos-hide-sm">مرتجع</span>
+        </button>
+        <button
+          v-if="pos.shift && pos.drawer.mode !== 'off'"
+          class="btn btn--sm btn--ghost pos-drawer-btn"
+          title="فتح الدرج بلا بيع — يُسجَّل على الوردية"
+          @click="kickDrawer(true)"
+        >
+          <Inbox :size="15" /> <span class="pos-hide-sm">الدرج</span>
+        </button>
+        <button
           v-if="pos.shift"
           class="btn btn--sm btn--ghost"
           @click="showRecent = true"
@@ -60,6 +75,13 @@
           @click="openCloseShift"
         >
           <LockKeyhole :size="15" /> <span class="pos-hide-sm">تقفيل الوردية</span>
+        </button>
+        <button
+          class="btn btn--sm btn--ghost btn--icon pos-settings-btn"
+          title="إعدادات الشاشة (الدرج والتثبيت كتطبيق)"
+          @click="showSettings = true"
+        >
+          <Settings :size="15" />
         </button>
         <ThemeToggle />
         <NuxtLink
@@ -83,6 +105,17 @@
       </NuxtLink>
     </div>
 
+    <div v-if="pos.device && pos.bindError" class="pos-banner">
+      <AlertTriangle :size="16" />
+      <span>
+        {{ pos.bindError }} — البيع هنا محفوظ على هذه الشاشة فقط ولن يُرفع حتى
+        تُربط بجهاز كاشير خاص بها.
+      </span>
+      <button class="btn btn--sm btn--primary" @click="pos.rebind()">
+        إعادة المحاولة
+      </button>
+    </div>
+
     <!-- ══ الحالات قبل البيع ══ -->
     <div v-if="!pos.ready" class="pos-center">
       <div class="spinner spinner--lg" />
@@ -102,7 +135,8 @@
         <h2>اختر جهاز الكاشير</h2>
         <p class="doc-hint">
           يُربط هذا المتصفح بالجهاز مرة واحدة، وتُنزَّل الأصناف والأسعار ليعمل
-          بعدها بلا إنترنت.
+          بعدها بلا إنترنت. لكل شاشة بيع (لابتوب، تابلت، موبايل) جهاز كاشير
+          خاص بها وورديتها.
         </p>
 
         <div v-if="devicesLoading" class="spinner" />
@@ -121,7 +155,7 @@
             v-for="d in devices"
             :key="d.id"
             class="pos-setup__device"
-            :disabled="!d.isActive || binding"
+            :disabled="!d.isActive || binding || boundElsewhere(d)"
             @click="bind(d)"
           >
             <span class="doc-cell">
@@ -129,6 +163,9 @@
               <span class="doc-cell__sub">
                 {{ d.code }} · {{ d.warehouse?.name }}
                 <template v-if="!d.isActive"> · موقوف</template>
+                <template v-else-if="boundElsewhere(d)">
+                  · مربوط بشاشة أخرى
+                </template>
                 <template v-else-if="d.hasOpenShift"> · عليه وردية مفتوحة</template>
               </span>
             </span>
@@ -519,8 +556,28 @@
                     {{ formatCurrency(pos.shiftSummary.card) }}
                   </span>
                 </div>
+                <div v-if="pos.shiftSummary.returnsCount">
+                  <span>
+                    مرتجعات ({{ formatNumber(pos.shiftSummary.returnsCount) }})
+                  </span>
+                  <span class="doc-money">
+                    {{ formatCurrency(pos.shiftSummary.returnsTotal) }}
+                  </span>
+                </div>
+                <div v-if="pos.shiftSummary.cashRefunds">
+                  <span>رُدّ نقداً من الدرج</span>
+                  <span class="doc-money">
+                    {{ formatCurrency(pos.shiftSummary.cashRefunds) }}
+                  </span>
+                </div>
+                <div v-if="pos.shiftSummary.drawerOpens">
+                  <span>فتح الدرج بلا بيع</span>
+                  <span class="doc-num">
+                    {{ formatNumber(pos.shiftSummary.drawerOpens) }} مرة
+                  </span>
+                </div>
                 <div>
-                  <span>العهدة + المبيعات النقدية</span>
+                  <span>المفترض في الدرج</span>
                   <span class="doc-money">
                     {{ formatCurrency(pos.shiftSummary.expectedCash) }}
                   </span>
@@ -661,8 +718,11 @@
                 >
                   <span>
                     {{ OUTBOX_LABELS[entry.type] }}
-                    <code v-if="entry.payload.number" class="doc-code">
-                      {{ entry.payload.number }}
+                    <code
+                      v-if="entry.payload.number || entry.payload.invoiceNumber"
+                      class="doc-code"
+                    >
+                      {{ entry.payload.number || entry.payload.invoiceNumber }}
                     </code>
                   </span>
                   <span class="form-error">{{ entry.error }}</span>
@@ -680,6 +740,9 @@
       </Transition>
     </Teleport>
 
+    <PosReturnModal v-model="showReturn" @done="onReturned" />
+    <PosScreenSettings v-model="showSettings" />
+
     <SalesInvoicePrint ref="printer" :invoice="printTarget" :settings="pos.settings" />
   </div>
 </template>
@@ -691,6 +754,7 @@ import {
   Banknote,
   ChevronLeft,
   CircleCheck,
+  Inbox,
   CloudOff,
   CloudUpload,
   LockKeyhole,
@@ -702,8 +766,10 @@ import {
   ReceiptText,
   RefreshCw,
   ScanBarcode,
+  Settings,
   Store,
   Trash2,
+  Undo2,
   Unlock,
   Wifi,
   X,
@@ -713,8 +779,10 @@ import { useAccess } from "@/composables/useAccess";
 import type { AccessState as AccessStatus } from "@/composables/useAccess";
 import { useToast } from "@/composables/useToast";
 import { lineAmounts, sum2, unitPriceOf } from "@/pos/calc";
+import { posDb } from "@/pos/db";
 import type {
   CartLine,
+  LocalReturn,
   LocalSale,
   OutboxType,
   PosDevice,
@@ -727,7 +795,20 @@ import { FEATURES, PERMS } from "@/utils/access";
 
 // بلا middleware "auth": الكاشير يدخل ويبيع حتى لو انتهت جلسته أو انقطع النت
 definePageMeta({ layout: "pos" });
-useHead({ title: "شاشة الكاشير" });
+useHead({
+  title: "شاشة الكاشير",
+  // تثبيت الشاشة كتطبيق: أيقونة على الجهاز ونافذة كاملة بلا شريط المتصفح
+  link: [
+    { rel: "manifest", href: "/manifest.webmanifest" },
+    { rel: "apple-touch-icon", href: "/icons/pos-180.png" },
+  ],
+  meta: [
+    { name: "theme-color", content: "#0d1117" },
+    { name: "mobile-web-app-capable", content: "yes" },
+    { name: "apple-mobile-web-app-capable", content: "yes" },
+    { name: "apple-mobile-web-app-title", content: "كاشير STB" },
+  ],
+});
 
 const pos = usePosStore();
 const accessStore = useAccessStore();
@@ -740,6 +821,7 @@ const MAX_TILES = 60;
 const OUTBOX_LABELS: Record<OutboxType, string> = {
   "shift.open": "فتح وردية",
   sale: "فاتورة",
+  return: "مرتجع",
   "shift.close": "تقفيل وردية",
 };
 
@@ -753,6 +835,18 @@ const accessState = computed<AccessStatus>(() =>
         tenantOnly: true,
       })
     : "allowed",
+);
+
+/**
+ * المرتجع صلاحية مستقلة عن البيع. بلا إنترنت نعتمد آخر ما عرفناه عن هذا
+ * المستخدم على هذه الشاشة — والافتراضي المنع: مرتجع يرفضه السيرفر لاحقاً
+ * معناه نقد خرج من الدرج بلا مستند.
+ */
+const cachedCanReturn = ref(false);
+const canReturn = computed(() =>
+  accessKnown.value
+    ? resolve({ permissions: [PERMS.POS_RETURN], tenantOnly: true }) === "allowed"
+    : cachedCanReturn.value,
 );
 
 // ─── حالة الاتصال ─────────────────────────────────────────────────────────────
@@ -806,6 +900,10 @@ const loadDevices = async () => {
     devicesLoading.value = false;
   }
 };
+
+/** الجهاز تعمل عليه شاشة أخرى: لا يُختار هنا */
+const boundElsewhere = (d: PosDevice) =>
+  !!d.installationId && d.installationId !== pos.installationId;
 
 const bind = async (target: PosDevice) => {
   binding.value = true;
@@ -988,6 +1086,7 @@ const submitPay = async () => {
     }
 
     const sale = await pos.checkout(payments, Number(pay.cash) || 0);
+    if (payments.some((p) => p.method === "cash")) void kickDrawer();
     showPay.value = false;
     doneSale.value = sale;
     await printSale(sale);
@@ -1064,6 +1163,29 @@ const shiftSales = computed(() =>
 const isPending = (sale: LocalSale) =>
   pos.outbox.some((entry) => entry.id === `sale-${sale.uuid}`);
 
+// ─── المرتجع والدرج والإعدادات ────────────────────────────────────────────────
+const showReturn = ref(false);
+const showSettings = ref(false);
+
+/** يفتح الدرج. فشله (طابعة مطفأة) لا يوقف البيع: تنبيه فقط */
+const kickDrawer = async (manual = false) => {
+  try {
+    await pos.openDrawer(manual);
+  } catch (e) {
+    toast.warning(getErrorMessage(e, "تعذر فتح الدرج"));
+  }
+};
+
+const onReturned = (salesReturn: LocalReturn) => {
+  const cash = salesReturn.refundMethod === "cash" && salesReturn.refundAmount > 0;
+  toast.success(
+    salesReturn.refundAmount > 0
+      ? `تم المرتجع — ردّ للعميل ${formatCurrency(salesReturn.refundAmount)} ${cash ? "نقداً" : "على البطاقة"}`
+      : "تم تسجيل المرتجع",
+  );
+  if (cash) void kickDrawer();
+};
+
 // ─── المرفوضات ────────────────────────────────────────────────────────────────
 const showFailed = ref(false);
 
@@ -1104,12 +1226,14 @@ onMounted(async () => {
     return;
   }
   shiftForm.name = pos.cashierName;
+  cachedCanReturn.value = (await posDb.getMeta<boolean>("canReturn")) ?? false;
 
   // الخطة والصلاحيات: نحاول معرفتها، وفشل الطلب (بلا إنترنت) لا يمنع البيع
   accessStore
     .fetch()
     .then(() => {
       accessKnown.value = true;
+      void posDb.setMeta({ canReturn: canReturn.value });
     })
     .catch(() => {});
 

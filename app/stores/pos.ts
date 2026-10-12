@@ -6,20 +6,28 @@
 // الطابور.
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { OfflineError, SessionExpiredError, usePosApi } from "@/pos/api";
+import {
+  OfflineError,
+  PosRequestError,
+  SessionExpiredError,
+  usePosApi,
+} from "@/pos/api";
 import {
   buildZatcaQr,
   lineAmounts,
   newUuid,
   POS_PRICES_INCLUDE_TAX,
   pricingError,
+  returnShare,
   sum2,
   toSaleLine,
   unitPriceOf,
 } from "@/pos/calc";
 import { posDb } from "@/pos/db";
+import { DEFAULT_DRAWER, kickDrawer, type DrawerConfig } from "@/pos/drawer";
 import type {
   CartLine,
+  LocalReturn,
   LocalSale,
   LocalShift,
   OutboxEntry,
@@ -28,10 +36,11 @@ import type {
   PosCustomer,
   PosDevice,
   PosProduct,
+  ReturnableInvoice,
   SalePayment,
   SyncResult,
 } from "@/pos/types";
-import type { SalesSettings } from "@/types/sales";
+import type { SalesPaymentMethod, SalesSettings } from "@/types/sales";
 
 /** كل كم يفحص الجهاز الاتصال ويرفع ما في طابوره */
 const HEARTBEAT_MS = 20_000;
@@ -52,6 +61,10 @@ export const usePosStore = defineStore("pos", () => {
   const counter = ref(0);
   const lastSync = ref<string | null>(null);
   const cashierName = ref("");
+  /** مرتجعات سُجّلت على هذه الشاشة */
+  const returns = ref<LocalReturn[]>([]);
+  /** إعداد درج النقود لهذه الشاشة (عتاد موصول بها، لا بجهاز الكاشير) */
+  const drawer = ref<DrawerConfig>({ ...DEFAULT_DRAWER });
 
   const products = ref<PosProduct[]>([]);
   const customers = ref<PosCustomer[]>([]);
@@ -83,6 +96,45 @@ export const usePosStore = defineStore("pos", () => {
     return index;
   });
 
+  // ─── هوية الشاشة ────────────────────────────────────────────────────────────
+  // كل متصفح له نسخته المحلية (عدّاد الفواتير، الوردية، المبيعات)، فجهاز
+  // الكاشير يُربط بشاشة واحدة. معرّف الشاشة يُولَّد مرة ويبقى.
+  const installationId = ref("");
+  /** هل أكد السيرفر أن هذه الشاشة هي المربوطة بالجهاز؟ */
+  const bound = ref(false);
+  /** سبب رفض السيرفر لهذه الشاشة (الجهاز مربوط بشاشة أخرى) */
+  const bindError = ref("");
+
+  const setBound = async (value: boolean) => {
+    bound.value = value;
+    await posDb.setMeta({ bound: value });
+  };
+
+  /**
+   * يتأكد أن الشاشة مربوطة بجهازها قبل أي رفع أو سحب. شاشة رفضها السيرفر
+   * لا تعيد المحاولة وحدها (قد يكون المدير نقل الجهاز لشاشة أخرى): تنتظر
+   * ضغطة "إعادة المحاولة".
+   */
+  const ensureBound = async (manual = false): Promise<boolean> => {
+    if (!device.value) return false;
+    if (bound.value) return true;
+    if (bindError.value && !manual) return false;
+    const result = await guarded(() =>
+      api.post<PosDevice>(`/pos/devices/${device.value!.id}/bind`, {
+        installationId: installationId.value,
+      }),
+    );
+    if (!result) return false;
+    bindError.value = "";
+    await setBound(true);
+    return true;
+  };
+
+  /** محاولة ربط يطلبها الكاشير بعد أن رُفضت الشاشة */
+  const rebind = async () => {
+    if (await ensureBound(true)) await sync({ pull: true });
+  };
+
   const reloadOutbox = async () => {
     outbox.value = await posDb.all("outbox");
   };
@@ -90,14 +142,28 @@ export const usePosStore = defineStore("pos", () => {
   /** يحمّل حالة الجهاز المحفوظة. لا يحتاج إنترنت */
   const init = async () => {
     if (ready.value) return;
-    const [d, s, sh, c, ls, name] = await Promise.all([
+    const [d, s, sh, c, ls, name, inst, isBound] = await Promise.all([
       posDb.getMeta<PosDevice>("device"),
       posDb.getMeta<SalesSettings>("settings"),
       posDb.getMeta<LocalShift>("shift"),
       posDb.getMeta<number>("counter"),
       posDb.getMeta<string>("lastSync"),
       posDb.getMeta<string>("cashierName"),
+      posDb.getMeta<string>("installationId"),
+      posDb.getMeta<boolean>("bound"),
     ]);
+    drawer.value = {
+      ...DEFAULT_DRAWER,
+      ...((await posDb.getMeta<DrawerConfig>("drawer")) ?? {}),
+    };
+    returns.value = await posDb.all("returns");
+    installationId.value = inst ?? newUuid();
+    if (!inst) await posDb.setMeta({ installationId: installationId.value });
+    bound.value = isBound === true;
+    // false محفوظة = السيرفر رفض هذه الشاشة قبل إغلاقها؛ null = لم تُربط بعد
+    if (isBound === false && d) {
+      bindError.value = "هذه الشاشة ليست المربوطة بجهاز الكاشير";
+    }
     device.value = d;
     settings.value = s;
     shift.value = sh;
@@ -135,6 +201,12 @@ export const usePosStore = defineStore("pos", () => {
       } else {
         online.value = true;
         lastError.value = error instanceof Error ? error.message : "خطأ غير متوقع";
+        if (error instanceof PosRequestError && error.status === 409) {
+          // الجهاز مربوط بشاشة أخرى (أو فُكّ ربطه): نعيد محاولة الربط في
+          // الدورة التالية، والمبيعات تبقى محفوظة هنا حتى يُحسم الأمر
+          bindError.value = error.message;
+          await setBound(false);
+        }
       }
       return null;
     }
@@ -184,7 +256,9 @@ export const usePosStore = defineStore("pos", () => {
     if (!device.value) return false;
     const since = !full && lastSync.value ? `&since=${encodeURIComponent(lastSync.value)}` : "";
     const data = await guarded(() =>
-      api.get<PosBootstrap>(`/pos/bootstrap?deviceId=${device.value!.id}${since}`),
+      api.get<PosBootstrap>(
+        `/pos/bootstrap?deviceId=${device.value!.id}&installationId=${installationId.value}${since}`,
+      ),
     );
     if (!data) return false;
     await applyBootstrap(data);
@@ -203,6 +277,7 @@ export const usePosStore = defineStore("pos", () => {
       const response = await guarded(() =>
         api.post<{ results: SyncResult[]; lastCounter: number }>("/pos/sync", {
           deviceId: device.value!.id,
+          installationId: installationId.value,
           operations: batch.map((e) => ({
             id: e.id,
             type: e.type,
@@ -212,16 +287,20 @@ export const usePosStore = defineStore("pos", () => {
       );
       if (!response) return false;
 
-      await posDb.settleOutbox(
-        batch,
-        new Map(
-          response.results.map((r) => [
-            r.id,
-            { ok: r.status !== "error", message: r.message },
-          ]),
-        ),
-      );
-      await reloadOutbox();
+      try {
+        await posDb.settleOutbox(
+          batch,
+          new Map(
+            response.results.map((r) => [
+              r.id,
+              { ok: r.status !== "error", message: r.message },
+            ]),
+          ),
+        );
+      } finally {
+        // مهما حدث: الواجهة تعرض ما في الطابور فعلاً
+        await reloadOutbox();
+      }
     }
   };
 
@@ -236,6 +315,18 @@ export const usePosStore = defineStore("pos", () => {
     }
     syncing.value = true;
     try {
+      if (!(await ensureBound())) {
+        // الشاشة مرفوضة: لا رفع ولا سحب، لكن حالة الاتصال تبقى صحيحة
+        if (bindError.value) {
+          try {
+            await api.get("/pos/ping");
+            online.value = true;
+          } catch (error) {
+            if (error instanceof OfflineError) online.value = false;
+          }
+        }
+        return;
+      }
       const pushed = pendingCount.value > 0 ? await push() : true;
       const duePull = options.pull || Date.now() - lastPullAt > PULL_EVERY_MS;
       if (pushed && duePull) {
@@ -279,11 +370,22 @@ export const usePosStore = defineStore("pos", () => {
     if (outbox.value.length > 0) {
       throw new Error("في الجهاز مبيعات لم تُرفع بعد — ارفعها قبل تغيير الجهاز");
     }
+    // الربط أولاً: جهاز مربوط بشاشة أخرى يُرفض هنا قبل مسح أي شيء
+    await api.post<PosDevice>(`/pos/devices/${target.id}/bind`, {
+      installationId: installationId.value,
+    });
     const data = await api.get<PosBootstrap>(
-      `/pos/bootstrap?deviceId=${target.id}`,
+      `/pos/bootstrap?deviceId=${target.id}&installationId=${installationId.value}`,
     );
     const keepName = cashierName.value;
-    await posDb.reset();
+    await posDb.reset({
+      installationId: installationId.value,
+      bound: true,
+      drawer: drawer.value,
+    });
+    returns.value = [];
+    bound.value = true;
+    bindError.value = "";
     counter.value = 0;
     shift.value = null;
     sales.value = [];
@@ -336,12 +438,23 @@ export const usePosStore = defineStore("pos", () => {
         ),
       );
     const cash = byMethod("cash");
+    const ownReturns = shift.value
+      ? returns.value.filter((r) => r.shiftId === shift.value!.id)
+      : [];
+    const cashRefunds = sum2(
+      ownReturns.filter((r) => r.refundMethod === "cash").map((r) => r.refundAmount),
+    );
     return {
       invoicesCount: own.length,
       salesTotal: sum2(own.map((sale) => sale.total)),
       cash,
       card: byMethod("card"),
-      expectedCash: sum2([shift.value?.openingCash ?? 0, cash]),
+      returnsCount: ownReturns.length,
+      returnsTotal: sum2(ownReturns.map((r) => r.total)),
+      cashRefunds,
+      drawerOpens: shift.value?.drawerOpens ?? 0,
+      // الدرج = العهدة + المبيعات النقدية − ما رُدّ نقداً
+      expectedCash: sum2([shift.value?.openingCash ?? 0, cash, -cashRefunds]),
     };
   });
 
@@ -357,6 +470,7 @@ export const usePosStore = defineStore("pos", () => {
           closedAt,
           closingCash,
           note: note || undefined,
+          drawerOpens: shift.value.drawerOpens ?? 0,
         },
         createdAt: closedAt,
       },
@@ -515,6 +629,189 @@ export const usePosStore = defineStore("pos", () => {
     return sale;
   };
 
+  // ─── المرتجع ────────────────────────────────────────────────────────────────
+  /** مرتجعات هذه الشاشة التي لم يؤكد السيرفر استلامها بعد */
+  const pendingReturnsOf = (invoiceNumber: string) =>
+    returns.value.filter(
+      (r) =>
+        r.invoiceNumber === invoiceNumber &&
+        outbox.value.some((entry) => entry.id === `return-${r.uuid}`),
+    );
+
+  /** يطرح من الفاتورة ما أُرجع منها على هذه الشاشة */
+  const withReturns = (
+    invoice: ReturnableInvoice,
+    done: LocalReturn[],
+  ): ReturnableInvoice => {
+    const returned = new Map<number, number>();
+    for (const line of done.flatMap((r) => r.lines)) {
+      returned.set(line.lineIndex, (returned.get(line.lineIndex) ?? 0) + line.quantity);
+    }
+    return {
+      ...invoice,
+      returnedAmount: sum2([invoice.returnedAmount, ...done.map((r) => r.total)]),
+      paidAmount: sum2([invoice.paidAmount, ...done.map((r) => -r.refundAmount)]),
+      lines: invoice.lines.map((line) => ({
+        ...line,
+        returnedQuantity: line.returnedQuantity + (returned.get(line.lineIndex) ?? 0),
+      })),
+    };
+  };
+
+  /**
+   * يجلب فاتورة برقمها لاختيار ما يُرجَع منها: من السيرفر (أي فاتورة للشركة)،
+   * وبلا إنترنت من نسخة الجهاز (فواتير هذه الشاشة فقط).
+   */
+  const lookupInvoice = async (rawNumber: string): Promise<ReturnableInvoice> => {
+    const number = rawNumber.trim();
+    if (!number) throw new Error("أدخل رقم الفاتورة");
+
+    try {
+      const remote = await api.get<Omit<ReturnableInvoice, "local">>(
+        `/pos/invoices/${encodeURIComponent(number)}`,
+      );
+      online.value = true;
+      // السيرفر لم يرَ بعد ما ينتظر الرفع من هذه الشاشة
+      return withReturns({ ...remote, local: false }, pendingReturnsOf(remote.number));
+    } catch (error) {
+      const waiting = sales.value.find(
+        (sale) => sale.number.toLowerCase() === number.toLowerCase(),
+      );
+      // فاتورة بيعت هنا ولم تُرفع بعد: السيرفر لا يعرفها، ونسخة الجهاز تكفي
+      const notUploaded =
+        waiting && outbox.value.some((entry) => entry.id === `sale-${waiting.uuid}`);
+      if (!(error instanceof OfflineError) && !notUploaded) throw error;
+      if (error instanceof OfflineError) online.value = false;
+      if (!waiting) {
+        throw new Error(
+          "لا يوجد اتصال — بلا إنترنت يمكن إرجاع فواتير هذه الشاشة فقط",
+        );
+      }
+      return withReturns(
+        {
+          number: waiting.number,
+          issuedAt: waiting.issuedAt,
+          customerName: waiting.customerName,
+          total: waiting.total,
+          paidAmount: waiting.total,
+          returnedAmount: 0,
+          lines: waiting.lines.map((line, lineIndex) => ({
+            lineIndex,
+            productName: line.productName,
+            unitName: line.unitName,
+            quantity: line.quantity,
+            returnedQuantity: 0,
+            subtotal: line.subtotal,
+            taxAmount: line.taxAmount,
+            total: line.total,
+          })),
+          local: true,
+        },
+        returns.value.filter((r) => r.invoiceNumber === waiting.number),
+      );
+    }
+  };
+
+  /** قيمة مرتجع وما يُردّ للعميل منه (نفس قاعدة السيرفر: المدفوع الزائد) */
+  const refundPreview = (
+    invoice: ReturnableInvoice,
+    quantities: Record<number, number>,
+  ) => {
+    const lines = invoice.lines
+      .map((line) => ({ line, quantity: Number(quantities[line.lineIndex]) || 0 }))
+      .filter((item) => item.quantity > 0);
+    const total = sum2(
+      lines.map((item) => returnShare(item.line, item.quantity).total),
+    );
+    const net = sum2([invoice.total, -invoice.returnedAmount, -total]);
+    return {
+      lines,
+      total,
+      refund: Math.max(sum2([invoice.paidAmount, -net]), 0),
+    };
+  };
+
+  /**
+   * يسجّل المرتجع على الجهاز ويضعه في طابور الرفع. المبلغ يخرج من درج الوردية
+   * الحالية، حتى لو كانت الفاتورة من وردية سابقة.
+   */
+  const refund = async (
+    invoice: ReturnableInvoice,
+    quantities: Record<number, number>,
+    method: SalesPaymentMethod,
+    reason: string,
+  ): Promise<LocalReturn> => {
+    if (!shift.value) throw new Error("افتح وردية أولاً");
+    const preview = refundPreview(invoice, quantities);
+    if (preview.lines.length === 0) throw new Error("حدّد كمية صنف واحد على الأقل");
+    for (const { line, quantity } of preview.lines) {
+      if (quantity > line.quantity - line.returnedQuantity + 1e-9) {
+        throw new Error(`كمية "${line.productName}" أكبر من المتاح للإرجاع`);
+      }
+    }
+
+    const issuedAt = new Date().toISOString();
+    const salesReturn: LocalReturn = {
+      uuid: newUuid(),
+      invoiceNumber: invoice.number,
+      issuedAt,
+      shiftId: shift.value.id,
+      lines: preview.lines.map(({ line, quantity }) => ({
+        lineIndex: line.lineIndex,
+        productName: line.productName,
+        unitName: line.unitName,
+        quantity,
+        total: returnShare(line, quantity).total,
+      })),
+      total: preview.total,
+      refundMethod: method,
+      refundAmount: preview.refund,
+      reason: reason || null,
+    };
+
+    await posDb.saveReturn(salesReturn, {
+      id: `return-${salesReturn.uuid}`,
+      type: "return",
+      createdAt: issuedAt,
+      payload: {
+        uuid: salesReturn.uuid,
+        invoiceNumber: salesReturn.invoiceNumber,
+        issuedAt,
+        shiftId: salesReturn.shiftId,
+        lines: salesReturn.lines.map(({ lineIndex, quantity }) => ({ lineIndex, quantity })),
+        refundMethod: method,
+        refundAmount: salesReturn.refundAmount,
+        reason: reason || undefined,
+      },
+    });
+    returns.value.push(salesReturn);
+    await reloadOutbox();
+    void sync();
+    return salesReturn;
+  };
+
+  // ─── درج النقود ─────────────────────────────────────────────────────────────
+  const setDrawer = async (config: DrawerConfig) => {
+    drawer.value = { ...config };
+    await posDb.setMeta({ drawer: drawer.value });
+  };
+
+  /**
+   * يفتح الدرج. `manual` = بلا بيع ولا مرتجع: يُعدّ على الوردية ويظهر
+   * للمدير عند التقفيل.
+   */
+  const openDrawer = async (manual = false) => {
+    if (drawer.value.mode === "off") return;
+    await kickDrawer(drawer.value);
+    if (manual && shift.value) {
+      shift.value = {
+        ...shift.value,
+        drawerOpens: (shift.value.drawerOpens ?? 0) + 1,
+      };
+      await posDb.setMeta({ shift: shift.value });
+    }
+  };
+
   /** يعيد محاولة ما رفضه السيرفر (في مكانه من الطابور: الترتيب مهم) */
   const retryFailed = async () => {
     await posDb.clearOutboxErrors(failedEntries.value);
@@ -545,6 +842,9 @@ export const usePosStore = defineStore("pos", () => {
     sessionExpired,
     syncing,
     lastError,
+    installationId,
+    bindError,
+    rebind,
     pendingCount,
     failedEntries,
     init,
@@ -565,6 +865,13 @@ export const usePosStore = defineStore("pos", () => {
     removeLine,
     clearCart,
     checkout,
+    returns,
+    lookupInvoice,
+    refundPreview,
+    refund,
+    drawer,
+    setDrawer,
+    openDrawer,
     retryFailed,
     reset,
   };
