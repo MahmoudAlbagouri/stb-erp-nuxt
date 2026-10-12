@@ -45,13 +45,19 @@
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
 import { onMounted } from "vue";
+import { useTheme } from "@/composables/useTheme";
 
 const auth = useAuthStore();
 onMounted(() => auth.hydrate());
+
+// ✅ الوضع الداكن/الفاتح على <html> (من الـ cookie — يعمل على السيرفر أيضاً)
+useTheme().applyTheme();
 </script>
 
 <style>
 .stb-bg {
+  /* الزخرفة أهدأ في الوضع الفاتح (القيمة من _themes.scss) */
+  opacity: var(--stb-decor-opacity, 1);
   position: fixed;
   inset: 0;
   pointer-events: none;

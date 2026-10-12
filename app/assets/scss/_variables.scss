@@ -1,33 +1,58 @@
+@use "sass:list";
+@use "sass:math";
+@use "sass:meta";
+
+// ⚠️ الألوان هنا تشير لمتغيرات CSS معرّفة في _themes.scss (داكن/فاتح).
+// لتغيير لون: عدّل قيمته في _themes.scss للوضعين.
+
+/// rgba() تدعم ألوان المتغيرات: rgba($stb-accent, 0.2) تعمل مع var(--stb-accent)
+/// عبر color-mix، وتبقى كما هي مع الألوان الصريحة.
+@function rgba($args...) {
+  @if list.length($args) == 2 and meta.type-of(list.nth($args, 1)) != color {
+    $alpha: list.nth($args, 2);
+    // الشفافية قد تُكتب 0.5 أو 50%
+    @if math.is-unitless($alpha) {
+      $alpha: math.percentage($alpha);
+    }
+    @return color-mix(in srgb, #{list.nth($args, 1)} #{$alpha}, transparent);
+  }
+  @return rgb($args...);
+}
+
 // ============================================
 // STB ERP - Design Tokens
 // Brand: Deep tech blue, metallic silver, glow accents
 // ============================================
 
 // --- Core Brand Colors (extracted from STB logo) ---
-$stb-primary:        #0a4fa8;   // deep royal blue
-$stb-primary-light:  #1a6fd4;   // medium blue
-$stb-primary-dark:   #062d6b;   // near-navy
-$stb-accent:         #00aaff;   // electric cyan glow
-$stb-accent-glow:    #00d4ff;   // bright sky blue
+$stb-primary:        var(--stb-primary);   // deep royal blue
+$stb-primary-light:  var(--stb-primary-light);   // medium blue
+$stb-primary-dark:   var(--stb-primary-dark);   // near-navy
+$stb-accent:         var(--stb-accent);   // electric cyan glow
+$stb-accent-glow:    var(--stb-accent-glow);   // bright sky blue
 
 // --- UI Neutrals ---
-$stb-dark:           #0d1117;   // near-black background
-$stb-surface:        #111827;   // card background
-$stb-surface-2:      #1a2332;   // elevated surface
-$stb-surface-3:      #243040;   // hover state
-$stb-border:         #1e3a5f;   // subtle border
-$stb-border-light:   #2a4a72;
+$stb-dark:           var(--stb-dark);   // near-black background
+$stb-surface:        var(--stb-surface);   // card background
+$stb-surface-2:      var(--stb-surface-2);   // elevated surface
+$stb-surface-3:      var(--stb-surface-3);   // hover state
+$stb-border:         var(--stb-border);   // subtle border
+$stb-border-light:   var(--stb-border-light);
 
 // --- Text ---
-$stb-text-primary:   #e8f1ff;   // near-white with blue tint
-$stb-text-secondary: #7a9cc4;   // muted blue-gray
-$stb-text-muted:     #4a6a8a;
+$stb-text-primary:   var(--stb-text-primary);   // near-white with blue tint
+$stb-text-secondary: var(--stb-text-secondary);   // muted blue-gray
+$stb-text-muted:     var(--stb-text-muted);
 
 // --- Semantic ---
-$stb-success:        #10b981;
-$stb-warning:        #f59e0b;
-$stb-danger:         #ef4444;
-$stb-info:           #3b82f6;
+$stb-success:        var(--stb-success);
+$stb-warning:        var(--stb-warning);
+$stb-danger:         var(--stb-danger);
+$stb-info:           var(--stb-info);
+
+// --- Theme helpers ---
+$stb-on-accent:      var(--stb-on-accent);  // النص فوق خلفية accent
+$stb-scrim:          var(--stb-scrim);      // خلفية معتمة خلف النوافذ/الأدراج
 
 // --- Gradients ---
 $gradient-primary:   linear-gradient(135deg, #{$stb-primary-dark} 0%, #{$stb-primary} 50%, #{$stb-primary-light} 100%);
@@ -37,11 +62,11 @@ $gradient-card:      linear-gradient(145deg, #{$stb-surface-2} 0%, #{$stb-surfac
 $gradient-sidebar:   linear-gradient(180deg, #{$stb-primary-dark} 0%, #030d1a 100%);
 
 // --- Shadows ---
-$shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.4);
-$shadow-md:    0 4px 16px rgba(0, 0, 0, 0.5);
-$shadow-lg:    0 8px 32px rgba(0, 0, 0, 0.6);
-$shadow-glow:  0 0 20px rgba(0, 170, 255, 0.2);
-$shadow-card:  0 2px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px #{$stb-border};
+$shadow-sm:    var(--stb-shadow-sm);
+$shadow-md:    var(--stb-shadow-md);
+$shadow-lg:    var(--stb-shadow-lg);
+$shadow-glow:  var(--stb-shadow-glow);
+$shadow-card:  var(--stb-shadow-card);
 
 // --- Spacing ---
 $space-1:  0.25rem;

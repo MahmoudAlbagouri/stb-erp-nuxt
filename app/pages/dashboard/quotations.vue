@@ -553,4 +553,25 @@ onMounted(() => {
     transform: rotate(360deg);
   }
 }
+
+// ─── فون: الوصف في سطر كامل، ثم الكمية والسعر وزر الحذف ───────────────────
+@media (max-width: 640px) {
+  .item-row {
+    flex-wrap: wrap;
+    padding: $space-3;
+    margin-bottom: $space-3;
+    background: rgba($stb-surface, 0.6);
+    border: 1px solid $stb-border;
+    border-radius: $radius-md;
+
+    // !important: الحقول عليها style="flex: …" داخلي
+    > :first-child {
+      flex: 1 1 100% !important;
+    }
+    > :not(:first-child):not(.btn) {
+      flex: 1 1 0 !important;
+      min-width: 0;
+    }
+  }
+}
 </style>

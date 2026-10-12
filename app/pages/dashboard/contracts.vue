@@ -908,7 +908,7 @@ onMounted(() => {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba($stb-dark, 0.85);
+    background: $stb-scrim;
     padding: $space-2;
     display: flex;
     justify-content: space-around;

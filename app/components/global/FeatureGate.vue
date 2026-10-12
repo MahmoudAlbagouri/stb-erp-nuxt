@@ -71,7 +71,7 @@ const upgradeTo = computed(() =>
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  color: $stb-dark;
+  color: $stb-on-accent;
   background: $stb-warning;
   box-shadow: 0 2px 8px rgba($stb-warning, 0.45);
 }

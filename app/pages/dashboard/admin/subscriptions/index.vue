@@ -76,7 +76,11 @@
       </div>
 
       <!-- Main: Subscription Details -->
-      <div class="card details-panel" v-if="selectedTenantId">
+      <div
+        v-if="selectedTenantId"
+        ref="detailsPanel"
+        class="card details-panel"
+      >
         <div v-if="loadingSub" class="flex-center p-10">
           <div class="spinner spinner--lg"></div>
         </div>
@@ -375,7 +379,7 @@
 
 <script setup lang="ts">
 import type { SubscriptionSummary } from "@/types";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, nextTick, onMounted } from "vue";
 import { useTenantStore } from "@/stores/tenants";
 import { usePlanStore } from "@/stores/plans";
 import { useApi } from "@/composables/useApi";
@@ -404,6 +408,7 @@ const api = useApi();
 const toast = useToast();
 
 const selectedTenantId = ref("");
+const detailsPanel = ref<HTMLElement | null>(null);
 const searchQuery = ref("");
 const subData = ref<SubscriptionSummary | null>(null);
 const loadingSub = ref(false);
@@ -445,6 +450,12 @@ const selectTenant = async (id: string) => {
     subData.value = null;
   } finally {
     loadingSub.value = false;
+  }
+
+  // آيباد/فون: التفاصيل تظهر تحت القائمة — ننزل إليها تلقائياً بعد الاختيار
+  if (window.matchMedia("(max-width: 1024px)").matches) {
+    await nextTick();
+    detailsPanel.value?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
 
@@ -521,6 +532,7 @@ const handleChangePlan = async () => {
 const getStatusLabel = (s: string) => {
   const map: Record<string, string> = {
     active: "نشط",
+    inactive: "غير نشط",
     trial: "تجريبي",
     expired: "منتهي الصلاحية", // ✅ تمت الإضافة
     cancelled: "ملغي",
@@ -603,7 +615,7 @@ onMounted(() => {
 
   .panel-header {
     padding: $space-4 $space-4 0;
-    @include flex(row, space-between, center);
+    @include flex(row, center, space-between);
     h3 {
       font-size: $font-size-sm;
       color: $stb-text-muted;
@@ -684,7 +696,7 @@ onMounted(() => {
       gap: 4px;
     }
     .t-info {
-      @include flex(row, space-between, center);
+      @include flex(row, center, space-between);
       .t-name {
         font-weight: 600;
         font-size: $font-size-sm;
@@ -906,6 +918,13 @@ onMounted(() => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// ─── آيباد/فون: مساحة فوق لوحة التفاصيل عند التمرير إليها (تحت الشريط العلوي) ─
+@media (max-width: 1024px) {
+  .details-panel {
+    scroll-margin-top: 76px;
   }
 }
 </style>

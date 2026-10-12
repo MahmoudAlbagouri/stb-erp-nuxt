@@ -5,6 +5,7 @@
 @use "sass:meta";
 @use "variables" as *;
 @use "mixins" as *;
+@use "themes";
 
 // --- Reset & Base ---
 *,
@@ -126,7 +127,7 @@ a:hover {
 
   &--accent {
     background: $gradient-accent;
-    color: $stb-dark;
+    color: $stb-on-accent;
     font-weight: 700;
     box-shadow: 0 4px 14px rgba($stb-accent, 0.35);
 
@@ -431,7 +432,7 @@ a:hover {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba($stb-dark, 0.8);
+  background: $stb-scrim;
   backdrop-filter: blur(4px);
   z-index: $z-modal;
   @include flex(row, center, center);

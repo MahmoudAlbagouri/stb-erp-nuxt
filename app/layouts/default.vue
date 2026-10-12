@@ -139,7 +139,7 @@ watch(
   position: fixed;
   inset: 0;
   z-index: $z-sidebar - 1;
-  background: rgba($stb-dark, 0.7);
+  background: $stb-scrim;
   backdrop-filter: blur(3px);
 }
 

@@ -720,7 +720,7 @@ onMounted(() => {
   border-radius: $radius-md;
   border: 1px solid $stb-border;
   .progress-label {
-    @include flex(row, space-between, center);
+    @include flex(row, center, space-between);
     margin-bottom: $space-2;
     font-size: $font-size-xs;
     color: $stb-text-muted;

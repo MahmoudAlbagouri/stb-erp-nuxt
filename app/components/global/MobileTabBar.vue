@@ -37,11 +37,13 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { LayoutGrid } from "lucide-vue-next";
 import { useUiStore } from "@/stores/ui";
+import { useAuthStore } from "@/stores/auth";
 import { useNotificationsStore } from "@/stores/notifications";
 import { useAccess } from "@/composables/useAccess";
 import { findNavItem } from "@/utils/navigation";
 
 const ui = useUiStore();
+const auth = useAuthStore();
 const notifications = useNotificationsStore();
 const route = useRoute();
 const { resolve } = useAccess();
@@ -58,8 +60,17 @@ const PRIORITY: { to: string; short: string }[] = [
   { to: "/dashboard/profile", short: "ملفي" },
 ];
 
+// مالك النظام: صفحات إدارة المنصة بدل صفحات الموارد البشرية
+const OWNER_PRIORITY: { to: string; short: string }[] = [
+  { to: "/dashboard", short: "الرئيسية" },
+  { to: "/dashboard/companies", short: "الشركات" },
+  { to: "/dashboard/admin/subscriptions", short: "التجديدات" },
+  { to: "/dashboard/plans", short: "الخطط" },
+  { to: "/dashboard/quotations", short: "العروض" },
+];
+
 const tabs = computed(() =>
-  PRIORITY.flatMap(({ to, short }) => {
+  (auth.isSystemAdmin ? OWNER_PRIORITY : PRIORITY).flatMap(({ to, short }) => {
     const item = findNavItem(to);
     return item && item.to === to && resolve(item) === "allowed"
       ? [{ ...item, short }]

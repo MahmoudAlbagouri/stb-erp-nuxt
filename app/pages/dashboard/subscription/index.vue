@@ -336,7 +336,7 @@ onMounted(() => store.fetchMySubscription());
   @include glass-card;
   padding: $space-4;
   .quota-head {
-    @include flex(row, space-between, center);
+    @include flex(row, center, space-between);
     margin-bottom: $space-2;
     .q-name {
       font-weight: 600;

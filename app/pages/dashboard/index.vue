@@ -729,7 +729,7 @@ const statusLabel = (s: string) =>
     flex-wrap: wrap; /* السماح بالتفاف العناصر إذا كثرت */
 
     .breakdown-item {
-      @include flex(column, space-between, center);
+      @include flex(column, center, space-between);
       /* تعديل العرض ليناسب العدد الجديد */
       flex: 1 1 18%;
       min-width: 80px;

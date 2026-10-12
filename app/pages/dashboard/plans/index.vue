@@ -436,7 +436,7 @@ onMounted(() => {
   .list-dashed {
     list-style: none;
     li {
-      @include flex(row, space-between, center);
+      @include flex(row, center, space-between);
       font-size: $font-size-sm;
       padding: 6px 0;
       border-bottom: 1px dashed $stb-border-light;

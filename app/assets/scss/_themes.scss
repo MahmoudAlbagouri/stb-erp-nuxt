@@ -1,0 +1,109 @@
+// ============================================
+// STB ERP — ألوان الوضعين الداكن والفاتح
+// ============================================
+// كل ألوان المشروع تمر من متغيرات CSS هنا (‎--stb-*‎). متغيرات SCSS في
+// _variables.scss ‏($stb-accent ...) تشير إليها، فتبديل الوضع = تبديل قيم
+// هذا الملف فقط — بدون تعديل أي صفحة.
+//
+// الوضع يُحدَّد بخاصية data-theme على <html> (انظر composables/useTheme.ts).
+
+@mixin theme-dark {
+  color-scheme: dark;
+
+  --stb-primary: #0a4fa8;
+  --stb-primary-light: #1a6fd4;
+  --stb-primary-dark: #062d6b;
+  --stb-accent: #00aaff;
+  --stb-accent-glow: #00d4ff;
+
+  --stb-dark: #0d1117; // خلفية الصفحة
+  --stb-surface: #111827; // الحقول ورؤوس الجداول
+  --stb-surface-2: #1a2332; // الكروت
+  --stb-surface-3: #243040; // hover
+  --stb-border: #1e3a5f;
+  --stb-border-light: #2a4a72;
+
+  --stb-text-primary: #e8f1ff;
+  --stb-text-secondary: #7a9cc4;
+  --stb-text-muted: #4a6a8a;
+
+  --stb-success: #10b981;
+  --stb-warning: #f59e0b;
+  --stb-danger: #ef4444;
+  --stb-info: #3b82f6;
+
+  --stb-on-accent: #0d1117; // النص فوق خلفية accent
+  --stb-scrim: rgba(13, 17, 23, 0.8); // الخلفية المعتمة خلف النوافذ
+
+  --stb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --stb-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --stb-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --stb-shadow-glow: 0 0 20px rgba(0, 170, 255, 0.2);
+  --stb-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--stb-border);
+
+  --stb-decor-opacity: 1; // الخلفية الزخرفية (app.vue)
+}
+
+@mixin theme-light {
+  color-scheme: light;
+
+  --stb-primary: #0a4fa8;
+  --stb-primary-light: #1a6fd4;
+  --stb-primary-dark: #083c85;
+  // أغمق قليلاً من الداكن ليبقى مقروءاً كنص وروابط فوق خلفية بيضاء
+  --stb-accent: #0277c8;
+  --stb-accent-glow: #0ea5e9;
+
+  --stb-dark: #eef2f8;
+  --stb-surface: #f4f7fb;
+  --stb-surface-2: #ffffff;
+  --stb-surface-3: #e6edf6;
+  --stb-border: #d3ddea;
+  --stb-border-light: #b6c5d8;
+
+  --stb-text-primary: #0f1f33;
+  --stb-text-secondary: #48607c;
+  --stb-text-muted: #66788f;
+
+  --stb-success: #059669;
+  --stb-warning: #c2700a;
+  --stb-danger: #dc2626;
+  --stb-info: #2563eb;
+
+  --stb-on-accent: #ffffff;
+  --stb-scrim: rgba(15, 31, 51, 0.5);
+
+  --stb-shadow-sm: 0 1px 2px rgba(15, 31, 51, 0.08);
+  --stb-shadow-md: 0 6px 18px rgba(15, 31, 51, 0.1);
+  --stb-shadow-lg: 0 14px 40px rgba(15, 31, 51, 0.16);
+  --stb-shadow-glow: 0 0 20px rgba(2, 119, 200, 0.18);
+  --stb-shadow-card: 0 1px 3px rgba(15, 31, 51, 0.06), 0 0 0 1px var(--stb-border);
+
+  --stb-decor-opacity: 0.35;
+}
+
+:root {
+  @include theme-dark;
+}
+
+:root[data-theme="light"] {
+  @include theme-light;
+}
+
+// ✅ القائمة الجانبية تحتفظ بهوية STB الداكنة في الوضعين (كحلي بنص فاتح):
+// نعيد تعريف المتغيرات داخل نطاقها فقط، فتبقى كل تنسيقاتها كما هي.
+.app-sidebar {
+  @include theme-dark;
+}
+
+// انتقال ناعم عند تبديل الوضع (يُضاف مؤقتاً من useTheme ثم يُزال)
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.25s ease,
+    box-shadow 0.35s ease !important;
+}

@@ -17,6 +17,7 @@
     </div>
     <div class="topbar-actions">
       <!-- ✅ إضافة جرس الإشعارات هنا -->
+      <ThemeToggle />
       <NotificationBell />
 
       <div class="topbar-badge">

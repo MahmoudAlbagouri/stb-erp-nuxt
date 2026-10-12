@@ -597,7 +597,7 @@ const formatSize = (bytes: number): string => {
   width: 28px;
   height: 28px;
   border-radius: $radius-full;
-  background: rgba($stb-dark, 0.8);
+  background: $stb-scrim;
   border: 1px solid $stb-border-light;
   color: $stb-text-primary;
   @include flex(row, center, center);

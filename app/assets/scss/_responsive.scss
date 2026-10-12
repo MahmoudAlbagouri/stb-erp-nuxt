@@ -382,6 +382,22 @@ canvas {
     grid-column: auto !important;
   }
 
+  // مسافة موحّدة بين الحقول بعد تحوّلها لعمود واحد (كانت تتلاصق)
+  .modal .form-grid,
+  .modal .form-row,
+  .modal .grid-2,
+  .modal .grid-3 {
+    gap: $space-4 !important;
+  }
+  .modal form > * + *,
+  .modal .form-section,
+  .modal .form-group.full-width {
+    margin-top: $space-4;
+  }
+  .modal .modal-form > * + * {
+    margin-top: 0; // .modal-form له gap خاص به
+  }
+
   // 16px تمنع iOS من تكبير الصفحة عند التركيز على الحقل
   .form-input,
   .form-select,

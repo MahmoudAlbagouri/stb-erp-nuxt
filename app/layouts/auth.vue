@@ -5,6 +5,7 @@
       <div class="auth-bg__orb auth-bg__orb--2" />
       <div class="auth-bg__grid" />
     </div>
+    <div class="auth-theme-toggle"><ThemeToggle /></div>
     <slot />
   </div>
 </template>
@@ -60,5 +61,12 @@
     background-size: 40px 40px;
     opacity: 0.4;
   }
+}
+
+.auth-theme-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
 }
 </style>
