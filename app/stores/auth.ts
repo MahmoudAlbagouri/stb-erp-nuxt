@@ -12,6 +12,11 @@ import {
   decodeJwt,
 } from "../utils/auth";
 import { getErrorMessage } from "../utils/errors";
+import {
+  SUPPORT_COOKIE,
+  supportCookieOptions,
+  type SupportTarget,
+} from "../utils/support";
 import type {
   AuthTokens,
   LoginPayload,
@@ -25,6 +30,12 @@ export const useAuthStore = defineStore("auth", () => {
 
   const accessTokenCookie = useCookie<string | null>(ACCESS_TOKEN_COOKIE);
   const refreshTokenCookie = useCookie<string | null>(REFRESH_TOKEN_COOKIE);
+
+  // وضع الدعم: الشركة التي يعمل مالك النظام داخلها (انظر utils/support)
+  const supportCookie = useCookie<SupportTarget | null>(
+    SUPPORT_COOKIE,
+    supportCookieOptions,
+  );
 
   // --- State ---
   // يُفك التوكن فور إنشاء المتجر (على السيرفر والمتصفح) حتى تكون الصلاحيات
@@ -55,6 +66,9 @@ export const useAuthStore = defineStore("auth", () => {
     () => decodedToken.value?.isDisclaimerAccepted === true,
   );
 
+  /** الشركة المفتوحة في وضع الدعم، أو null خارج وضع الدعم */
+  const supportTenant = computed(() => supportCookie.value ?? null);
+
   const role = computed(() => decodedToken.value?.role ?? null);
   // الصلاحيات داخل التوكن تأتي ضمن role.permissions
   const permissions = computed(() => role.value?.permissions ?? []);
@@ -74,6 +88,7 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const clearAuth = () => {
+    supportCookie.value = null;
     decodedToken.value = null;
     accessTokenCookie.value = null;
     refreshTokenCookie.value = null;
@@ -156,6 +171,33 @@ export const useAuthStore = defineStore("auth", () => {
     });
   };
 
+  /**
+   * وضع الدعم: يدخل مالك النظام شركة ويعمل داخلها بصلاحيات مديرها. توكن
+   * التجديد يبقى توكن المالك؛ يتغيّر توكن الوصول فقط.
+   */
+  const enterSupport = async (tenantId: string) => {
+    const res = await api.post<{
+      accessToken: string;
+      tenant: { id: string; companyName: string };
+    }>(`/auth/support/${tenantId}`, {});
+
+    supportCookie.value = {
+      tenantId: res.data.tenant.id,
+      companyName: res.data.tenant.companyName,
+    };
+    accessTokenCookie.value = res.data.accessToken;
+    // تحميل كامل: لا يبقى في الذاكرة شيء من حساب المالك أو شركة سابقة
+    window.location.assign(DASHBOARD_PATH);
+  };
+
+  /** الخروج من وضع الدعم والعودة لحساب مالك النظام */
+  const exitSupport = () => {
+    supportCookie.value = null;
+    // بلا توكن وصول: أول طلب يجدّد الجلسة بتوكن المالك (التجديد لم يتغيّر)
+    accessTokenCookie.value = null;
+    window.location.assign("/dashboard/companies");
+  };
+
   const logout = () => {
     resetAllStores();
     clearAuth();
@@ -177,6 +219,9 @@ export const useAuthStore = defineStore("auth", () => {
     isDisclaimerAccepted,
     hydrate,
     applyTokens: persist,
+    supportTenant,
+    enterSupport,
+    exitSupport,
     login,
     register,
     acceptDisclaimer,

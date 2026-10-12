@@ -1,0 +1,528 @@
+// ============================================
+// STB ERP — عناصر مشتركة لصفحات المستندات التجارية
+// (مخزون، ثم مشتريات ومبيعات): فلاتر، قوائم، نماذج بأسطر أصناف.
+// ============================================
+// تُحمَّل من main.scss. الأسماء كلها تبدأ بـ doc- حتى لا تتعارض مع تنسيقات
+// الصفحات الأقدم (scoped).
+
+@use "variables" as *;
+@use "mixins" as *;
+
+// ─── بطاقات الأرقام أعلى الصفحة ─────────────────────────────────────────────
+.doc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: $space-4;
+  margin-bottom: $space-4;
+
+  .stat-card {
+    padding: $space-4;
+
+    &__value {
+      font-size: $font-size-xl;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  @include respond-to("sm") {
+    grid-template-columns: 1fr 1fr;
+    gap: $space-3;
+
+    .stat-card {
+      padding: $space-3;
+
+      &__icon {
+        width: 36px;
+        height: 36px;
+      }
+      &__value {
+        font-size: $font-size-base;
+      }
+    }
+  }
+
+  // بطاقة قابلة للضغط (تفلتر القائمة)
+  button.stat-card {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+
+    &.is-active {
+      @include glow-border($stb-accent);
+    }
+  }
+}
+
+.doc-tone {
+  &--accent {
+    color: $stb-accent;
+    background: rgba($stb-accent, 0.12);
+  }
+  &--success {
+    color: $stb-success;
+    background: rgba($stb-success, 0.12);
+  }
+  &--warning {
+    color: $stb-warning;
+    background: rgba($stb-warning, 0.12);
+  }
+  &--danger {
+    color: $stb-danger;
+    background: rgba($stb-danger, 0.12);
+  }
+  &--info {
+    color: $stb-info;
+    background: rgba($stb-info, 0.12);
+  }
+}
+
+// ─── الفلاتر ─────────────────────────────────────────────────────────────────
+.doc-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(
+      auto-fit,
+      minmax(150px, 1fr)
+    );
+  gap: $space-3;
+  padding: $space-4;
+  margin-bottom: $space-4;
+
+  @include respond-to("lg") {
+    grid-template-columns: 1fr 1fr;
+
+    > .search-bar {
+      grid-column: 1 / -1;
+    }
+  }
+  @include respond-to("sm") {
+    grid-template-columns: 1fr;
+  }
+
+  // بلا حقل بحث: أعمدة متساوية
+  &--even {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+}
+
+// تبويبات الحالة فوق القائمة (الكل / مسودة / ...)
+.doc-tabs {
+  display: flex;
+  gap: $space-2;
+  margin-bottom: $space-4;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.doc-tab {
+  flex-shrink: 0;
+  padding: $space-2 $space-4;
+  font: inherit;
+  font-size: $font-size-sm;
+  color: $stb-text-secondary;
+  white-space: nowrap;
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $stb-text-primary;
+  }
+  &.is-active {
+    color: $stb-on-accent;
+    background: $stb-accent;
+    border-color: $stb-accent;
+  }
+}
+
+// ─── القائمة ─────────────────────────────────────────────────────────────────
+.doc-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.doc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &__main {
+    font-weight: 600;
+    color: $stb-text-primary;
+  }
+  &__sub {
+    font-size: $font-size-xs;
+    color: $stb-text-muted;
+  }
+}
+
+.doc-code {
+  padding: 2px $space-2;
+  font-size: $font-size-xs;
+  color: $stb-accent;
+  background: rgba($stb-accent, 0.08);
+  border-radius: $radius-sm;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+// رقم مجرّد (قد يكون سالباً): يُعرض LTR حتى لا تنقلب الإشارة ‎-3 إلى 3-
+.doc-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+// مبلغ بعملته (1,500.00 ر.س): باتجاه النص الطبيعي كباقي التطبيق
+.doc-num,
+.doc-money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  &--strong {
+    font-weight: 700;
+    color: $stb-text-primary;
+  }
+  // بعد strong عمداً: لون الاتجاه يغلب إذا اجتمعا
+  &--in {
+    color: $stb-success;
+    font-weight: 700;
+  }
+  &--out {
+    color: $stb-danger;
+    font-weight: 700;
+  }
+}
+
+// كمية + وحدتها
+.doc-qty {
+  display: inline-flex;
+  align-items: baseline;
+  gap: $space-1;
+  white-space: nowrap;
+}
+
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+
+  @include respond-to("sm") {
+    flex-wrap: wrap;
+  }
+}
+
+.doc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $space-3;
+  margin-top: $space-4;
+
+  &__count {
+    font-size: $font-size-sm;
+    color: $stb-text-secondary;
+  }
+}
+
+.doc-pager {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+
+  &__info {
+    font-size: $font-size-sm;
+    color: $stb-text-secondary;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// حالات المستندات والأرصدة
+.doc-status {
+  &--draft {
+    @include status-badge($stb-text-muted);
+  }
+  &--progress {
+    @include status-badge($stb-warning);
+  }
+  &--done {
+    @include status-badge($stb-success);
+  }
+  &--cancelled {
+    @include status-badge($stb-danger);
+  }
+  &--info {
+    @include status-badge($stb-accent);
+  }
+}
+
+// ─── النماذج ─────────────────────────────────────────────────────────────────
+.modal.doc-modal {
+  max-width: 820px;
+  padding: $space-6;
+
+  &--sm {
+    max-width: 480px;
+  }
+}
+
+.doc-modal__icon {
+  color: $stb-accent;
+  vertical-align: -3px;
+  margin-inline-end: $space-2;
+}
+
+.doc-form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+}
+
+.doc-section {
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+  padding: $space-4;
+  background: rgba($stb-surface, 0.6);
+  border: 1px solid $stb-border;
+  border-radius: $radius-lg;
+
+  &__title {
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $stb-accent;
+  }
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-3 $space-4;
+
+  &__full {
+    grid-column: 1 / -1;
+  }
+
+  @include respond-to("sm") {
+    grid-template-columns: 1fr;
+  }
+}
+
+.doc-hint {
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+}
+
+.doc-note {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-2;
+  padding: $space-3;
+  font-size: $font-size-sm;
+  color: $stb-text-secondary;
+  background: rgba($stb-warning, 0.08);
+  border: 1px solid rgba($stb-warning, 0.25);
+  border-radius: $radius-md;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: $stb-warning;
+  }
+}
+
+// ─── أسطر الأصناف داخل المستند ───────────────────────────────────────────────
+// شبكة لا جدول: الأعمدة يحددها كل نموذج بالمتغيّر ‎--doc-cols
+.doc-lines {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  &__head,
+  &__row {
+    display: grid;
+    grid-template-columns: var(--doc-cols, 2fr 1fr 1fr auto);
+    align-items: center;
+    gap: $space-3;
+    padding: $space-2 $space-3;
+  }
+
+  &__head {
+    font-size: $font-size-xs;
+    font-weight: 700;
+    color: $stb-text-secondary;
+    background: $stb-surface-2;
+  }
+
+  &__row {
+    border-top: 1px solid $stb-border;
+
+    .form-input {
+      min-width: 0;
+      padding-block: $space-2;
+    }
+  }
+
+  &__label {
+    display: none;
+    font-size: 0.7rem;
+    color: $stb-text-muted;
+  }
+
+  &__empty {
+    padding: $space-5;
+    font-size: $font-size-sm;
+    color: $stb-text-muted;
+    text-align: center;
+  }
+
+  @include respond-to("sm") {
+    &__head {
+      display: none;
+    }
+    &__row {
+      grid-template-columns: 1fr 1fr;
+      padding: $space-3;
+
+      > :first-child {
+        grid-column: 1 / -1;
+      }
+    }
+    &__label {
+      display: block;
+    }
+  }
+}
+
+// ─── إجماليات المستند ────────────────────────────────────────────────────────
+// سطر واحد (.doc-totals) أو صندوق بعدة أسطر (.doc-totals--box > div)
+.doc-totals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  font-size: $font-size-sm;
+  color: $stb-text-secondary;
+  background: $stb-surface-2;
+  border: 1px dashed $stb-border-light;
+  border-radius: $radius-md;
+
+  strong {
+    font-size: $font-size-lg;
+    color: $stb-text-primary;
+  }
+
+  &--box {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $space-2;
+    width: min(100%, 340px);
+    margin-inline-start: auto;
+
+    > div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $space-4;
+    }
+
+    .is-grand {
+      padding-top: $space-2;
+      font-weight: 700;
+      color: $stb-text-primary;
+      border-top: 1px solid $stb-border;
+    }
+  }
+}
+
+// بيانات المستند في وضع العرض (عنوان صغير + قيمة)
+.doc-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: $space-3 $space-4;
+}
+
+// ─── اختيار صنف (بحث + قائمة نتائج) ──────────────────────────────────────────
+.doc-picker {
+  position: relative;
+
+  &__results {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(100% + 4px);
+    z-index: 5;
+    max-height: 260px;
+    overflow-y: auto;
+    background: $stb-surface-2;
+    border: 1px solid $stb-border-light;
+    border-radius: $radius-md;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    @include scrollbar;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-3;
+    width: 100%;
+    padding: $space-2 $space-3;
+    font: inherit;
+    color: $stb-text-primary;
+    text-align: start;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid $stb-border;
+    cursor: pointer;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+    &:hover:not(:disabled),
+    &.is-focused {
+      background: rgba($stb-accent, 0.1);
+    }
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__state {
+    padding: $space-3;
+    font-size: $font-size-sm;
+    color: $stb-text-muted;
+    text-align: center;
+  }
+}
+
+// ─── الطباعة ─────────────────────────────────────────────────────────────────
+// عنصر ‎.print-area (يُنقل إلى body) مخفي على الشاشة، وعند الطباعة يظهر وحده:
+// تُخفى كل الواجهة فلا يُطبع إلا المستند.
+.print-area {
+  display: none;
+}
+
+@media print {
+  body > *:not(.print-area) {
+    display: none !important;
+  }
+  .print-area {
+    display: block;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+}

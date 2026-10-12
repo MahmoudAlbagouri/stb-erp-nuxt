@@ -168,6 +168,34 @@
                       class="form-input"
                     />
                   </div>
+                  <div class="form-group">
+                    <label>عدد الأصناف (Products)</label>
+                    <StbNumberInput
+                      v-model.number="form.quotas.max_products"
+                      class="form-input"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>عدد المخازن (Warehouses)</label>
+                    <StbNumberInput
+                      v-model.number="form.quotas.max_warehouses"
+                      class="form-input"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>فواتير البيع شهرياً (Invoices)</label>
+                    <StbNumberInput
+                      v-model.number="form.quotas.max_invoices"
+                      class="form-input"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>أجهزة الكاشير (POS)</label>
+                    <StbNumberInput
+                      v-model.number="form.quotas.max_pos_devices"
+                      class="form-input"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -248,6 +276,10 @@ const initialQuotas = {
   max_employees: 0,
   max_contracts: 0,
   max_biometric_devices: 0,
+  max_products: 0,
+  max_warehouses: 0,
+  max_invoices: 0,
+  max_pos_devices: 0,
 };
 
 const form = reactive<{
@@ -270,9 +302,14 @@ const openModal = (plan?: Plan) => {
   if (plan) {
     isEditing.value = true;
     currentId.value = plan.id;
-    // نسخ البيانات بعمق لتجنب التعديل المباشر
+    // حقول النموذج فقط: نسخ الخطة كلها كان يُدخل id وتواريخها في النموذج
+    // فتُرسل مع الحفظ ويرفضها السيرفر (400)
     Object.assign(form, {
-      ...plan,
+      name: plan.name,
+      nameAr: plan.nameAr,
+      price: String(plan.price ?? ""),
+      billingCycle: plan.billingCycle,
+      isCustom: plan.isCustom,
       quotas: { ...initialQuotas, ...plan.quotas },
     });
     selectedFeatures.value = [...(plan.features || [])];
@@ -291,8 +328,14 @@ const openModal = (plan?: Plan) => {
 const handleSubmit = async () => {
   submitting.value = true;
   try {
+    // ما يقبله السيرفر فقط (أي حقل زائد يُرفض الطلب كله)
     const payload = {
-      ...form,
+      name: form.name,
+      nameAr: form.nameAr,
+      price: form.price,
+      billingCycle: form.billingCycle,
+      isCustom: form.isCustom,
+      quotas: { ...form.quotas },
       features: selectedFeatures.value,
     };
 
@@ -337,16 +380,7 @@ const getBillingLabel = (c: string) => {
   return map[c] || c;
 };
 
-const getQuotaLabel = (k: string) => {
-  const map: Record<string, string> = {
-    max_users: "المستخدمين",
-    max_employees: "الموظفين",
-    max_contracts: "العقود",
-    max_biometric_devices: "أجهزة البصمة",
-    max_storage_mb: "مساحة التخزين (MB)",
-  };
-  return map[k] || k;
-};
+const getQuotaLabel = (k: string) => QUOTA_LABELS[k] || k;
 
 const getFeatureName = (name: string) => {
   const feat = store.availableFeatures.find((f) => f.name === name);

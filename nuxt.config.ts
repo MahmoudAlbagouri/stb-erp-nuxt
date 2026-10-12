@@ -33,6 +33,13 @@ export default defineNuxtConfig({
     },
   },
 
+  // شاشة الكاشير تُرسم في المتصفح فقط: هيكلها ثابت فيخزّنه الـ service worker
+  // (public/sw.js) ويفتحها بلا إنترنت، وبياناتها كلها من IndexedDB لا من السيرفر
+  routeRules: {
+    "/pos/**": { ssr: false },
+    "/pos": { ssr: false },
+  },
+
   // بقية الإعدادات (head, runtimeConfig) صحيحة ولا تحتاج تعديل
   app: {
     head: {

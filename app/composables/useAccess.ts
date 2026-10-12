@@ -24,6 +24,8 @@ export interface AccessRule {
   feature?: FeatureKey;
   /** لمالك النظام فقط */
   systemOnly?: boolean;
+  /** لحسابات الشركات فقط: مالك النظام بلا شركة فلا بيانات له هنا */
+  tenantOnly?: boolean;
 }
 
 export type AccessState = "allowed" | "denied" | "locked";
@@ -89,6 +91,7 @@ export const useAccess = () => {
   const resolve = (rule?: AccessRule): AccessState => {
     if (!rule) return "allowed";
     if (rule.systemOnly && !auth.isSystemAdmin) return "denied";
+    if (rule.tenantOnly && auth.isSystemAdmin) return "denied";
     if (rule.permissions && !canAny(rule.permissions)) return "denied";
     if (rule.feature && !hasFeature(rule.feature)) return "locked";
     return "allowed";

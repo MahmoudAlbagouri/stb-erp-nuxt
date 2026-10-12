@@ -1,5 +1,7 @@
 <template>
-  <div class="page-container">
+  <!-- مالك النظام بلا شركة: لوحته الخاصة بدل لوحة شركة فارغة -->
+  <OwnerHome v-if="auth.isSystemAdmin" />
+  <div v-else class="page-container">
     <!-- Header Section -->
     <div class="page-header">
       <div class="page-header__title tn">
@@ -300,6 +302,7 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from "@/stores/auth";
 import { useUsersStore } from "@/stores/users";
 import { useEmployeesStore } from "@/stores/employees";
 import { useLeavesStore } from "@/stores/leaves";
@@ -333,6 +336,8 @@ import {
   MinusCircle, // ✅ أيقونة الخصومات
   Building2,
 } from "lucide-vue-next";
+
+const auth = useAuthStore();
 
 type StatItem = {
   icon: Component;
@@ -381,6 +386,9 @@ const updateSaudiTime = () => {
 };
 
 onMounted(async () => {
+  // لوحة مالك النظام تحمّل بياناتها بنفسها: لا طلبات لبيانات شركة غير موجودة
+  if (auth.isSystemAdmin) return;
+
   updateSaudiTime();
   timeInterval = setInterval(updateSaudiTime, 1000);
   await profileStore.fetchProfile();

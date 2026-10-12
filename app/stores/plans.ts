@@ -8,6 +8,10 @@ export interface PlanQuotas {
   max_employees?: number;
   max_contracts?: number; // ✅ تمت الإضافة
   max_biometric_devices?: number; // ✅ تمت الإضافة
+  max_products?: number;
+  max_warehouses?: number;
+  max_invoices?: number;
+  max_pos_devices?: number;
   max_storage_mb?: number;
   [key: string]: number | undefined;
 }

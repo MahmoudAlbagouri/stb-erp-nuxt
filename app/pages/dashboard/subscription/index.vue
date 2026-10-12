@@ -160,8 +160,7 @@ const getStatusLabel = (s: string) => {
 
 const getBillingLabel = (c?: string) =>
   c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
-const getQuotaLabel = (k: string) =>
-  k === "max_users" ? "المستخدمين" : k === "max_employees" ? "الموظفين" : k;
+const getQuotaLabel = (k: string) => QUOTA_LABELS[k] || k;
 const getPercentage = (q: QuotaUsage) =>
   q.limit === null ? 0 : Math.min(100, Math.round((q.used / q.limit) * 100));
 

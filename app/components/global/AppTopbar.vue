@@ -21,7 +21,10 @@
       <NotificationBell />
 
       <div class="topbar-badge">
-        <span v-if="auth.isSuperAdmin" class="badge badge--active"
+        <span v-if="auth.supportTenant" class="badge badge--pending"
+          >وضع الدعم</span
+        >
+        <span v-else-if="auth.isSuperAdmin" class="badge badge--active"
           >مالك الشركة</span
         >
         <span v-else-if="auth.isSystemAdmin" class="badge badge--active"

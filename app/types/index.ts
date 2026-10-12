@@ -624,6 +624,8 @@ export interface DecodedToken {
   employeeId?: string;
   role?: JwtRole | null;
   isDisclaimerAccepted?: boolean;
+  /** وضع الدعم: معرّف مالك النظام الذي يعمل داخل الشركة بهذا التوكن */
+  supportBy?: string;
 }
 
 // --- Toast ---

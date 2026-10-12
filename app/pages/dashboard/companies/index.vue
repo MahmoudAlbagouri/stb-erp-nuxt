@@ -144,6 +144,18 @@
 
         <!-- Card Footer -->
         <div class="tenant-card__footer">
+          <button
+            class="btn btn--primary btn--sm"
+            :disabled="entering === tenant.id"
+            title="العمل داخل هذه الشركة بصلاحيات مديرها"
+            @click="enterSupport(tenant)"
+          >
+            <LifeBuoy :size="14" />
+            دخول للدعم
+          </button>
+
+          <div class="action-divider"></div>
+
           <button class="btn btn--ghost btn--sm" @click="openModal(tenant)">
             <Edit :size="14" />
             تعديل
@@ -259,6 +271,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { useTenantStore } from "@/stores/tenants";
+import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/composables/useToast";
 import type { Tenant } from "@/stores/tenants";
 
@@ -270,6 +283,7 @@ import {
   Phone,
   MapPin,
   Globe,
+  LifeBuoy,
   Calendar,
   Edit,
   Trash2,
@@ -281,6 +295,20 @@ import {
 import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
 definePageMeta({ middleware: "auth" });
+
+// ─── وضع الدعم: الدخول إلى شركة والعمل داخلها ───
+const authStore = useAuthStore();
+const entering = ref<string | null>(null);
+
+const enterSupport = async (tenant: Tenant) => {
+  entering.value = tenant.id;
+  try {
+    await authStore.enterSupport(tenant.id); // ينتقل للوحة الشركة عند النجاح
+  } catch (e) {
+    useToast().error(getErrorMessage(e, "تعذر الدخول إلى الشركة"));
+    entering.value = null;
+  }
+};
 
 const store = useTenantStore();
 const toast = useToast();

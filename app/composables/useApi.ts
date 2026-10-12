@@ -8,6 +8,12 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "../utils/auth";
 import { saveBlob } from "../utils/download";
+import {
+  requestSupportToken,
+  SUPPORT_COOKIE,
+  supportCookieOptions,
+  type SupportTarget,
+} from "../utils/support";
 
 type ResponseType = "json" | "blob";
 
@@ -16,8 +22,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 /** رسالة الخطأ من جسم الاستجابة (الباك إند يعيد { message }) */
 const extractMessage = (body: unknown, fallback: string): string => {
-  if (isRecord(body) && typeof body.message === "string" && body.message) {
-    return body.message;
+  if (isRecord(body)) {
+    // أخطاء التحقق تأتي قائمة (errors أو message كمصفوفة): نعرض أولها بدل
+    // رسالة عامة لا تقول ما الخطأ
+    for (const list of [body.errors, body.message]) {
+      if (Array.isArray(list) && typeof list[0] === "string" && list[0]) {
+        return list[0];
+      }
+    }
+    if (typeof body.message === "string" && body.message) return body.message;
   }
   if (typeof body === "string" && body) return body;
   return fallback;
@@ -43,6 +56,12 @@ export const useApi = () => {
     secure: isSecure,
     path: "/",
   });
+
+  // وضع الدعم: الشركة التي يعمل مالك النظام داخلها (انظر utils/support)
+  const supportCookie = useCookie<SupportTarget | null>(
+    SUPPORT_COOKIE,
+    supportCookieOptions,
+  );
 
   const getHeaders = (
     withAuth = true,
@@ -106,6 +125,17 @@ export const useApi = () => {
       const tokens = apiResponse.data;
 
       if (tokens?.accessToken && tokens?.refreshToken) {
+        // وضع الدعم: التوكن المجدَّد توكن المالك؛ نستبدله بتوكن دعم جديد لنفس
+        // الشركة. إذا رفضه السيرفر نخرج من وضع الدعم ونعود لحساب المالك.
+        if (supportCookie.value) {
+          const supportToken = await requestSupportToken(
+            BASE_URL,
+            tokens.accessToken,
+            supportCookie.value.tenantId,
+          );
+          if (supportToken) tokens.accessToken = supportToken;
+          else supportCookie.value = null;
+        }
         accessTokenCookie.value = tokens.accessToken;
         refreshTokenCookie.value = tokens.refreshToken;
         // ✅ تحديث التوكن المفكوك أيضاً: الصلاحيات الجديدة تظهر فوراً في الواجهة

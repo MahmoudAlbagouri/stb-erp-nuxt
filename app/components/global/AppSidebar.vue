@@ -99,7 +99,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useProfileStore } from "@/stores/profile";
 import { useNotificationsStore } from "@/stores/notifications";
 import { useAccess } from "@/composables/useAccess";
-import { NAV_SECTIONS } from "@/utils/navigation";
+import { NAV_SECTIONS, findNavItem } from "@/utils/navigation";
 
 const ui = useUiStore();
 const auth = useAuthStore();
@@ -128,12 +128,11 @@ const visibleSections = computed(() =>
   })).filter((section) => section.items.length > 0),
 );
 
-const isActive = (to: string) =>
-  to === "/dashboard"
-    ? route.path === to
-    : route.path === to || route.path.startsWith(`${to}/`);
+// العنصر النشط = أدق تطابق للمسار فقط (حتى لا يُضاء عنصر وأحد فروعه معاً)
+const isActive = (to: string) => findNavItem(route.path)?.to === to;
 
 const roleLabel = computed(() => {
+  if (auth.supportTenant) return "مالك النظام — وضع الدعم";
   if (auth.isSystemAdmin) return "مالك النظام";
   if (auth.isSuperAdmin) return "مالك الشركة";
   return auth.role?.name || profile.data?.personal?.user?.role || "مستخدم";
