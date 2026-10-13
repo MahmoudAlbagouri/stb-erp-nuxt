@@ -368,8 +368,10 @@ export const usePosStore = defineStore("pos", () => {
         posDb.getMeta<CashMove[]>("cashMoves"),
         posDb.getMeta<StoredCart>("cart"),
       ]);
+    const stockComplete = await posDb.getMeta<boolean>("stockComplete");
     stockLevels.value = levels ?? {};
-    stockKnown.value = levels !== null;
+    // نسخة كاملة من الأرصدة استُلمت من قبل؟ بدونها لا تُعرض ولا يُمنع بها بيع
+    stockKnown.value = stockComplete === true;
     serverBalances.value = balances ?? {};
     promotions.value = promos ?? [];
     posOptions.value = options ?? DEFAULT_POS_OPTIONS;
@@ -433,8 +435,10 @@ export const usePosStore = defineStore("pos", () => {
     if (waiting.length) await posDb.putCustomers(waiting);
 
     // الأرصدة: كلها في التنزيل الكامل، وما تغيّر في غيره
+    // التغييرات تُدمج فقط فوق نسخة كاملة سبق استلامها
     let nextStock = stockLevels.value;
-    if (data.stock) {
+    const stockReceived = !!data.stock && (data.full || stockKnown.value);
+    if (data.stock && stockReceived) {
       nextStock = data.full ? {} : { ...stockLevels.value };
       for (const row of data.stock) nextStock[row.productId] = row.quantity;
     }
@@ -469,10 +473,10 @@ export const usePosStore = defineStore("pos", () => {
       customerBalances: nextBalances,
       promotions: data.promotions ?? promotions.value,
       posOptions: data.posOptions ?? posOptions.value,
-      ...(data.stock ? { stock: nextStock } : {}),
+      ...(stockReceived ? { stock: nextStock, stockComplete: true } : {}),
     });
     stockLevels.value = nextStock;
-    if (data.stock) stockKnown.value = true;
+    if (stockReceived) stockKnown.value = true;
     serverBalances.value = nextBalances;
     promotions.value = data.promotions ?? promotions.value;
     posOptions.value = data.posOptions ?? posOptions.value;
@@ -500,7 +504,13 @@ export const usePosStore = defineStore("pos", () => {
   /** يسحب الأصناف والأسعار والعملاء: كلها، أو ما تغيّر منذ آخر سحب */
   const pull = async (full = false): Promise<boolean> => {
     if (!device.value) return false;
-    const since = !full && lastSync.value ? `?since=${encodeURIComponent(lastSync.value)}` : "";
+    // شاشة لم تستلم أرصدة مخزنها كاملة بعد (رُبطت قبل أن يرسلها السيرفر): سحب
+    // "ما تغيّر" وحده كان سيعرض كل الأصناف برصيد صفر
+    const complete = full || !stockKnown.value;
+    const since =
+      !complete && lastSync.value
+        ? `?since=${encodeURIComponent(lastSync.value)}`
+        : "";
     const data = await guarded(() =>
       deviceApi().get<PosBootstrap>(`/bootstrap${since}`),
     );
