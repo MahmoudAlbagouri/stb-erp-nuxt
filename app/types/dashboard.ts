@@ -15,9 +15,9 @@ export interface DashboardOverview {
     custom: boolean;
   };
   /** الفرع المختار، أو null لكل الفروع */
-  warehouseId: string | null;
-  /** فروع الشركة لقائمة الاختيار */
-  branches: { id: string; name: string }[] | null;
+  branchId: string | null;
+  /** فروع الشركة النشطة المسموحة للمستخدم، لقائمة الاختيار */
+  branches: { id: string; name: string }[];
   sales: SalesOverview | null;
   purchasing: PurchasingOverview | null;
   inventory: InventoryOverview | null;
@@ -98,6 +98,8 @@ export interface InventoryOverview {
 export interface HrOverview {
   employees: { active: number; inactive: number; terminated: number };
   departments: { name: string; count: number }[];
+  /** الموظفون النشطون في كل فرع */
+  branches: { name: string; count: number }[];
   pending: {
     leaves: number;
     advances: number;

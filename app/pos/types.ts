@@ -43,7 +43,11 @@ export interface PosDevice {
   name: string;
   code: string;
   warehouseId: string;
-  warehouse?: { id: string; name: string } | null;
+  warehouse?: {
+    id: string;
+    name: string;
+    branch?: { id: string; name: string } | null;
+  } | null;
   lastCounter: number;
   lastSeenAt?: string | null;
   isActive: boolean;
@@ -114,6 +118,14 @@ export interface PosTenantProfile {
   currency: string;
   currencyDecimals: number;
   timezone: string;
+  /** فرع الجهاز: يُطبع على الإيصال (غائب في بيانات محفوظة قبل هذه النسخة) */
+  branch?: {
+    id: string;
+    name: string;
+    address: string | null;
+    phone: string | null;
+    isMain: boolean;
+  } | null;
 }
 
 /** كاشير على الجهاز: رقمه السري مشتق لا نص (انظر pos/cashiers.ts) */

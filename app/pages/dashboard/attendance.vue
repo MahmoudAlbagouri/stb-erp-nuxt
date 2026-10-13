@@ -65,7 +65,11 @@
             <h3>{{ dev.alias || dev.serialNumber }}</h3>
             <p class="text-sm text-muted">
               <MapPin :size="12" class="inline-icon" />
-              {{ dev.location || "غير محدد الموقع" }}
+              {{
+                [branches.hasMany ? dev.branch?.name : "", dev.location]
+                  .filter(Boolean)
+                  .join(" — ") || "غير محدد الموقع"
+              }}
             </p>
             <div class="divider"></div>
             <div class="device-details">
@@ -344,6 +348,19 @@
                     placeholder="MB10"
                   />
                 </div>
+              </div>
+              <div v-if="branches.hasMany" class="form-group">
+                <label>الفرع</label>
+                <select v-model="deviceForm.branchId" class="form-select">
+                  <option value="">الفرع الرئيسي</option>
+                  <option
+                    v-for="b in branches.activeOptions.filter((o) => !o.isMain)"
+                    :key="b.id"
+                    :value="b.id"
+                  >
+                    {{ b.name }}
+                  </option>
+                </select>
               </div>
               <div class="form-group">
                 <label>الموقع</label>
@@ -673,6 +690,7 @@ import {
   type PunchType,
 } from "@/stores/attendance";
 import { useAuthStore } from "@/stores/auth";
+import { useBranchesStore } from "@/stores/branches";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
 import type {
@@ -727,6 +745,8 @@ const activeTab = ref<"devices" | "logs">("devices");
 const submitting = ref(false);
 const exporting = ref<"excel" | "pdf" | null>(null);
 
+const branches = useBranchesStore();
+
 // Device Form
 const showDeviceModal = ref(false);
 const deviceForm = reactive<CreateDevicePayload>({
@@ -735,6 +755,7 @@ const deviceForm = reactive<CreateDevicePayload>({
   model: "",
   location: "",
   timezone: "",
+  branchId: "",
 });
 const togglingId = ref<string | null>(null);
 
@@ -796,6 +817,7 @@ const openDeviceModal = () => {
     model: "",
     location: "",
     timezone: "",
+    branchId: "",
   });
   showDeviceModal.value = true;
 };
@@ -806,6 +828,7 @@ const handleAddDevice = async () => {
     await store.createDevice({
       ...deviceForm,
       timezone: deviceForm.timezone || undefined,
+      branchId: deviceForm.branchId || undefined,
     });
     toast.success("تم إضافة الجهاز بنجاح");
     showDeviceModal.value = false;
@@ -1002,6 +1025,7 @@ const punchBadgeClass = (type: PunchType) => {
 // ─── Init ──────────────────────────────────────────────────────────────────
 onMounted(() => {
   store.fetchDevices();
+  branches.fetchOptions();
   loadLogs();
   if (employeesStore.employees.length === 0) {
     employeesStore.fetchAll();

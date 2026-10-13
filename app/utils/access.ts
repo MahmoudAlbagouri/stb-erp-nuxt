@@ -8,6 +8,8 @@ export const PERMS = {
   USER_VIEW: "view_users",
   USER_UPDATE: "update_user",
   USER_DELETE: "delete_user",
+  BRANCH_VIEW: "view_branches",
+  BRANCH_MANAGE: "manage_branches",
   DEPARTMENT_CREATE: "create_department",
   DEPARTMENT_VIEW: "view_departments",
   DEPARTMENT_UPDATE: "update_department",

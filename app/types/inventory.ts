@@ -12,6 +12,9 @@ export interface Warehouse {
   /** يُسمح أن ينزل الرصيد تحت الصفر (الفروع: نعم، الرئيسي: لا) */
   allowNegativeStock: boolean;
   isActive: boolean;
+  /** الفرع الذي يتبعه المخزن */
+  branchId: string;
+  branch?: { id: string; name: string } | null;
 }
 
 export interface WarehousePayload {
@@ -21,6 +24,8 @@ export interface WarehousePayload {
   phone?: string;
   allowNegativeStock?: boolean;
   isActive?: boolean;
+  /** يُترك فارغاً للفرع الرئيسي */
+  branchId?: string;
 }
 
 // ─── الأرصدة ─────────────────────────────────────────────────────────────────

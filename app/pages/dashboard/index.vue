@@ -92,7 +92,7 @@
         <select
           class="form-select"
           aria-label="الفرع"
-          :value="warehouseId"
+          :value="branchId"
           @change="setBranch(($event.target as HTMLSelectElement).value)"
         >
           <option value="">كل الفروع</option>
@@ -388,6 +388,7 @@
       <section v-if="overview.hr || overview.attendance" class="home-section">
         <h2 class="home-section__title">
           <Users :size="18" /> الموارد البشرية
+          <span v-if="branchName" class="home-section__tag">{{ branchName }}</span>
         </h2>
 
         <div v-if="overview.hr" class="home-kpis">
@@ -446,8 +447,35 @@
           </ChartCard>
         </div>
 
-        <div v-if="overview.hr?.payroll" class="home-grid">
+        <div
+          v-if="overview.hr && (overview.hr.payroll || hrBranches.length > 1)"
+          class="home-grid"
+        >
           <ChartCard
+            v-if="hrBranches.length > 1"
+            title="الموظفون حسب الفرع"
+            subtitle="النشطون فقط"
+          >
+            <ul class="home-pending">
+              <li v-for="item in hrBranches" :key="item.name">
+                <div class="home-pending__row">
+                  <span class="home-pending__icon">
+                    <Building2 :size="16" />
+                  </span>
+                  <span class="home-pending__label">{{ item.name }}</span>
+                  <span class="home-meter">
+                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
+                  </span>
+                  <strong class="home-pending__count">
+                    {{ formatNumber(item.count) }}
+                  </strong>
+                </div>
+              </li>
+            </ul>
+          </ChartCard>
+
+          <ChartCard
+            v-if="overview.hr.payroll"
             title="مسيرات الرواتب"
             :subtitle="`صافي آخر المسيرات (${currencyLabel()})`"
             :table="payrollTable"
@@ -535,7 +563,7 @@ const isCustom = computed(() => !!appliedFrom.value && !!appliedTo.value);
 const customOpen = ref(false);
 const customFrom = ref("");
 const customTo = ref("");
-const warehouseId = ref("");
+const branchId = ref("");
 
 const overview = ref<DashboardOverview | null>(null);
 const loading = ref(false);
@@ -550,7 +578,7 @@ const load = async () => {
         ...(isCustom.value
           ? { from: appliedFrom.value, to: appliedTo.value }
           : { days: days.value }),
-        warehouseId: warehouseId.value || undefined,
+        branchId: branchId.value || undefined,
       })}`,
     );
     overview.value = res.data;
@@ -590,13 +618,13 @@ const applyCustom = () => {
 };
 
 const setBranch = (id: string) => {
-  warehouseId.value = id;
+  branchId.value = id;
   void load();
 };
 
 const branchOptions = computed(() => overview.value?.branches ?? []);
 const branchName = computed(
-  () => branchOptions.value.find((b) => b.id === warehouseId.value)?.name ?? "",
+  () => branchOptions.value.find((b) => b.id === branchId.value)?.name ?? "",
 );
 
 const hasAnySection = computed(() => {
@@ -1261,6 +1289,13 @@ const payrollTable = computed<ChartTable>(() => ({
       p.paid ? "صُرف" : "لم يُصرف",
     ]),
 }));
+
+// ─── الموظفون حسب الفرع ───────────────────────────────────────────────────────
+const hrBranches = computed(() => {
+  const rows = overview.value?.hr?.branches ?? [];
+  const max = Math.max(1, ...rows.map((row) => row.count));
+  return rows.map((row) => ({ ...row, share: (row.count / max) * 100 }));
+});
 
 // ─── الموظفون حسب القسم ───────────────────────────────────────────────────────
 const departmentSlices = computed(() =>

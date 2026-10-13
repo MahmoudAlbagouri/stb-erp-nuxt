@@ -1,4 +1,4 @@
-<!-- pages/dashboard/inventory/warehouses.vue — المخازن: الرئيسي + مخازن الفروع -->
+<!-- pages/dashboard/inventory/warehouses.vue — المخازن: كل مخزن يتبع فرعاً -->
 <template>
   <div class="page-container">
     <div class="page-header">
@@ -14,7 +14,7 @@
           @click="openCreate"
         >
           <Plus :size="18" />
-          <span>إضافة مخزن فرع</span>
+          <span>إضافة مخزن</span>
         </button>
       </div>
     </div>
@@ -29,6 +29,7 @@
           <thead>
             <tr>
               <th>المخزن</th>
+              <th>الفرع</th>
               <th>النوع</th>
               <th>العنوان</th>
               <th>الرصيد السالب</th>
@@ -44,6 +45,7 @@
                   <span v-if="w.code" class="doc-cell__sub">{{ w.code }}</span>
                 </div>
               </td>
+              <td>{{ w.branch?.name || "—" }}</td>
               <td>
                 <span
                   :class="[
@@ -51,7 +53,7 @@
                     w.type === 'main' ? 'doc-status--info' : 'doc-status--draft',
                   ]"
                 >
-                  {{ w.type === "main" ? "رئيسي" : "فرع" }}
+                  {{ w.type === "main" ? "رئيسي" : "فرعي" }}
                 </span>
               </td>
               <td>
@@ -110,7 +112,7 @@
             <div class="modal__header">
               <h3>
                 <WarehouseIcon :size="20" class="doc-modal__icon" />
-                {{ editing ? "تعديل مخزن" : "إضافة مخزن فرع" }}
+                {{ editing ? "تعديل مخزن" : "إضافة مخزن" }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -132,6 +134,22 @@
                     maxlength="120"
                     placeholder="مثال: فرع الرياض"
                   />
+                </div>
+                <div v-if="branches.options.length > 1" class="form-group doc-grid__full">
+                  <label>الفرع *</label>
+                  <select v-model="form.branchId" class="form-select" required>
+                    <option
+                      v-for="b in branchChoices"
+                      :key="b.id"
+                      :value="b.id"
+                    >
+                      {{ b.name }}
+                    </option>
+                  </select>
+                  <small v-if="editing" class="doc-hint">
+                    نقل المخزن إلى فرع آخر ينقل معه كل فواتيره وحركاته السابقة في
+                    التقارير.
+                  </small>
                 </div>
                 <div class="form-group">
                   <label>الكود</label>
@@ -198,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import {
   PackageSearch,
   Pencil,
@@ -209,6 +227,7 @@ import {
 } from "lucide-vue-next";
 import { useInventoryStore } from "@/stores/inventory";
 import { useAccessStore } from "@/stores/access";
+import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
 import type { Warehouse } from "@/types/inventory";
 
@@ -216,6 +235,7 @@ definePageMeta({ middleware: "auth" });
 
 const store = useInventoryStore();
 const accessStore = useAccessStore();
+const branches = useBranchesStore();
 const toast = useToast();
 
 const showModal = ref(false);
@@ -229,8 +249,14 @@ const emptyForm = () => ({
   address: "",
   allowNegativeStock: true,
   isActive: true,
+  branchId: branches.options.find((b) => b.isMain)?.id ?? "",
 });
 const form = reactive(emptyForm());
+
+/** الفروع النشطة، مع فرع المخزن الحالي حتى لو أُوقف */
+const branchChoices = computed(() =>
+  branches.options.filter((b) => b.isActive || b.id === form.branchId),
+);
 
 const openCreate = () => {
   Object.assign(form, emptyForm());
@@ -246,6 +272,7 @@ const openEdit = (warehouse: Warehouse) => {
     address: warehouse.address ?? "",
     allowNegativeStock: warehouse.allowNegativeStock,
     isActive: warehouse.isActive,
+    branchId: warehouse.branchId,
   });
   editing.value = warehouse;
   showModal.value = true;
@@ -265,6 +292,7 @@ const handleSubmit = async () => {
       address: form.address || undefined,
       allowNegativeStock: form.allowNegativeStock,
       isActive: form.isActive,
+      branchId: form.branchId || undefined,
     };
     if (editing.value) {
       await store.updateWarehouse(editing.value.id, payload);
@@ -308,7 +336,7 @@ const doDelete = async () => {
 
 onMounted(async () => {
   try {
-    await store.fetchWarehouses(true);
+    await Promise.all([store.fetchWarehouses(true), branches.fetchOptions()]);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل المخازن"));
   }

@@ -191,6 +191,22 @@
                   }}</span>
                 </div>
 
+                <div v-if="branchesStore.hasMany" class="form-group">
+                  <label class="form-label">الفرع</label>
+                  <select v-model="form.employee.branchId" class="form-select">
+                    <option value="">الفرع الرئيسي</option>
+                    <option
+                      v-for="branch in branchesStore.activeOptions.filter(
+                        (b) => !b.isMain,
+                      )"
+                      :key="branch.id"
+                      :value="branch.id"
+                    >
+                      {{ branch.name }}
+                    </option>
+                  </select>
+                </div>
+
                 <!-- ✅ قسم اختيار/إنشاء القسم -->
                 <div class="form-group form-group--full">
                   <label class="form-label required">القسم</label>
@@ -1320,6 +1336,13 @@
                       <span>القسم</span>
                       <strong>{{ selectedDepartmentLabel }}</strong>
                     </div>
+                    <div v-if="branchesStore.hasMany" class="review-row">
+                      <span>الفرع</span>
+                      <strong>{{
+                        branchesStore.nameOf(form.employee.branchId) ||
+                        "الفرع الرئيسي"
+                      }}</strong>
+                    </div>
                     <div class="review-row">
                       <span>اوقات الدوام</span>
                       <strong>{{ selectedShiftLabel }}</strong>
@@ -1563,6 +1586,7 @@ import { useRolesStore } from "@/stores/roles";
 import { usePermissionsStore } from "@/stores/permissions";
 import { useShiftsStore } from "@/stores/shifts";
 import { useDepartmentsStore } from "@/stores/departments";
+import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
 import type { Education, NationalityType, OnboardingResult } from "@/types";
 import { normalizeIban, isValidIban, formatIban } from "@/utils/payment";
@@ -1578,6 +1602,7 @@ const rolesStore = useRolesStore();
 const permissionsStore = usePermissionsStore();
 const shiftsStore = useShiftsStore();
 const departmentsStore = useDepartmentsStore();
+const branchesStore = useBranchesStore();
 const toast = useToast();
 
 const NATIONALITIES = [
@@ -1658,6 +1683,7 @@ const form = reactive({
     phone: "",
     jobTitle: "",
     departmentId: "",
+    branchId: "",
     status: "active" as "active" | "inactive" | "terminated",
     shiftId: "",
   },
@@ -1809,6 +1835,7 @@ watch(
       permissionsStore.fetchAll();
       shiftsStore.fetchAll();
       departmentsStore.fetchAll();
+      branchesStore.fetchOptions();
       calculateContractDates();
     }
   },
@@ -2282,6 +2309,7 @@ const handleClose = () => {
         phone: "",
         jobTitle: "",
         departmentId: "",
+        branchId: "",
         status: "active",
         shiftId: "",
       },
@@ -2419,6 +2447,7 @@ const handleSubmit = async () => {
       nationalIdCardPath: form.employee.nationalIdCardPath || undefined,
       phone: form.employee.phone || undefined,
       jobTitle: form.employee.jobTitle || undefined,
+      branchId: form.employee.branchId || undefined,
       status: form.employee.status,
     };
 

@@ -13,8 +13,9 @@
     >
       <header class="invoice-print__header">
         <h1>{{ settings?.sellerName || "فاتورة" }}</h1>
-        <p v-if="settings?.address">{{ settings.address }}</p>
-        <p v-if="settings?.phone" dir="ltr">{{ settings.phone }}</p>
+        <p v-if="branchLine">{{ branchLine }}</p>
+        <p v-if="address">{{ address }}</p>
+        <p v-if="phone" dir="ltr">{{ phone }}</p>
         <p v-if="settings?.taxNumber">
           الرقم الضريبي: <span dir="ltr">{{ settings.taxNumber }}</span>
         </p>
@@ -104,16 +105,36 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import QRCode from "qrcode";
-import type { PrintableInvoice, SalesSettings } from "@/types/sales";
+import type {
+  PrintBranch,
+  PrintableInvoice,
+  SalesSettings,
+} from "@/types/sales";
 
 type PrintSize = "a4" | "thermal";
 
 const props = defineProps<{
   invoice: PrintableInvoice | null;
   settings: SalesSettings | null;
+  /** فرع البيع؛ إن غاب يؤخذ من مخزن الفاتورة */
+  branch?: PrintBranch | null;
 }>();
+
+// عنوان الفرع وهاتفه يُطبعان بدل عنوان الشركة؛ ما لم يُدخَل للفرع يبقى للشركة
+const printBranch = computed(
+  () => props.branch ?? props.invoice?.warehouse?.branch ?? null,
+);
+const branchLine = computed(() =>
+  printBranch.value && !printBranch.value.isMain ? printBranch.value.name : "",
+);
+const address = computed(
+  () => printBranch.value?.address || props.settings?.address || "",
+);
+const phone = computed(
+  () => printBranch.value?.phone || props.settings?.phone || "",
+);
 
 const size = ref<PrintSize>("a4");
 const qrImage = ref("");

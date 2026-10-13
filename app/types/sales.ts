@@ -157,7 +157,17 @@ export interface SalesInvoice {
  * ما تحتاجه نسخة الطباعة من الفاتورة — تحققه فاتورة السيرفر (SalesInvoice)
  * وفاتورة الكاشير المحلية قبل رفعها.
  */
+/** الفرع كما يُطبع على الفاتورة والإيصال */
+export interface PrintBranch {
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  isMain?: boolean;
+}
+
 export interface PrintableInvoice {
+  /** مخزن الفاتورة وفرعه (فاتورة لوحة التحكم)؛ الكاشير يمرّر فرعه مباشرة */
+  warehouse?: { branch?: PrintBranch | null } | null;
   number: string | null;
   invoiceType: SalesInvoiceType;
   customer?: { name: string; taxNumber?: string | null } | null;

@@ -819,7 +819,12 @@
     <PosReturnModal v-model="showReturn" @done="onReturned" />
     <PosScreenSettings v-model="showSettings" />
 
-    <SalesInvoicePrint ref="printer" :invoice="printTarget" :settings="pos.settings" />
+    <SalesInvoicePrint
+      ref="printer"
+      :invoice="printTarget"
+      :settings="pos.settings"
+      :branch="pos.tenant?.branch"
+    />
   </div>
 </template>
 

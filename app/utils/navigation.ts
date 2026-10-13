@@ -28,6 +28,7 @@ import {
   Landmark,
   Layers,
   LayoutDashboard,
+  MapPin,
   MinusCircle,
   MonitorSmartphone,
   UserRound,
@@ -90,6 +91,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Users,
         permissions: [P.USER_VIEW],
         feature: F.EMPLOYEES_MODULE,
+      },
+      {
+        to: "/dashboard/branches",
+        label: "الفروع",
+        icon: MapPin,
+        permissions: [P.BRANCH_VIEW],
+        tenantOnly: true,
       },
       {
         to: "/dashboard/notifications",

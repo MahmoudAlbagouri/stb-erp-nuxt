@@ -59,6 +59,8 @@ export interface User {
   deleted_at: string | null;
   role?: Role | null;
   tenant?: Tenant;
+  /** الفروع المقيَّد بها. فارغة = كل الفروع */
+  branches?: { id: string; name: string }[];
 }
 
 // ✅ تعريف واجهة المؤهل التعليمي
@@ -261,6 +263,9 @@ export interface Employee {
   // ✅ القسم علاقة (كائن) وليس نصاً حراً
   departmentId?: string | null;
   department?: Department | null;
+  /** الفرع الذي يعمل فيه */
+  branchId?: string | null;
+  branch?: { id: string; name: string } | null;
 
   status: "active" | "inactive" | "terminated";
   tenantId: string;
@@ -323,6 +328,8 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   roleId?: string;
+  /** فارغة = كل الفروع */
+  branchIds?: string[];
 }
 
 export interface UpdateUserPayload {
@@ -330,6 +337,7 @@ export interface UpdateUserPayload {
   email?: string;
   status?: "active" | "inactive" | "suspended";
   roleId?: string;
+  branchIds?: string[];
 }
 
 export interface CreateRolePayload {
@@ -359,6 +367,7 @@ export interface CreateEmployeePayload {
   phone?: string;
   jobTitle?: string;
   departmentId?: string;
+  branchId?: string;
   shiftId?: string;
   status?: "active" | "inactive" | "terminated";
   userId?: string;
@@ -377,6 +386,7 @@ export interface UpdateEmployeePayload {
   phone?: string;
   jobTitle?: string;
   departmentId?: string | null;
+  branchId?: string;
   shiftId?: string | null;
   status?: "active" | "inactive" | "terminated";
   userId?: string | null;
@@ -538,6 +548,9 @@ export interface BiometricDevice {
   model?: string;
   /** منطقة ساعة الجهاز (IANA)؛ فارغة = منطقة الشركة */
   timezone?: string | null;
+  /** الفرع المركَّب فيه الجهاز */
+  branchId?: string | null;
+  branch?: { id: string; name: string } | null;
   /** الحالة الفعلية محسوبة من آخر اتصال */
   status: DeviceStatus;
   lastSeenAt?: string;
@@ -575,6 +588,8 @@ export interface CreateDevicePayload {
   model?: string;
   /** تُترك فارغة ليتبع الجهاز منطقة الشركة */
   timezone?: string;
+  /** يُترك فارغاً للفرع الرئيسي */
+  branchId?: string;
 }
 
 // --- Subscriptions ---

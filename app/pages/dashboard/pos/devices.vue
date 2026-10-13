@@ -66,7 +66,14 @@
                   <span><code class="doc-code">{{ d.code }}</code></span>
                 </div>
               </td>
-              <td>{{ d.warehouse?.name || "—" }}</td>
+              <td>
+                <div class="doc-cell">
+                  <span>{{ d.warehouse?.name || "—" }}</span>
+                  <span v-if="d.warehouse?.branch" class="doc-cell__sub">
+                    {{ d.warehouse.branch.name }}
+                  </span>
+                </div>
+              </td>
               <td>
                 <code v-if="d.lastCounter" class="doc-code">
                   {{ d.code }}-{{ String(d.lastCounter).padStart(6, "0") }}
@@ -192,7 +199,7 @@
                   <select v-model="form.warehouseId" class="form-select" required>
                     <option value="" disabled>اختر المخزن...</option>
                     <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
-                      {{ w.name }}
+                      {{ w.branch ? `${w.name} — ${w.branch.name}` : w.name }}
                     </option>
                   </select>
                 </div>

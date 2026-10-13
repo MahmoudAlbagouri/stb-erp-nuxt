@@ -129,6 +129,20 @@
               </select>
             </div>
 
+            <div v-if="branchesStore.hasMany" class="form-group">
+              <label><MapPin :size="14" /> الفرع</label>
+              <select v-model="advFilters.branchId" class="form-select">
+                <option value="">كل الفروع</option>
+                <option
+                  v-for="branch in branchesStore.options"
+                  :key="branch.id"
+                  :value="branch.id"
+                >
+                  {{ branch.name }}
+                </option>
+              </select>
+            </div>
+
             <div class="form-group">
               <label><Clock :size="14" /> أوقات الدوام</label>
               <select v-model="advFilters.shiftId" class="form-select">
@@ -282,12 +296,14 @@
         </div>
         <div class="emp-card__body">
           <div
-            v-if="emp.jobTitle || emp.department"
+            v-if="emp.jobTitle || emp.department || branchLabel(emp)"
             class="emp-detail emp-detail--primary"
           >
             <Briefcase :size="13" class="detail-icon" />
             <span>{{
-              [emp.jobTitle, emp.department?.name].filter(Boolean).join(" — ")
+              [emp.jobTitle, emp.department?.name, branchLabel(emp)]
+                .filter(Boolean)
+                .join(" — ")
             }}</span>
           </div>
           <div class="emp-detail">
@@ -482,6 +498,18 @@
                       :value="dept.id"
                     >
                       {{ dept.name }}
+                    </option>
+                  </select>
+                </div>
+                <div v-if="branchesStore.hasMany" class="form-group">
+                  <label>الفرع</label>
+                  <select v-model="editForm.branchId" class="form-select">
+                    <option
+                      v-for="branch in editBranchChoices"
+                      :key="branch.id"
+                      :value="branch.id"
+                    >
+                      {{ branch.name }}
                     </option>
                   </select>
                 </div>
@@ -789,6 +817,7 @@ import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useEmployeesStore } from "@/stores/employees";
 import { useUsersStore } from "@/stores/users";
 import { useDepartmentsStore } from "@/stores/departments";
+import { useBranchesStore } from "@/stores/branches";
 import { useShiftsStore } from "@/stores/shifts";
 import { useToast } from "@/composables/useToast";
 import type {
@@ -826,6 +855,7 @@ import {
   ChevronDown,
   // أيقونات جديدة للفلترة
   Clock,
+  MapPin,
   UserCheck,
   FileSignature,
   AlertCircle,
@@ -837,6 +867,10 @@ definePageMeta({ middleware: "auth" });
 const store = useEmployeesStore();
 const usersStore = useUsersStore();
 const departmentsStore = useDepartmentsStore();
+const branchesStore = useBranchesStore();
+/** اسم الفرع يظهر فقط لشركة لها أكثر من فرع */
+const branchLabel = (emp: Employee) =>
+  branchesStore.hasMany ? (emp.branch?.name ?? "") : "";
 const shiftsStore = useShiftsStore();
 const toast = useToast();
 const showOnboarding = ref(false);
@@ -893,6 +927,7 @@ const nationalityFilter = ref("");
 const showAdvancedFilters = ref(false);
 const advFilters = reactive({
   departmentId: "",
+  branchId: "",
   shiftId: "",
   hasUser: "" as "" | "true" | "false",
   hasContract: "" as "" | "true" | "false",
@@ -906,6 +941,7 @@ const applyFilters = async () => {
     nationalityType: nationalityFilter.value || undefined,
     search: search.value || undefined,
     departmentId: advFilters.departmentId || undefined,
+    branchId: advFilters.branchId || undefined,
     shiftId: advFilters.shiftId || undefined,
     hasUser: advFilters.hasUser || undefined,
     hasContract: advFilters.hasContract || undefined,
@@ -932,6 +968,7 @@ const countByStatus = (s: string) =>
 
 const resetAdvancedFilters = () => {
   advFilters.departmentId = "";
+  advFilters.branchId = "";
   advFilters.shiftId = "";
   advFilters.hasUser = "";
   advFilters.hasContract = "";
@@ -954,6 +991,7 @@ const handleExportFiltered = async (type: "excel" | "pdf") => {
       status: statusFilter.value || undefined,
       nationalityType: nationalityFilter.value || undefined,
       departmentId: advFilters.departmentId || undefined,
+      branchId: advFilters.branchId || undefined,
       shiftId: advFilters.shiftId || undefined,
       hasUser: advFilters.hasUser || undefined,
       hasContract: advFilters.hasContract || undefined,
@@ -1024,6 +1062,7 @@ interface EditFormType {
   phone: string;
   jobTitle: string;
   departmentId: string;
+  branchId: string;
   status: "active" | "inactive" | "terminated";
   userId: string | null;
   educations: Education[];
@@ -1037,10 +1076,18 @@ const editForm = reactive<EditFormType>({
   phone: "",
   jobTitle: "",
   departmentId: "",
+  branchId: "",
   status: "active",
   userId: null,
   educations: [],
 });
+
+/** الفروع النشطة، مع فرع الموظف الحالي حتى لو أُوقف */
+const editBranchChoices = computed(() =>
+  branchesStore.options.filter(
+    (b) => b.isActive || b.id === editForm.branchId,
+  ),
+);
 
 const availableUsers = computed(() => {
   const assignedUserIds = new Set(
@@ -1076,6 +1123,7 @@ const openEdit = async (emp: Employee) => {
     phone: emp.phone ?? "",
     jobTitle: emp.jobTitle ?? "",
     departmentId: emp.department?.id ?? "",
+    branchId: emp.branchId ?? "",
     status: emp.status,
     userId: emp.user?.id ?? null,
     educations: emp.educations
@@ -1109,6 +1157,7 @@ const handleUpdate = async () => {
       phone: editForm.phone || undefined,
       jobTitle: editForm.jobTitle || undefined,
       departmentId: editForm.departmentId || undefined,
+      branchId: editForm.branchId || undefined,
       status: editForm.status,
       userId: editForm.userId || undefined,
       educations: cleanEducations,
@@ -1195,6 +1244,7 @@ onMounted(() => {
   store.fetchAll();
   usersStore.fetchAll();
   departmentsStore.fetchAll();
+  branchesStore.fetchOptions();
   shiftsStore.fetchAll();
 });
 </script>

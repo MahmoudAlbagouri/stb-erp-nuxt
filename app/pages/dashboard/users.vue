@@ -52,6 +52,7 @@
               <th>البريد الإلكتروني</th>
               <th>الحالة</th>
               <th>الدور</th>
+              <th v-if="branches.hasMany">الفروع</th>
               <th>النوع</th>
               <th>الإجراءات</th>
             </tr>
@@ -80,6 +81,14 @@
               <td>
                 <span v-if="user.role">{{ user.role.name }}</span>
                 <span v-else class="text-muted text-xs">استعلام</span>
+              </td>
+              <td v-if="branches.hasMany">
+                <span v-if="user.isSuperAdmin || !user.branches?.length">
+                  كل الفروع
+                </span>
+                <span v-else>
+                  {{ user.branches.map((b) => b.name).join("، ") }}
+                </span>
               </td>
               <td>
                 <span v-if="user.isSuperAdmin" class="badge badge--system">
@@ -186,6 +195,30 @@
                 </select>
               </div>
 
+              <div
+                v-if="branches.hasMany && !editingUser?.isSuperAdmin"
+                class="form-group"
+              >
+                <label>الفروع المسموح له بها</label>
+                <div class="branch-checks">
+                  <label
+                    v-for="b in branches.options"
+                    :key="b.id"
+                    class="checkbox-label"
+                  >
+                    <input v-model="form.branchIds" type="checkbox" :value="b.id" />
+                    <span>{{ b.name }}</span>
+                  </label>
+                </div>
+                <small class="form-hint">
+                  {{
+                    form.branchIds.length
+                      ? "يرى ويعمل في الفروع المختارة فقط. يسري خلال دقائق من الحفظ."
+                      : "بلا اختيار: يرى كل الفروع."
+                  }}
+                </small>
+              </div>
+
               <div v-if="editingUser" class="form-group">
                 <label>الحالة</label>
                 <select v-model="form.status" class="form-select">
@@ -235,6 +268,7 @@
 <script setup lang="ts">
 import { useUsersStore } from "@/stores/users";
 import { useRolesStore } from "@/stores/roles";
+import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
 import type { User } from "@/types";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -244,6 +278,7 @@ definePageMeta({ middleware: "auth" });
 
 const store = useUsersStore();
 const rolesStore = useRolesStore();
+const branches = useBranchesStore();
 const toast = useToast();
 
 const search = ref("");
@@ -261,6 +296,7 @@ const form = reactive({
   password: "",
   roleId: "",
   status: "active" as "active" | "inactive" | "suspended",
+  branchIds: [] as string[],
 });
 
 const filtered = computed(() =>
@@ -283,6 +319,7 @@ const openCreate = () => {
     password: "",
     roleId: "",
     status: "active",
+    branchIds: [],
   });
   showModal.value = true;
 };
@@ -295,6 +332,7 @@ const openEdit = (user: User) => {
     password: "",
     roleId: user.roleId ?? "",
     status: user.status,
+    branchIds: (user.branches ?? []).map((b) => b.id),
   });
   showModal.value = true;
 };
@@ -307,6 +345,8 @@ const handleSubmit = async () => {
         username: form.username,
         status: form.status,
         roleId: form.roleId || undefined,
+        // مدير الشركة يرى الكل دائماً: لا تُرسل فروعه
+        branchIds: editingUser.value.isSuperAdmin ? undefined : form.branchIds,
       });
       toast.success("تم تحديث المستخدم بنجاح");
     } else {
@@ -315,6 +355,7 @@ const handleSubmit = async () => {
         email: form.email,
         password: form.password,
         roleId: form.roleId || undefined,
+        branchIds: form.branchIds,
       });
       toast.success("تم إنشاء المستخدم بنجاح");
     }
@@ -351,6 +392,7 @@ const statusLabel = (s: string) =>
 onMounted(() => {
   store.fetchAll();
   rolesStore.fetchAll();
+  branches.fetchOptions();
 });
 </script>
 
@@ -447,6 +489,12 @@ onMounted(() => {
   color: $stb-text-muted;
   opacity: 0.4;
   margin-bottom: $space-3;
+}
+
+.branch-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
 }
 
 .modal-form {
