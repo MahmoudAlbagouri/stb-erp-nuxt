@@ -46,7 +46,11 @@
                 'sidebar-nav__item--locked': item.locked,
                 'is-active': isActive(item.to),
               }"
-              :title="item.locked ? 'غير متاح في خطتك الحالية — اضغط للتفاصيل' : undefined"
+              :title="
+                item.locked
+                  ? 'غير متاح في خطتك الحالية — اضغط للتفاصيل'
+                  : undefined
+              "
             >
               <component :is="item.icon" class="sidebar-nav__icon" />
               <span>{{ item.label }}</span>
@@ -73,7 +77,7 @@
         </div>
         <div class="sidebar-footer__info">
           <span class="sidebar-footer__name">{{
-            profile.fullName || "جاري التحميل..."
+            profile.fullName || "جاري  التحميل..."
           }}</span>
           <span class="sidebar-footer__role">{{ roleLabel }}</span>
         </div>
