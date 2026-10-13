@@ -145,12 +145,7 @@
                 </div>
                 <div class="form-group">
                   <label>الهاتف</label>
-                  <input
-                    v-model.trim="form.phone"
-                    class="form-input"
-                    dir="ltr"
-                    maxlength="30"
-                  />
+                  <StbPhoneInput v-model="form.phone" />
                 </div>
                 <div class="form-group doc-grid__full">
                   <label>العنوان</label>

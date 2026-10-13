@@ -281,12 +281,12 @@
                 <h4 class="form-section__title">التسعير والضريبة</h4>
                 <div class="form-grid">
                   <div class="form-group">
-                    <label>سعر البيع (ر.س) *</label>
+                    <label>سعر البيع ({{ currencyLabel() }}) *</label>
                     <StbNumberInput
                       v-model.number="form.salePrice"
                       class="form-input"
                       min="0"
-                      step="0.01"
+                      :step="moneyStep()"
                       required
                     />
                   </div>
@@ -308,7 +308,7 @@
                       v-model.number="form.minSalePrice"
                       class="form-input"
                       min="0"
-                      step="0.01"
+                      :step="moneyStep()"
                       placeholder="اختياري"
                     />
                   </div>
@@ -395,7 +395,7 @@
                       v-model.number="unit.salePrice"
                       class="form-input"
                       min="0"
-                      step="0.01"
+                      :step="moneyStep()"
                       :placeholder="unitPricePlaceholder(unit.factor)"
                     />
                   </div>
@@ -633,7 +633,7 @@ const selectedExtraUnits = computed(() =>
 
 const unitPricePlaceholder = (factor: number | "") =>
   factor && form.salePrice !== ""
-    ? `تلقائي: ${formatNumber(Number(form.salePrice) * Number(factor), 2)}`
+    ? `تلقائي: ${formatMoney(Number(form.salePrice) * Number(factor))}`
     : "تلقائي";
 
 // تفصيل السعر حسب "شامل/قبل الضريبة" — نفس القاعدة التي سيستخدمها الكاشير

@@ -12,6 +12,7 @@ import {
   decodeJwt,
 } from "../utils/auth";
 import { getErrorMessage } from "../utils/errors";
+import { getCountry } from "../utils/countries";
 import {
   SUPPORT_COOKIE,
   supportCookieOptions,
@@ -23,6 +24,13 @@ import type {
   RegisterPayload,
   DecodedToken,
 } from "@/types";
+
+/** دولة الشركة وعملتها وتوقيتها كما تحفظها شاشة الكاشير على الجهاز */
+export interface DeviceLocale {
+  country: string;
+  currency: string;
+  timezone: string;
+}
 
 export const useAuthStore = defineStore("auth", () => {
   const api = useApi();
@@ -73,6 +81,34 @@ export const useAuthStore = defineStore("auth", () => {
   // الصلاحيات داخل التوكن تأتي ضمن role.permissions
   const permissions = computed(() => role.value?.permissions ?? []);
   const employeeId = computed(() => decodedToken.value?.employeeId);
+
+  // ✅ دولة الشركة وعملتها ومنطقتها الزمنية. التوكنات الصادرة قبل دعم تعدد
+  // الدول لا تحملها: تُعامل بالدولة الافتراضية
+  //
+  // شاشة الكاشير تعمل بلا جلسة (التوكن ينتهي بعد 15 دقيقة بلا إنترنت): تضع
+  // هنا دولة الشركة المحفوظة على الجهاز، ولها الأولوية ما دامت الشاشة مفتوحة
+  const deviceLocale = ref<DeviceLocale | null>(null);
+  const setDeviceLocale = (locale: DeviceLocale | null) => {
+    deviceLocale.value = locale;
+  };
+
+  const country = computed(
+    () =>
+      getCountry(deviceLocale.value?.country ?? decodedToken.value?.country)
+        .code,
+  );
+  const currency = computed(
+    () =>
+      deviceLocale.value?.currency ??
+      decodedToken.value?.currency ??
+      getCountry(country.value).currency,
+  );
+  const timezone = computed(
+    () =>
+      deviceLocale.value?.timezone ??
+      decodedToken.value?.timezone ??
+      getCountry(country.value).timezone,
+  );
 
   // --- Hydrate & Persist ---
   const hydrate = () => {
@@ -211,6 +247,10 @@ export const useAuthStore = defineStore("auth", () => {
     role,
     permissions,
     employeeId,
+    country,
+    currency,
+    timezone,
+    setDeviceLocale,
     loading,
     error,
     isAuthenticated,

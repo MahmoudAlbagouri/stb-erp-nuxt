@@ -107,13 +107,13 @@
               <h4 class="doc-section__title">ردّ المبلغ للعميل</h4>
               <div class="doc-grid">
                 <div class="form-group">
-                  <label>المبلغ المردود (ر.س)</label>
+                  <label>المبلغ المردود ({{ currencyLabel() }})</label>
                   <StbNumberInput
                     v-model.number="form.refundAmount"
                     class="form-input"
                     min="0"
                     :max="refundable"
-                    step="0.01"
+                    :step="moneyStep()"
                     :disabled="!invoice.customerId"
                   />
                   <small class="doc-hint">

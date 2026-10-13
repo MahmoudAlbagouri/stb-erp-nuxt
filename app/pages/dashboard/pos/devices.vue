@@ -106,7 +106,7 @@
                     v-if="d.installationId"
                     v-can="'manage_pos_devices'"
                     class="btn btn--sm btn--ghost"
-                    title="فكّ ربط الجهاز بشاشته ليُربط بشاشة أخرى"
+                    title="فكّ ربط الجهاز بشاشته: يُبطل مفتاحها فوراً (لجهاز استُبدل أو سُرق)"
                     @click="askUnbind(d)"
                   >
                     <Unlink :size="14" /> فك الربط
@@ -208,7 +208,7 @@
 
               <label class="checkbox-label">
                 <input v-model="form.isActive" type="checkbox" />
-                <span>نشط (الجهاز الموقوف لا يرفع ولا ينزّل)</span>
+                <span>نشط (الجهاز الموقوف لا يرفع ولا ينزّل حتى يُفعَّل)</span>
               </label>
 
               <div class="modal__footer">
@@ -233,7 +233,7 @@
     <ConfirmDialog
       v-model="showUnbind"
       title="فك ربط الجهاز"
-      :message="`فك ربط '${unbindTarget?.name}' يسمح بربطه بشاشة أخرى. الشاشة الحالية لن ترفع عليه بعدها — تأكد أنها رفعت كل مبيعاتها وقفلت ورديتها أولاً.`"
+      :message="`فك ربط '${unbindTarget?.name}' يُبطل مفتاح شاشته فوراً ويسمح بربطه بشاشة أخرى. الشاشة الحالية لن ترفع ولن تسحب بعدها — إن لم يكن الجهاز مسروقاً فتأكد أنها رفعت كل مبيعاتها وقفلت ورديتها أولاً.`"
       confirm-text="فك الربط"
       :loading="unbinding"
       @confirm="doUnbind"

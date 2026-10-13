@@ -39,7 +39,7 @@
       <div class="stat-card stat-total">
         <div class="stat-card__icon"><Banknote :size="24" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ totalPayroll }} ر.س</div>
+          <div class="stat-card__value">{{ totalPayroll }} {{ currencyLabel() }}</div>
           <div class="stat-card__label">إجمالي الرواتب</div>
         </div>
       </div>
@@ -53,7 +53,7 @@
       <div class="stat-card stat-avg">
         <div class="stat-card__icon"><TrendingUp :size="24" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ avgSalary }} ر.س</div>
+          <div class="stat-card__value">{{ avgSalary }} {{ currencyLabel() }}</div>
           <div class="stat-card__label">متوسط الأجر</div>
         </div>
       </div>

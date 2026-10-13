@@ -243,11 +243,11 @@
 
               <div class="grid-2">
                 <div class="form-group">
-                  <label>المبلغ (ر.س) *</label
+                  <label>المبلغ ({{ currencyLabel() }}) *</label
                   ><StbNumberInput
                     v-model.number="form.amount"
                     min="0.01"
-                    step="0.01"
+                    :step="moneyStep()"
                     class="form-input"
                     required
                   />

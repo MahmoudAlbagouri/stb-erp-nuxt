@@ -59,15 +59,15 @@
             <td>
               {{ line.productName }}
               <small v-if="line.discount > 0">
-                (خصم {{ formatNumber(line.discount, 2) }})
+                (خصم {{ formatMoney(line.discount) }})
               </small>
             </td>
             <td>
               <span dir="ltr">{{ formatNumber(line.quantity) }}</span>
               {{ line.unitName }}
             </td>
-            <td dir="ltr">{{ formatNumber(line.unitPrice, 2) }}</td>
-            <td dir="ltr">{{ formatNumber(line.total, 2) }}</td>
+            <td dir="ltr">{{ formatMoney(line.unitPrice) }}</td>
+            <td dir="ltr">{{ formatMoney(line.total) }}</td>
           </tr>
         </tbody>
       </table>
@@ -75,23 +75,23 @@
       <section class="invoice-print__totals">
         <div>
           <span>الإجمالي قبل الضريبة</span>
-          <span dir="ltr">{{ formatNumber(invoice.subtotal, 2) }}</span>
+          <span dir="ltr">{{ formatMoney(invoice.subtotal) }}</span>
         </div>
         <div>
           <span>ضريبة القيمة المضافة</span>
-          <span dir="ltr">{{ formatNumber(invoice.taxTotal, 2) }}</span>
+          <span dir="ltr">{{ formatMoney(invoice.taxTotal) }}</span>
         </div>
         <div class="is-grand">
-          <span>الإجمالي شامل الضريبة (ر.س)</span>
-          <span dir="ltr">{{ formatNumber(invoice.total, 2) }}</span>
+          <span>الإجمالي شامل الضريبة ({{ currencyLabel() }})</span>
+          <span dir="ltr">{{ formatMoney(invoice.total) }}</span>
         </div>
         <div v-if="invoice.paidAmount > 0">
           <span>المدفوع</span>
-          <span dir="ltr">{{ formatNumber(invoice.paidAmount, 2) }}</span>
+          <span dir="ltr">{{ formatMoney(invoice.paidAmount) }}</span>
         </div>
         <div v-if="invoice.remaining > 0">
           <span>المتبقي</span>
-          <span dir="ltr">{{ formatNumber(invoice.remaining, 2) }}</span>
+          <span dir="ltr">{{ formatMoney(invoice.remaining) }}</span>
         </div>
       </section>
 

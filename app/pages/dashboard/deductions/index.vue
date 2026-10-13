@@ -243,11 +243,11 @@
 
               <div class="grid-2">
                 <div class="form-group">
-                  <label>إجمالي المبلغ (ر.س) *</label
+                  <label>إجمالي المبلغ ({{ currencyLabel() }}) *</label
                   ><StbNumberInput
                     v-model.number="form.totalAmount"
                     min="0.01"
-                    step="0.01"
+                    :step="moneyStep()"
                     class="form-input"
                     required
                   />
@@ -385,7 +385,7 @@ const totalRemaining = computed(() =>
 );
 const calculatedMonthly = computed(() =>
   form.totalAmount && form.installmentsCount
-    ? Number((form.totalAmount / form.installmentsCount).toFixed(2))
+    ? roundMoney(form.totalAmount / form.installmentsCount)
     : 0,
 );
 const todayLabel = formatDate(new Date());

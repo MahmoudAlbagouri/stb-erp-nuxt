@@ -57,13 +57,8 @@
             <div class="device-card__icon">
               <Fingerprint :size="28" />
             </div>
-            <span
-              :class="[
-                'badge',
-                dev.status === 'online' ? 'badge--active' : 'badge--inactive',
-              ]"
-            >
-              {{ dev.status === "online" ? "متصل" : "غير متصل" }}
+            <span :class="['badge', DEVICE_STATUS[dev.status].badge]">
+              {{ DEVICE_STATUS[dev.status].label }}
             </span>
           </div>
           <div class="device-card__body">
@@ -81,6 +76,15 @@
                 >Model: <b>{{ dev.model || "-" }}</b></span
               >
             </div>
+            <p class="device-meta">
+              <Clock :size="12" class="inline-icon" />
+              آخر اتصال:
+              {{ dev.lastSeenAt ? formatDateTime(dev.lastSeenAt) : "لم يتصل بعد" }}
+            </p>
+            <p v-if="dev.timezone" class="device-meta">
+              <Globe :size="12" class="inline-icon" />
+              توقيت الجهاز: <span dir="ltr">{{ dev.timezone }}</span>
+            </p>
           </div>
           <div class="device-card__footer">
             <button
@@ -90,6 +94,15 @@
             >
               <UserPlus :size="14" />
               ربط موظف
+            </button>
+            <button
+              v-can="'update_biometric_device'"
+              class="btn btn--sm btn--ghost"
+              :disabled="togglingId === dev.id"
+              @click="toggleDevice(dev)"
+            >
+              <Power :size="14" />
+              {{ dev.status === "disabled" ? "تفعيل" : "إيقاف" }}
             </button>
             <button
               v-can="'delete_biometric_device'"
@@ -272,6 +285,13 @@
             </tbody>
           </table>
         </div>
+        <DocPager
+          :total="store.logsTotal"
+          :page="store.logsPage"
+          :total-pages="logsTotalPages"
+          label="بصمة"
+          @change="loadLogs"
+        />
       </div>
     </div>
 
@@ -332,6 +352,25 @@
                   class="form-input"
                   placeholder="مبنى أ - الدور الأرضي"
                 />
+              </div>
+              <div class="form-group">
+                <label>توقيت الجهاز</label>
+                <select v-model="deviceForm.timezone" class="form-select">
+                  <option value="">
+                    نفس توقيت الشركة ({{ companyZoneLabel }})
+                  </option>
+                  <option
+                    v-for="c in COUNTRIES"
+                    :key="c.code"
+                    :value="c.timezone"
+                  >
+                    {{ c.nameAr }}
+                  </option>
+                </select>
+                <small class="form-hint">
+                  يُغيَّر فقط لجهاز في فرع بدولة أخرى. به تُضبط ساعة الجهاز
+                  وتُقرأ أوقات بصماته.
+                </small>
               </div>
               <div class="modal__footer">
                 <button
@@ -497,7 +536,8 @@
                   required
                 />
                 <small class="form-hint">
-                  لا يمكن اختيار تاريخ يتجاوز 24 ساعة من الآن.
+                  بتوقيت الشركة ({{ companyZoneLabel }}). لا يمكن اختيار تاريخ
+                  يتجاوز 24 ساعة من الآن.
                 </small>
               </div>
 
@@ -627,13 +667,19 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import {
+  ATTENDANCE_PAGE_SIZE,
   useAttendanceStore,
   type AttendanceLog,
   type PunchType,
 } from "@/stores/attendance";
+import { useAuthStore } from "@/stores/auth";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
-import type { CreateDevicePayload, BiometricDevice } from "@/types";
+import type {
+  CreateDevicePayload,
+  BiometricDevice,
+  DeviceStatus,
+} from "@/types";
 
 import {
   Fingerprint,
@@ -651,13 +697,30 @@ import {
   FileSpreadsheet,
   FileText,
   Info,
+  Clock,
+  Globe,
+  Power,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
 
 const store = useAttendanceStore();
 const employeesStore = useEmployeesStore();
+const auth = useAuthStore();
 const toast = useToast();
+
+const DEVICE_STATUS: Record<DeviceStatus, { label: string; badge: string }> = {
+  online: { label: "متصل", badge: "badge--active" },
+  offline: { label: "غير متصل", badge: "badge--inactive" },
+  disabled: { label: "موقوف", badge: "badge--terminated" },
+};
+
+/** اسم دولة منطقة الشركة الزمنية، للتوضيح بجانب حقول الوقت */
+const companyZoneLabel = computed(
+  () =>
+    COUNTRIES.find((c) => c.timezone === auth.timezone)?.nameAr ??
+    auth.timezone,
+);
 
 // ─── State ──────────────────────────────────────────────────────────────────
 const activeTab = ref<"devices" | "logs">("devices");
@@ -671,7 +734,9 @@ const deviceForm = reactive<CreateDevicePayload>({
   alias: "",
   model: "",
   location: "",
+  timezone: "",
 });
+const togglingId = ref<string | null>(null);
 
 // Push User Form
 const showPushModal = ref(false);
@@ -711,12 +776,13 @@ const editLogForm = reactive({
   leaveReason: "",
 });
 
-// وقت الآن بصيغة datetime-local، لضبط الحد الأقصى في input
-const nowLocalDatetime = computed(() => {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
-});
+// الآن بتوقيت الشركة بصيغة datetime-local، لضبط الحد الأقصى في input.
+// حقول الوقت كلها بتوقيت الشركة لا بتوقيت المتصفح (انظر utils/timezone)
+const nowLocalDatetime = computed(() => nowZonedInput(auth.timezone));
+
+const logsTotalPages = computed(() =>
+  Math.max(1, Math.ceil(store.logsTotal / ATTENDANCE_PAGE_SIZE)),
+);
 
 const targetDevice = computed(() =>
   store.devices.find((d) => d.id === targetDeviceId.value),
@@ -729,6 +795,7 @@ const openDeviceModal = () => {
     alias: "",
     model: "",
     location: "",
+    timezone: "",
   });
   showDeviceModal.value = true;
 };
@@ -736,7 +803,10 @@ const openDeviceModal = () => {
 const handleAddDevice = async () => {
   submitting.value = true;
   try {
-    await store.createDevice(deviceForm);
+    await store.createDevice({
+      ...deviceForm,
+      timezone: deviceForm.timezone || undefined,
+    });
     toast.success("تم إضافة الجهاز بنجاح");
     showDeviceModal.value = false;
   } catch (e) {
@@ -753,6 +823,26 @@ const confirmDeleteDevice = async (id: string) => {
     toast.success("تم حذف الجهاز");
   } catch (e) {
     toast.error(getErrorMessage(e));
+  }
+};
+
+/** إيقاف الجهاز يرفض اتصاله حتى يُفعَّل: يحتفظ ببصماته ويرفعها بعد التفعيل */
+const toggleDevice = async (dev: BiometricDevice) => {
+  const disable = dev.status !== "disabled";
+  if (
+    disable &&
+    !confirm("إيقاف الجهاز يمنعه من رفع البصمات حتى تفعّله. هل تريد المتابعة؟")
+  ) {
+    return;
+  }
+  togglingId.value = dev.id;
+  try {
+    await store.updateDeviceStatus(dev.id, disable ? "disabled" : "offline");
+    toast.success(disable ? "تم إيقاف الجهاز" : "تم تفعيل الجهاز");
+  } catch (e) {
+    toast.error(getErrorMessage(e));
+  } finally {
+    togglingId.value = null;
   }
 };
 
@@ -780,11 +870,12 @@ const handlePushUser = async () => {
 };
 
 // ─── Logs: فلترة وتحميل ──────────────────────────────────────────────────
-const loadLogs = () => {
-  store.fetchLogs(activeFilters.value);
+const loadLogs = (page = 1) => {
+  store.fetchLogs({ ...activeFilters.value, page });
 };
 
 const applyFilters = () => loadLogs();
+const reloadLogs = () => loadLogs(store.logsPage);
 
 const resetFilters = () => {
   filters.from = "";
@@ -829,7 +920,7 @@ const handleCreateManualLog = async () => {
     await store.createManualLog({
       employeeId: manualLogForm.employeeId,
       punchType: manualLogForm.punchType,
-      punchTime: new Date(manualLogForm.punchTime).toISOString(),
+      punchTime: fromZonedInput(manualLogForm.punchTime, auth.timezone),
       leaveReason:
         manualLogForm.punchType === "leave"
           ? manualLogForm.leaveReason
@@ -855,16 +946,10 @@ const canEditLog = (log: AttendanceLog): boolean => {
   return hoursSince <= 24;
 };
 
-const toDatetimeLocal = (iso: string) => {
-  const d = new Date(iso);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
-};
-
 const openEditLogModal = (log: AttendanceLog) => {
   editingLogId.value = log.id;
   editLogForm.punchType = log.punchType;
-  editLogForm.punchTime = toDatetimeLocal(log.punchTime);
+  editLogForm.punchTime = toZonedInput(log.punchTime, auth.timezone);
   editLogForm.leaveReason = log.leaveReason || "";
   showEditLogModal.value = true;
 };
@@ -877,13 +962,15 @@ const handleUpdateLog = async () => {
   submitting.value = true;
   try {
     await store.updateLog(editingLogId.value, {
-      punchTime: new Date(editLogForm.punchTime).toISOString(),
+      punchTime: fromZonedInput(editLogForm.punchTime, auth.timezone),
       punchType: editLogForm.punchType,
       leaveReason:
         editLogForm.punchType === "leave" ? editLogForm.leaveReason : undefined,
     });
     toast.success("تم تعديل البصمة بنجاح");
     showEditLogModal.value = false;
+    // تعديل بصمة قد يغيّر ساعات عمل بصمة أخرى (الانصراف المقابل)
+    reloadLogs();
   } catch (e) {
     toast.error(getErrorMessage(e, "فشل في تعديل البصمة"));
   } finally {
@@ -1028,6 +1115,12 @@ onMounted(() => {
 
 .inline-icon {
   flex-shrink: 0;
+}
+
+.device-meta {
+  margin-top: $space-2;
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
 }
 
 .device-details {

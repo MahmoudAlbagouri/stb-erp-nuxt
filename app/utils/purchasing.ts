@@ -6,6 +6,7 @@ import type {
   PurchaseReturnStatus,
   StatementEntryType,
 } from "@/types/purchasing";
+import { roundMoney } from "./format";
 
 type Tone = "draft" | "progress" | "done" | "cancelled" | "info";
 
@@ -47,8 +48,6 @@ export const STATEMENT_ENTRY_LABELS: Record<StatementEntryType, string> = {
   payment: "سداد",
 };
 
-const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
-
 /**
  * معاينة مبالغ سطر شراء أثناء الإدخال — نفس قاعدة السيرفر
  * (purchase-totals.util). المبالغ المحفوظة يحسبها السيرفر دائماً.
@@ -64,14 +63,14 @@ export const previewPurchaseLine = (line: {
   const rate = line.taxRate / 100;
 
   const subtotal = line.pricesIncludeTax
-    ? round2(round2(entered) / (1 + rate))
-    : round2(entered);
+    ? roundMoney(roundMoney(entered) / (1 + rate))
+    : roundMoney(entered);
   const total = line.pricesIncludeTax
-    ? round2(entered)
-    : round2(subtotal + round2(subtotal * rate));
+    ? roundMoney(entered)
+    : roundMoney(subtotal + roundMoney(subtotal * rate));
 
-  return { subtotal, taxAmount: round2(total - subtotal), total };
+  return { subtotal, taxAmount: roundMoney(total - subtotal), total };
 };
 
 export const sumMoney = (values: number[]) =>
-  round2(values.reduce((sum, value) => sum + value, 0));
+  roundMoney(values.reduce((sum, value) => sum + value, 0));

@@ -115,8 +115,8 @@
                     type="text"
                     class="form-input"
                     :class="{ 'form-input--error': errors.nationalId }"
-                    placeholder="1xxxxxxxxx"
-                    maxlength="10"
+                    placeholder="رقم الهوية"
+                    maxlength="20"
                     @input="
                       form.employee.nationalId =
                         form.employee.nationalId.replace(/[^0-9]/g, '')
@@ -164,20 +164,9 @@
                 <!-- ✅ حقل رقم الهاتف -->
                 <div class="form-group">
                   <label class="form-label required">رقم الهاتف</label>
-                  <input
+                  <StbPhoneInput
                     v-model="form.employee.phone"
-                    type="tel"
-                    class="form-input"
-                    :class="{ 'form-input--error': errors.phone }"
-                    placeholder="05xxxxxxxx"
-                    dir="ltr"
-                    maxlength="10"
-                    @input="
-                      form.employee.phone = form.employee.phone.replace(
-                        /[^0-9]/g,
-                        '',
-                      )
-                    "
+                    :input-class="{ 'form-input--error': errors.phone }"
                     @blur="validateSingleField('phone')"
                   />
                   <span v-if="errors.phone" class="form-error">{{
@@ -1136,7 +1125,7 @@
                           dir="ltr"
                           @blur="validateSingleField('basicSalary')"
                         />
-                        <span class="input-suffix">ر.س</span>
+                        <span class="input-suffix">{{ currencyLabel() }}</span>
                       </div>
                       <span v-if="errors.basicSalary" class="form-error">{{
                         errors.basicSalary
@@ -1157,7 +1146,7 @@
                           dir="ltr"
                           @blur="validateSingleField('housingAllowance')"
                         />
-                        <span class="input-suffix">ر.س</span>
+                        <span class="input-suffix">{{ currencyLabel() }}</span>
                       </div>
                       <span v-if="errors.housingAllowance" class="form-error">{{
                         errors.housingAllowance
@@ -1178,7 +1167,7 @@
                           dir="ltr"
                           @blur="validateSingleField('transportAllowance')"
                         />
-                        <span class="input-suffix">ر.س</span>
+                        <span class="input-suffix">{{ currencyLabel() }}</span>
                       </div>
                       <span
                         v-if="errors.transportAllowance"
@@ -1201,7 +1190,7 @@
                           dir="ltr"
                           @blur="validateSingleField('otherAllowances')"
                         />
-                        <span class="input-suffix">ر.س</span>
+                        <span class="input-suffix">{{ currencyLabel() }}</span>
                       </div>
                       <span v-if="errors.otherAllowances" class="form-error">{{
                         errors.otherAllowances
@@ -1254,7 +1243,7 @@
                     <div class="salary-summary__rows">
                       <div class="salary-row">
                         <span>الراتب الأساسي</span>
-                        <span>{{ fmt(form.salary.basicSalary) }} ر.س</span>
+                        <span>{{ fmt(form.salary.basicSalary) }} {{ currencyLabel() }}</span>
                       </div>
                       <div
                         v-if="form.salary.housingAllowance"
@@ -1262,7 +1251,7 @@
                       >
                         <span>بدل السكن</span>
                         <span
-                          >+ {{ fmt(form.salary.housingAllowance) }} ر.س</span
+                          >+ {{ fmt(form.salary.housingAllowance) }} {{ currencyLabel() }}</span
                         >
                       </div>
                       <div
@@ -1271,7 +1260,7 @@
                       >
                         <span>بدل النقل</span>
                         <span
-                          >+ {{ fmt(form.salary.transportAllowance) }} ر.س</span
+                          >+ {{ fmt(form.salary.transportAllowance) }} {{ currencyLabel() }}</span
                         >
                       </div>
                       <div
@@ -1280,12 +1269,12 @@
                       >
                         <span>بدلات أخرى</span>
                         <span
-                          >+ {{ fmt(form.salary.otherAllowances) }} ر.س</span
+                          >+ {{ fmt(form.salary.otherAllowances) }} {{ currencyLabel() }}</span
                         >
                       </div>
                       <div class="salary-row salary-row--total">
                         <span>الإجمالي</span>
-                        <span>{{ fmt(totalSalary) }} ر.س</span>
+                        <span>{{ fmt(totalSalary) }} {{ currencyLabel() }}</span>
                       </div>
                     </div>
                   </div>
@@ -1456,7 +1445,7 @@
                   <div v-if="form.withSalary" class="review-rows">
                     <div class="review-row">
                       <span>الراتب الأساسي</span>
-                      <strong>{{ fmt(form.salary.basicSalary) }} ر.س</strong>
+                      <strong>{{ fmt(form.salary.basicSalary) }} {{ currencyLabel() }}</strong>
                     </div>
                     <div class="review-row">
                       <span>طريقة الدفع</span>
@@ -1475,7 +1464,7 @@
                     </div>
                     <div class="review-row review-row--total">
                       <span>الإجمالي</span>
-                      <strong>{{ fmt(totalSalary) }} ر.س</strong>
+                      <strong>{{ fmt(totalSalary) }} {{ currencyLabel() }}</strong>
                     </div>
                   </div>
                   <div v-else class="review-skip">
@@ -1878,8 +1867,8 @@ const validateSingleField = (field: string) => {
       else delete errors.jobTitle;
       break;
     case "phone":
-      if (!form.employee.phone || form.employee.phone.length !== 10) {
-        errors.phone = "رقم الهاتف مطلوب ويجب أن يكون 10 أرقام";
+      if (!form.employee.phone || !isValidPhone(form.employee.phone)) {
+        errors.phone = "رقم الهاتف مطلوب ويجب أن يكون صالحاً للدولة المحددة";
       } else delete errors.phone;
       break;
     case "status":
@@ -2088,8 +2077,8 @@ const validateCurrentTab = (silent: boolean = false): boolean => {
       errors.departmentName = "اسم القسم مطلوب";
       isValid = false;
     }
-    if (!form.employee.phone || form.employee.phone.length !== 10) {
-      errors.phone = "رقم الهاتف مطلوب ويجب أن يكون 10 أرقام";
+    if (!form.employee.phone || !isValidPhone(form.employee.phone)) {
+      errors.phone = "رقم الهاتف مطلوب ويجب أن يكون صالحاً للدولة المحددة";
       isValid = false;
     }
     if (!form.employee.status) {

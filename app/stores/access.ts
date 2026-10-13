@@ -6,7 +6,7 @@ import { ref } from "vue";
 import { useApi } from "../composables/useApi";
 import type { QuotaUsage } from "@/types";
 
-interface AccessResponse {
+export interface AccessResponse {
   /** مالك النظام: بلا قيود خطة */
   unrestricted: boolean;
   status: string;
@@ -27,6 +27,15 @@ export const useAccessStore = defineStore("access", () => {
 
   let inFlight: Promise<void> | null = null;
 
+  /** يطبّق بيانات وصول جُلبت خارج هذا المتجر (شاشة الكاشير تجلبها بطبقتها) */
+  const apply = (data: AccessResponse) => {
+    unrestricted.value = data.unrestricted;
+    status.value = data.status;
+    features.value = data.features ?? [];
+    quotas.value = data.quotas ?? {};
+    loaded.value = true;
+  };
+
   const fetch = (force = false): Promise<void> => {
     if (loaded.value && !force) return Promise.resolve();
     if (inFlight) return inFlight;
@@ -34,13 +43,7 @@ export const useAccessStore = defineStore("access", () => {
     loading.value = true;
     inFlight = api
       .get<AccessResponse>("/subscriptions/me/access")
-      .then((res) => {
-        unrestricted.value = res.data.unrestricted;
-        status.value = res.data.status;
-        features.value = res.data.features ?? [];
-        quotas.value = res.data.quotas ?? {};
-        loaded.value = true;
-      })
+      .then((res) => apply(res.data))
       .catch((error) => {
         console.error("Failed to load access data:", error);
       })
@@ -68,6 +71,7 @@ export const useAccessStore = defineStore("access", () => {
     loaded,
     loading,
     fetch,
+    apply,
     reset,
   };
 });

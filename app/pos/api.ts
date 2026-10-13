@@ -2,10 +2,19 @@
 //
 // طبقة مستقلة عن useApi عمداً: useApi يسجّل خروج المستخدم إذا فشل تجديد
 // التوكن، وهذا خطأ هنا — الكاشير يجب أن يواصل البيع محلياً مهما حدث للشبكة
-// أو للجلسة. لذلك نفرّق بين ثلاث حالات ولا نطرد أحداً:
-//   OfflineError        لا اتصال (أو السيرفر لا يرد) ← نعيد المحاولة لاحقاً
-//   SessionExpiredError الجلسة انتهت ← البيع مستمر، والرفع ينتظر تسجيل الدخول
-//   Error               السيرفر رفض الطلب برسالة
+// أو للجلسة.
+//
+// للشاشة هويتان:
+//   جلسة المستخدم  لربط الشاشة بجهاز كاشير أول مرة فقط (يحتاج صلاحية).
+//   مفتاح الجهاز   لكل ما بعد ذلك: سحب الأصناف ورفع المبيعات. يصدر عند الربط
+//                  ويبقى، فلا يتوقف الرفع على تسجيل دخول أحد.
+//
+// الأخطاء أنواع، ولا واحد منها يطرد الكاشير:
+//   OfflineError              لا اتصال (أو السيرفر لا يرد) ← نعيد المحاولة لاحقاً
+//   SessionExpiredError       لا جلسة مستخدم ← الربط ينتظر تسجيل الدخول
+//   DeviceKeyError            المفتاح أُبطل (فُكّ الربط أو أُوقف الجهاز)
+//   SubscriptionInactiveError اشتراك الشركة غير سارٍ
+//   PosRequestError           السيرفر رفض الطلب برسالة
 import { useCookie, useRuntimeConfig } from "nuxt/app";
 import { useAuthStore } from "@/stores/auth";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/utils/auth";
@@ -24,11 +33,17 @@ export class OfflineError extends Error {
 
 export class SessionExpiredError extends Error {
   constructor() {
-    super("انتهت الجلسة — سجّل الدخول لرفع المبيعات");
+    super("انتهت الجلسة — سجّل الدخول لربط الشاشة");
   }
 }
 
-/** السيرفر رفض الطلب. 409 في المزامنة = هذه الشاشة ليست المربوطة بالجهاز */
+/** مفتاح الجهاز لم يعد صالحاً: الشاشة تحتاج ربطاً جديداً بجلسة مستخدم */
+export class DeviceKeyError extends Error {}
+
+/** اشتراك الشركة غير سارٍ أو لا يشمل نقاط البيع */
+export class SubscriptionInactiveError extends Error {}
+
+/** السيرفر رفض الطلب. 409 = هذه الشاشة ليست المربوطة بالجهاز */
 export class PosRequestError extends Error {
   constructor(
     message: string,
@@ -38,12 +53,23 @@ export class PosRequestError extends Error {
   }
 }
 
+/** ما يعرّف الشاشة للسيرفر بعد ربطها */
+export interface DeviceCredentials {
+  deviceId: string;
+  installationId: string;
+  key: string;
+}
+
 /** مهلة الطلب: شبكة معلّقة تُعامل كانقطاع بدل أن تجمّد المزامنة */
 const TIMEOUT_MS = 15_000;
+const HTTP_SUBSCRIPTION_INACTIVE = 402;
 
 const isSecure = process.env.NODE_ENV === "production";
 const cookieOptions = (maxAge: number) =>
   ({ maxAge, sameSite: "lax", secure: isSecure, path: "/" }) as const;
+
+type Method = "GET" | "POST";
+type Headers = Record<string, string>;
 
 export const usePosApi = () => {
   const baseUrl = useRuntimeConfig().public.apiBase;
@@ -64,7 +90,7 @@ export const usePosApi = () => {
   const send = async (
     path: string,
     init: RequestInit,
-    token: string | null,
+    headers: Headers,
   ): Promise<Response> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -72,10 +98,7 @@ export const usePosApi = () => {
       return await fetch(`${baseUrl}${path}`, {
         ...init,
         signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...headers },
       });
     } catch {
       // فشل الشبكة أو انتهاء المهلة: لا نعرف شيئاً عن الجلسة، فقط لا اتصال
@@ -85,17 +108,42 @@ export const usePosApi = () => {
     }
   };
 
+  const bearer = (token: string | null): Headers =>
+    token ? { Authorization: `Bearer ${token}` } : {};
+
+  const toInit = (method: Method, body?: unknown): RequestInit => ({
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  const messageOf = async (res: Response): Promise<string> => {
+    const payload = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const message = Array.isArray(payload?.message)
+      ? payload.message[0]
+      : payload?.message;
+    return message || `تعذر تنفيذ الطلب (${res.status})`;
+  };
+
+  const dataOf = async <T>(res: Response): Promise<T> =>
+    ((await res.json().catch(() => null)) as { data?: T } | null)?.data as T;
+
+  // ─── جلسة المستخدم ──────────────────────────────────────────────────────────
   /** يجدّد التوكن. انقطاع الشبكة هنا ليس انتهاء جلسة */
   const refresh = async (): Promise<void> => {
     if (!refreshToken.value) throw new SessionExpiredError();
 
-    const res = await send("/auth/refresh", { method: "POST" }, refreshToken.value);
+    const res = await send(
+      "/auth/refresh",
+      { method: "POST" },
+      bearer(refreshToken.value),
+    );
     if (!res.ok) throw new SessionExpiredError();
 
-    const body = (await res.json()) as {
-      data?: { accessToken?: string; refreshToken?: string };
-    };
-    const tokens = body.data;
+    const tokens = await dataOf<{ accessToken?: string; refreshToken?: string }>(
+      res,
+    );
     if (!tokens?.accessToken || !tokens.refreshToken) {
       throw new SessionExpiredError();
     }
@@ -124,46 +172,84 @@ export const usePosApi = () => {
     });
   };
 
+  /** طلب بجلسة المستخدم (ربط الشاشة، قائمة الأجهزة) */
   const request = async <T>(
-    method: "GET" | "POST",
+    method: Method,
     path: string,
     body?: unknown,
   ): Promise<T> => {
-    const init: RequestInit = {
-      method,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    };
+    const init = toInit(method, body);
 
     // التوكن القصير ينتهي كل 15 دقيقة: نجدّده قبل الطلب إن غاب
     if (!accessToken.value) await refresh();
 
-    let res = await send(path, init, accessToken.value);
+    let res = await send(path, init, bearer(accessToken.value));
     if (res.status === 401) {
       await refresh();
-      res = await send(path, init, accessToken.value);
+      res = await send(path, init, bearer(accessToken.value));
       if (res.status === 401) throw new SessionExpiredError();
     }
 
-    const payload = (await res.json().catch(() => null)) as {
-      data?: T;
-      message?: string | string[];
-    } | null;
-    if (!res.ok) {
-      const message = Array.isArray(payload?.message)
-        ? payload.message[0]
-        : payload?.message;
-      throw new PosRequestError(
-        message || `تعذر تنفيذ الطلب (${res.status})`,
-        res.status,
-      );
+    if (!res.ok) throw new PosRequestError(await messageOf(res), res.status);
+    return dataOf<T>(res);
+  };
+
+  // ─── هوية الجهاز ────────────────────────────────────────────────────────────
+  /** توكن تجديد رفضه السيرفر: لا نعيد تجربته مع كل نبضة */
+  let deadRefreshToken: string | null = null;
+
+  /**
+   * جلسة المستخدم ترافق طلب الجهاز إن وُجدت (ليُعرف من يعمل على الشاشة)،
+   * وغيابها أو تعذر تجديدها لا يوقف الطلب.
+   */
+  const sessionHeaders = async (): Promise<Headers> => {
+    const stale = refreshToken.value === deadRefreshToken;
+    if (!accessToken.value && refreshToken.value && !stale) {
+      try {
+        await refresh();
+      } catch (error) {
+        if (error instanceof SessionExpiredError) {
+          deadRefreshToken = refreshToken.value;
+        }
+      }
     }
-    return payload?.data as T;
+    return bearer(accessToken.value);
+  };
+
+  /** طلب بمفتاح الجهاز: السحب والرفع وفحص الاتصال */
+  const deviceRequest = async <T>(
+    credentials: DeviceCredentials,
+    method: Method,
+    path: string,
+    body?: unknown,
+  ): Promise<T> => {
+    const res = await send(`/pos/device${path}`, toInit(method, body), {
+      ...(await sessionHeaders()),
+      "X-Pos-Device": credentials.deviceId,
+      "X-Pos-Installation": credentials.installationId,
+      "X-Pos-Key": credentials.key,
+    });
+
+    if (res.ok) return dataOf<T>(res);
+
+    const message = await messageOf(res);
+    if (res.status === 401) throw new DeviceKeyError(message);
+    if (res.status === HTTP_SUBSCRIPTION_INACTIVE) {
+      throw new SubscriptionInactiveError(message);
+    }
+    throw new PosRequestError(message, res.status);
   };
 
   return {
     get: <T>(path: string) => request<T>("GET", path),
     post: <T>(path: string, body: unknown) => request<T>("POST", path, body),
-    /** هل توجد جلسة يمكن الرفع بها؟ (توكن أو توكن تجديد) */
+    /** طلبات الشاشة بمفتاح جهازها (المسارات نسبة إلى ‎/pos/device) */
+    device: (credentials: DeviceCredentials) => ({
+      get: <T>(path: string) => deviceRequest<T>(credentials, "GET", path),
+      post: <T>(path: string, body: unknown) =>
+        deviceRequest<T>(credentials, "POST", path, body),
+    }),
+    /** هل توجد جلسة مستخدم؟ (توكن أو توكن تجديد) */
     hasSession: () => !!accessToken.value || !!refreshToken.value,
   };
 };

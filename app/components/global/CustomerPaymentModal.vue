@@ -54,13 +54,13 @@
               </small>
 
               <div class="form-group">
-                <label>المبلغ (ر.س) *</label>
+                <label>المبلغ ({{ currencyLabel() }}) *</label>
                 <StbNumberInput
                   v-model.number="form.amount"
                   class="form-input"
                   min="0.01"
                   :max="invoice ? invoice.remaining : undefined"
-                  step="0.01"
+                  :step="moneyStep()"
                   required
                 />
               </div>

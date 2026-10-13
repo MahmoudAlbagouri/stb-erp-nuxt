@@ -16,7 +16,10 @@ export interface Tenant {
   domain: string | null;
   phone: string | null;
   address: string | null;
+  /** رمز الدولة ISO (SA, EG…) */
   country: string | null;
+  /** عملة الشركة ISO 4217 — تُشتق من الدولة */
+  currency: string;
   status: "active" | "trial" | "inactive";
   language: string;
   timezone: string;
@@ -292,6 +295,8 @@ export interface LoginPayload {
 
 export interface RegisterPayload {
   companyName: string;
+  /** رمز الدولة ISO: منه تُحدَّد العملة ومفتاح الهاتف */
+  country: string;
   phone?: string;
   address?: string;
   username: string;
@@ -531,6 +536,9 @@ export interface BiometricDevice {
   ipAddress?: string;
   location?: string;
   model?: string;
+  /** منطقة ساعة الجهاز (IANA)؛ فارغة = منطقة الشركة */
+  timezone?: string | null;
+  /** الحالة الفعلية محسوبة من آخر اتصال */
   status: DeviceStatus;
   lastSeenAt?: string;
   isActive: boolean;
@@ -565,6 +573,8 @@ export interface CreateDevicePayload {
   alias?: string;
   location?: string;
   model?: string;
+  /** تُترك فارغة ليتبع الجهاز منطقة الشركة */
+  timezone?: string;
 }
 
 // --- Subscriptions ---
@@ -626,6 +636,10 @@ export interface DecodedToken {
   isDisclaimerAccepted?: boolean;
   /** وضع الدعم: معرّف مالك النظام الذي يعمل داخل الشركة بهذا التوكن */
   supportBy?: string;
+  /** إعدادات دولة الشركة (تغيب عن مالك النظام) — انظر utils/countries */
+  country?: string;
+  currency?: string;
+  timezone?: string;
 }
 
 // --- Toast ---

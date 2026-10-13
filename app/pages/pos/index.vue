@@ -48,7 +48,7 @@
         </button>
 
         <button
-          v-if="pos.shift && canReturn"
+          v-if="pos.shift && pos.canReturn"
           class="btn btn--sm btn--ghost pos-return-btn"
           @click="showReturn = true"
         >
@@ -97,12 +97,41 @@
     <div v-if="pos.sessionExpired" class="pos-banner">
       <AlertTriangle :size="16" />
       <span>
-        انتهت جلسة الدخول. البيع مستمر ومحفوظ على الجهاز، لكن الرفع للسيرفر
-        ينتظر تسجيل الدخول.
+        هذه الشاشة تحتاج تسجيل دخول مرة واحدة لتُربط بجهازها. البيع مستمر
+        ومحفوظ على الجهاز، ويُرفع بعد الربط.
       </span>
       <NuxtLink to="/auth/login" class="btn btn--sm btn--primary">
         تسجيل الدخول
       </NuxtLink>
+    </div>
+
+    <div v-if="pos.device && pos.suspended" class="pos-banner">
+      <AlertTriangle :size="16" />
+      <span>
+        {{ pos.suspended }}
+        <template v-if="pos.shift">
+          — الوردية الحالية تكمل، وما يُباع محفوظ على الجهاز ويُرفع بعد التجديد.
+        </template>
+      </span>
+    </div>
+
+    <div
+      v-else-if="pos.device && pos.offlineState !== 'ok'"
+      class="pos-banner"
+    >
+      <CloudOff :size="16" />
+      <span>{{ offlineNotice }}</span>
+      <button class="btn btn--sm btn--primary" @click="pos.sync({ pull: true })">
+        إعادة المحاولة
+      </button>
+    </div>
+
+    <div v-if="pos.cashierRevoked" class="pos-banner">
+      <AlertTriangle :size="16" />
+      <span>
+        تم إيقاف كاشير هذه الوردية من لوحة التحكم — قفّل الوردية ليفتح كاشير
+        آخر.
+      </span>
     </div>
 
     <div v-if="pos.device && pos.bindError" class="pos-banner">
@@ -187,7 +216,46 @@
           {{ pos.device.name }} · {{ pos.device.warehouse?.name }} ·
           {{ formatNumber(pos.products.length) }} صنف على الجهاز
         </p>
-        <div class="form-group">
+        <p v-if="pos.shiftBlockReason" class="form-error">
+          {{ pos.shiftBlockReason }}
+        </p>
+
+        <!-- شركة عرّفت كاشيرات: الوردية تُفتح باسم صاحبها ورقمه السري -->
+        <template v-if="pos.cashiers.length">
+          <div class="form-group">
+            <label>الكاشير</label>
+            <div class="pos-cashiers">
+              <button
+                v-for="c in pos.cashiers"
+                :key="c.id"
+                type="button"
+                class="pos-cashiers__item"
+                :class="{ 'is-active': shiftForm.cashierId === c.id }"
+                @click="pickCashier(c.id)"
+              >
+                <UserRound :size="16" />
+                <span>{{ c.name }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>الرقم السري</label>
+            <input
+              ref="pinEl"
+              v-model="shiftForm.pin"
+              type="password"
+              inputmode="numeric"
+              autocomplete="off"
+              class="form-input pos-pin"
+              maxlength="6"
+              placeholder="••••"
+              :disabled="!shiftForm.cashierId"
+              required
+              @input="shiftForm.pin = shiftForm.pin.replace(/\D/g, '')"
+            />
+          </div>
+        </template>
+        <div v-else class="form-group">
           <label>اسم الكاشير</label>
           <input
             v-model.trim="shiftForm.name"
@@ -197,21 +265,29 @@
           />
         </div>
         <div class="form-group">
-          <label>العهدة النقدية في الدرج (ر.س)</label>
+          <label>العهدة النقدية في الدرج ({{ currencyLabel() }})</label>
           <StbNumberInput
             v-model.number="shiftForm.openingCash"
             class="form-input"
             min="0"
-            step="0.01"
+            :step="moneyStep()"
             placeholder="0"
           />
         </div>
         <p v-if="!pos.products.length" class="form-error">
           لم تُنزَّل الأصناف بعد — اتصل بالإنترنت واضغط زر المزامنة بالأعلى.
         </p>
-        <button type="submit" class="btn btn--primary btn--full">
+        <button
+          type="submit"
+          class="btn btn--primary btn--full"
+          :class="{ 'btn--loading': openingShift }"
+          :disabled="openingShift || !!pos.shiftBlockReason"
+        >
           فتح الوردية وبدء البيع
         </button>
+        <p v-if="pos.lastContactAt" class="doc-hint">
+          آخر اتصال بالسيرفر: {{ formatDateTime(pos.lastContactAt) }}
+        </p>
         <button
           type="button"
           class="btn btn--ghost btn--sm"
@@ -268,7 +344,7 @@
           >
             <span class="pos-tile__name">{{ p.name }}</span>
             <span class="pos-tile__price">
-              {{ formatNumber(unitPriceOf(p, null), 2) }}
+              {{ formatMoney(unitPriceOf(p, null)) }}
             </span>
           </button>
           <p v-if="!visibleProducts.length" class="doc-lines__empty">
@@ -339,10 +415,10 @@
               </select>
               <span v-else class="doc-cell__sub">{{ line.unitName }}</span>
               <span class="doc-cell__sub">
-                × {{ formatNumber(line.unitPrice, 2) }}
+                × {{ formatMoney(line.unitPrice) }}
               </span>
               <strong class="doc-money pos-line__total">
-                {{ formatNumber(amountOf(line), 2) }}
+                {{ formatMoney(amountOf(line)) }}
               </strong>
             </div>
             <div v-if="line.product.allowDiscount" class="pos-line__discount">
@@ -351,7 +427,7 @@
                 v-model.number="line.discount"
                 class="form-input"
                 min="0"
-                step="0.01"
+                :step="moneyStep()"
                 placeholder="0"
               />
             </div>
@@ -425,7 +501,7 @@
                     v-model.number="pay.cash"
                     class="form-input"
                     min="0"
-                    step="0.01"
+                    :step="moneyStep()"
                     placeholder="0"
                   />
                 </div>
@@ -435,7 +511,7 @@
                     v-model.number="pay.card"
                     class="form-input"
                     min="0"
-                    step="0.01"
+                    :step="moneyStep()"
                     placeholder="0"
                   />
                 </div>
@@ -585,12 +661,12 @@
               </div>
 
               <div class="form-group">
-                <label>النقد المعدود في الدرج (ر.س) *</label>
+                <label>النقد المعدود في الدرج ({{ currencyLabel() }}) *</label>
                 <StbNumberInput
                   v-model.number="closeForm.closingCash"
                   class="form-input"
                   min="0"
-                  step="0.01"
+                  :step="moneyStep()"
                   required
                 />
               </div>
@@ -771,6 +847,7 @@ import {
   Trash2,
   Undo2,
   Unlock,
+  UserRound,
   Wifi,
   X,
 } from "lucide-vue-next";
@@ -778,8 +855,8 @@ import { useAccess } from "@/composables/useAccess";
 // الاسم مستعار: AccessState في القالب هو المكوّن لا النوع
 import type { AccessState as AccessStatus } from "@/composables/useAccess";
 import { useToast } from "@/composables/useToast";
-import { lineAmounts, sum2, unitPriceOf } from "@/pos/calc";
-import { posDb } from "@/pos/db";
+import { lineAmounts, sumAmounts, unitPriceOf } from "@/pos/calc";
+import { verifyCashierPin } from "@/pos/cashiers";
 import type {
   CartLine,
   LocalReturn,
@@ -793,7 +870,8 @@ import { usePosStore } from "@/stores/pos";
 import type { PrintableInvoice } from "@/types/sales";
 import { FEATURES, PERMS } from "@/utils/access";
 
-// بلا middleware "auth": الكاشير يدخل ويبيع حتى لو انتهت جلسته أو انقطع النت
+// بلا middleware "auth": الشاشة تعمل بهوية جهازها — تفتح وتبيع وترفع حتى لو
+// انتهت جلسة المستخدم أو انقطع النت
 definePageMeta({ layout: "pos" });
 useHead({
   title: "شاشة الكاشير",
@@ -825,7 +903,11 @@ const OUTBOX_LABELS: Record<OutboxType, string> = {
   "shift.close": "تقفيل وردية",
 };
 
-// ─── الصلاحية والخطة (تُفحص فقط إذا عرفنا الجواب؛ بلا إنترنت نثق بالجهاز) ────
+// ─── الصلاحية والخطة ──────────────────────────────────────────────────────────
+// الشاشة المربوطة تعمل بهوية جهازها: تُحجب فقط إذا عرفنا يقيناً — من السيرفر،
+// الآن — أن المستخدم المسجّل دخوله لا يملك صلاحية الكاشير أو أن الخطة لا
+// تشمله. بلا إنترنت أو بلا جلسة لا نعرف، فلا نحجب (كان غياب التوكن يُقرأ
+// "لا صلاحية"، فتُقفل الشاشة على صاحبها بعد ربع ساعة بلا إنترنت).
 const accessKnown = ref(false);
 const accessState = computed<AccessStatus>(() =>
   accessKnown.value
@@ -837,17 +919,14 @@ const accessState = computed<AccessStatus>(() =>
     : "allowed",
 );
 
-/**
- * المرتجع صلاحية مستقلة عن البيع. بلا إنترنت نعتمد آخر ما عرفناه عن هذا
- * المستخدم على هذه الشاشة — والافتراضي المنع: مرتجع يرفضه السيرفر لاحقاً
- * معناه نقد خرج من الدرج بلا مستند.
- */
-const cachedCanReturn = ref(false);
-const canReturn = computed(() =>
-  accessKnown.value
-    ? resolve({ permissions: [PERMS.POS_RETURN], tenantOnly: true }) === "allowed"
-    : cachedCanReturn.value,
-);
+/** تنبيه مهلة العمل بلا اتصال (انظر pos.offlineState) */
+const offlineNotice = computed(() => {
+  const days = Math.floor(pos.offlineHours / 24);
+  const limit = Math.round(pos.offlinePolicy.blockAfterHours / 24);
+  return pos.offlineState === "blocked"
+    ? `مرّ ${days} يوم بلا اتصال بالسيرفر. الوردية المفتوحة تكمل وتُقفَّل، لكن لا تُفتح وردية جديدة حتى يتصل الجهاز بالإنترنت.`
+    : `مرّ ${days} يوم بلا اتصال بالسيرفر. البيع مستمر ومحفوظ على الجهاز — بعد ${limit} أيام بلا اتصال لن تُفتح وردية جديدة.`;
+});
 
 // ─── حالة الاتصال ─────────────────────────────────────────────────────────────
 const connection = computed(() => {
@@ -925,15 +1004,51 @@ const changeDevice = async () => {
 };
 
 // ─── الوردية ──────────────────────────────────────────────────────────────────
-const shiftForm = reactive({ name: "", openingCash: "" as number | "" });
+const shiftForm = reactive({
+  name: "",
+  openingCash: "" as number | "",
+  cashierId: "",
+  pin: "",
+});
+const pinEl = ref<HTMLInputElement | null>(null);
+const openingShift = ref(false);
+
+const pickCashier = async (id: string) => {
+  shiftForm.cashierId = id;
+  shiftForm.pin = "";
+  await nextTick();
+  pinEl.value?.focus();
+};
 
 const submitOpenShift = async () => {
+  openingShift.value = true;
   try {
-    await pos.openShift(Number(shiftForm.openingCash) || 0, shiftForm.name);
+    // التحقق من الرقم على الجهاز نفسه: يعمل بلا إنترنت
+    const cashier = pos.cashiers.find((c) => c.id === shiftForm.cashierId) ?? null;
+    if (pos.cashiers.length) {
+      if (!cashier) {
+        toast.warning("اختر الكاشير");
+        return;
+      }
+      if (!(await verifyCashierPin(cashier, shiftForm.pin))) {
+        shiftForm.pin = "";
+        toast.error("الرقم السري غير صحيح");
+        return;
+      }
+    }
+
+    await pos.openShift(
+      Number(shiftForm.openingCash) || 0,
+      cashier?.name ?? shiftForm.name,
+      cashier,
+    );
+    shiftForm.pin = "";
     await nextTick();
     searchEl.value?.focus();
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر فتح الوردية"));
+  } finally {
+    openingShift.value = false;
   }
 };
 
@@ -941,7 +1056,7 @@ const showClose = ref(false);
 const closeForm = reactive({ closingCash: "" as number | "", note: "" });
 
 const closeDifference = computed(() =>
-  sum2([Number(closeForm.closingCash) || 0, -pos.shiftSummary.expectedCash]),
+  sumAmounts([Number(closeForm.closingCash) || 0, -pos.shiftSummary.expectedCash]),
 );
 
 const openCloseShift = () => {
@@ -960,6 +1075,8 @@ const submitCloseShift = async () => {
     showClose.value = false;
     shiftForm.name = pos.cashierName;
     shiftForm.openingCash = "";
+    shiftForm.cashierId = "";
+    shiftForm.pin = "";
     toast.success(
       pos.online
         ? "تم تقفيل الوردية"
@@ -1044,13 +1161,13 @@ const payState = computed(() => {
   const total = pos.cartTotals.total;
   const card = Number(pay.card) || 0;
   const cash = Number(pay.cash) || 0;
-  const cashDue = sum2([total, -card]);
+  const cashDue = sumAmounts([total, -card]);
 
   return {
     /** ما يُسجَّل نقداً = المطلوب نقداً (لا ما استُلم) */
     cashDue,
-    short: Math.max(sum2([cashDue, -cash]), 0),
-    change: Math.max(sum2([cash, -cashDue]), 0),
+    short: Math.max(sumAmounts([cashDue, -cash]), 0),
+    change: Math.max(sumAmounts([cash, -cashDue]), 0),
     error: card > total ? "مبلغ الشبكة أكبر من المطلوب" : "",
   };
 });
@@ -1226,16 +1343,14 @@ onMounted(async () => {
     return;
   }
   shiftForm.name = pos.cashierName;
-  cachedCanReturn.value = (await posDb.getMeta<boolean>("canReturn")) ?? false;
 
-  // الخطة والصلاحيات: نحاول معرفتها، وفشل الطلب (بلا إنترنت) لا يمنع البيع
-  accessStore
-    .fetch()
-    .then(() => {
-      accessKnown.value = true;
-      void posDb.setMeta({ canReturn: canReturn.value });
-    })
-    .catch(() => {});
+  // خطة الشركة وصلاحيات المستخدم الحالي: تُعرف فقط إذا ردّ السيرفر على جلسة
+  // قائمة. غير ذلك (بلا إنترنت، بلا جلسة) لا يحجب الشاشة
+  void pos.fetchUserAccess().then((access) => {
+    if (!access) return;
+    accessStore.apply(access);
+    accessKnown.value = true;
+  });
 
   if (pos.device) {
     pos.start();
@@ -1257,6 +1372,42 @@ onBeforeUnmount(() => pos.stop());
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+// ─── اختيار الكاشير ──────────────────────────────────────────────────────────
+.pos-cashiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+
+  &__item {
+    @include flex(row, center, center, $space-2);
+    padding: $space-2 $space-4;
+    border: 1px solid $stb-border;
+    border-radius: $radius-md;
+    background: transparent;
+    color: $stb-text-primary;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $stb-accent;
+    }
+
+    &.is-active {
+      border-color: $stb-accent;
+      background: rgba($stb-accent, 0.12);
+      color: $stb-accent;
+    }
+  }
+}
+
+.pos-pin {
+  text-align: center;
+  letter-spacing: 0.5em;
+  font-size: $font-size-lg;
 }
 
 // ─── الشريط العلوي ───────────────────────────────────────────────────────────

@@ -3,15 +3,16 @@
 // نفس قواعد السيرفر (document-totals.util و zatca.util). الإيصال يُطبع بما
 // يحسبه الجهاز هنا، والسيرفر عند الرفع يتحقق منه ثم يعتمده كما هو.
 import type { CartLine, PosProduct, SaleLine } from "./types";
+import { currencyDecimals, roundMoney } from "../utils/format";
 
-export const round2 = (value: number): number =>
-  Math.round((value + Number.EPSILON) * 100) / 100;
+/** مبلغ مقرَّب لخانات عملة الشركة (2 أو 3) — كما يقرّب السيرفر */
+export const roundAmount = roundMoney;
 
 const round4 = (value: number): number =>
   Math.round((value + Number.EPSILON) * 10000) / 10000;
 
-export const sum2 = (values: number[]): number =>
-  round2(values.reduce((total, value) => total + value, 0));
+export const sumAmounts = (values: number[]): number =>
+  roundAmount(values.reduce((total, value) => total + value, 0));
 
 /** أسعار شاشة الكاشير شاملة الضريبة دائماً (ما يراه العميل على الرف) */
 export const POS_PRICES_INCLUDE_TAX = true;
@@ -38,9 +39,9 @@ export const lineAmounts = (line: {
   discount: number;
   taxRate: number;
 }): { subtotal: number; taxAmount: number; total: number } => {
-  const total = round2(line.quantity * line.unitPrice - line.discount);
-  const subtotal = round2(total / (1 + line.taxRate / 100));
-  return { subtotal, taxAmount: round2(total - subtotal), total };
+  const total = roundAmount(line.quantity * line.unitPrice - line.discount);
+  const subtotal = roundAmount(total / (1 + line.taxRate / 100));
+  return { subtotal, taxAmount: roundAmount(total - subtotal), total };
 };
 
 /**
@@ -59,7 +60,8 @@ export const pricingError = (line: CartLine): string | null => {
     // سعر وحدة الأساس بعد الخصم، بنفس أساس أقل سعر للصنف
     const effective = (gross - line.discount) / line.quantity / line.factor;
     const minimum = toGrossPrice(product, product.minSalePrice);
-    if (effective + 0.005 < minimum) {
+    // نصف أصغر جزء من العملة: فرق التقريب لا يُعدّ بيعاً تحت الحد
+    if (effective + 0.5 / 10 ** currencyDecimals() < minimum) {
       return `سعر "${product.name}" بعد الخصم أقل من أقل سعر مسموح (${minimum})`;
     }
   }
@@ -87,9 +89,9 @@ export const returnShare = (
   quantity: number,
 ): { subtotal: number; taxAmount: number; total: number } => {
   const share = quantity / line.quantity;
-  const subtotal = round2(line.subtotal * share);
-  const taxAmount = round2(line.taxAmount * share);
-  return { subtotal, taxAmount, total: round2(subtotal + taxAmount) };
+  const subtotal = roundAmount(line.subtotal * share);
+  const taxAmount = roundAmount(line.taxAmount * share);
+  return { subtotal, taxAmount, total: roundAmount(subtotal + taxAmount) };
 };
 
 // ─── رمز QR لهيئة الزكاة والضريبة (المرحلة الأولى) ───────────────────────────

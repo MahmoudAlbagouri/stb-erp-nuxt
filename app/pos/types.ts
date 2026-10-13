@@ -53,6 +53,9 @@ export interface PosDevice {
   boundAt?: string | null;
 }
 
+/** رد ربط الشاشة: الجهاز + مفتاحه (يصل هذه المرة فقط، ويُحفظ على الشاشة) */
+export type BoundPosDevice = PosDevice & { deviceKey: string };
+
 export interface PosDevicePayload {
   name: string;
   code?: string;
@@ -65,6 +68,7 @@ export interface PosShiftRecord {
   deviceId: string;
   device?: Pick<PosDevice, "id" | "name" | "code"> | null;
   cashierName?: string | null;
+  cashierId?: string | null;
   status: "open" | "closed";
   openedAt: string;
   openingCash: number;
@@ -95,6 +99,54 @@ export interface PosBootstrap {
   products: PosProduct[];
   customers: PosCustomer[];
   openShift: PosShiftRecord | null;
+  tenant: PosTenantProfile;
+  /** الكاشيرات الفعّالون (كاملة دائماً). فارغة = الورديات بلا رقم سري */
+  cashiers: PosCashier[];
+  /** صلاحية المرتجع لوردية بلا كاشير محدد */
+  returnsAllowed: boolean;
+  offlinePolicy: PosOfflinePolicy;
+}
+
+/** الشركة كما تحفظها الشاشة: بها تعرض العملة والوقت بلا إنترنت ولا جلسة */
+export interface PosTenantProfile {
+  companyName: string;
+  country: string;
+  currency: string;
+  currencyDecimals: number;
+  timezone: string;
+}
+
+/** كاشير على الجهاز: رقمه السري مشتق لا نص (انظر pos/cashiers.ts) */
+export interface PosCashier {
+  id: string;
+  name: string;
+  canReturn: boolean;
+  pinSalt: string;
+  pinHash: string;
+  pinIterations: number;
+}
+
+/** كاشير كما تعرضه لوحة التحكم (بلا أي أثر للرقم السري) */
+export interface PosCashierRecord {
+  id: string;
+  name: string;
+  canReturn: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PosCashierPayload {
+  name: string;
+  /** يُرسل عند الإنشاء، وعند التعديل فقط لتغيير الرقم */
+  pin?: string;
+  canReturn?: boolean;
+  isActive?: boolean;
+}
+
+/** حد العمل بلا اتصال (ساعات) — يحدده السيرفر */
+export interface PosOfflinePolicy {
+  warnAfterHours: number;
+  blockAfterHours: number;
 }
 
 // ─── ما يُنشئه الجهاز محلياً ─────────────────────────────────────────────────
@@ -104,6 +156,8 @@ export interface LocalShift {
   openedAt: string;
   openingCash: number;
   cashierName: string;
+  /** الكاشير الذي فتحها برقمه السري (غائب = وردية بلا كاشير محدد) */
+  cashierId?: string | null;
   /** مرات فتح الدرج يدوياً بلا بيع (تُرفع مع التقفيل) */
   drawerOpens?: number;
 }

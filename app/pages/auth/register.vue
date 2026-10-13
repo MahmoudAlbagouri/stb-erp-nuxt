@@ -30,30 +30,49 @@
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="form-group">
-          <label>رقم الهاتف</label>
-          <div class="input-wrapper">
-            <Phone :size="18" class="input-icon" />
-            <input
-              v-model="form.phone"
-              type="tel"
-              class="form-input with-icon"
-              placeholder="+966500000000"
-            />
-          </div>
+      <div class="form-group">
+        <label>الدولة *</label>
+        <div class="input-wrapper">
+          <Globe :size="18" class="input-icon" />
+          <select
+            v-model="form.country"
+            class="form-select with-icon"
+            required
+          >
+            <option v-for="c in COUNTRIES" :key="c.code" :value="c.code">
+              {{ c.nameAr }}
+            </option>
+          </select>
         </div>
-        <div class="form-group">
-          <label>العنوان</label>
-          <div class="input-wrapper">
-            <MapPin :size="18" class="input-icon" />
-            <input
-              v-model="form.address"
-              type="text"
-              class="form-input with-icon"
-              placeholder="الرياض - حي العليا"
-            />
-          </div>
+        <p class="auth-form__hint">
+          <Coins :size="14" />
+          <span>
+            عملة الحساب:
+            <strong>
+              {{ selectedCountry.currencyNameAr }} ({{
+                selectedCountry.currencySymbol
+              }})
+            </strong>
+            — تُحدَّد حسب الدولة ولا يمكن تغييرها لاحقاً
+          </span>
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label>رقم الهاتف</label>
+        <StbPhoneInput v-model="form.phone" :country="form.country" />
+      </div>
+
+      <div class="form-group">
+        <label>العنوان</label>
+        <div class="input-wrapper">
+          <MapPin :size="18" class="input-icon" />
+          <input
+            v-model="form.address"
+            type="text"
+            class="form-input with-icon"
+            placeholder="المدينة - الحي - الشارع"
+          />
         </div>
       </div>
 
@@ -132,13 +151,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
 // ✅ استيراد الأيقونات المطلوبة
 import {
   Building2,
   Briefcase,
-  Phone,
+  Globe,
+  Coins,
   MapPin,
   UserCog,
   AtSign,
@@ -154,6 +174,8 @@ const auth = useAuthStore();
 const showPass = ref(false); // ✅ حالة إظهار/إخفاء الباسورد
 const form = reactive({
   companyName: "",
+  // من الدولة تُحدَّد عملة الحساب ومفتاح الهاتف
+  country: DEFAULT_COUNTRY_CODE,
   phone: "",
   address: "",
   username: "",
@@ -161,8 +183,10 @@ const form = reactive({
   password: "",
 });
 
+const selectedCountry = computed(() => getCountry(form.country));
+
 const handleRegister = async () => {
-  await auth.register(form);
+  await auth.register({ ...form, phone: form.phone || undefined });
 };
 </script>
 
@@ -182,9 +206,24 @@ const handleRegister = async () => {
   margin-top: $space-2;
 }
 
+.auth-form__hint {
+  @include flex(row, center, flex-start, $space-2);
+  margin-top: $space-2;
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+
+  strong {
+    color: $stb-accent;
+  }
+}
+
 /* تنسيق الحقول العادية */
 .input-wrapper {
   position: relative;
+
+  .form-select.with-icon {
+    padding-right: $space-10;
+  }
 
   .input-icon {
     position: absolute;

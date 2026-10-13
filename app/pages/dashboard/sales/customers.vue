@@ -211,12 +211,7 @@
                 </div>
                 <div class="form-group">
                   <label>الهاتف</label>
-                  <input
-                    v-model.trim="form.phone"
-                    class="form-input"
-                    dir="ltr"
-                    maxlength="30"
-                  />
+                  <StbPhoneInput v-model="form.phone" />
                 </div>
                 <div class="form-group">
                   <label>البريد الإلكتروني</label>
@@ -263,12 +258,12 @@
                   </small>
                 </div>
                 <div class="form-group">
-                  <label>الحد الائتماني (ر.س)</label>
+                  <label>الحد الائتماني ({{ currencyLabel() }})</label>
                   <StbNumberInput
                     v-model.number="form.creditLimit"
                     class="form-input"
                     min="0"
-                    step="0.01"
+                    :step="moneyStep()"
                     placeholder="بلا حد"
                   />
                   <small class="doc-hint">
@@ -276,11 +271,11 @@
                   </small>
                 </div>
                 <div class="form-group">
-                  <label>رصيد افتتاحي (ر.س)</label>
+                  <label>رصيد افتتاحي ({{ currencyLabel() }})</label>
                   <StbNumberInput
                     v-model.number="form.openingBalance"
                     class="form-input"
-                    step="0.01"
+                    :step="moneyStep()"
                     placeholder="0"
                   />
                   <small class="doc-hint">

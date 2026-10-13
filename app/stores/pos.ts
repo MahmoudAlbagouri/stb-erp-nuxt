@@ -7,10 +7,13 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import {
+  DeviceKeyError,
   OfflineError,
   PosRequestError,
   SessionExpiredError,
+  SubscriptionInactiveError,
   usePosApi,
+  type DeviceCredentials,
 } from "@/pos/api";
 import {
   buildZatcaQr,
@@ -19,27 +22,33 @@ import {
   POS_PRICES_INCLUDE_TAX,
   pricingError,
   returnShare,
-  sum2,
+  sumAmounts,
   toSaleLine,
   unitPriceOf,
 } from "@/pos/calc";
 import { posDb } from "@/pos/db";
 import { DEFAULT_DRAWER, kickDrawer, type DrawerConfig } from "@/pos/drawer";
 import type {
+  BoundPosDevice,
   CartLine,
   LocalReturn,
   LocalSale,
   LocalShift,
   OutboxEntry,
   PosBootstrap,
+  PosCashier,
   PosCategory,
   PosCustomer,
   PosDevice,
+  PosOfflinePolicy,
   PosProduct,
+  PosTenantProfile,
   ReturnableInvoice,
   SalePayment,
   SyncResult,
 } from "@/pos/types";
+import type { AccessResponse } from "@/stores/access";
+import { useAuthStore } from "@/stores/auth";
 import type { SalesPaymentMethod, SalesSettings } from "@/types/sales";
 
 /** كل كم يفحص الجهاز الاتصال ويرفع ما في طابوره */
@@ -49,6 +58,14 @@ const PULL_EVERY_MS = 5 * 60_000;
 /** أقصى عدد عمليات في طلب رفع واحد (حد السيرفر) */
 const PUSH_BATCH = 100;
 const COUNTER_DIGITS = 6;
+const HOUR_MS = 3_600_000;
+/** حد العمل بلا اتصال قبل أن يصل من السيرفر (نفس قيمه الافتراضية) */
+const DEFAULT_OFFLINE_POLICY: PosOfflinePolicy = {
+  warnAfterHours: 72,
+  blockAfterHours: 168,
+};
+/** "آخر اتصال" وساعة الجهاز يُحفظان على القرص بهذه الوتيرة لا مع كل نبضة */
+const PERSIST_EVERY_MS = 60_000;
 
 export const usePosStore = defineStore("pos", () => {
   const api = usePosApi();
@@ -72,11 +89,27 @@ export const usePosStore = defineStore("pos", () => {
   const sales = ref<LocalSale[]>([]);
   const outbox = ref<OutboxEntry[]>([]);
 
+  // ─── آخر حالة معروفة عن الشركة (تُحفظ على الجهاز: الشاشة تعمل بها بلا إنترنت) ──
+  const tenant = ref<PosTenantProfile | null>(null);
+  const cashiers = ref<PosCashier[]>([]);
+  /** صلاحية المرتجع لوردية بلا كاشير محدد، كما يعرفها السيرفر عن هذه الشاشة */
+  const returnsAllowed = ref(false);
+  const offlinePolicy = ref<PosOfflinePolicy>({ ...DEFAULT_OFFLINE_POLICY });
+
   // ─── الاتصال ────────────────────────────────────────────────────────────────
   const online = ref(false);
   const sessionExpired = ref(false);
   const syncing = ref(false);
   const lastError = ref("");
+  /** اشتراك الشركة غير سارٍ (رسالة السيرفر). فارغة = سارٍ على حد علمنا */
+  const suspended = ref("");
+  /** آخر مرة ردّ فيها السيرفر على هذه الشاشة (بساعة الجهاز) */
+  const lastContactAt = ref<number | null>(null);
+  /**
+   * الوقت الآن كما تعتمده الشاشة: ساعة الجهاز، لكنها لا ترجع للخلف — إرجاع
+   * ساعة الجهاز لا يمدّ مهلة العمل بلا اتصال.
+   */
+  const now = ref(Date.now());
 
   const pendingCount = computed(
     () => outbox.value.filter((entry) => !entry.error).length,
@@ -105,10 +138,88 @@ export const usePosStore = defineStore("pos", () => {
   /** سبب رفض السيرفر لهذه الشاشة (الجهاز مربوط بشاشة أخرى) */
   const bindError = ref("");
 
-  const setBound = async (value: boolean) => {
+  /**
+   * مفتاح الجهاز: يصل مرة عند الربط ويُحفظ هنا. به تسحب الشاشة وترفع دون
+   * جلسة مستخدم (التوكن ينتهي خلال دقائق بلا إنترنت؛ المفتاح يبقى حتى يُفكّ
+   * الربط).
+   */
+  const deviceKey = ref<string | null>(null);
+
+  const setBound = async (value: boolean, key: string | null = null) => {
     bound.value = value;
-    await posDb.setMeta({ bound: value });
+    deviceKey.value = value ? key : null;
+    await posDb.setMeta({ bound: value, deviceKey: deviceKey.value });
   };
+
+  const credentials = (): DeviceCredentials | null =>
+    device.value && deviceKey.value
+      ? {
+          deviceId: device.value.id,
+          installationId: installationId.value,
+          key: deviceKey.value,
+        }
+      : null;
+
+  /** طلبات الشاشة بمفتاح جهازها */
+  const deviceApi = () => {
+    const current = credentials();
+    if (!current) throw new DeviceKeyError("الشاشة غير مربوطة بجهاز كاشير");
+    return api.device(current);
+  };
+
+  // ─── ساعة الشاشة وحد العمل بلا اتصال ────────────────────────────────────────
+  let clockSavedAt = 0;
+  let contactSavedAt = 0;
+
+  /** يحدّث "الآن" (بلا رجوع للخلف) ويحفظه دورياً ليبقى بعد إعادة التشغيل */
+  const tick = () => {
+    now.value = Math.max(Date.now(), now.value);
+    if (now.value - clockSavedAt > PERSIST_EVERY_MS) {
+      clockSavedAt = now.value;
+      void posDb.setMeta({ clock: now.value });
+    }
+  };
+
+  const markContact = () => {
+    tick();
+    lastContactAt.value = now.value;
+    if (now.value - contactSavedAt > PERSIST_EVERY_MS) {
+      contactSavedAt = now.value;
+      void posDb.setMeta({ lastContactAt: now.value });
+    }
+  };
+
+  const setSuspended = (message: string) => {
+    if (suspended.value === message) return;
+    suspended.value = message;
+    void posDb.setMeta({ suspended: message });
+  };
+
+  const offlineHours = computed(() =>
+    lastContactAt.value === null
+      ? 0
+      : Math.max(0, (now.value - lastContactAt.value) / HOUR_MS),
+  );
+
+  /** ok ← warn (تنبيه) ← blocked (لا وردية جديدة حتى تتصل الشاشة) */
+  const offlineState = computed<"ok" | "warn" | "blocked">(() => {
+    if (offlineHours.value >= offlinePolicy.value.blockAfterHours) return "blocked";
+    if (offlineHours.value >= offlinePolicy.value.warnAfterHours) return "warn";
+    return "ok";
+  });
+
+  /**
+   * سبب منع فتح وردية جديدة، أو "" إن كان مسموحاً. الوردية المفتوحة لا تتأثر:
+   * تكمل وتُقفَّل وتُرفع مبيعاتها حين يعود الاتصال.
+   */
+  const shiftBlockReason = computed(() => {
+    if (suspended.value) return suspended.value;
+    if (offlineState.value === "blocked") {
+      const days = Math.floor(offlineHours.value / 24);
+      return `مرّ ${days} يوم بلا اتصال بالسيرفر — صِل الجهاز بالإنترنت لفتح وردية جديدة`;
+    }
+    return "";
+  });
 
   /**
    * يتأكد أن الشاشة مربوطة بجهازها قبل أي رفع أو سحب. شاشة رفضها السيرفر
@@ -117,16 +228,18 @@ export const usePosStore = defineStore("pos", () => {
    */
   const ensureBound = async (manual = false): Promise<boolean> => {
     if (!device.value) return false;
-    if (bound.value) return true;
+    if (bound.value && deviceKey.value) return true;
     if (bindError.value && !manual) return false;
+    // الربط (وإصدار المفتاح) هو الطلب الوحيد الذي يحتاج جلسة مستخدم. شاشة
+    // مربوطة من قبل هذا التحديث بلا مفتاح تحصل عليه هنا عند أول جلسة
     const result = await guarded(() =>
-      api.post<PosDevice>(`/pos/devices/${device.value!.id}/bind`, {
+      api.post<BoundPosDevice>(`/pos/devices/${device.value!.id}/bind`, {
         installationId: installationId.value,
       }),
     );
     if (!result) return false;
     bindError.value = "";
-    await setBound(true);
+    await setBound(true, result.deviceKey);
     return true;
   };
 
@@ -156,6 +269,30 @@ export const usePosStore = defineStore("pos", () => {
       ...DEFAULT_DRAWER,
       ...((await posDb.getMeta<DrawerConfig>("drawer")) ?? {}),
     };
+
+    const [key, profile, staff, mayReturn, policy, hold, contact, clock] =
+      await Promise.all([
+        posDb.getMeta<string>("deviceKey"),
+        posDb.getMeta<PosTenantProfile>("tenant"),
+        posDb.getMeta<PosCashier[]>("cashiers"),
+        posDb.getMeta<boolean>("returnsAllowed"),
+        posDb.getMeta<PosOfflinePolicy>("offlinePolicy"),
+        posDb.getMeta<string>("suspended"),
+        posDb.getMeta<number>("lastContactAt"),
+        posDb.getMeta<number>("clock"),
+      ]);
+    deviceKey.value = key;
+    tenant.value = profile;
+    cashiers.value = staff ?? [];
+    returnsAllowed.value = mayReturn === true;
+    offlinePolicy.value = policy ?? { ...DEFAULT_OFFLINE_POLICY };
+    suspended.value = hold ?? "";
+    now.value = Math.max(Date.now(), clock ?? 0);
+    // شاشة تعمل من قبل هذا التحديث: مهلتها تبدأ من الآن لا من الماضي
+    lastContactAt.value = contact ?? (d ? now.value : null);
+    if (contact === null && d) void posDb.setMeta({ lastContactAt: now.value });
+    // العملة والتوقيت من الجهاز: الشاشة تفتح صحيحة بلا إنترنت ولا جلسة
+    useAuthStore().setDeviceLocale(profile);
     returns.value = await posDb.all("returns");
     installationId.value = inst ?? newUuid();
     if (!inst) await posDb.setMeta({ installationId: installationId.value });
@@ -190,14 +327,28 @@ export const usePosStore = defineStore("pos", () => {
       online.value = true;
       sessionExpired.value = false;
       lastError.value = "";
+      markContact();
+      setSuspended("");
       return result;
     } catch (error) {
       if (error instanceof OfflineError) {
         online.value = false;
       } else if (error instanceof SessionExpiredError) {
-        // السيرفر ردّ، فالشبكة تعمل؛ لكن الرفع ينتظر تسجيل الدخول
+        // السيرفر ردّ، فالشبكة تعمل؛ لكن ربط الشاشة ينتظر تسجيل الدخول
         online.value = true;
         sessionExpired.value = true;
+      } else if (error instanceof SubscriptionInactiveError) {
+        // السيرفر ردّ: الشاشة متصلة، لكن الاشتراك موقوف — ما بيع يبقى على
+        // الجهاز ويُرفع بعد التجديد، ولا تُفتح وردية جديدة حتى ذلك
+        online.value = true;
+        markContact();
+        setSuspended(error.message);
+      } else if (error instanceof DeviceKeyError) {
+        // المفتاح أُبطل (فُكّ الربط أو أُوقف الجهاز): الشاشة تحتاج ربطاً
+        // جديداً، والمبيعات تبقى محفوظة هنا حتى يُحسم الأمر
+        online.value = true;
+        bindError.value = error.message;
+        await setBound(false);
       } else {
         online.value = true;
         lastError.value = error instanceof Error ? error.message : "خطأ غير متوقع";
@@ -225,6 +376,7 @@ export const usePosStore = defineStore("pos", () => {
         openedAt: data.openShift.openedAt,
         openingCash: data.openShift.openingCash,
         cashierName: data.openShift.cashierName ?? "",
+        cashierId: data.openShift.cashierId ?? null,
       };
     }
 
@@ -234,7 +386,16 @@ export const usePosStore = defineStore("pos", () => {
       lastSync: data.serverTime,
       counter: nextCounter,
       shift: nextShift,
+      tenant: data.tenant,
+      cashiers: data.cashiers,
+      returnsAllowed: data.returnsAllowed,
+      offlinePolicy: data.offlinePolicy,
     });
+    tenant.value = data.tenant;
+    cashiers.value = data.cashiers;
+    returnsAllowed.value = data.returnsAllowed;
+    offlinePolicy.value = data.offlinePolicy;
+    useAuthStore().setDeviceLocale(data.tenant);
     device.value = data.device;
     settings.value = data.settings;
     lastSync.value = data.serverTime;
@@ -254,11 +415,9 @@ export const usePosStore = defineStore("pos", () => {
   /** يسحب الأصناف والأسعار والعملاء: كلها، أو ما تغيّر منذ آخر سحب */
   const pull = async (full = false): Promise<boolean> => {
     if (!device.value) return false;
-    const since = !full && lastSync.value ? `&since=${encodeURIComponent(lastSync.value)}` : "";
+    const since = !full && lastSync.value ? `?since=${encodeURIComponent(lastSync.value)}` : "";
     const data = await guarded(() =>
-      api.get<PosBootstrap>(
-        `/pos/bootstrap?deviceId=${device.value!.id}&installationId=${installationId.value}${since}`,
-      ),
+      deviceApi().get<PosBootstrap>(`/bootstrap${since}`),
     );
     if (!data) return false;
     await applyBootstrap(data);
@@ -275,9 +434,7 @@ export const usePosStore = defineStore("pos", () => {
       if (batch.length === 0) return true;
 
       const response = await guarded(() =>
-        api.post<{ results: SyncResult[]; lastCounter: number }>("/pos/sync", {
-          deviceId: device.value!.id,
-          installationId: installationId.value,
+        deviceApi().post<{ results: SyncResult[]; lastCounter: number }>("/sync", {
           operations: batch.map((e) => ({
             id: e.id,
             type: e.type,
@@ -308,6 +465,7 @@ export const usePosStore = defineStore("pos", () => {
 
   /** دورة مزامنة: رفع ما في الطابور ثم سحب التغييرات إن حان وقتها */
   const sync = async (options: { pull?: boolean } = {}) => {
+    tick();
     if (!device.value || syncing.value) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       online.value = false;
@@ -332,8 +490,8 @@ export const usePosStore = defineStore("pos", () => {
       if (pushed && duePull) {
         await pull();
       } else if (pushed && pendingCount.value === 0) {
-        // لا شيء للرفع ولا للسحب: فحص اتصال خفيف
-        await guarded(() => api.get("/pos/ping"));
+        // لا شيء للرفع ولا للسحب: فحص اتصال خفيف (وبه يُعرف أن الاشتراك سارٍ)
+        await guarded(() => deviceApi().get("/ping"));
       }
     } finally {
       syncing.value = false;
@@ -356,6 +514,8 @@ export const usePosStore = defineStore("pos", () => {
   };
 
   const stop = () => {
+    // خارج شاشة الكاشير تعود العملة والتوقيت لما في جلسة المستخدم
+    useAuthStore().setDeviceLocale(null);
     if (heartbeat) clearInterval(heartbeat);
     heartbeat = null;
     window.removeEventListener("online", onOnline);
@@ -371,20 +531,32 @@ export const usePosStore = defineStore("pos", () => {
       throw new Error("في الجهاز مبيعات لم تُرفع بعد — ارفعها قبل تغيير الجهاز");
     }
     // الربط أولاً: جهاز مربوط بشاشة أخرى يُرفض هنا قبل مسح أي شيء
-    await api.post<PosDevice>(`/pos/devices/${target.id}/bind`, {
-      installationId: installationId.value,
-    });
-    const data = await api.get<PosBootstrap>(
-      `/pos/bootstrap?deviceId=${target.id}&installationId=${installationId.value}`,
+    const { deviceKey: key } = await api.post<BoundPosDevice>(
+      `/pos/devices/${target.id}/bind`,
+      { installationId: installationId.value },
     );
+    const data = await api
+      .device({
+        deviceId: target.id,
+        installationId: installationId.value,
+        key,
+      })
+      .get<PosBootstrap>("/bootstrap");
     const keepName = cashierName.value;
+    tick();
     await posDb.reset({
       installationId: installationId.value,
       bound: true,
+      deviceKey: key,
       drawer: drawer.value,
+      clock: now.value,
+      lastContactAt: now.value,
     });
     returns.value = [];
     bound.value = true;
+    deviceKey.value = key;
+    lastContactAt.value = now.value;
+    suspended.value = "";
     bindError.value = "";
     counter.value = 0;
     shift.value = null;
@@ -397,13 +569,27 @@ export const usePosStore = defineStore("pos", () => {
   };
 
   // ─── الوردية ────────────────────────────────────────────────────────────────
-  const openShift = async (openingCash: number, name: string) => {
+  /**
+   * يفتح وردية. `cashier` من تحقق من رقمه السري على هذه الشاشة (انظر
+   * pos/cashiers)؛ بدونه وردية باسم حر — فقط لشركة لم تعرّف كاشيرات.
+   */
+  const openShift = async (
+    openingCash: number,
+    name: string,
+    cashier: PosCashier | null = null,
+  ) => {
     if (shift.value) throw new Error("توجد وردية مفتوحة بالفعل");
+    tick();
+    if (shiftBlockReason.value) throw new Error(shiftBlockReason.value);
+    if (cashiers.value.length > 0 && !cashier) {
+      throw new Error("اختر الكاشير وأدخل رقمه السري");
+    }
     const next: LocalShift = {
       id: newUuid(),
       openedAt: new Date().toISOString(),
       openingCash,
       cashierName: name,
+      cashierId: cashier?.id ?? null,
     };
     await posDb.enqueue(
       {
@@ -414,6 +600,7 @@ export const usePosStore = defineStore("pos", () => {
           openedAt: next.openedAt,
           openingCash,
           cashierName: name || undefined,
+          cashierId: cashier?.id,
         },
         createdAt: next.openedAt,
       },
@@ -426,13 +613,35 @@ export const usePosStore = defineStore("pos", () => {
     void sync({ pull: true });
   };
 
+  /** كاشير الوردية الحالية كما هو في آخر قائمة نزلت (null = لم يعد فيها) */
+  const shiftCashier = computed(() =>
+    shift.value?.cashierId
+      ? (cashiers.value.find((c) => c.id === shift.value!.cashierId) ?? null)
+      : null,
+  );
+
+  /** كاشير الوردية أُوقف أو حُذف (عرفت الشاشة عند آخر اتصال): يقفّل ورديته فقط */
+  const cashierRevoked = computed(
+    () => !!shift.value?.cashierId && !shiftCashier.value,
+  );
+
+  /**
+   * المرتجع يتبع صاحب الوردية — نفس قاعدة السيرفر: كاشيرها إن فُتحت برقم
+   * سري، وإلا آخر ما عُرف عن مستخدم هذه الشاشة.
+   */
+  const canReturn = computed(() =>
+    shift.value?.cashierId
+      ? !!shiftCashier.value?.canReturn
+      : returnsAllowed.value,
+  );
+
   /** مبيعات الوردية الحالية من نسخة الجهاز (تعمل بلا إنترنت) */
   const shiftSummary = computed(() => {
     const own = shift.value
       ? sales.value.filter((sale) => sale.shiftId === shift.value!.id)
       : [];
     const byMethod = (method: string) =>
-      sum2(
+      sumAmounts(
         own.flatMap((sale) =>
           sale.payments.filter((p) => p.method === method).map((p) => p.amount),
         ),
@@ -441,20 +650,20 @@ export const usePosStore = defineStore("pos", () => {
     const ownReturns = shift.value
       ? returns.value.filter((r) => r.shiftId === shift.value!.id)
       : [];
-    const cashRefunds = sum2(
+    const cashRefunds = sumAmounts(
       ownReturns.filter((r) => r.refundMethod === "cash").map((r) => r.refundAmount),
     );
     return {
       invoicesCount: own.length,
-      salesTotal: sum2(own.map((sale) => sale.total)),
+      salesTotal: sumAmounts(own.map((sale) => sale.total)),
       cash,
       card: byMethod("card"),
       returnsCount: ownReturns.length,
-      returnsTotal: sum2(ownReturns.map((r) => r.total)),
+      returnsTotal: sumAmounts(ownReturns.map((r) => r.total)),
       cashRefunds,
       drawerOpens: shift.value?.drawerOpens ?? 0,
       // الدرج = العهدة + المبيعات النقدية − ما رُدّ نقداً
-      expectedCash: sum2([shift.value?.openingCash ?? 0, cash, -cashRefunds]),
+      expectedCash: sumAmounts([shift.value?.openingCash ?? 0, cash, -cashRefunds]),
     };
   });
 
@@ -492,9 +701,9 @@ export const usePosStore = defineStore("pos", () => {
       lineAmounts({ ...line, taxRate: line.product.taxRate }),
     );
     return {
-      subtotal: sum2(amounts.map((a) => a.subtotal)),
-      taxTotal: sum2(amounts.map((a) => a.taxAmount)),
-      total: sum2(amounts.map((a) => a.total)),
+      subtotal: sumAmounts(amounts.map((a) => a.subtotal)),
+      taxTotal: sumAmounts(amounts.map((a) => a.taxAmount)),
+      total: sumAmounts(amounts.map((a) => a.total)),
       items: cart.value.reduce((count, line) => count + line.quantity, 0),
     };
   });
@@ -552,6 +761,9 @@ export const usePosStore = defineStore("pos", () => {
     cashReceived: number,
   ): Promise<LocalSale> => {
     if (!device.value || !shift.value) throw new Error("افتح وردية أولاً");
+    if (cashierRevoked.value) {
+      throw new Error("تم إيقاف كاشير هذه الوردية — قفّل الوردية ليفتح غيره");
+    }
     if (cart.value.length === 0) throw new Error("السلة فارغة");
 
     for (const line of cart.value) {
@@ -561,16 +773,16 @@ export const usePosStore = defineStore("pos", () => {
     }
 
     const lines = cart.value.map(toSaleLine);
-    const total = sum2(lines.map((l) => l.total));
-    const taxTotal = sum2(lines.map((l) => l.taxAmount));
-    if (sum2(payments.map((p) => p.amount)) !== total) {
+    const total = sumAmounts(lines.map((l) => l.total));
+    const taxTotal = sumAmounts(lines.map((l) => l.taxAmount));
+    if (sumAmounts(payments.map((p) => p.amount)) !== total) {
       throw new Error("المقبوض لا يساوي إجمالي الفاتورة");
     }
 
     const customer = customers.value.find((c) => c.id === customerId.value);
     const nextCounter = counter.value + 1;
     const issuedAt = new Date().toISOString();
-    const cashPaid = sum2(
+    const cashPaid = sumAmounts(
       payments.filter((p) => p.method === "cash").map((p) => p.amount),
     );
 
@@ -585,11 +797,11 @@ export const usePosStore = defineStore("pos", () => {
       pricesIncludeTax: POS_PRICES_INCLUDE_TAX,
       lines,
       payments,
-      subtotal: sum2(lines.map((l) => l.subtotal)),
+      subtotal: sumAmounts(lines.map((l) => l.subtotal)),
       taxTotal,
       total,
       cashReceived,
-      change: Math.max(sum2([cashReceived, -cashPaid]), 0),
+      change: Math.max(sumAmounts([cashReceived, -cashPaid]), 0),
       qrCode: settings.value?.taxNumber
         ? buildZatcaQr({
             sellerName: settings.value.sellerName ?? "",
@@ -649,8 +861,8 @@ export const usePosStore = defineStore("pos", () => {
     }
     return {
       ...invoice,
-      returnedAmount: sum2([invoice.returnedAmount, ...done.map((r) => r.total)]),
-      paidAmount: sum2([invoice.paidAmount, ...done.map((r) => -r.refundAmount)]),
+      returnedAmount: sumAmounts([invoice.returnedAmount, ...done.map((r) => r.total)]),
+      paidAmount: sumAmounts([invoice.paidAmount, ...done.map((r) => -r.refundAmount)]),
       lines: invoice.lines.map((line) => ({
         ...line,
         returnedQuantity: line.returnedQuantity + (returned.get(line.lineIndex) ?? 0),
@@ -667,10 +879,11 @@ export const usePosStore = defineStore("pos", () => {
     if (!number) throw new Error("أدخل رقم الفاتورة");
 
     try {
-      const remote = await api.get<Omit<ReturnableInvoice, "local">>(
-        `/pos/invoices/${encodeURIComponent(number)}`,
+      const remote = await deviceApi().get<Omit<ReturnableInvoice, "local">>(
+        `/invoices/${encodeURIComponent(number)}`,
       );
       online.value = true;
+      markContact();
       // السيرفر لم يرَ بعد ما ينتظر الرفع من هذه الشاشة
       return withReturns({ ...remote, local: false }, pendingReturnsOf(remote.number));
     } catch (error) {
@@ -720,14 +933,14 @@ export const usePosStore = defineStore("pos", () => {
     const lines = invoice.lines
       .map((line) => ({ line, quantity: Number(quantities[line.lineIndex]) || 0 }))
       .filter((item) => item.quantity > 0);
-    const total = sum2(
+    const total = sumAmounts(
       lines.map((item) => returnShare(item.line, item.quantity).total),
     );
-    const net = sum2([invoice.total, -invoice.returnedAmount, -total]);
+    const net = sumAmounts([invoice.total, -invoice.returnedAmount, -total]);
     return {
       lines,
       total,
-      refund: Math.max(sum2([invoice.paidAmount, -net]), 0),
+      refund: Math.max(sumAmounts([invoice.paidAmount, -net]), 0),
     };
   };
 
@@ -742,6 +955,7 @@ export const usePosStore = defineStore("pos", () => {
     reason: string,
   ): Promise<LocalReturn> => {
     if (!shift.value) throw new Error("افتح وردية أولاً");
+    if (!canReturn.value) throw new Error("لا تملك صلاحية عمل مرتجع");
     const preview = refundPreview(invoice, quantities);
     if (preview.lines.length === 0) throw new Error("حدّد كمية صنف واحد على الأقل");
     for (const { line, quantity } of preview.lines) {
@@ -819,6 +1033,20 @@ export const usePosStore = defineStore("pos", () => {
     await sync();
   };
 
+  /**
+   * خطة الشركة وصلاحيات المستخدم المسجّل دخوله الآن — إن وُجد واتصلنا. يعيد
+   * null إن تعذر (بلا إنترنت أو بلا جلسة)، وهذا لا يمنع البيع: الشاشة تعمل
+   * بهوية جهازها.
+   */
+  const fetchUserAccess = async (): Promise<AccessResponse | null> => {
+    if (!api.hasSession()) return null;
+    try {
+      return await api.get<AccessResponse>("/subscriptions/me/access");
+    } catch {
+      return null;
+    }
+  };
+
   const reset = () => {
     stop();
     cart.value = [];
@@ -845,6 +1073,18 @@ export const usePosStore = defineStore("pos", () => {
     installationId,
     bindError,
     rebind,
+    tenant,
+    cashiers,
+    shiftCashier,
+    cashierRevoked,
+    canReturn,
+    suspended,
+    lastContactAt,
+    offlineHours,
+    offlineState,
+    offlinePolicy,
+    shiftBlockReason,
+    fetchUserAccess,
     pendingCount,
     failedEntries,
     init,

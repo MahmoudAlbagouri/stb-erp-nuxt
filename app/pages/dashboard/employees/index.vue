@@ -454,8 +454,8 @@
                     v-model="editForm.nationalId"
                     type="text"
                     class="form-input"
-                    placeholder="1xxxxxxxxx"
-                    maxlength="10"
+                    placeholder="رقم الهوية"
+                    maxlength="20"
                     @input="
                       editForm.nationalId = editForm.nationalId.replace(
                         /[^0-9]/g,
@@ -487,16 +487,7 @@
                 </div>
                 <div class="form-group">
                   <label>رقم الهاتف</label
-                  ><input
-                    v-model="editForm.phone"
-                    type="tel"
-                    class="form-input"
-                    dir="ltr"
-                    maxlength="10"
-                    @input="
-                      editForm.phone = editForm.phone.replace(/[^0-9]/g, '')
-                    "
-                  />
+                  ><StbPhoneInput v-model="editForm.phone" />
                 </div>
                 <div class="form-group">
                   <label>الحالة الوظيفية</label>

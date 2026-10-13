@@ -401,7 +401,7 @@ const totalApprovedAmount = computed(() =>
 );
 const calculatedMonthly = computed(() =>
   form.totalAmount && form.installmentsCount
-    ? Number((form.totalAmount / form.installmentsCount).toFixed(2))
+    ? roundMoney(form.totalAmount / form.installmentsCount)
     : 0,
 );
 const todayLabel = formatDate(new Date());

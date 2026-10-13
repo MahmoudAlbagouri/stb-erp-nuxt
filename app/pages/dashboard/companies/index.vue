@@ -126,7 +126,7 @@
         <div class="tenant-card__body">
           <div class="tenant-detail">
             <Phone :size="14" />
-            <span>{{ tenant.phone || "—" }}</span>
+            <span dir="ltr">{{ tenant.phone || "—" }}</span>
           </div>
           <div class="tenant-detail">
             <MapPin :size="14" />
@@ -134,7 +134,10 @@
           </div>
           <div class="tenant-detail">
             <Globe :size="14" />
-            <span>{{ tenant.country || "غير محدد" }}</span>
+            <span>
+              {{ findCountry(tenant.country)?.nameAr ?? "غير محدد" }}
+              · {{ getCurrencySymbol(tenant.currency) }}
+            </span>
           </div>
           <div class="tenant-detail">
             <Calendar :size="14" />
@@ -200,25 +203,24 @@
                 />
               </div>
 
-              <div class="grid-2-modal">
-                <div class="form-group">
-                  <label>رقم الهاتف</label>
-                  <input
-                    v-model="form.phone"
-                    type="tel"
-                    class="form-input"
-                    placeholder="+966..."
-                  />
-                </div>
-                <div class="form-group">
-                  <label>الدولة</label>
-                  <input
-                    v-model="form.country"
-                    type="text"
-                    class="form-input"
-                    placeholder="المملكة العربية السعودية"
-                  />
-                </div>
+              <div class="form-group">
+                <label>الدولة *</label>
+                <select v-model="form.country" class="form-select" required>
+                  <option v-for="c in COUNTRIES" :key="c.code" :value="c.code">
+                    {{ c.nameAr }} — {{ c.currencyNameAr }} ({{
+                      c.currencySymbol
+                    }})
+                  </option>
+                </select>
+                <small v-if="countryChanged" class="form-hint">
+                  تغيير الدولة يغيّر عملة عرض كل مبالغ الشركة ومنطقتها الزمنية،
+                  ولا يحوّل المبالغ المسجّلة.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label>رقم الهاتف</label>
+                <StbPhoneInput v-model="form.phone" :country="form.country" />
               </div>
 
               <div class="form-group">
@@ -227,7 +229,7 @@
                   v-model="form.address"
                   type="text"
                   class="form-input"
-                  placeholder="الرياض - حي العليا"
+                  placeholder="المدينة - الحي - الشارع"
                 />
               </div>
 
@@ -328,8 +330,14 @@ const form = reactive({
   companyName: "",
   phone: "",
   address: "",
-  country: "",
+  country: DEFAULT_COUNTRY_CODE,
 });
+
+/** الدولة المحفوظة للشركة قيد التعديل (لتنبيه مالك النظام عند تغييرها) */
+const originalCountry = ref<string | null>(null);
+const countryChanged = computed(
+  () => isEditing.value && form.country !== originalCountry.value,
+);
 
 // Computed
 const filteredTenants = computed(() => {
@@ -361,14 +369,16 @@ const openModal = (tenant?: Tenant) => {
     form.companyName = tenant.companyName;
     form.phone = tenant.phone || "";
     form.address = tenant.address || "";
-    form.country = tenant.country || "";
+    form.country = getCountry(tenant.country).code;
+    originalCountry.value = form.country;
   } else {
     isEditing.value = false;
     currentTenantId.value = null;
     form.companyName = "";
     form.phone = "";
     form.address = "";
-    form.country = "";
+    form.country = DEFAULT_COUNTRY_CODE;
+    originalCountry.value = null;
   }
   showModal.value = true;
 };
@@ -380,11 +390,13 @@ const closeModal = () => {
 const handleSubmit = async () => {
   submitting.value = true;
   try {
+    // رقم فارغ لا يُرسل: السيرفر يتحقق من أي رقم مُرسل حسب الدولة
+    const payload = { ...form, phone: form.phone || undefined };
     if (isEditing.value && currentTenantId.value) {
-      await store.update(currentTenantId.value, form);
+      await store.update(currentTenantId.value, payload);
       toast.success("تم تحديث بيانات الشركة بنجاح");
     } else {
-      await store.create(form);
+      await store.create(payload);
       toast.success("تم إضافة الشركة بنجاح");
     }
     closeModal();
@@ -689,5 +701,12 @@ onMounted(() => {
   background: rgba($stb-text-muted, 0.12);
   color: $stb-text-muted;
   border: 1px solid rgba($stb-text-muted, 0.25);
+}
+
+.form-hint {
+  display: block;
+  margin-top: $space-2;
+  font-size: $font-size-xs;
+  color: $stb-warning;
 }
 </style>

@@ -22,6 +22,9 @@ export interface AttendanceLogFilters {
   limit?: number;
 }
 
+/** عدد السجلات في الصفحة */
+export const ATTENDANCE_PAGE_SIZE = 50;
+
 export interface CreateManualLogPayload {
   employeeId: string;
   punchTime: string; // ISO datetime
@@ -41,6 +44,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
   const devices = ref<BiometricDevice[]>([]);
   const logs = ref<AttendanceLog[]>([]);
   const logsTotal = ref(0);
+  const logsPage = ref(1);
   const loading = ref(false);
 
   // --- Devices Management ---
@@ -90,11 +94,17 @@ export const useAttendanceStore = defineStore("attendance", () => {
   const fetchLogs = async (filters?: AttendanceLogFilters) => {
     loading.value = true;
     try {
+      const page = filters?.page ?? 1;
       const res = await api.get<{ data: AttendanceLog[]; total: number }>(
-        `/attendance/logs${toQueryString(filters)}`,
+        `/attendance/logs${toQueryString({
+          ...filters,
+          page,
+          limit: filters?.limit ?? ATTENDANCE_PAGE_SIZE,
+        })}`,
       );
       logs.value = res.data.data || [];
       logsTotal.value = res.data.total || 0;
+      logsPage.value = page;
     } catch (error) {
       console.error("Failed to fetch logs:", error);
     } finally {
@@ -134,6 +144,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     devices.value = [];
     logs.value = [];
     logsTotal.value = 0;
+    logsPage.value = 1;
     loading.value = false;
   };
 
@@ -141,6 +152,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     devices,
     logs,
     logsTotal,
+    logsPage,
     loading,
     fetchDevices,
     createDevice,

@@ -57,7 +57,7 @@
       <div class="stat-card stat-approved">
         <div class="stat-card__icon"><Banknote :size="24" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ totalAmount }} ر.س</div>
+          <div class="stat-card__value">{{ totalAmount }} {{ currencyLabel() }}</div>
           <div class="stat-card__label">إجمالي المعتمدة</div>
         </div>
       </div>
@@ -263,7 +263,7 @@
                     placeholder="0.00"
                     required
                     min="1"
-                    step="0.01"
+                    :step="moneyStep()"
                   />
                 </div>
                 <div class="form-group">

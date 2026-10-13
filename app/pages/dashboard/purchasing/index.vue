@@ -378,7 +378,7 @@
                       {{ formatCurrency(line.unitPrice) }}
                     </span>
                     <span v-if="line.discount > 0" class="doc-cell__sub">
-                      خصم {{ formatNumber(line.discount, 2) }}
+                      خصم {{ formatMoney(line.discount) }}
                     </span>
                   </div>
                   <div>
@@ -607,7 +607,7 @@
                         v-model.number="line.discount"
                         class="form-input"
                         min="0"
-                        step="0.01"
+                        :step="moneyStep()"
                         placeholder="0"
                       />
                     </div>
