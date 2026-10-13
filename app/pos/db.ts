@@ -148,6 +148,21 @@ export const posDb = {
     });
   },
 
+  /** عميل أضافه الكاشير هنا، مع عملية رفعه في معاملة واحدة */
+  saveCustomer(customer: PosCustomer, entry: OutboxEntry): Promise<void> {
+    return transact(["customers", "outbox"], (get) => {
+      get("customers").put(JSON.parse(JSON.stringify(customer)));
+      get("outbox").add(JSON.parse(JSON.stringify(entry)));
+    });
+  },
+
+  /** يعيد عملاء أُضيفوا هنا ولم يُرفعوا بعد (تنزيل كامل يمسح نسخة العملاء) */
+  putCustomers(customers: PosCustomer[]): Promise<void> {
+    return transact(["customers"], (get) => {
+      customers.forEach((c) => get("customers").put(JSON.parse(JSON.stringify(c))));
+    });
+  },
+
   /** يحفظ مرتجعاً مع عملية رفعه في معاملة واحدة */
   saveReturn(salesReturn: LocalReturn, entry: OutboxEntry): Promise<void> {
     return transact(["returns", "outbox"], (get) => {

@@ -28,7 +28,12 @@ export interface PosCustomer {
   name: string;
   phone: string | null;
   taxNumber: string | null;
+  /** أقصى مديونية للبيع الآجل (null أو غائب = بلا حد) */
+  creditLimit?: number | null;
+  paymentTermsDays?: number;
   available: boolean;
+  /** أُضيف على هذه الشاشة ولم يؤكد السيرفر استلامه بعد */
+  local?: boolean;
 }
 
 export interface PosCategory {
@@ -46,6 +51,8 @@ export interface PosDevice {
   warehouse?: {
     id: string;
     name: string;
+    /** false = البيع بأكثر من الرصيد يرفضه السيرفر، فتمنعه الشاشة */
+    allowNegativeStock?: boolean;
     branch?: { id: string; name: string } | null;
   } | null;
   lastCounter: number;
@@ -85,6 +92,11 @@ export interface PosShiftRecord {
   returnsTotal: number;
   /** ما رُدّ نقداً من الدرج */
   cashRefunds: number;
+  /** ما بيع على الحساب (آجل) */
+  creditTotal: number;
+  /** نقد أُودع في الدرج / سُحب منه بلا بيع */
+  cashIn: number;
+  cashOut: number;
   /** مرات فتح الدرج يدوياً بلا بيع */
   drawerOpens: number;
   expectedCash: number;
@@ -109,6 +121,57 @@ export interface PosBootstrap {
   /** صلاحية المرتجع لوردية بلا كاشير محدد */
   returnsAllowed: boolean;
   offlinePolicy: PosOfflinePolicy;
+  /** أرصدة مخزن الجهاز: كلها (full) أو ما تغيّر. غائبة من سيرفر أقدم */
+  stock?: { productId: string; quantity: number }[];
+  /** ما على كل عميل الآن (القائمة كاملة دائماً) */
+  customerBalances?: { id: string; balance: number }[];
+  promotions?: PosPromotion[];
+  posOptions?: PosOptions;
+}
+
+/** عرض أو سعر خاص يطبّقه الجهاز (انظر pos/promotions.ts) */
+export interface PosPromotion {
+  id: string;
+  name: string;
+  type: "special_price" | "percent_off" | "buy_x_get_y";
+  productId: string | null;
+  categoryId: string | null;
+  customerId: string | null;
+  /** السعر الخاص لوحدة الأساس، بنفس أساس سعر الصنف */
+  price: number | null;
+  percent: number | null;
+  buyQuantity: number | null;
+  getQuantity: number | null;
+  startsAt: string | null;
+  endsAt: string | null;
+}
+
+/** عرض كما تديره لوحة التحكم */
+export interface PosPromotionRecord extends PosPromotion {
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type PosPromotionPayload = Partial<Omit<PosPromotion, "id">> & {
+  name: string;
+  type: PosPromotion["type"];
+  isActive?: boolean;
+};
+
+/** باركود الميزان (انظر pos/scale.ts) */
+export interface ScaleBarcodeOptions {
+  enabled: boolean;
+  prefixes: string[];
+  itemDigits: number;
+  valueType: "weight" | "price";
+  valueDecimals: number;
+}
+
+/** إعدادات الكاشير على مستوى الشركة */
+export interface PosOptions {
+  scale: ScaleBarcodeOptions;
+  /** ما يحتاج رقم مشرف السري */
+  approvals: { void: boolean; cashOut: boolean; manualDrawer: boolean };
 }
 
 /** الشركة كما تحفظها الشاشة: بها تعرض العملة والوقت بلا إنترنت ولا جلسة */
@@ -133,6 +196,10 @@ export interface PosCashier {
   id: string;
   name: string;
   canReturn: boolean;
+  /** يوافق برقمه السري على ما يتجاوز صلاحية الكاشير */
+  isSupervisor?: boolean;
+  /** أقصى خصم يدوي % على الفاتورة (null أو غائب = بلا حد) */
+  maxDiscountPercent?: number | null;
   pinSalt: string;
   pinHash: string;
   pinIterations: number;
@@ -143,6 +210,8 @@ export interface PosCashierRecord {
   id: string;
   name: string;
   canReturn: boolean;
+  isSupervisor: boolean;
+  maxDiscountPercent: number | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -152,6 +221,8 @@ export interface PosCashierPayload {
   /** يُرسل عند الإنشاء، وعند التعديل فقط لتغيير الرقم */
   pin?: string;
   canReturn?: boolean;
+  isSupervisor?: boolean;
+  maxDiscountPercent?: number | null;
   isActive?: boolean;
 }
 
@@ -182,8 +253,90 @@ export interface CartLine {
   unitName: string;
   factor: number;
   quantity: number;
+  /** سعر القائمة (السعر الخاص يُحسب عند التسعير) */
   unitPrice: number;
+  /** خصم الكاشير على السطر */
   discount: number;
+}
+
+/** خصم على الفاتورة كلها: نسبة أو مبلغ */
+export interface InvoiceDiscount {
+  type: "percent" | "amount";
+  value: number;
+}
+
+/** سطر سلة كما يُحفظ على الجهاز (الصنف بمعرّفه: بياناته تتجدد عند الاسترجاع) */
+export interface StoredCartLine {
+  productId: string;
+  unitId: string | null;
+  quantity: number;
+  discount: number;
+}
+
+/** سلة محفوظة: الجارية (تبقى بعد إغلاق المتصفح) أو معلّقة */
+export interface StoredCart {
+  lines: StoredCartLine[];
+  customerId: string;
+  invoiceDiscount: InvoiceDiscount | null;
+}
+
+/** فاتورة معلّقة: عميل ذهب ليحضر شيئاً، والكاشير يكمل مع غيره */
+export interface HeldCart extends StoredCart {
+  id: string;
+  heldAt: string;
+  label: string;
+  total: number;
+  items: number;
+}
+
+/** إيداع أو سحب نقدي من الدرج خلال الوردية */
+export interface CashMove {
+  id: string;
+  shiftId: string;
+  type: "in" | "out";
+  amount: number;
+  reason: string;
+  occurredAt: string;
+  approvedBy: string | null;
+}
+
+export type AuditAction =
+  | "line_removed"
+  | "cart_cleared"
+  | "sale_held"
+  | "held_deleted"
+  | "drawer_opened"
+  | "cash_in"
+  | "cash_out"
+  | "discount"
+  | "price_below_min"
+  | "credit_over_limit"
+  | "approval_denied";
+
+/** حدث تدقيق كما تعرضه لوحة التحكم */
+export interface PosAuditRecord {
+  id: string;
+  deviceId: string;
+  deviceName: string | null;
+  shiftId: string | null;
+  action: AuditAction;
+  cashierName: string | null;
+  approvedBy: string | null;
+  amount: number | null;
+  details: string | null;
+  occurredAt: string;
+}
+
+/** حركة درج كما تعرضها لوحة التحكم */
+export interface PosCashMovementRecord {
+  id: string;
+  shiftId: string;
+  type: "in" | "out";
+  amount: number;
+  reason: string;
+  cashierName: string | null;
+  approvedBy: string | null;
+  occurredAt: string;
 }
 
 export interface SaleLine {
@@ -198,6 +351,10 @@ export interface SaleLine {
   subtotal: number;
   taxAmount: number;
   total: number;
+  /** الكمية بوحدة الأساس: لتحديث رصيد الشاشة (لا تُرفع) */
+  baseQuantity?: number;
+  /** العرض المطبَّق (للإيصال، لا يُرفع) */
+  promoName?: string | null;
 }
 
 export interface SalePayment {
@@ -224,6 +381,10 @@ export interface LocalSale {
   /** ما دفعه العميل نقداً والباقي له (للإيصال فقط، لا يُرفع) */
   cashReceived: number;
   change: number;
+  /** ما بقي على حساب العميل (بيع آجل) */
+  creditAmount?: number;
+  /** مجموع الخصوم: عروض + خصم الكاشير (للتقرير) */
+  discountTotal?: number;
   qrCode: string | null;
 }
 
@@ -272,7 +433,14 @@ export interface LocalReturn {
   reason: string | null;
 }
 
-export type OutboxType = "shift.open" | "sale" | "return" | "shift.close";
+export type OutboxType =
+  | "shift.open"
+  | "customer.create"
+  | "sale"
+  | "return"
+  | "cash.move"
+  | "audit"
+  | "shift.close";
 
 /** عملية في طابور الرفع: تبقى حتى يؤكد السيرفر استلامها */
 export interface OutboxEntry {

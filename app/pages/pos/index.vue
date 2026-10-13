@@ -55,6 +55,24 @@
           <Undo2 :size="15" /> <span class="pos-hide-sm">مرتجع</span>
         </button>
         <button
+          v-if="pos.shift && pos.held.length"
+          class="btn btn--sm btn--ghost pos-held-btn"
+          title="الفواتير المعلّقة (F7)"
+          @click="showHeld = true"
+        >
+          <PauseCircle :size="15" />
+          <span class="pos-hide-sm">معلّقة</span>
+          <span class="pos-status__count">{{ formatNumber(pos.held.length) }}</span>
+        </button>
+        <button
+          v-if="pos.shift"
+          class="btn btn--sm btn--ghost"
+          title="إيداع أو سحب نقدي من الدرج (F9)"
+          @click="showCashMove = true"
+        >
+          <Wallet :size="15" /> <span class="pos-hide-sm">نقد</span>
+        </button>
+        <button
           v-if="pos.shift && pos.drawer.mode !== 'off'"
           class="btn btn--sm btn--ghost pos-drawer-btn"
           title="فتح الدرج بلا بيع — يُسجَّل على الوردية"
@@ -75,6 +93,21 @@
           @click="openCloseShift"
         >
           <LockKeyhole :size="15" /> <span class="pos-hide-sm">تقفيل الوردية</span>
+        </button>
+        <button
+          v-if="pos.device"
+          class="btn btn--sm btn--ghost btn--icon"
+          title="شاشة العميل: نافذة تُسحب للشاشة الثانية"
+          @click="openCustomerDisplay"
+        >
+          <MonitorUp :size="15" />
+        </button>
+        <button
+          class="btn btn--sm btn--ghost btn--icon"
+          title="اختصارات لوحة المفاتيح (F1)"
+          @click="showShortcuts = true"
+        >
+          <Keyboard :size="15" />
         </button>
         <button
           class="btn btn--sm btn--ghost btn--icon pos-settings-btn"
@@ -340,11 +373,21 @@
             v-for="p in visibleProducts"
             :key="p.id"
             class="pos-tile"
-            @click="pos.addProduct(p)"
+            :class="{ 'is-out': isOut(p) }"
+            @click="add(p)"
           >
             <span class="pos-tile__name">{{ p.name }}</span>
-            <span class="pos-tile__price">
-              {{ formatMoney(unitPriceOf(p, null)) }}
+            <span class="pos-tile__foot">
+              <span
+                v-if="pos.stockOf(p) !== null"
+                class="pos-tile__stock"
+                :title="`المتاح في المخزن: ${pos.stockOf(p)} ${p.baseUnitName}`"
+              >
+                {{ formatNumber(pos.stockOf(p)!) }}
+              </span>
+              <span class="pos-tile__price">
+                {{ formatMoney(unitPriceOf(p, null)) }}
+              </span>
             </span>
           </button>
           <p v-if="!visibleProducts.length" class="doc-lines__empty">
@@ -359,24 +402,50 @@
 
       <!-- السلة -->
       <section class="pos-cart card">
-        <select v-model="pos.customerId" class="form-select pos-cart__customer">
-          <option value="">عميل نقدي</option>
-          <option v-for="c in pos.customers" :key="c.id" :value="c.id">
-            {{ c.name }}
-          </option>
-        </select>
+        <div class="pos-cart__customer">
+          <select v-model="pos.customerId" class="form-select">
+            <option value="">عميل نقدي</option>
+            <option v-for="c in pos.customers" :key="c.id" :value="c.id">
+              {{ c.name }}
+            </option>
+          </select>
+          <button
+            class="btn btn--ghost btn--icon"
+            title="عميل جديد"
+            @click="showCustomer = true"
+          >
+            <UserPlus :size="16" />
+          </button>
+        </div>
+        <p v-if="selectedCustomer" class="doc-hint pos-cart__balance">
+          عليه {{ formatCurrency(pos.customerBalance(selectedCustomer.id)) }}
+          <template v-if="selectedCustomer.creditLimit != null">
+            · حد الائتمان {{ formatCurrency(selectedCustomer.creditLimit) }}
+          </template>
+        </p>
 
         <div class="pos-cart__lines">
           <p v-if="!pos.cart.length" class="doc-lines__empty">
             السلة فارغة — امسح باركود أو اضغط على صنف
           </p>
-          <div v-for="line in pos.cart" :key="line.key" class="pos-line">
+          <div
+            v-for="{ line, unitPrice, total, promoName, invoiceDiscount } in pos.priced.lines"
+            :key="line.key"
+            class="pos-line"
+            :class="{ 'is-selected': pos.selectedKey === line.key }"
+            @click="pos.selectedKey = line.key"
+          >
             <div class="pos-line__head">
-              <span class="doc-cell__main">{{ line.product.name }}</span>
+              <span class="doc-cell__main">
+                {{ line.product.name }}
+                <span v-if="promoName" class="badge doc-status--done pos-line__promo">
+                  {{ promoName }}
+                </span>
+              </span>
               <button
                 class="btn btn--sm btn--danger btn--icon"
-                title="حذف"
-                @click="pos.removeLine(line.key)"
+                title="حذف (Delete)"
+                @click.stop="removeLine(line)"
               >
                 <Trash2 :size="14" />
               </button>
@@ -387,6 +456,7 @@
                   <Minus :size="14" />
                 </button>
                 <StbNumberInput
+                  :ref="(el) => trackInput(qtyInputs, line.key, el)"
                   v-model.number="line.quantity"
                   class="form-input"
                   min="0"
@@ -415,26 +485,49 @@
               </select>
               <span v-else class="doc-cell__sub">{{ line.unitName }}</span>
               <span class="doc-cell__sub">
-                × {{ formatMoney(line.unitPrice) }}
+                ×
+                <s v-if="unitPrice < line.unitPrice">{{ formatMoney(line.unitPrice) }}</s>
+                {{ formatMoney(unitPrice) }}
               </span>
               <strong class="doc-money pos-line__total">
-                {{ formatMoney(amountOf(line)) }}
+                {{ formatMoney(total) }}
               </strong>
             </div>
             <div v-if="line.product.allowDiscount" class="pos-line__discount">
               <label>خصم</label>
               <StbNumberInput
+                :ref="(el) => trackInput(discountInputs, line.key, el)"
                 v-model.number="line.discount"
                 class="form-input"
                 min="0"
                 :step="moneyStep()"
                 placeholder="0"
               />
+              <span v-if="invoiceDiscount > 0">
+                + {{ formatMoney(invoiceDiscount) }} من خصم الفاتورة
+              </span>
             </div>
           </div>
         </div>
 
         <div class="pos-cart__totals">
+          <div v-if="pos.priced.promoDiscount > 0">
+            <span>خصم العروض</span>
+            <span class="doc-money">
+              − {{ formatCurrency(pos.priced.promoDiscount) }}
+            </span>
+          </div>
+          <div v-if="pos.priced.manualDiscount > 0">
+            <span>
+              خصم الكاشير
+              <template v-if="pos.invoiceDiscount?.type === 'percent'">
+                ({{ pos.invoiceDiscount.value }}% على الفاتورة)
+              </template>
+            </span>
+            <span class="doc-money" :class="{ 'pos-over': pos.cartIssues.discountOverLimit }">
+              − {{ formatCurrency(pos.priced.manualDiscount) }}
+            </span>
+          </div>
           <div>
             <span>قبل الضريبة</span>
             <span class="doc-money">
@@ -451,11 +544,29 @@
 
         <div class="pos-cart__actions">
           <button
-            class="btn btn--ghost"
+            class="btn btn--ghost btn--icon"
+            title="إفراغ السلة"
             :disabled="!pos.cart.length"
-            @click="pos.clearCart()"
+            @click="clearCart"
           >
-            إفراغ
+            <Trash2 :size="16" />
+          </button>
+          <button
+            class="btn btn--ghost btn--icon"
+            title="تعليق الفاتورة (F6)"
+            :disabled="!pos.cart.length"
+            @click="hold"
+          >
+            <PauseCircle :size="16" />
+          </button>
+          <button
+            class="btn btn--ghost btn--icon"
+            :class="{ 'is-on': !!pos.invoiceDiscount }"
+            title="خصم على الفاتورة (F8)"
+            :disabled="!pos.cart.length"
+            @click="showDiscount = true"
+          >
+            <Percent :size="16" />
           </button>
           <button
             class="btn btn--primary pos-pay"
@@ -535,7 +646,30 @@
                 </button>
               </div>
 
-              <div class="doc-totals" :class="{ 'pos-short': payState.short > 0 }">
+              <label v-if="selectedCustomer" class="checkbox-label">
+                <input v-model="pay.credit" type="checkbox" />
+                <span>
+                  الباقي على حساب العميل (آجل) — {{ selectedCustomer.name }}
+                </span>
+              </label>
+              <p v-else class="doc-hint">للبيع الآجل اختر عميلاً مسجّلاً أولاً.</p>
+
+              <div
+                v-if="payState.credit > 0"
+                class="doc-totals"
+                :class="{ 'pos-short': payState.creditOverLimit }"
+              >
+                <span>
+                  على الحساب (آجل)
+                  <template v-if="payState.creditOverLimit"> — يتجاوز حد الائتمان</template>
+                </span>
+                <strong class="doc-money">{{ formatCurrency(payState.credit) }}</strong>
+              </div>
+              <div
+                v-else
+                class="doc-totals"
+                :class="{ 'pos-short': payState.short > 0 }"
+              >
                 <span>{{ payState.short > 0 ? "المتبقي" : "الباقي للعميل" }}</span>
                 <strong class="doc-money">
                   {{
@@ -546,6 +680,9 @@
                 </strong>
               </div>
               <p v-if="payState.error" class="form-error">{{ payState.error }}</p>
+              <p v-for="message in payOverrides" :key="message" class="pos-note">
+                {{ message }} — يحتاج موافقة مشرف
+              </p>
 
               <div class="modal__footer">
                 <button type="button" class="btn btn--ghost" @click="showPay = false">
@@ -577,6 +714,12 @@
             <div v-if="doneSale.change > 0" class="doc-totals">
               <span>الباقي للعميل</span>
               <strong class="doc-money">{{ formatCurrency(doneSale.change) }}</strong>
+            </div>
+            <div v-if="doneSale.creditAmount" class="doc-totals">
+              <span>على حساب {{ doneSale.customerName }}</span>
+              <strong class="doc-money">
+                {{ formatCurrency(doneSale.creditAmount) }}
+              </strong>
             </div>
             <p v-if="!pos.online" class="doc-hint">
               حُفظت على الجهاز وستُرفع تلقائياً عند عودة الإنترنت.
@@ -632,6 +775,12 @@
                     {{ formatCurrency(pos.shiftSummary.card) }}
                   </span>
                 </div>
+                <div v-if="pos.shiftSummary.credit">
+                  <span>آجل (على الحساب)</span>
+                  <span class="doc-money">
+                    {{ formatCurrency(pos.shiftSummary.credit) }}
+                  </span>
+                </div>
                 <div v-if="pos.shiftSummary.returnsCount">
                   <span>
                     مرتجعات ({{ formatNumber(pos.shiftSummary.returnsCount) }})
@@ -644,6 +793,18 @@
                   <span>رُدّ نقداً من الدرج</span>
                   <span class="doc-money">
                     {{ formatCurrency(pos.shiftSummary.cashRefunds) }}
+                  </span>
+                </div>
+                <div v-if="pos.shiftSummary.cashIn">
+                  <span>إيداعات في الدرج</span>
+                  <span class="doc-money">
+                    {{ formatCurrency(pos.shiftSummary.cashIn) }}
+                  </span>
+                </div>
+                <div v-if="pos.shiftSummary.cashOut">
+                  <span>مسحوبات من الدرج</span>
+                  <span class="doc-money">
+                    {{ formatCurrency(pos.shiftSummary.cashOut) }}
                   </span>
                 </div>
                 <div v-if="pos.shiftSummary.drawerOpens">
@@ -697,7 +858,9 @@
                 <button type="button" class="btn btn--ghost" @click="showClose = false">
                   رجوع
                 </button>
-                <button type="submit" class="btn btn--primary">تقفيل الوردية</button>
+                <button type="submit" class="btn btn--primary">
+                  <Printer :size="16" /> تقفيل وطباعة تقرير Z
+                </button>
               </div>
             </form>
           </div>
@@ -720,6 +883,11 @@
                 @click="showRecent = false"
               >
                 <X :size="20" />
+              </button>
+            </div>
+            <div class="doc-actions pos-recent__actions">
+              <button class="btn btn--sm btn--ghost" @click="printShiftReport('X')">
+                <Printer :size="14" /> طباعة ملخص الوردية (X)
               </button>
             </div>
             <div class="doc-lines" :style="{ '--doc-cols': '1.2fr 1fr 1fr 0.8fr auto' }">
@@ -818,6 +986,13 @@
 
     <PosReturnModal v-model="showReturn" @done="onReturned" />
     <PosScreenSettings v-model="showSettings" />
+    <PosHeldModal v-model="showHeld" @resume="resumeHeld" @remove="removeHeld" />
+    <PosCashMoveModal v-model="showCashMove" @submit="submitCashMove" />
+    <PosCustomerModal v-model="showCustomer" />
+    <PosDiscountModal v-model="showDiscount" />
+    <PosShortcutsModal v-model="showShortcuts" />
+    <PosApprovalModal ref="approval" />
+    <PosShiftReport ref="shiftReport" />
 
     <SalesInvoicePrint
       ref="printer"
@@ -829,19 +1004,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import {
   AlertTriangle,
   Banknote,
   ChevronLeft,
   CircleCheck,
   Inbox,
+  Keyboard,
   CloudOff,
   CloudUpload,
   LockKeyhole,
   LogOut,
   Minus,
   MonitorSmartphone,
+  MonitorUp,
+  PauseCircle,
+  Percent,
   Plus,
   Printer,
   ReceiptText,
@@ -852,7 +1039,9 @@ import {
   Trash2,
   Undo2,
   Unlock,
+  UserPlus,
   UserRound,
+  Wallet,
   Wifi,
   X,
 } from "lucide-vue-next";
@@ -860,14 +1049,19 @@ import { useAccess } from "@/composables/useAccess";
 // الاسم مستعار: AccessState في القالب هو المكوّن لا النوع
 import type { AccessState as AccessStatus } from "@/composables/useAccess";
 import { useToast } from "@/composables/useToast";
-import { lineAmounts, sumAmounts, unitPriceOf } from "@/pos/calc";
+import type { ShiftReportData } from "@/components/global/PosShiftReport.vue";
+import { sumAmounts, unitPriceOf } from "@/pos/calc";
+import { createDisplayPublisher, type DisplayState } from "@/pos/display";
 import { verifyCashierPin } from "@/pos/cashiers";
 import type {
   CartLine,
+  CashMove,
   LocalReturn,
   LocalSale,
   OutboxType,
   PosDevice,
+  PosOptions,
+  PosProduct,
   SalePayment,
 } from "@/pos/types";
 import { useAccessStore } from "@/stores/access";
@@ -903,9 +1097,31 @@ const MAX_TILES = 60;
 
 const OUTBOX_LABELS: Record<OutboxType, string> = {
   "shift.open": "فتح وردية",
+  "customer.create": "عميل جديد",
   sale: "فاتورة",
   return: "مرتجع",
+  "cash.move": "حركة نقدية",
+  audit: "سجل تدقيق",
   "shift.close": "تقفيل وردية",
+};
+
+// ─── موافقة المشرف ────────────────────────────────────────────────────────────
+const approval = ref<{
+  request: (reason: string) => Promise<string | null>;
+  isOpen: boolean;
+} | null>(null);
+
+/**
+ * يتأكد أن العملية مسموحة: بلا موافقة إن لم تشترطها إعدادات الشركة (أو كان
+ * كاشير الوردية مشرفاً)، وإلا برقم مشرف. `ok: false` = أُلغي الطلب.
+ */
+const authorize = async (
+  kind: keyof PosOptions["approvals"] | "always",
+  reason: string,
+): Promise<{ ok: boolean; approvedBy: string | null }> => {
+  if (!pos.needsSupervisor(kind)) return { ok: true, approvedBy: null };
+  const approvedBy = (await approval.value?.request(reason)) ?? null;
+  return { ok: !!approvedBy, approvedBy };
 };
 
 // ─── الصلاحية والخطة ──────────────────────────────────────────────────────────
@@ -1069,6 +1285,11 @@ const openCloseShift = () => {
     toast.warning("في السلة أصناف — أتمّ البيع أو أفرغ السلة قبل التقفيل");
     return;
   }
+  if (pos.held.length) {
+    toast.warning("توجد فواتير معلّقة — أتمّها أو احذفها قبل التقفيل");
+    showHeld.value = true;
+    return;
+  }
   closeForm.closingCash = "";
   closeForm.note = "";
   showClose.value = true;
@@ -1076,8 +1297,14 @@ const openCloseShift = () => {
 
 const submitCloseShift = async () => {
   try {
+    // أرقام الوردية تُلتقط قبل التقفيل: بعده لا وردية على الشاشة
+    const report = buildShiftReport("Z", {
+      closingCash: Number(closeForm.closingCash) || 0,
+      note: closeForm.note,
+    });
     await pos.closeShift(Number(closeForm.closingCash) || 0, closeForm.note);
     showClose.value = false;
+    if (report) void printReport(report);
     shiftForm.name = pos.cashierName;
     shiftForm.openingCash = "";
     shiftForm.cashierId = "";
@@ -1115,12 +1342,19 @@ const onSearchEnter = () => {
   const term = search.value.trim();
   if (!term) return;
 
-  if (pos.scan(term)) {
+  try {
+    if (pos.scan(term)) {
+      search.value = "";
+      return;
+    }
+  } catch (e) {
+    // باركود معروف لكن الرصيد لا يكفي
+    toast.warning(getErrorMessage(e, "تعذرت إضافة الصنف"));
     search.value = "";
     return;
   }
   if (filtered.value.length === 1) {
-    pos.addProduct(filtered.value[0]!);
+    add(filtered.value[0]!);
     search.value = "";
     return;
   }
@@ -1132,13 +1366,116 @@ const onSearchEnter = () => {
 };
 
 // ─── السلة ────────────────────────────────────────────────────────────────────
-const amountOf = (line: CartLine) =>
-  lineAmounts({ ...line, taxRate: line.product.taxRate }).total;
+/** يضيف صنفاً للسلة (رصيد غير كافٍ في مخزن لا يسمح بالسالب: تنبيه) */
+const add = (product: PosProduct) => {
+  try {
+    pos.addProduct(product);
+  } catch (e) {
+    toast.warning(getErrorMessage(e, "تعذرت إضافة الصنف"));
+  }
+};
+
+/** صنف مخزني نفد من مخزن الجهاز */
+const isOut = (product: PosProduct) => {
+  const available = pos.stockOf(product);
+  return available !== null && available <= 0;
+};
+
+const selectedCustomer = computed(
+  () => pos.customers.find((c) => c.id === pos.customerId) ?? null,
+);
+
+/** حذف سطر: يُسجَّل، وقد يحتاج موافقة مشرف حسب إعدادات الشركة */
+const removeLine = async (line: CartLine) => {
+  const { ok, approvedBy } = await authorize(
+    "void",
+    `حذف "${line.product.name}" من السلة`,
+  );
+  if (ok) await pos.removeLine(line.key, approvedBy);
+};
+
+const clearCart = async () => {
+  if (!pos.cart.length) return;
+  const { ok, approvedBy } = await authorize("void", "إفراغ السلة");
+  if (ok) await pos.clearCart(approvedBy);
+};
 
 const step = (line: CartLine, delta: number) => {
   const next = (Number(line.quantity) || 0) + delta;
-  if (next <= 0) pos.removeLine(line.key);
+  if (next <= 0) void removeLine(line);
   else line.quantity = next;
+};
+
+// حقول الكمية والخصم لكل سطر: يركّز عليها اختصار لوحة المفاتيح
+type InputHandle = { $el: HTMLInputElement };
+const qtyInputs = new Map<number, InputHandle>();
+const discountInputs = new Map<number, InputHandle>();
+const trackInput = (
+  inputs: Map<number, InputHandle>,
+  key: number,
+  el: unknown,
+) => {
+  if (el) inputs.set(key, el as InputHandle);
+  else inputs.delete(key);
+};
+const focusInput = (inputs: Map<number, InputHandle>) => {
+  const input = pos.selectedKey === null ? null : inputs.get(pos.selectedKey)?.$el;
+  input?.focus();
+  input?.select?.();
+};
+
+// ─── تعليق الفاتورة ───────────────────────────────────────────────────────────
+const showHeld = ref(false);
+const showDiscount = ref(false);
+const showCustomer = ref(false);
+const showShortcuts = ref(false);
+
+const hold = async () => {
+  if (!pos.cart.length) return;
+  try {
+    await pos.holdCart();
+    toast.success("عُلّقت الفاتورة — تجدها في «معلّقة»");
+    searchEl.value?.focus();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر تعليق الفاتورة"));
+  }
+};
+
+const resumeHeld = async (id: string) => {
+  await pos.resumeHeld(id);
+  showHeld.value = false;
+};
+
+const removeHeld = async (id: string) => {
+  const { ok, approvedBy } = await authorize("void", "حذف فاتورة معلّقة");
+  if (ok) await pos.deleteHeld(id, approvedBy);
+};
+
+// ─── حركة نقدية في الدرج ──────────────────────────────────────────────────────
+const showCashMove = ref(false);
+
+const submitCashMove = async (move: {
+  type: CashMove["type"];
+  amount: number;
+  reason: string;
+}) => {
+  try {
+    const { ok, approvedBy } =
+      move.type === "out"
+        ? await authorize(
+            "cashOut",
+            `سحب ${formatCurrency(move.amount)} من الدرج: ${move.reason}`,
+          )
+        : { ok: true, approvedBy: null };
+    if (!ok) return;
+    await pos.addCashMove(move.type, move.amount, move.reason, approvedBy);
+    showCashMove.value = false;
+    toast.success(move.type === "in" ? "سُجّل الإيداع" : "سُجّل السحب");
+    // الدرج يُفتح للحركة نفسها: ليس فتحاً بلا سبب
+    void kickDrawer();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر تسجيل الحركة"));
+  }
 };
 
 const changeUnit = (line: CartLine, unitId: string) => {
@@ -1154,7 +1491,12 @@ const changeUnit = (line: CartLine, unitId: string) => {
 const showPay = ref(false);
 const paying = ref(false);
 const cashEl = ref<{ $el: HTMLInputElement } | null>(null);
-const pay = reactive({ cash: "" as number | "", card: "" as number | "" });
+const pay = reactive({
+  cash: "" as number | "",
+  card: "" as number | "",
+  /** الباقي على حساب العميل (بيع آجل) */
+  credit: false,
+});
 
 /** فئات نقدية قريبة أكبر من المطلوب، لضغطة واحدة */
 const quickCash = computed(() => {
@@ -1166,16 +1508,37 @@ const payState = computed(() => {
   const total = pos.cartTotals.total;
   const card = Number(pay.card) || 0;
   const cash = Number(pay.cash) || 0;
-  const cashDue = sumAmounts([total, -card]);
+  /** ما بقي بعد الشبكة: يُدفع نقداً، أو يُقيَّد على الحساب */
+  const afterCard = sumAmounts([total, -card]);
+  const onAccount = pay.credit && !!selectedCustomer.value;
+  const credit = onAccount ? Math.max(sumAmounts([afterCard, -cash]), 0) : 0;
+  const cashDue = sumAmounts([afterCard, -credit]);
 
+  const limit = selectedCustomer.value?.creditLimit ?? null;
   return {
     /** ما يُسجَّل نقداً = المطلوب نقداً (لا ما استُلم) */
     cashDue,
+    credit,
+    creditOverLimit:
+      credit > 0 &&
+      limit !== null &&
+      pos.customerBalance(selectedCustomer.value!.id) + credit > limit + 1e-9,
     short: Math.max(sumAmounts([cashDue, -cash]), 0),
     change: Math.max(sumAmounts([cash, -cashDue]), 0),
     error: card > total ? "مبلغ الشبكة أكبر من المطلوب" : "",
   };
 });
+
+/** ما يتجاوز صلاحية الكاشير في هذه الفاتورة: يُطلب له رقم مشرف عند الإتمام */
+const payOverrides = computed(() => [
+  ...pos.cartIssues.belowMin,
+  ...(pos.cartIssues.discountOverLimit
+    ? [`الخصم ${pos.priced.manualPercent.toFixed(1)}% يتجاوز حدّك (${pos.discountLimit}%)`]
+    : []),
+  ...(payState.value.creditOverLimit
+    ? [`تجاوز حد ائتمان "${selectedCustomer.value?.name}"`]
+    : []),
+]);
 
 const payAll = (method: "cash" | "card") => {
   pay.cash = method === "cash" ? pos.cartTotals.total : "";
@@ -1188,8 +1551,13 @@ const openPay = async () => {
     toast.warning(`أدخل كمية "${empty.product.name}"`);
     return;
   }
+  if (pos.cartIssues.blocked.length) {
+    toast.warning(pos.cartIssues.blocked[0]!);
+    return;
+  }
   pay.cash = "";
   pay.card = "";
+  pay.credit = false;
   showPay.value = true;
   await nextTick();
   cashEl.value?.$el.focus();
@@ -1199,6 +1567,18 @@ const submitPay = async () => {
   if (payState.value.short > 0 || payState.value.error) return;
   paying.value = true;
   try {
+    // ما يتجاوز صلاحية الكاشير: برقم مشرف، أو يُمنع إن لم يكن في الشركة من يوافق
+    let approvedBy: string | null = null;
+    if (payOverrides.value.length) {
+      if (!pos.cashiers.length) {
+        toast.error(payOverrides.value[0]!);
+        return;
+      }
+      const granted = await authorize("always", payOverrides.value.join(" · "));
+      if (!granted.ok) return;
+      approvedBy = granted.approvedBy;
+    }
+
     const payments: SalePayment[] = [];
     if (payState.value.cashDue > 0) {
       payments.push({ method: "cash", amount: payState.value.cashDue });
@@ -1207,7 +1587,7 @@ const submitPay = async () => {
       payments.push({ method: "card", amount: Number(pay.card) });
     }
 
-    const sale = await pos.checkout(payments, Number(pay.cash) || 0);
+    const sale = await pos.checkout(payments, Number(pay.cash) || 0, approvedBy);
     if (payments.some((p) => p.method === "cash")) void kickDrawer();
     showPay.value = false;
     doneSale.value = sale;
@@ -1248,8 +1628,8 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
   subtotal: sale.subtotal,
   taxTotal: sale.taxTotal,
   total: sale.total,
-  paidAmount: sale.total,
-  remaining: 0,
+  paidAmount: sumAmounts([sale.total, -(sale.creditAmount ?? 0)]),
+  remaining: sale.creditAmount ?? 0,
   qrCode: sale.qrCode,
   lines: sale.lines.map((line, index) => ({
     id: String(index),
@@ -1292,7 +1672,13 @@ const showSettings = ref(false);
 /** يفتح الدرج. فشله (طابعة مطفأة) لا يوقف البيع: تنبيه فقط */
 const kickDrawer = async (manual = false) => {
   try {
-    await pos.openDrawer(manual);
+    let approvedBy: string | null = null;
+    if (manual) {
+      const granted = await authorize("manualDrawer", "فتح الدرج بلا بيع");
+      if (!granted.ok) return;
+      approvedBy = granted.approvedBy;
+    }
+    await pos.openDrawer(manual, approvedBy);
   } catch (e) {
     toast.warning(getErrorMessage(e, "تعذر فتح الدرج"));
   }
@@ -1306,6 +1692,208 @@ const onReturned = (salesReturn: LocalReturn) => {
       : "تم تسجيل المرتجع",
   );
   if (cash) void kickDrawer();
+};
+
+// ─── تقرير الوردية (X / Z) ────────────────────────────────────────────────────
+const shiftReport = ref<{ print: (data: ShiftReportData) => Promise<void> } | null>(
+  null,
+);
+
+const buildShiftReport = (
+  kind: ShiftReportData["kind"],
+  closing: { closingCash: number | null; note: string } = {
+    closingCash: null,
+    note: "",
+  },
+): ShiftReportData | null => {
+  if (!pos.shift || !pos.device) return null;
+  const summary = pos.shiftSummary;
+  const branch = pos.tenant?.branch;
+  return {
+    kind,
+    company: pos.settings?.sellerName || pos.tenant?.companyName || "",
+    branch: branch && !branch.isMain ? branch.name : "",
+    device: pos.device.name,
+    cashier: pos.shift.cashierName,
+    openedAt: pos.shift.openedAt,
+    printedAt: new Date().toISOString(),
+    openingCash: pos.shift.openingCash,
+    invoicesCount: summary.invoicesCount,
+    salesTotal: summary.salesTotal,
+    cash: summary.cash,
+    card: summary.card,
+    credit: summary.credit,
+    discounts: summary.discounts,
+    returnsCount: summary.returnsCount,
+    returnsTotal: summary.returnsTotal,
+    cashRefunds: summary.cashRefunds,
+    cashIn: summary.cashIn,
+    cashOut: summary.cashOut,
+    drawerOpens: summary.drawerOpens,
+    expectedCash: summary.expectedCash,
+    closingCash: closing.closingCash,
+    note: closing.note,
+    moves: pos.cashMoves.filter((move) => move.shiftId === pos.shift!.id),
+  };
+};
+
+const printReport = async (data: ShiftReportData) => {
+  try {
+    // الإيصال السابق لا يُطبع مع التقرير
+    printTarget.value = null;
+    await nextTick();
+    await shiftReport.value?.print(data);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذرت الطباعة"));
+  }
+};
+
+const printShiftReport = (kind: ShiftReportData["kind"]) => {
+  const report = buildShiftReport(kind);
+  if (report) void printReport(report);
+};
+
+// ─── شاشة العميل ──────────────────────────────────────────────────────────────
+const displayState = (): DisplayState => ({
+  company: pos.settings?.sellerName || pos.tenant?.companyName || "",
+  currency: currencyLabel(),
+  decimals: pos.tenant?.currencyDecimals ?? 2,
+  lines: pos.priced.lines.map((p) => ({
+    name: p.line.product.name,
+    quantity: Number(p.line.quantity) || 0,
+    unitName: p.line.unitName,
+    total: p.total,
+  })),
+  discount: sumAmounts([pos.priced.promoDiscount, pos.priced.manualDiscount]),
+  total: pos.priced.total,
+  done: doneSale.value
+    ? {
+        total: doneSale.value.total,
+        paid: sumAmounts([doneSale.value.total, -(doneSale.value.creditAmount ?? 0)]),
+        change: doneSale.value.change,
+      }
+    : null,
+});
+const display = createDisplayPublisher(displayState);
+watch([() => pos.priced, doneSale], () => display.publish(), { deep: false });
+
+const openCustomerDisplay = () => {
+  const opened = window.open(
+    "/pos/display",
+    "stb-pos-display",
+    "popup,width=900,height=600",
+  );
+  if (!opened) toast.warning("اسمح بالنوافذ المنبثقة لهذا الموقع لفتح شاشة العميل");
+};
+
+// ─── اختصارات لوحة المفاتيح ───────────────────────────────────────────────────
+/** نافذة مفتوحة فوق شاشة البيع: الاختصارات لا تعمل تحتها */
+const modalOpen = computed(
+  () =>
+    showPay.value ||
+    !!doneSale.value ||
+    showClose.value ||
+    showRecent.value ||
+    showFailed.value ||
+    showReturn.value ||
+    showSettings.value ||
+    showHeld.value ||
+    showCashMove.value ||
+    showCustomer.value ||
+    showDiscount.value ||
+    showShortcuts.value ||
+    !!approval.value?.isOpen,
+);
+
+const closeTopModal = () => {
+  if (approval.value?.isOpen) return; // لها زر إلغاء يسجّل الرفض
+  if (showPay.value) showPay.value = false;
+  else if (doneSale.value) void finishSale();
+  else
+    for (const flag of [
+      showClose,
+      showRecent,
+      showFailed,
+      showReturn,
+      showSettings,
+      showHeld,
+      showCashMove,
+      showCustomer,
+      showDiscount,
+      showShortcuts,
+    ]) {
+      flag.value = false;
+    }
+};
+
+const selectedLine = () =>
+  pos.cart.find((line) => line.key === pos.selectedKey) ?? null;
+
+const moveSelection = (delta: number) => {
+  if (!pos.cart.length) return;
+  const index = pos.cart.findIndex((line) => line.key === pos.selectedKey);
+  const next = Math.min(Math.max(index + delta, 0), pos.cart.length - 1);
+  pos.selectedKey = pos.cart[next]!.key;
+};
+
+const onKeydown = (event: KeyboardEvent) => {
+  if (!pos.shift || event.ctrlKey || event.altKey || event.metaKey) return;
+  const { key } = event;
+  const handle = (action: () => void) => {
+    event.preventDefault();
+    action();
+  };
+
+  if (key === "Escape") return handle(closeTopModal);
+  if (modalOpen.value) {
+    // داخل نافذة الدفع: F4 = نقداً بالضبط
+    if (key === "F4" && showPay.value) handle(() => payAll("cash"));
+    else if (/^F\d+$/.test(key)) event.preventDefault();
+    return;
+  }
+
+  switch (key) {
+    case "F1":
+      return handle(() => (showShortcuts.value = true));
+    case "F2":
+      return handle(() => searchEl.value?.focus());
+    case "F4":
+      return handle(() => pos.cart.length && void openPay());
+    case "F6":
+      return handle(() => void hold());
+    case "F7":
+      return handle(() => (showHeld.value = true));
+    case "F8":
+      return handle(() => pos.cart.length && (showDiscount.value = true));
+    case "F9":
+      return handle(() => (showCashMove.value = true));
+  }
+
+  // ما بعدها يعمل على السطر المحدد، وفقط خارج حقول الكتابة
+  const target = event.target as HTMLElement | null;
+  const typing =
+    !!target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  // في حقل البحث الفارغ تبقى الأسهم و+/− للسلة (الباركود لا يحويها)
+  const inEmptySearch = target === searchEl.value && !search.value;
+  if (typing && !inEmptySearch) return;
+
+  const line = selectedLine();
+  switch (key) {
+    case "ArrowDown":
+      return handle(() => moveSelection(1));
+    case "ArrowUp":
+      return handle(() => moveSelection(-1));
+    case "+":
+      return line && handle(() => step(line, 1));
+    case "-":
+      return line && handle(() => step(line, -1));
+    case "*":
+      return line && handle(() => focusInput(qtyInputs));
+    case "/":
+      return line && handle(() => focusInput(discountInputs));
+    case "Delete":
+      return line && handle(() => void removeLine(line));
+  }
 };
 
 // ─── المرفوضات ────────────────────────────────────────────────────────────────
@@ -1341,6 +1929,7 @@ const registerOfflineShell = () => {
 
 onMounted(async () => {
   registerOfflineShell();
+  window.addEventListener("keydown", onKeydown);
   try {
     await pos.init();
   } catch (e) {
@@ -1366,7 +1955,11 @@ onMounted(async () => {
   }
 });
 
-onBeforeUnmount(() => pos.stop());
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onKeydown);
+  display.close();
+  pos.stop();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -1377,42 +1970,6 @@ onBeforeUnmount(() => pos.stop());
   flex-direction: column;
   height: 100%;
   min-height: 0;
-}
-
-// ─── اختيار الكاشير ──────────────────────────────────────────────────────────
-.pos-cashiers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $space-2;
-
-  &__item {
-    @include flex(row, center, center, $space-2);
-    padding: $space-2 $space-4;
-    border: 1px solid $stb-border;
-    border-radius: $radius-md;
-    background: transparent;
-    color: $stb-text-primary;
-    font-family: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      border-color: $stb-accent;
-    }
-
-    &.is-active {
-      border-color: $stb-accent;
-      background: rgba($stb-accent, 0.12);
-      color: $stb-accent;
-    }
-  }
-}
-
-.pos-pin {
-  text-align: center;
-  letter-spacing: 0.5em;
-  font-size: $font-size-lg;
 }
 
 // ─── الشريط العلوي ───────────────────────────────────────────────────────────
@@ -1824,5 +2381,74 @@ onBeforeUnmount(() => pos.stop());
   @include respond-to("sm") {
     display: none;
   }
+}
+// ─── إضافات: الرصيد، السطر المحدد، العروض، العميل ────────────────────────────
+.pos-tile {
+  &.is-out {
+    opacity: 0.55;
+  }
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-2;
+  }
+  &__stock {
+    padding: 0 $space-2;
+    font-size: $font-size-xs;
+    font-weight: 700;
+    color: $stb-text-secondary;
+    background: $stb-surface-3;
+    border-radius: $radius-sm;
+    direction: ltr;
+  }
+}
+
+.pos-line {
+  cursor: pointer;
+
+  &.is-selected {
+    border-color: $stb-accent;
+    box-shadow: inset 3px 0 0 $stb-accent;
+  }
+  &__promo {
+    margin-inline-start: $space-2;
+    font-size: $font-size-xs;
+  }
+  s {
+    color: $stb-text-muted;
+  }
+}
+
+.pos-cart {
+  &__customer {
+    display: flex;
+    gap: $space-2;
+
+    .form-select {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+  &__balance {
+    margin: -$space-2 0 0;
+  }
+  &__actions .btn.is-on {
+    color: $stb-accent;
+    border-color: $stb-accent;
+  }
+}
+
+.pos-over {
+  color: $stb-danger;
+  font-weight: 700;
+}
+
+.pos-held-btn .pos-status__count {
+  margin-inline-start: $space-1;
+}
+
+.pos-recent__actions {
+  padding: 0 $space-4 $space-3;
 }
 </style>

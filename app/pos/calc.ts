@@ -2,8 +2,8 @@
 //
 // نفس قواعد السيرفر (document-totals.util و zatca.util). الإيصال يُطبع بما
 // يحسبه الجهاز هنا، والسيرفر عند الرفع يتحقق منه ثم يعتمده كما هو.
-import type { CartLine, PosProduct, SaleLine } from "./types";
-import { currencyDecimals, roundMoney } from "../utils/format";
+import type { PosProduct } from "./types";
+import { roundMoney } from "../utils/format";
 
 /** مبلغ مقرَّب لخانات عملة الشركة (2 أو 3) — كما يقرّب السيرفر */
 export const roundAmount = roundMoney;
@@ -43,42 +43,6 @@ export const lineAmounts = (line: {
   const subtotal = roundAmount(total / (1 + line.taxRate / 100));
   return { subtotal, taxAmount: roundAmount(total - subtotal), total };
 };
-
-/**
- * يتحقق من قواعد التسعير المعرّفة على الصنف (كما يفعل السيرفر في فواتير
- * لوحة التحكم). يعيد رسالة الخطأ أو null.
- */
-export const pricingError = (line: CartLine): string | null => {
-  const { product } = line;
-  const gross = line.quantity * line.unitPrice;
-
-  if (line.discount > gross) return `خصم "${product.name}" أكبر من قيمته`;
-  if (line.discount > 0 && !product.allowDiscount) {
-    return `"${product.name}" لا يُسمح بالخصم عليه`;
-  }
-  if (product.minSalePrice !== null) {
-    // سعر وحدة الأساس بعد الخصم، بنفس أساس أقل سعر للصنف
-    const effective = (gross - line.discount) / line.quantity / line.factor;
-    const minimum = toGrossPrice(product, product.minSalePrice);
-    // نصف أصغر جزء من العملة: فرق التقريب لا يُعدّ بيعاً تحت الحد
-    if (effective + 0.5 / 10 ** currencyDecimals() < minimum) {
-      return `سعر "${product.name}" بعد الخصم أقل من أقل سعر مسموح (${minimum})`;
-    }
-  }
-  return null;
-};
-
-export const toSaleLine = (line: CartLine): SaleLine => ({
-  productId: line.product.id,
-  productName: line.product.name,
-  unitId: line.unitId ?? undefined,
-  unitName: line.unitName,
-  quantity: line.quantity,
-  unitPrice: line.unitPrice,
-  discount: line.discount,
-  taxRate: line.product.taxRate,
-  ...lineAmounts({ ...line, taxRate: line.product.taxRate }),
-});
 
 /**
  * نصيب كمية مُرجعة من مبالغ سطر الفاتورة — نفس حساب السيرفر

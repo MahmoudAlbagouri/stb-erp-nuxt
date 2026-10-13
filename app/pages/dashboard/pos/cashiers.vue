@@ -58,6 +58,7 @@
             <tr>
               <th>الكاشير</th>
               <th>المرتجع</th>
+              <th>حد الخصم</th>
               <th>الحالة</th>
               <th>أُضيف في</th>
               <th>إجراءات</th>
@@ -66,7 +67,12 @@
           <tbody>
             <tr v-for="c in cashiers" :key="c.id">
               <td>
-                <span class="doc-cell__main">{{ c.name }}</span>
+                <span class="doc-cell__main">
+                  {{ c.name }}
+                  <span v-if="c.isSupervisor" class="badge doc-status--info">
+                    مشرف
+                  </span>
+                </span>
               </td>
               <td>
                 <span
@@ -76,6 +82,11 @@
                   ]"
                 >
                   {{ c.canReturn ? "مسموح" : "غير مسموح" }}
+                </span>
+              </td>
+              <td>
+                <span class="doc-num">
+                  {{ c.maxDiscountPercent === null ? "بلا حد" : `${c.maxDiscountPercent}%` }}
                 </span>
               </td>
               <td>
@@ -168,9 +179,32 @@
                 </div>
               </div>
 
+              <div class="form-group">
+                <label>أقصى خصم يمنحه على الفاتورة (%)</label>
+                <StbNumberInput
+                  v-model.number="form.maxDiscountPercent"
+                  class="form-input"
+                  min="0"
+                  max="100"
+                  step="any"
+                  placeholder="فارغ = بلا حد"
+                />
+                <small class="doc-hint">
+                  ما زاد عنه يحتاج رقم مشرف السري عند الدفع. عروض الإدارة لا
+                  تُحسب منه.
+                </small>
+              </div>
+
               <label class="checkbox-label">
                 <input v-model="form.canReturn" type="checkbox" />
                 <span>يُسمح له بعمل مرتجع وردّ مبلغ من الدرج</span>
+              </label>
+              <label class="checkbox-label">
+                <input v-model="form.isSupervisor" type="checkbox" />
+                <span>
+                  مشرف: يوافق برقمه على خصم فوق الحد، بيع تحت أقل سعر، وما
+                  تشترطه إعدادات الكاشير
+                </span>
               </label>
               <label class="checkbox-label">
                 <input v-model="form.isActive" type="checkbox" />
@@ -237,10 +271,18 @@ const load = async () => {
 const showModal = ref(false);
 const submitting = ref(false);
 const editing = ref<PosCashierRecord | null>(null);
-const form = reactive({ name: "", pin: "", canReturn: false, isActive: true });
+const emptyForm = () => ({
+  name: "",
+  pin: "",
+  canReturn: false,
+  isSupervisor: false,
+  maxDiscountPercent: "" as number | "",
+  isActive: true,
+});
+const form = reactive(emptyForm());
 
 const openCreate = () => {
-  Object.assign(form, { name: "", pin: "", canReturn: false, isActive: true });
+  Object.assign(form, emptyForm());
   editing.value = null;
   showModal.value = true;
 };
@@ -250,6 +292,8 @@ const openEdit = (cashier: PosCashierRecord) => {
     name: cashier.name,
     pin: "",
     canReturn: cashier.canReturn,
+    isSupervisor: cashier.isSupervisor,
+    maxDiscountPercent: cashier.maxDiscountPercent ?? "",
     isActive: cashier.isActive,
   });
   editing.value = cashier;
@@ -268,6 +312,10 @@ const handleSubmit = async () => {
     const payload: PosCashierPayload = {
       name: form.name,
       canReturn: form.canReturn,
+      isSupervisor: form.isSupervisor,
+      // فارغ = بلا حد (null صريحة تزيل حداً سابقاً)
+      maxDiscountPercent:
+        form.maxDiscountPercent === "" ? null : Number(form.maxDiscountPercent),
       isActive: form.isActive,
       // عند التعديل يُرسل الرقم فقط إذا أُدخل رقم جديد
       ...(form.pin ? { pin: form.pin } : {}),

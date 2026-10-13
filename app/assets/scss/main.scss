@@ -829,4 +829,5 @@ a:hover {
 
 // --- Responsive layer (يجب أن تبقى آخر شيء) ---
 @include meta.load-css("documents");
+@include meta.load-css("pos");
 @include meta.load-css("responsive");

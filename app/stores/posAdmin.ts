@@ -4,10 +4,15 @@ import { defineStore } from "pinia";
 import { useApi } from "../composables/useApi";
 import type { Paginated } from "@/types/catalog";
 import type {
+  AuditAction,
+  PosAuditRecord,
   PosCashierPayload,
   PosCashierRecord,
+  PosCashMovementRecord,
   PosDevice,
   PosDevicePayload,
+  PosPromotionPayload,
+  PosPromotionRecord,
   PosShiftRecord,
 } from "@/pos/types";
 
@@ -56,7 +61,57 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
       )
     ).data;
 
+  // ─── العروض والأسعار الخاصة ───
+  const fetchPromotions = async () =>
+    (await api.get<PosPromotionRecord[]>(`${BASE}/promotions`)).data;
+
+  const createPromotion = async (payload: PosPromotionPayload) =>
+    (await api.post<PosPromotionRecord>(`${BASE}/promotions`, payload)).data;
+
+  const updatePromotion = async (
+    id: string,
+    payload: Partial<PosPromotionPayload>,
+  ) =>
+    (await api.patch<PosPromotionRecord>(`${BASE}/promotions/${id}`, payload))
+      .data;
+
+  const removePromotion = async (id: string) => {
+    await api.del(`${BASE}/promotions/${id}`);
+  };
+
+  // ─── سجل التدقيق وحركات الدرج ───
+  const fetchAudit = async (
+    filters: {
+      deviceId?: string;
+      shiftId?: string;
+      action?: AuditAction | "";
+      from?: string;
+      to?: string;
+      page?: number;
+    } = {},
+  ) =>
+    (
+      await api.get<Paginated<PosAuditRecord>>(
+        `${BASE}/audit${toQueryString(filters)}`,
+      )
+    ).data;
+
+  const fetchCashMovements = async (
+    filters: { deviceId?: string; shiftId?: string; page?: number } = {},
+  ) =>
+    (
+      await api.get<Paginated<PosCashMovementRecord>>(
+        `${BASE}/cash-movements${toQueryString(filters)}`,
+      )
+    ).data;
+
   return {
+    fetchPromotions,
+    createPromotion,
+    updatePromotion,
+    removePromotion,
+    fetchAudit,
+    fetchCashMovements,
     fetchDevices,
     createDevice,
     updateDevice,

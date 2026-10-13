@@ -1,0 +1,184 @@
+// _pos.scss — أنماط مشتركة بين شاشة الكاشير ونوافذها (مكوّنات components/global/Pos*)
+// ما يخص صفحة الكاشير وحدها يبقى في pages/pos/index.vue.
+@use "variables" as *;
+@use "mixins" as *;
+
+// ─── اختيار شخص (كاشير عند فتح الوردية، مشرف عند الموافقة) ───
+.pos-cashiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+
+  &__item {
+    @include flex(row, center, center, $space-2);
+    padding: $space-2 $space-4;
+    border: 1px solid $stb-border;
+    border-radius: $radius-md;
+    background: transparent;
+    color: $stb-text-primary;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $stb-accent;
+    }
+
+    &.is-active {
+      border-color: $stb-accent;
+      background: rgba($stb-accent, 0.12);
+      color: $stb-accent;
+    }
+  }
+}
+
+.pos-pin {
+  text-align: center;
+  letter-spacing: 0.5em;
+  font-size: $font-size-lg;
+}
+
+// ─── تنبيه داخل نافذة (سبب طلب الموافقة، تحذير) ───
+.pos-note {
+  padding: $space-3 $space-4;
+  font-weight: 600;
+  line-height: 1.7;
+  color: $stb-text-primary;
+  background: rgba($stb-warning, 0.12);
+  border: 1px solid rgba($stb-warning, 0.35);
+  border-radius: $radius-md;
+}
+
+// ─── اختيار من اثنين (إيداع/سحب، نسبة/مبلغ) ───
+.pos-toggle {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: $space-2;
+
+  button {
+    @include flex(row, center, center, $space-2);
+    padding: $space-3;
+    font: inherit;
+    font-weight: 700;
+    color: $stb-text-secondary;
+    background: transparent;
+    border: 1px solid $stb-border;
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &.is-active {
+      color: $stb-accent;
+      background: rgba($stb-accent, 0.12);
+      border-color: $stb-accent;
+    }
+  }
+}
+
+// ─── قائمة صفوف داخل نافذة (فواتير معلّقة، اختصارات) ───
+.pos-rows {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  max-height: 55vh;
+  overflow-y: auto;
+  @include scrollbar;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-3;
+    background: $stb-surface-2;
+    border: 1px solid $stb-border;
+    border-radius: $radius-md;
+  }
+  &__main {
+    flex: 1;
+    min-width: 0;
+  }
+  &__empty {
+    padding: $space-6;
+    text-align: center;
+    color: $stb-text-muted;
+  }
+}
+
+// مفتاح لوحة المفاتيح
+.pos-key {
+  display: inline-block;
+  min-width: 34px;
+  padding: 2px $space-2;
+  font-family: inherit;
+  font-size: $font-size-xs;
+  font-weight: 700;
+  text-align: center;
+  color: $stb-text-primary;
+  background: $stb-surface-3;
+  border: 1px solid $stb-border-light;
+  border-bottom-width: 2px;
+  border-radius: $radius-sm;
+  direction: ltr;
+}
+
+// ─── تقرير الوردية المطبوع (X / Z) على الورق الحراري ───
+.shift-report {
+  width: 72mm;
+  margin: 0 auto;
+  font-family: "Cairo", sans-serif;
+  font-size: 12px;
+  color: #000;
+
+  h1 {
+    margin: 0 0 2px;
+    font-size: 15px;
+    text-align: center;
+  }
+  h2 {
+    margin: 6px 0;
+    padding: 3px 0;
+    font-size: 13px;
+    text-align: center;
+    border-block: 1px dashed #000;
+  }
+  p {
+    margin: 0;
+    text-align: center;
+  }
+  &__rows {
+    margin-top: 6px;
+
+    div {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 2px 0;
+    }
+    .is-strong {
+      font-weight: 800;
+      border-top: 1px solid #000;
+      margin-top: 3px;
+      padding-top: 4px;
+    }
+  }
+  &__section {
+    margin-top: 8px;
+    font-weight: 800;
+    border-bottom: 1px solid #000;
+  }
+  &__sign {
+    margin-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+
+    span {
+      flex: 1;
+      padding-top: 4px;
+      text-align: center;
+      border-top: 1px solid #000;
+    }
+  }
+}

@@ -110,6 +110,8 @@ export const PERMS = {
   CATALOG_SETTINGS_MANAGE: "manage_catalog_settings",
   INVENTORY_VIEW: "view_inventory",
   WAREHOUSE_MANAGE: "manage_warehouses",
+  POS_PROMOTION_MANAGE: "manage_pos_promotions",
+  POS_AUDIT_VIEW: "view_pos_audit",
   STOCK_ADJUST: "adjust_stock",
   STOCK_TRANSFER_MANAGE: "manage_stock_transfers",
   STOCK_TRANSFER_RECEIVE: "receive_stock_transfers",

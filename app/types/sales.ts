@@ -1,5 +1,6 @@
 // types/sales.ts — أنواع موديول المبيعات والعملاء (مطابقة لكيانات الباك إند)
 import type { Warehouse } from "./inventory";
+import type { PosOptions } from "@/pos/types";
 
 // ─── إعدادات الفوترة ─────────────────────────────────────────────────────────
 export interface SalesSettings {
@@ -9,6 +10,8 @@ export interface SalesSettings {
   address?: string | null;
   phone?: string | null;
   invoiceFooter?: string | null;
+  /** إعدادات شاشة الكاشير: باركود الميزان وما يحتاج موافقة مشرف */
+  posOptions?: Partial<PosOptions>;
 }
 
 // ─── العملاء ─────────────────────────────────────────────────────────────────

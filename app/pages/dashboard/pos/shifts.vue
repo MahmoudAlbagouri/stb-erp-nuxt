@@ -95,6 +95,9 @@
                     <span class="doc-cell__sub doc-money">
                       {{ formatCurrency(s.cardTotal) }}
                     </span>
+                    <span v-if="s.creditTotal" class="doc-cell__sub">
+                      آجل {{ formatMoney(s.creditTotal) }}
+                    </span>
                     <span v-if="s.returnsCount" class="doc-cell__sub text-danger">
                       مرتجعات {{ formatNumber(s.returnsCount) }} ·
                       {{ formatMoney(s.returnsTotal) }}
@@ -106,6 +109,10 @@
                     <span class="doc-money">{{ formatCurrency(s.expectedCash) }}</span>
                     <span class="doc-cell__sub">
                       عهدة {{ formatMoney(s.openingCash) }}
+                    </span>
+                    <span v-if="s.cashIn || s.cashOut" class="doc-cell__sub">
+                      إيداع {{ formatMoney(s.cashIn) }} · سحب
+                      {{ formatMoney(s.cashOut) }}
                     </span>
                     <span v-if="s.cashRefunds" class="doc-cell__sub">
                       رُدّ نقداً {{ formatMoney(s.cashRefunds) }}

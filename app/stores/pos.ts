@@ -5,7 +5,7 @@
 // لا فرق بين "أونلاين" و"أوفلاين" في طريقة البيع؛ الفرق فقط متى يُفرَّغ
 // الطابور.
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   DeviceKeyError,
   OfflineError,
@@ -20,17 +20,22 @@ import {
   lineAmounts,
   newUuid,
   POS_PRICES_INCLUDE_TAX,
-  pricingError,
   returnShare,
+  roundAmount,
   sumAmounts,
-  toSaleLine,
   unitPriceOf,
 } from "@/pos/calc";
 import { posDb } from "@/pos/db";
 import { DEFAULT_DRAWER, kickDrawer, type DrawerConfig } from "@/pos/drawer";
+import { priceCart, pricingIssue } from "@/pos/promotions";
+import { parseScaleBarcode } from "@/pos/scale";
 import type {
+  AuditAction,
   BoundPosDevice,
   CartLine,
+  CashMove,
+  HeldCart,
+  InvoiceDiscount,
   LocalReturn,
   LocalSale,
   LocalShift,
@@ -41,10 +46,14 @@ import type {
   PosCustomer,
   PosDevice,
   PosOfflinePolicy,
+  PosOptions,
   PosProduct,
+  PosPromotion,
   PosTenantProfile,
   ReturnableInvoice,
+  SaleLine,
   SalePayment,
+  StoredCart,
   SyncResult,
 } from "@/pos/types";
 import type { AccessResponse } from "@/stores/access";
@@ -64,8 +73,28 @@ const DEFAULT_OFFLINE_POLICY: PosOfflinePolicy = {
   warnAfterHours: 72,
   blockAfterHours: 168,
 };
+/** إعدادات الكاشير قبل أن تصل من السيرفر (نفس قيمه الافتراضية) */
+const DEFAULT_POS_OPTIONS: PosOptions = {
+  scale: {
+    enabled: false,
+    prefixes: ["20", "21", "22", "23", "24", "25", "26", "27", "28", "29"],
+    itemDigits: 5,
+    valueType: "weight",
+    valueDecimals: 3,
+  },
+  approvals: { void: false, cashOut: false, manualDrawer: false },
+};
+/** تأخير حفظ السلة على الجهاز بعد آخر تعديل */
+const CART_SAVE_DELAY_MS = 300;
+/** خانات كمية صنف موزون يُحسب وزنه من سعر باركود الميزان */
+const WEIGHT_DECIMALS = 3;
+
 /** "آخر اتصال" وساعة الجهاز يُحفظان على القرص بهذه الوتيرة لا مع كل نبضة */
 const PERSIST_EVERY_MS = 60_000;
+
+/** الكميات بأربع خانات كما في السيرفر: يزيل ضجيج الفاصلة العائمة */
+const roundQuantity = (value: number): number =>
+  Math.round((value + Number.EPSILON) * 10000) / 10000;
 
 export const usePosStore = defineStore("pos", () => {
   const api = usePosApi();
@@ -95,6 +124,18 @@ export const usePosStore = defineStore("pos", () => {
   /** صلاحية المرتجع لوردية بلا كاشير محدد، كما يعرفها السيرفر عن هذه الشاشة */
   const returnsAllowed = ref(false);
   const offlinePolicy = ref<PosOfflinePolicy>({ ...DEFAULT_OFFLINE_POLICY });
+  /** أرصدة مخزن الجهاز كما في آخر سحب (productId ← الكمية بوحدة الأساس) */
+  const stockLevels = ref<Record<string, number>>({});
+  /** false = السيرفر لم يرسل أرصدة بعد: لا تُعرض ولا يُمنع بها بيع */
+  const stockKnown = ref(false);
+  /** ما على كل عميل كما في آخر سحب */
+  const serverBalances = ref<Record<string, number>>({});
+  const promotions = ref<PosPromotion[]>([]);
+  const posOptions = ref<PosOptions>(DEFAULT_POS_OPTIONS);
+  /** فواتير معلّقة على هذه الشاشة */
+  const held = ref<HeldCart[]>([]);
+  /** إيداعات وسحوبات الدرج في الوردية الحالية */
+  const cashMoves = ref<CashMove[]>([]);
 
   // ─── الاتصال ────────────────────────────────────────────────────────────────
   const online = ref(false);
@@ -316,6 +357,26 @@ export const usePosStore = defineStore("pos", () => {
         posDb.all("sales"),
       ]);
     await reloadOutbox();
+
+    const [levels, balances, promos, options, parked, moves, savedCart] =
+      await Promise.all([
+        posDb.getMeta<Record<string, number>>("stock"),
+        posDb.getMeta<Record<string, number>>("customerBalances"),
+        posDb.getMeta<PosPromotion[]>("promotions"),
+        posDb.getMeta<PosOptions>("posOptions"),
+        posDb.getMeta<HeldCart[]>("held"),
+        posDb.getMeta<CashMove[]>("cashMoves"),
+        posDb.getMeta<StoredCart>("cart"),
+      ]);
+    stockLevels.value = levels ?? {};
+    stockKnown.value = levels !== null;
+    serverBalances.value = balances ?? {};
+    promotions.value = promos ?? [];
+    posOptions.value = options ?? DEFAULT_POS_OPTIONS;
+    held.value = parked ?? [];
+    cashMoves.value = moves ?? [];
+    // سلة لم تكتمل قبل إغلاق المتصفح أو انقطاع الكهرباء
+    if (savedCart && sh) restoreCart(savedCart);
     ready.value = true;
   };
 
@@ -365,6 +426,21 @@ export const usePosStore = defineStore("pos", () => {
 
   const applyBootstrap = async (data: PosBootstrap) => {
     await posDb.applyCatalog(data);
+    // التنزيل الكامل يستبدل نسخة العملاء: من أُضيف هنا ولم يُرفع بعد يعود
+    const waiting = customers.value.filter(
+      (c) => c.local && outbox.value.some((e) => e.id === `customer-${c.id}`),
+    );
+    if (waiting.length) await posDb.putCustomers(waiting);
+
+    // الأرصدة: كلها في التنزيل الكامل، وما تغيّر في غيره
+    let nextStock = stockLevels.value;
+    if (data.stock) {
+      nextStock = data.full ? {} : { ...stockLevels.value };
+      for (const row of data.stock) nextStock[row.productId] = row.quantity;
+    }
+    const nextBalances = data.customerBalances
+      ? Object.fromEntries(data.customerBalances.map((row) => [row.id, row.balance]))
+      : serverBalances.value;
     // العدّاد لا ينقص أبداً: الأعلى بين الجهاز والسيرفر (جهاز أُعيدت تهيئته)
     const nextCounter = Math.max(counter.value, data.device.lastCounter);
 
@@ -390,7 +466,16 @@ export const usePosStore = defineStore("pos", () => {
       cashiers: data.cashiers,
       returnsAllowed: data.returnsAllowed,
       offlinePolicy: data.offlinePolicy,
+      customerBalances: nextBalances,
+      promotions: data.promotions ?? promotions.value,
+      posOptions: data.posOptions ?? posOptions.value,
+      ...(data.stock ? { stock: nextStock } : {}),
     });
+    stockLevels.value = nextStock;
+    if (data.stock) stockKnown.value = true;
+    serverBalances.value = nextBalances;
+    promotions.value = data.promotions ?? promotions.value;
+    posOptions.value = data.posOptions ?? posOptions.value;
     tenant.value = data.tenant;
     cashiers.value = data.cashiers;
     returnsAllowed.value = data.returnsAllowed;
@@ -562,6 +647,11 @@ export const usePosStore = defineStore("pos", () => {
     shift.value = null;
     sales.value = [];
     cart.value = [];
+    held.value = [];
+    cashMoves.value = [];
+    stockLevels.value = {};
+    stockKnown.value = false;
+    serverBalances.value = {};
     await posDb.setMeta({ cashierName: keepName });
     await applyBootstrap(data);
     online.value = true;
@@ -604,8 +694,9 @@ export const usePosStore = defineStore("pos", () => {
         },
         createdAt: next.openedAt,
       },
-      { shift: next, cashierName: name },
+      { shift: next, cashierName: name, cashMoves: [] },
     );
+    cashMoves.value = [];
     shift.value = next;
     cashierName.value = name;
     await reloadOutbox();
@@ -653,22 +744,43 @@ export const usePosStore = defineStore("pos", () => {
     const cashRefunds = sumAmounts(
       ownReturns.filter((r) => r.refundMethod === "cash").map((r) => r.refundAmount),
     );
+    const moves = shift.value
+      ? cashMoves.value.filter((move) => move.shiftId === shift.value!.id)
+      : [];
+    const moved = (type: CashMove["type"]) =>
+      sumAmounts(moves.filter((move) => move.type === type).map((move) => move.amount));
+    const cashIn = moved("in");
+    const cashOut = moved("out");
     return {
       invoicesCount: own.length,
       salesTotal: sumAmounts(own.map((sale) => sale.total)),
       cash,
       card: byMethod("card"),
+      /** ما بيع على الحساب (آجل): لم يدخل الدرج */
+      credit: sumAmounts(own.map((sale) => sale.creditAmount ?? 0)),
+      discounts: sumAmounts(own.map((sale) => sale.discountTotal ?? 0)),
       returnsCount: ownReturns.length,
       returnsTotal: sumAmounts(ownReturns.map((r) => r.total)),
       cashRefunds,
+      cashIn,
+      cashOut,
       drawerOpens: shift.value?.drawerOpens ?? 0,
-      // الدرج = العهدة + المبيعات النقدية − ما رُدّ نقداً
-      expectedCash: sumAmounts([shift.value?.openingCash ?? 0, cash, -cashRefunds]),
+      // الدرج = العهدة + المبيعات النقدية − ما رُدّ نقداً + الإيداعات − المسحوبات
+      expectedCash: sumAmounts([
+        shift.value?.openingCash ?? 0,
+        cash,
+        -cashRefunds,
+        cashIn,
+        -cashOut,
+      ]),
     };
   });
 
   const closeShift = async (closingCash: number, note: string) => {
     if (!shift.value) throw new Error("لا توجد وردية مفتوحة");
+    if (held.value.length) {
+      throw new Error("توجد فواتير معلّقة — أتمّها أو احذفها قبل التقفيل");
+    }
     const closedAt = new Date().toISOString();
     await posDb.enqueue(
       {
@@ -683,82 +795,500 @@ export const usePosStore = defineStore("pos", () => {
         },
         createdAt: closedAt,
       },
-      { shift: null },
+      { shift: null, cart: null },
     );
     shift.value = null;
     cart.value = [];
+    customerId.value = "";
+    invoiceDiscount.value = null;
     await reloadOutbox();
     void sync();
   };
 
+  // ─── سجل التدقيق ────────────────────────────────────────────────────────────
+  /**
+   * يسجّل ما لا يترك أثراً في الفواتير (حذف سطر، إفراغ سلة، فتح الدرج، خصم…).
+   * يُرفع مع الطابور في النبضة التالية — لا يستعجل اتصالاً لكل حدث.
+   */
+  const logAudit = async (
+    action: AuditAction,
+    info: { amount?: number; details?: string; approvedBy?: string | null } = {},
+  ) => {
+    if (!device.value) return;
+    const id = newUuid();
+    const occurredAt = new Date().toISOString();
+    await posDb.enqueue({
+      id: `audit-${id}`,
+      type: "audit",
+      createdAt: occurredAt,
+      payload: {
+        id,
+        action,
+        occurredAt,
+        shiftId: shift.value?.id,
+        cashierName: shift.value?.cashierName || undefined,
+        approvedBy: info.approvedBy || undefined,
+        amount: info.amount,
+        details: info.details?.slice(0, 500),
+      },
+    });
+    await reloadOutbox();
+  };
+
+  // ─── موافقة المشرف ──────────────────────────────────────────────────────────
+  const supervisors = computed(() => cashiers.value.filter((c) => c.isSupervisor));
+
+  /**
+   * هل تحتاج العملية رقم مشرف السري؟ شركة لم تعرّف كاشيرات لا تستخدم الأرقام
+   * السرية أصلاً، ووردية يفتحها مشرف لا تحتاج موافقة غيره.
+   * `always`: ما يتجاوز صلاحية الكاشير دائماً (خصم فوق حدّه، بيع تحت أقل سعر).
+   */
+  const needsSupervisor = (
+    kind: keyof PosOptions["approvals"] | "always",
+  ): boolean => {
+    if (!cashiers.value.length) return false;
+    if (shiftCashier.value?.isSupervisor) return false;
+    return kind === "always" ? true : posOptions.value.approvals[kind];
+  };
+
+  // ─── الرصيد وأرصدة العملاء ──────────────────────────────────────────────────
+  /** مبيعات هذه الشاشة التي لم يؤكد السيرفر استلامها بعد */
+  const pendingSales = computed(() => {
+    const queued = new Set(
+      outbox.value.filter((e) => e.type === "sale").map((e) => e.id),
+    );
+    return sales.value.filter((sale) => queued.has(`sale-${sale.uuid}`));
+  });
+
+  /** ما بيع هنا ولم يصل السيرفر بعد، بوحدة الأساس لكل صنف */
+  const pendingSold = computed(() => {
+    const sold = new Map<string, number>();
+    for (const line of pendingSales.value.flatMap((sale) => sale.lines)) {
+      sold.set(
+        line.productId,
+        (sold.get(line.productId) ?? 0) + (line.baseQuantity ?? line.quantity),
+      );
+    }
+    return sold;
+  });
+
+  /**
+   * المتاح من الصنف في مخزن الجهاز (بوحدة الأساس) = آخر رصيد من السيرفر − ما
+   * بيع هنا ولم يُرفع. null = خدمة بلا مخزون، أو الأرصدة لم تصل بعد.
+   */
+  const stockOf = (product: PosProduct): number | null => {
+    if (!product.isStocked || !stockKnown.value) return null;
+    return roundQuantity(
+      (stockLevels.value[product.id] ?? 0) - (pendingSold.value.get(product.id) ?? 0),
+    );
+  };
+
+  /** مخزن الجهاز لا يسمح بالرصيد السالب: السيرفر سيرفض البيع بأكثر من المتاح */
+  const stockEnforced = computed(
+    () => device.value?.warehouse?.allowNegativeStock === false,
+  );
+
+  /** ما في السلة من الصنف بوحدة الأساس */
+  const inCart = (productId: string) =>
+    cart.value
+      .filter((line) => line.product.id === productId)
+      .reduce((sum, line) => sum + (Number(line.quantity) || 0) * line.factor, 0);
+
+  /** ما على العميل = آخر ما عرفه السيرفر + ما بيع له آجلاً هنا ولم يُرفع */
+  const customerBalance = (id: string): number =>
+    sumAmounts([
+      serverBalances.value[id] ?? 0,
+      ...pendingSales.value
+        .filter((sale) => sale.customerId === id)
+        .map((sale) => sale.creditAmount ?? 0),
+    ]);
+
   // ─── السلة ──────────────────────────────────────────────────────────────────
   const cart = ref<CartLine[]>([]);
   const customerId = ref("");
+  /** خصم الكاشير على الفاتورة كلها */
+  const invoiceDiscount = ref<InvoiceDiscount | null>(null);
+  /** السطر المحدد: عليه تعمل اختصارات لوحة المفاتيح */
+  const selectedKey = ref<number | null>(null);
   let lineKey = 0;
 
-  const cartTotals = computed(() => {
-    const amounts = cart.value.map((line) =>
-      lineAmounts({ ...line, taxRate: line.product.taxRate }),
-    );
+  /** السلة مسعّرة: العروض، خصم الكاشير، وخصم الفاتورة موزّعاً على الأسطر */
+  const priced = computed(() =>
+    priceCart(cart.value, {
+      promotions: promotions.value,
+      customerId: customerId.value || null,
+      now: now.value,
+      invoiceDiscount: invoiceDiscount.value,
+    }),
+  );
+
+  const cartTotals = computed(() => ({
+    subtotal: priced.value.subtotal,
+    taxTotal: priced.value.taxTotal,
+    total: priced.value.total,
+    items: priced.value.items,
+  }));
+
+  /** حد خصم كاشير الوردية % (null = بلا حد) */
+  const discountLimit = computed(
+    () => shiftCashier.value?.maxDiscountPercent ?? null,
+  );
+
+  /**
+   * ما يتجاوز صلاحية الكاشير في السلة الحالية ويحتاج موافقة مشرف قبل الدفع.
+   * `blocked`: ما لا يُتجاوز أصلاً (كمية أو خصم غير منطقي، أو رصيد غير كافٍ).
+   */
+  const cartIssues = computed(() => {
+    const issues = priced.value.lines
+      .map((line) => pricingIssue(line))
+      .filter((issue): issue is NonNullable<typeof issue> => !!issue);
+    const blocked = issues.filter((issue) => issue.blocking).map((i) => i.message);
+
+    if (stockEnforced.value) {
+      for (const product of new Set(cart.value.map((line) => line.product))) {
+        const available = stockOf(product);
+        if (available !== null && inCart(product.id) > available + 1e-9) {
+          blocked.push(
+            `الرصيد المتاح من "${product.name}" ${available} فقط`,
+          );
+        }
+      }
+    }
     return {
-      subtotal: sumAmounts(amounts.map((a) => a.subtotal)),
-      taxTotal: sumAmounts(amounts.map((a) => a.taxAmount)),
-      total: sumAmounts(amounts.map((a) => a.total)),
-      items: cart.value.reduce((count, line) => count + line.quantity, 0),
+      blocked,
+      belowMin: issues.filter((issue) => !issue.blocking).map((i) => i.message),
+      discountOverLimit:
+        discountLimit.value !== null &&
+        priced.value.manualPercent > discountLimit.value + 0.005,
     };
   });
 
-  /** يضيف صنفاً للسلة، أو يزيد كميته إن كان موجوداً بنفس الوحدة */
-  const addProduct = (product: PosProduct, unitId: string | null = null) => {
-    // باركود وحدة الأساس قد يحمل معرّفها صراحةً
-    const effectiveUnit = unitId === product.baseUnitId ? null : unitId;
-    const existing = cart.value.find(
-      (line) => line.product.id === product.id && line.unitId === effectiveUnit,
-    );
-    if (existing) {
-      existing.quantity += 1;
-      return;
-    }
-    const unit = effectiveUnit
-      ? product.units.find((u) => u.unitId === effectiveUnit)
-      : null;
-    cart.value.push({
+  const serializeCart = (): StoredCart => ({
+    lines: cart.value.map((line) => ({
+      productId: line.product.id,
+      unitId: line.unitId,
+      quantity: Number(line.quantity) || 0,
+      discount: Number(line.discount) || 0,
+    })),
+    customerId: customerId.value,
+    invoiceDiscount: invoiceDiscount.value,
+  });
+
+  const buildLine = (
+    product: PosProduct,
+    unitId: string | null,
+    quantity: number,
+    discount = 0,
+  ): CartLine => {
+    const unit = unitId ? product.units.find((u) => u.unitId === unitId) : null;
+    return {
       key: ++lineKey,
       product,
       unitId: unit ? unit.unitId : null,
       unitName: unit ? unit.name : product.baseUnitName,
       factor: unit ? unit.factor : 1,
-      quantity: 1,
+      quantity,
       unitPrice: unitPriceOf(product, unit ? unit.unitId : null),
-      discount: 0,
-    });
+      discount,
+    };
   };
 
-  /** مسح باركود: يعيد false إذا لم يُعرف */
+  /** يعيد بناء سلة محفوظة بأحدث بيانات الأصناف (صنف حُذف من الجهاز يسقط) */
+  const restoreCart = (stored: StoredCart) => {
+    const byId = new Map(products.value.map((p) => [p.id, p]));
+    cart.value = stored.lines.flatMap((line) => {
+      const product = byId.get(line.productId);
+      return product
+        ? [buildLine(product, line.unitId, line.quantity, line.discount)]
+        : [];
+    });
+    customerId.value = customers.value.some((c) => c.id === stored.customerId)
+      ? stored.customerId
+      : "";
+    invoiceDiscount.value = stored.invoiceDiscount ?? null;
+    selectedKey.value = cart.value.at(-1)?.key ?? null;
+  };
+
+  // السلة تُحفظ على الجهاز مع كل تعديل: تبقى بعد إغلاق المتصفح أو انقطاع الكهرباء
+  let cartSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  watch(
+    [cart, customerId, invoiceDiscount],
+    () => {
+      if (!ready.value) return;
+      if (cartSaveTimer) clearTimeout(cartSaveTimer);
+      cartSaveTimer = setTimeout(() => {
+        void posDb.setMeta({ cart: cart.value.length ? serializeCart() : null });
+      }, CART_SAVE_DELAY_MS);
+    },
+    { deep: true },
+  );
+
+  /**
+   * يضيف صنفاً للسلة، أو يزيد كميته إن كان موجوداً بنفس الوحدة. يرمي خطأ إن
+   * كان مخزن الجهاز لا يسمح بالسالب والمتاح لا يكفي.
+   */
+  const addProduct = (
+    product: PosProduct,
+    unitId: string | null = null,
+    quantity = 1,
+  ): CartLine => {
+    // باركود وحدة الأساس قد يحمل معرّفها صراحةً
+    const effectiveUnit = unitId === product.baseUnitId ? null : unitId;
+    const unit = effectiveUnit
+      ? product.units.find((u) => u.unitId === effectiveUnit)
+      : null;
+
+    const available = stockOf(product);
+    if (stockEnforced.value && available !== null) {
+      const wanted = inCart(product.id) + quantity * (unit ? unit.factor : 1);
+      if (wanted > available + 1e-9) {
+        throw new Error(
+          available > 0
+            ? `الرصيد المتاح من "${product.name}" ${available} فقط`
+            : `"${product.name}" غير متوفر في المخزن`,
+        );
+      }
+    }
+
+    const existing = cart.value.find(
+      (line) => line.product.id === product.id && line.unitId === (unit?.unitId ?? null),
+    );
+    if (existing) {
+      existing.quantity = roundQuantity((Number(existing.quantity) || 0) + quantity);
+      selectedKey.value = existing.key;
+      return existing;
+    }
+    const line = buildLine(product, unit?.unitId ?? null, quantity);
+    cart.value.push(line);
+    selectedKey.value = line.key;
+    // من مصفوفة السلة: الكائن التفاعلي الذي يراه القالب
+    return cart.value.at(-1)!;
+  };
+
+  /**
+   * مسح باركود: باركود صنف، أو باركود ميزان يحمل الوزن أو السعر. يعيد false
+   * إذا لم يُعرف.
+   */
   const scan = (barcode: string): boolean => {
-    const match = barcodeIndex.value.get(barcode.trim());
-    if (!match) return false;
-    addProduct(match.product, match.unitId);
+    const code = barcode.trim();
+    const match = barcodeIndex.value.get(code);
+    if (match) {
+      addProduct(match.product, match.unitId);
+      return true;
+    }
+
+    const reading = parseScaleBarcode(code, posOptions.value.scale);
+    if (!reading) return false;
+    const product =
+      reading.itemCodes
+        .map((item) => barcodeIndex.value.get(item)?.product)
+        .find((found) => !!found) ??
+      products.value.find((p) => reading.itemCodes.includes(p.sku));
+    if (!product) return false;
+
+    const unitPrice = unitPriceOf(product, null);
+    const quantity =
+      reading.type === "weight"
+        ? reading.value
+        : unitPrice > 0
+          ? // الميزان طبع السعر: الوزن = السعر ÷ سعر الكيلو
+            Math.round((reading.value / unitPrice) * 10 ** WEIGHT_DECIMALS) /
+            10 ** WEIGHT_DECIMALS
+          : 0;
+    if (!(quantity > 0)) return false;
+    addProduct(product, null, quantity);
     return true;
   };
 
-  const removeLine = (key: number) => {
+  const lineLabel = (line: CartLine) =>
+    `${line.product.name} × ${Number(line.quantity) || 0} ${line.unitName}`;
+
+  /** يحذف سطراً ويسجّله في سجل التدقيق */
+  const removeLine = async (key: number, approvedBy: string | null = null) => {
+    const target = priced.value.lines.find((p) => p.line.key === key);
     cart.value = cart.value.filter((line) => line.key !== key);
+    if (selectedKey.value === key) selectedKey.value = cart.value.at(-1)?.key ?? null;
+    if (target) {
+      await logAudit("line_removed", {
+        amount: target.total,
+        details: lineLabel(target.line),
+        approvedBy,
+      });
+    }
   };
 
-  const clearCart = () => {
+  /** يفرغ السلة بلا تسجيل (بعد بيع أو تعليق) */
+  const resetCart = () => {
     cart.value = [];
     customerId.value = "";
+    invoiceDiscount.value = null;
+    selectedKey.value = null;
+  };
+
+  /** الكاشير يفرغ السلة: يُسجَّل في سجل التدقيق */
+  const clearCart = async (approvedBy: string | null = null) => {
+    if (!cart.value.length) return;
+    const total = priced.value.total;
+    const details = cart.value.map(lineLabel).join("، ");
+    resetCart();
+    await logAudit("cart_cleared", { amount: total, details, approvedBy });
+  };
+
+  // ─── تعليق الفاتورة ─────────────────────────────────────────────────────────
+  const saveHeld = () => posDb.setMeta({ held: held.value });
+
+  /** يعلّق السلة الحالية ليخدم الكاشير عميلاً آخر */
+  const holdCart = async (label = "") => {
+    if (!cart.value.length) throw new Error("السلة فارغة");
+    const entry: HeldCart = {
+      ...serializeCart(),
+      id: newUuid(),
+      heldAt: new Date().toISOString(),
+      label: label.trim(),
+      total: priced.value.total,
+      items: priced.value.items,
+    };
+    held.value = [...held.value, entry];
+    await saveHeld();
+    resetCart();
+    await logAudit("sale_held", {
+      amount: entry.total,
+      details: entry.label || undefined,
+    });
+  };
+
+  /** يسترجع فاتورة معلّقة (والسلة الحالية، إن وُجدت، تُعلَّق مكانها) */
+  const resumeHeld = async (id: string) => {
+    const entry = held.value.find((h) => h.id === id);
+    if (!entry) return;
+    if (cart.value.length) await holdCart();
+    held.value = held.value.filter((h) => h.id !== id);
+    await saveHeld();
+    restoreCart(entry);
+  };
+
+  const deleteHeld = async (id: string, approvedBy: string | null = null) => {
+    const entry = held.value.find((h) => h.id === id);
+    if (!entry) return;
+    held.value = held.value.filter((h) => h.id !== id);
+    await saveHeld();
+    await logAudit("held_deleted", {
+      amount: entry.total,
+      details: entry.label || undefined,
+      approvedBy,
+    });
+  };
+
+  // ─── حركات الدرج النقدية ────────────────────────────────────────────────────
+  /** إيداع نقد في الدرج أو سحبه بلا بيع (فكّة، مصروف نثري، توريد للخزنة) */
+  const addCashMove = async (
+    type: CashMove["type"],
+    amount: number,
+    reason: string,
+    approvedBy: string | null = null,
+  ): Promise<CashMove> => {
+    if (!shift.value) throw new Error("افتح وردية أولاً");
+    if (!(amount > 0)) throw new Error("أدخل المبلغ");
+    if (!reason.trim()) throw new Error("اكتب سبب الحركة");
+    if (type === "out" && amount > shiftSummary.value.expectedCash + 1e-9) {
+      throw new Error(
+        `المبلغ أكبر من المفترض في الدرج (${shiftSummary.value.expectedCash})`,
+      );
+    }
+
+    const move: CashMove = {
+      id: newUuid(),
+      shiftId: shift.value.id,
+      type,
+      amount: roundAmount(amount),
+      reason: reason.trim(),
+      occurredAt: new Date().toISOString(),
+      approvedBy,
+    };
+    const next = [...cashMoves.value, move];
+    await posDb.enqueue(
+      {
+        id: `cash-${move.id}`,
+        type: "cash.move",
+        createdAt: move.occurredAt,
+        payload: {
+          id: move.id,
+          shiftId: move.shiftId,
+          type,
+          amount: move.amount,
+          reason: move.reason,
+          occurredAt: move.occurredAt,
+          cashierName: shift.value.cashierName || undefined,
+          approvedBy: approvedBy || undefined,
+        },
+      },
+      { cashMoves: next },
+    );
+    cashMoves.value = next;
+    await logAudit(type === "in" ? "cash_in" : "cash_out", {
+      amount: move.amount,
+      details: move.reason,
+      approvedBy,
+    });
+    void sync();
+    return move;
+  };
+
+  // ─── عميل من الشاشة ─────────────────────────────────────────────────────────
+  /** يضيف عميلاً على الجهاز ويختاره؛ يُرفع قبل فواتيره (الطابور بالترتيب) */
+  const addCustomer = async (input: {
+    name: string;
+    phone?: string;
+    taxNumber?: string;
+  }): Promise<PosCustomer> => {
+    const name = input.name.trim();
+    if (!name) throw new Error("اسم العميل مطلوب");
+    const taxNumber = input.taxNumber?.trim() || null;
+    if (taxNumber && !/^\d{15}$/.test(taxNumber)) {
+      throw new Error("الرقم الضريبي يتكون من 15 رقماً");
+    }
+
+    const customer: PosCustomer = {
+      id: newUuid(),
+      name,
+      phone: input.phone?.trim() || null,
+      taxNumber,
+      creditLimit: null,
+      paymentTermsDays: 0,
+      available: true,
+      local: true,
+    };
+    await posDb.saveCustomer(customer, {
+      id: `customer-${customer.id}`,
+      type: "customer.create",
+      createdAt: new Date().toISOString(),
+      payload: {
+        id: customer.id,
+        name,
+        phone: customer.phone ?? undefined,
+        taxNumber: taxNumber ?? undefined,
+      },
+    });
+    customers.value = [...customers.value, customer];
+    customerId.value = customer.id;
+    await reloadOutbox();
+    void sync();
+    return customer;
   };
 
   // ─── إتمام البيع ────────────────────────────────────────────────────────────
   /**
    * يحفظ الفاتورة على الجهاز ويضعها في طابور الرفع، ثم يحاول رفعها. يعيد
    * الفاتورة لطباعة إيصالها فوراً — سواء وُجد إنترنت أم لا.
+   *
+   * ما قُبض أقل من الإجمالي = الباقي على حساب العميل (بيع آجل، لعميل مسجّل).
+   * `approvedBy`: المشرف الذي وافق على ما يتجاوز صلاحية الكاشير (انظر
+   * cartIssues) — الشاشة تطلبه قبل الاستدعاء.
    */
   const checkout = async (
     payments: SalePayment[],
     cashReceived: number,
+    approvedBy: string | null = null,
   ): Promise<LocalSale> => {
     if (!device.value || !shift.value) throw new Error("افتح وردية أولاً");
     if (cashierRevoked.value) {
@@ -766,20 +1296,57 @@ export const usePosStore = defineStore("pos", () => {
     }
     if (cart.value.length === 0) throw new Error("السلة فارغة");
 
-    for (const line of cart.value) {
-      if (!(line.quantity > 0)) throw new Error(`كمية "${line.product.name}" غير صحيحة`);
-      const problem = pricingError(line);
-      if (problem) throw new Error(problem);
-    }
+    const current = priced.value;
+    const issues = cartIssues.value;
+    if (issues.blocked.length) throw new Error(issues.blocked[0]);
 
-    const lines = cart.value.map(toSaleLine);
-    const total = sumAmounts(lines.map((l) => l.total));
-    const taxTotal = sumAmounts(lines.map((l) => l.taxAmount));
-    if (sumAmounts(payments.map((p) => p.amount)) !== total) {
-      throw new Error("المقبوض لا يساوي إجمالي الفاتورة");
-    }
+    const total = current.total;
+    const paid = sumAmounts(payments.map((p) => p.amount));
+    const creditAmount = sumAmounts([total, -paid]);
+    if (creditAmount < 0) throw new Error("المقبوض أكبر من إجمالي الفاتورة");
 
     const customer = customers.value.find((c) => c.id === customerId.value);
+    let creditOverLimit = false;
+    if (creditAmount > 0) {
+      if (!customer) throw new Error("البيع الآجل لعميل مسجّل — اختر العميل");
+      const limit = customer.creditLimit ?? null;
+      creditOverLimit =
+        limit !== null && customerBalance(customer.id) + creditAmount > limit + 1e-9;
+    }
+
+    // ما يتجاوز صلاحية الكاشير: بموافقة مشرف، أو يُمنع إن لم يوجد من يوافق
+    const overrides = [
+      ...issues.belowMin,
+      ...(issues.discountOverLimit
+        ? [`الخصم يتجاوز حدّ الكاشير (${discountLimit.value}%)`]
+        : []),
+      ...(creditOverLimit ? [`تجاوز حد ائتمان العميل "${customer!.name}"`] : []),
+    ];
+    const selfApproved = !!shiftCashier.value?.isSupervisor;
+    if (overrides.length && !approvedBy && !selfApproved) {
+      throw new Error(overrides[0]);
+    }
+    const approver = overrides.length
+      ? (approvedBy ?? shiftCashier.value?.name ?? null)
+      : null;
+
+    const lines: SaleLine[] = current.lines.map((p) => ({
+      productId: p.line.product.id,
+      productName: p.line.product.name,
+      unitId: p.line.unitId ?? undefined,
+      unitName: p.line.unitName,
+      quantity: Number(p.line.quantity),
+      unitPrice: p.unitPrice,
+      discount: p.discount,
+      taxRate: p.line.product.taxRate,
+      subtotal: p.subtotal,
+      taxAmount: p.taxAmount,
+      total: p.total,
+      baseQuantity: roundQuantity(Number(p.line.quantity) * p.line.factor),
+      promoName: p.promoName,
+    }));
+    const taxTotal = current.taxTotal;
+
     const nextCounter = counter.value + 1;
     const issuedAt = new Date().toISOString();
     const cashPaid = sumAmounts(
@@ -797,11 +1364,13 @@ export const usePosStore = defineStore("pos", () => {
       pricesIncludeTax: POS_PRICES_INCLUDE_TAX,
       lines,
       payments,
-      subtotal: sumAmounts(lines.map((l) => l.subtotal)),
+      subtotal: current.subtotal,
       taxTotal,
       total,
       cashReceived,
       change: Math.max(sumAmounts([cashReceived, -cashPaid]), 0),
+      creditAmount,
+      discountTotal: sumAmounts([current.promoDiscount, current.manualDiscount]),
       qrCode: settings.value?.taxNumber
         ? buildZatcaQr({
             sellerName: settings.value.sellerName ?? "",
@@ -826,7 +1395,16 @@ export const usePosStore = defineStore("pos", () => {
           shiftId: sale.shiftId,
           customerId: sale.customerId ?? undefined,
           pricesIncludeTax: sale.pricesIncludeTax,
-          lines: lines.map(({ productName: _name, unitName: _unit, ...line }) => line),
+          // ما يخص الشاشة وحدها (الاسم، الرصيد، العرض) لا يُرفع
+          lines: lines.map(
+            ({
+              productName: _name,
+              unitName: _unit,
+              baseQuantity: _base,
+              promoName: _promo,
+              ...line
+            }) => line,
+          ),
           payments,
         },
       },
@@ -835,8 +1413,30 @@ export const usePosStore = defineStore("pos", () => {
 
     counter.value = nextCounter;
     sales.value.push(sale);
-    clearCart();
+    resetCart();
     await reloadOutbox();
+
+    if (current.manualDiscount > 0) {
+      await logAudit("discount", {
+        amount: current.manualDiscount,
+        details: `${sale.number} — ${current.manualPercent.toFixed(1)}%`,
+        approvedBy: issues.discountOverLimit ? approver : null,
+      });
+    }
+    if (issues.belowMin.length) {
+      await logAudit("price_below_min", {
+        details: `${sale.number} — ${issues.belowMin.join("، ")}`,
+        approvedBy: approver,
+      });
+    }
+    if (creditOverLimit) {
+      await logAudit("credit_over_limit", {
+        amount: creditAmount,
+        details: `${sale.number} — ${customer!.name}`,
+        approvedBy: approver,
+      });
+    }
+
     void sync();
     return sale;
   };
@@ -906,7 +1506,8 @@ export const usePosStore = defineStore("pos", () => {
           issuedAt: waiting.issuedAt,
           customerName: waiting.customerName,
           total: waiting.total,
-          paidAmount: waiting.total,
+          // ما بيع آجلاً لم يُدفع: لا يُردّ منه نقد
+          paidAmount: sumAmounts([waiting.total, -(waiting.creditAmount ?? 0)]),
           returnedAmount: 0,
           lines: waiting.lines.map((line, lineIndex) => ({
             lineIndex,
@@ -1014,7 +1615,7 @@ export const usePosStore = defineStore("pos", () => {
    * يفتح الدرج. `manual` = بلا بيع ولا مرتجع: يُعدّ على الوردية ويظهر
    * للمدير عند التقفيل.
    */
-  const openDrawer = async (manual = false) => {
+  const openDrawer = async (manual = false, approvedBy: string | null = null) => {
     if (drawer.value.mode === "off") return;
     await kickDrawer(drawer.value);
     if (manual && shift.value) {
@@ -1023,6 +1624,7 @@ export const usePosStore = defineStore("pos", () => {
         drawerOpens: (shift.value.drawerOpens ?? 0) + 1,
       };
       await posDb.setMeta({ shift: shift.value });
+      await logAudit("drawer_opened", { approvedBy });
     }
   };
 
@@ -1049,8 +1651,11 @@ export const usePosStore = defineStore("pos", () => {
 
   const reset = () => {
     stop();
+    // السلة تبقى محفوظة على الجهاز: تعود عند فتح الشاشة من جديد
+    ready.value = false;
     cart.value = [];
     customerId.value = "";
+    invoiceDiscount.value = null;
   };
 
   return {
@@ -1099,12 +1704,32 @@ export const usePosStore = defineStore("pos", () => {
     shiftSummary,
     cart,
     customerId,
+    invoiceDiscount,
+    selectedKey,
+    priced,
     cartTotals,
+    cartIssues,
+    discountLimit,
     addProduct,
     scan,
     removeLine,
     clearCart,
     checkout,
+    held,
+    holdCart,
+    resumeHeld,
+    deleteHeld,
+    cashMoves,
+    addCashMove,
+    addCustomer,
+    customerBalance,
+    stockOf,
+    stockEnforced,
+    promotions,
+    posOptions,
+    supervisors,
+    needsSupervisor,
+    logAudit,
     returns,
     lookupInvoice,
     refundPreview,
