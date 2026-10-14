@@ -80,6 +80,7 @@ import { ShieldCheck, UserRound, X } from "lucide-vue-next";
 import { useToast } from "@/composables/useToast";
 import { verifyCashierPin } from "@/pos/cashiers";
 import { usePosStore } from "@/stores/pos";
+import { playSound } from "@/utils/sounds";
 
 const pos = usePosStore();
 const toast = useToast();
@@ -128,6 +129,7 @@ const submit = async () => {
       finish(supervisor.name);
     } else {
       pin.value = "";
+      playSound("error", "pos");
       toast.error("الرقم السري غير صحيح");
     }
   } catch (e) {
@@ -144,6 +146,8 @@ const request = (why: string): Promise<string | null> => {
   pin.value = "";
   supervisorId.value = pos.supervisors.length === 1 ? pos.supervisors[0]!.id : "";
   open.value = true;
+  // نغمة مميزة يسمعها المشرف من مكانه فيأتي
+  playSound("attention", "pos");
   if (supervisorId.value) void focusPin();
   return new Promise((resolve) => {
     settle = resolve;

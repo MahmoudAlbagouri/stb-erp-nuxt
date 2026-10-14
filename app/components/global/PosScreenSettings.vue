@@ -86,6 +86,15 @@
               </p>
             </template>
 
+            <!-- ══ الأصوات ══ -->
+            <h4 class="pos-settings__title"><Volume2 :size="16" /> الأصوات</h4>
+            <p class="doc-hint">
+              تنبيه بالصوت للأحداث المهمة، فلا يحتاج الكاشير للنظر إلى الشاشة: مسح
+              الباركود، صنف غير معروف، تمام البيع، طلب موافقة مشرف، وانقطاع
+              الاتصال وعودته. الإعداد لهذا الجهاز فقط.
+            </p>
+            <SoundSettingsPanel scope="pos" :sounds="POS_SOUNDS" />
+
             <!-- ══ التثبيت كتطبيق ══ -->
             <h4 class="pos-settings__title">
               <MonitorDown :size="16" /> تثبيت الشاشة كتطبيق
@@ -133,8 +142,10 @@ import {
   MonitorDown,
   Settings,
   Share,
+  Volume2,
   X,
 } from "lucide-vue-next";
+import type { SoundName } from "@/utils/sounds";
 import { usePwaInstall } from "@/composables/usePwaInstall";
 import { useToast } from "@/composables/useToast";
 import {
@@ -153,6 +164,17 @@ const emit = defineEmits<{ "update:modelValue": [value: boolean] }>();
 const pos = usePosStore();
 const toast = useToast();
 const { canInstall, installed, standalone, isIos, install } = usePwaInstall();
+
+/** أصوات شاشة الكاشير بترتيب أهميتها (الأول يُسمع عند التشغيل وتغيير المستوى) */
+const POS_SOUNDS: SoundName[] = [
+  "scan",
+  "error",
+  "success",
+  "attention",
+  "offline",
+  "online",
+  "rejected",
+];
 
 const supported = drawerSupported();
 const form = reactive<DrawerConfig>({ ...pos.drawer });

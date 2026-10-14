@@ -111,7 +111,7 @@
         </button>
         <button
           class="btn btn--sm btn--ghost btn--icon pos-settings-btn"
-          title="إعدادات الشاشة (الدرج والتثبيت كتطبيق)"
+          title="إعدادات الشاشة (الدرج والأصوات والتثبيت كتطبيق)"
           @click="showSettings = true"
         >
           <Settings :size="15" />
@@ -1068,6 +1068,7 @@ import { useAccessStore } from "@/stores/access";
 import { usePosStore } from "@/stores/pos";
 import type { PrintableInvoice } from "@/types/sales";
 import { FEATURES, PERMS } from "@/utils/access";
+import { installSoundUnlock, playSound, type SoundName } from "@/utils/sounds";
 
 // بلا middleware "auth": الشاشة تعمل بهوية جهازها — تفتح وتبيع وترفع حتى لو
 // انتهت جلسة المستخدم أو انقطع النت
@@ -1091,6 +1092,9 @@ const pos = usePosStore();
 const accessStore = useAccessStore();
 const { resolve } = useAccess();
 const toast = useToast();
+
+/** صوت شاشة الكاشير (يُضبط من إعدادات الشاشة) */
+const sound = (name: SoundName) => playSound(name, "pos");
 
 /** أقصى عدد بلاطات أصناف تُرسم (الباقي يوصل له بالبحث) */
 const MAX_TILES = 60;
@@ -1253,6 +1257,7 @@ const submitOpenShift = async () => {
       }
       if (!(await verifyCashierPin(cashier, shiftForm.pin))) {
         shiftForm.pin = "";
+        sound("error");
         toast.error("الرقم السري غير صحيح");
         return;
       }
@@ -1344,20 +1349,24 @@ const onSearchEnter = () => {
 
   try {
     if (pos.scan(term)) {
+      sound("scan");
       search.value = "";
       return;
     }
   } catch (e) {
     // باركود معروف لكن الرصيد لا يكفي
+    sound("error");
     toast.warning(getErrorMessage(e, "تعذرت إضافة الصنف"));
     search.value = "";
     return;
   }
   if (filtered.value.length === 1) {
-    add(filtered.value[0]!);
+    if (add(filtered.value[0]!)) sound("scan");
     search.value = "";
     return;
   }
+  // أهم صوت: بدونه يكمل الكاشير ولا يلاحظ أن الصنف لم يُضَف
+  sound("error");
   toast.warning(
     filtered.value.length
       ? "أكثر من صنف مطابق — اختر من القائمة"
@@ -1366,12 +1375,18 @@ const onSearchEnter = () => {
 };
 
 // ─── السلة ────────────────────────────────────────────────────────────────────
-/** يضيف صنفاً للسلة (رصيد غير كافٍ في مخزن لا يسمح بالسالب: تنبيه) */
-const add = (product: PosProduct) => {
+/**
+ * يضيف صنفاً للسلة (رصيد غير كافٍ في مخزن لا يسمح بالسالب: تنبيه). يعيد
+ * false إن لم يُضَف.
+ */
+const add = (product: PosProduct): boolean => {
   try {
     pos.addProduct(product);
+    return true;
   } catch (e) {
+    sound("error");
     toast.warning(getErrorMessage(e, "تعذرت إضافة الصنف"));
+    return false;
   }
 };
 
@@ -1548,10 +1563,12 @@ const payAll = (method: "cash" | "card") => {
 const openPay = async () => {
   const empty = pos.cart.find((line) => !(Number(line.quantity) > 0));
   if (empty) {
+    sound("error");
     toast.warning(`أدخل كمية "${empty.product.name}"`);
     return;
   }
   if (pos.cartIssues.blocked.length) {
+    sound("error");
     toast.warning(pos.cartIssues.blocked[0]!);
     return;
   }
@@ -1571,6 +1588,7 @@ const submitPay = async () => {
     let approvedBy: string | null = null;
     if (payOverrides.value.length) {
       if (!pos.cashiers.length) {
+        sound("error");
         toast.error(payOverrides.value[0]!);
         return;
       }
@@ -1588,6 +1606,7 @@ const submitPay = async () => {
     }
 
     const sale = await pos.checkout(payments, Number(pay.cash) || 0, approvedBy);
+    sound("success");
     if (payments.some((p) => p.method === "cash")) void kickDrawer();
     showPay.value = false;
     doneSale.value = sale;
@@ -1595,6 +1614,7 @@ const submitPay = async () => {
     await nextTick();
     nextEl.value?.focus();
   } catch (e) {
+    sound("error");
     toast.error(getErrorMessage(e, "تعذر إتمام البيع"));
   } finally {
     paying.value = false;
@@ -1899,6 +1919,30 @@ const onKeydown = (event: KeyboardEvent) => {
 // ─── المرفوضات ────────────────────────────────────────────────────────────────
 const showFailed = ref(false);
 
+// ─── أصوات الاتصال والطابور ───────────────────────────────────────────────────
+// حالة الاتصال عند فتح الشاشة ليست "تغيّراً": الأصوات تبدأ بعد أول مزامنة
+// تكتمل، فلا يُسمع "عاد الاتصال" مع كل فتح للشاشة، ولا "مرفوضة" لعمليات
+// رُفضت قبل إغلاقها
+const connectionKnown = ref(false);
+watch(
+  () => pos.syncing,
+  (busy) => {
+    if (!busy) connectionKnown.value = true;
+  },
+);
+watch(
+  () => pos.online,
+  (online) => {
+    if (connectionKnown.value) sound(online ? "online" : "offline");
+  },
+);
+watch(
+  () => pos.failedEntries.length,
+  (count, before) => {
+    if (connectionKnown.value && count > before) sound("rejected");
+  },
+);
+
 const retryFailed = async () => {
   await pos.retryFailed();
   if (!pos.failedEntries.length) {
@@ -1929,6 +1973,8 @@ const registerOfflineShell = () => {
 
 onMounted(async () => {
   registerOfflineShell();
+  // أول ضغطة أو زر يفتح الصوت (سياسة المتصفحات)، فتُسمع أصوات المؤقتات بعدها
+  installSoundUnlock();
   window.addEventListener("keydown", onKeydown);
   try {
     await pos.init();

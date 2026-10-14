@@ -55,6 +55,15 @@
           <p>لا توجد إشعارات جديدة</p>
         </div>
 
+        <div class="popover-sound">
+          <SoundSettingsPanel
+            scope="dashboard"
+            label="صوت عند وصول إشعار جديد"
+            :sounds="['notification']"
+            compact
+          />
+        </div>
+
         <div class="popover-footer">
           <NuxtLink
             to="/dashboard/notifications"
@@ -70,10 +79,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onBeforeUnmount, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useNotificationsStore } from "@/stores/notifications";
 import { useToast } from "@/composables/useToast";
+import { installSoundUnlock, playSound } from "@/utils/sounds";
 import {
   Bell,
   BellOff,
@@ -199,11 +209,29 @@ const formatTimeAgo = (dateStr: string) => {
   return `منذ ${diffDays} يوم`;
 };
 
-onMounted(() => {
-  store.fetchUnreadCount();
-  setInterval(() => {
+// صوت الإشعار الجديد (مقفل افتراضياً — يفعّله المستخدم من القائمة): عند زيادة
+// غير المقروء بعد أول جلب، لا لما كان موجوداً عند فتح الصفحة
+let countKnown = false;
+watch(
+  () => store.unreadCount,
+  (count, before) => {
+    if (countKnown && count > before) playSound("notification", "dashboard");
+  },
+);
+
+let poll: ReturnType<typeof setInterval> | null = null;
+
+onMounted(async () => {
+  installSoundUnlock();
+  await store.fetchUnreadCount();
+  countKnown = true;
+  poll = setInterval(() => {
     if (!isOpen.value) store.fetchUnreadCount();
   }, 60000);
+});
+
+onBeforeUnmount(() => {
+  if (poll) clearInterval(poll);
 });
 </script>
 
@@ -373,6 +401,11 @@ onMounted(() => {
   padding: $space-8;
   color: $stb-text-muted;
   font-size: $font-size-sm;
+}
+.popover-sound {
+  padding: $space-3 $space-4;
+  border-top: 1px solid $stb-border;
+  font-size: $font-size-xs;
 }
 .popover-footer {
   padding: $space-2;
