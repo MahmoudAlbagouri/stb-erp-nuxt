@@ -48,7 +48,12 @@ export const DEFAULT_POS_OPTIONS: PosOptions = {
     valueType: "weight",
     valueDecimals: 3,
   },
-  approvals: { void: false, cashOut: false, manualDrawer: false },
+  approvals: {
+    void: false,
+    cashOut: false,
+    manualDrawer: false,
+    priceChange: false,
+  },
 };
 /** تأخير حفظ السلة على الجهاز بعد آخر تعديل */
 export const CART_SAVE_DELAY_MS = 300;

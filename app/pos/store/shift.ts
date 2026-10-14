@@ -224,8 +224,19 @@ export const createShift = (state: PosState, connection: PosConnection) => {
   ): boolean => {
     if (!cashiers.value.length) return false;
     if (shiftCashier.value?.isSupervisor) return false;
-    return kind === "always" ? true : posOptions.value.approvals[kind];
+    return kind === "always" ? true : !!posOptions.value.approvals[kind];
   };
+
+  /**
+   * هل يحتاج تغيير سعر صنف في الفاتورة رقم مشرف الآن؟ نعم إن لم يملك كاشير
+   * الوردية صلاحيته، أو اشترطت إعدادات الشركة الموافقة. غير ذلك يغيّره بنفسه —
+   * وحد خصمه وأقل سعر للصنف يُفحصان عند الدفع.
+   */
+  const needsPriceApproval = (): boolean =>
+    needsSupervisor("priceChange") ||
+    (!!shiftCashier.value &&
+      shiftCashier.value.canChangePrice === false &&
+      needsSupervisor("always"));
 
   // ─── حركات الدرج النقدية ────────────────────────────────────────────────────
   /** إيداع نقد في الدرج أو سحبه بلا بيع (فكّة، مصروف نثري، توريد للخزنة) */
@@ -315,6 +326,7 @@ export const createShift = (state: PosState, connection: PosConnection) => {
     logAudit,
     supervisors,
     needsSupervisor,
+    needsPriceApproval,
     addCashMove,
     setDrawer,
     openDrawer,

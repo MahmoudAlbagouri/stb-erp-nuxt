@@ -113,6 +113,9 @@ export interface SalesInvoiceLine {
   factor: number;
   quantity: number;
   unitPrice: number;
+  /** السعر الأصلي حين غيّر الكاشير سعر الصنف في هذه الفاتورة وحدها */
+  listPrice?: number | null;
+  priceReason?: string | null;
   discount: number;
   taxRate: number;
   subtotal: number;

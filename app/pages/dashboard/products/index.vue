@@ -118,6 +118,7 @@
                     <span class="product-cell__meta">
                       {{ p.type === "service" ? "خدمة" : p.baseUnit?.name }}
                       <template v-if="p.isWeighted"> · بالوزن</template>
+                      <template v-if="p.openPrice"> · سعر مفتوح</template>
                     </span>
                   </div>
                 </td>
@@ -333,6 +334,13 @@
                   <label class="toggle">
                     <input v-model="form.isWeighted" type="checkbox" />
                     <span>يُباع بالوزن</span>
+                  </label>
+                  <label
+                    class="toggle"
+                    title="خدمات أو أصناف بلا سعر ثابت: الكاشير يكتب السعر عند إضافتها، وسعر البيع أعلاه اقتراح فقط"
+                  >
+                    <input v-model="form.openPrice" type="checkbox" />
+                    <span>سعر مفتوح (يُكتب عند البيع)</span>
                   </label>
                   <label class="toggle">
                     <input v-model="form.isActive" type="checkbox" />
@@ -608,6 +616,7 @@ const emptyForm = () => ({
   priceIncludesTax: true,
   allowDiscount: true,
   isWeighted: false,
+  openPrice: false,
   isActive: true,
   units: [] as UnitRow[],
   barcodes: [] as BarcodeRow[],
@@ -684,6 +693,7 @@ const openEdit = async (product: Product) => {
       priceIncludesTax: full.priceIncludesTax,
       allowDiscount: full.allowDiscount,
       isWeighted: full.isWeighted,
+      openPrice: full.openPrice ?? false,
       isActive: full.isActive,
       units: (full.units ?? []).map((u) => ({
         unitId: u.unitId,
@@ -719,6 +729,7 @@ const buildPayload = (): ProductPayload => ({
   priceIncludesTax: form.priceIncludesTax,
   allowDiscount: form.allowDiscount,
   isWeighted: form.isWeighted,
+  openPrice: form.openPrice,
   isActive: form.isActive,
   units: form.units.map((u) => ({
     unitId: u.unitId,

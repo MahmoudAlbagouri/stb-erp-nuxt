@@ -386,7 +386,7 @@
                 {{ formatNumber(pos.stockOf(p)!) }}
               </span>
               <span class="pos-tile__price">
-                {{ formatMoney(unitPriceOf(p, null)) }}
+                {{ p.openPrice ? "سعر مفتوح" : formatMoney(unitPriceOf(p, null)) }}
               </span>
             </span>
           </button>
@@ -441,6 +441,13 @@
                 <span v-if="promoName" class="badge doc-status--done pos-line__promo">
                   {{ promoName }}
                 </span>
+                <span
+                  v-if="isRepriced(line)"
+                  class="badge doc-status--progress pos-line__promo"
+                  :title="line.priceReason || ''"
+                >
+                  سعر معدّل
+                </span>
               </span>
               <button
                 class="btn btn--sm btn--danger btn--icon"
@@ -484,11 +491,24 @@
                 </option>
               </select>
               <span v-else class="doc-cell__sub">{{ line.unitName }}</span>
-              <span class="doc-cell__sub">
+              <button
+                type="button"
+                class="pos-line__price"
+                :class="{ 'is-pending': line.pricePending }"
+                title="سعر هذه الفاتورة فقط (=)"
+                @click.stop="editPrice(line)"
+              >
                 ×
-                <s v-if="unitPrice < line.unitPrice">{{ formatMoney(line.unitPrice) }}</s>
-                {{ formatMoney(unitPrice) }}
-              </span>
+                <template v-if="line.pricePending">اكتب السعر</template>
+                <template v-else>
+                  <s v-if="isRepriced(line)">{{ formatMoney(line.listPrice!) }}</s>
+                  <s v-else-if="unitPrice < line.unitPrice">
+                    {{ formatMoney(line.unitPrice) }}
+                  </s>
+                  {{ formatMoney(unitPrice) }}
+                </template>
+                <Pencil :size="11" />
+              </button>
               <strong class="doc-money pos-line__total">
                 {{ formatMoney(total) }}
               </strong>
@@ -991,6 +1011,7 @@
     <PosCustomerModal v-model="showCustomer" />
     <PosDiscountModal v-model="showDiscount" />
     <PosShortcutsModal v-model="showShortcuts" />
+    <PosPriceModal :line="priceLine" @close="closePrice" @submit="submitPrice" />
     <PosApprovalModal ref="approval" />
     <PosShiftReport ref="shiftReport" />
 
@@ -1028,6 +1049,7 @@ import {
   MonitorSmartphone,
   MonitorUp,
   PauseCircle,
+  Pencil,
   Percent,
   Plus,
   Printer,
@@ -1051,6 +1073,7 @@ import type { AccessState as AccessStatus } from "@/composables/useAccess";
 import { useToast } from "@/composables/useToast";
 import type { ShiftReportData } from "@/components/global/PosShiftReport.vue";
 import { sumAmounts, unitPriceOf } from "@/pos/calc";
+import { isRepriced } from "@/pos/promotions";
 import { createDisplayPublisher, type DisplayState } from "@/pos/display";
 import { verifyCashierPin } from "@/pos/cashiers";
 import type {
@@ -1351,6 +1374,7 @@ const onSearchEnter = () => {
     if (pos.scan(term)) {
       sound("scan");
       search.value = "";
+      promptPendingPrice();
       return;
     }
   } catch (e) {
@@ -1382,6 +1406,7 @@ const onSearchEnter = () => {
 const add = (product: PosProduct): boolean => {
   try {
     pos.addProduct(product);
+    promptPendingPrice();
     return true;
   } catch (e) {
     sound("error");
@@ -1498,8 +1523,55 @@ const changeUnit = (line: CartLine, unitId: string) => {
   line.unitId = unit ? unit.unitId : null;
   line.unitName = unit ? unit.name : line.product.baseUnitName;
   line.factor = unit ? unit.factor : 1;
-  line.unitPrice = unitPriceOf(line.product, line.unitId);
+  // سعر الوحدة الجديدة: أي تعديل على سعر السابقة يُلغى، كالخصم
+  pos.resetLinePrice(line);
   line.discount = 0;
+  promptPendingPrice();
+};
+
+// ─── سعر الصنف في هذه الفاتورة ────────────────────────────────────────────────
+/** السطر المفتوح في نافذة السعر (null = مغلقة) */
+const priceLine = ref<CartLine | null>(null);
+
+const editPrice = (line: CartLine) => {
+  pos.selectedKey = line.key;
+  priceLine.value = line;
+};
+
+const closePrice = async () => {
+  priceLine.value = null;
+  await nextTick();
+  searchEl.value?.focus();
+};
+
+/** صنف بسعر مفتوح أُضيف للتو: تُطلب كتابة سعره فوراً */
+const promptPendingPrice = () => {
+  const line = pos.cart.find((l) => l.key === pos.selectedKey);
+  if (line?.pricePending) priceLine.value = line;
+};
+
+const submitPrice = async ({ price, reason }: { price: number; reason: string | null }) => {
+  const line = priceLine.value;
+  if (!line) return;
+  try {
+    const list = pos.listPriceOf(line);
+    const changing = !line.product.openPrice && Math.abs(price - list) > 1e-9;
+    let approvedBy: string | null = null;
+    // كاشير بلا صلاحية تغيير السعر، أو شركة تشترط الموافقة: رقم مشرف قبل التطبيق
+    if (changing && pos.needsPriceApproval()) {
+      priceLine.value = null;
+      approvedBy =
+        (await approval.value?.request(
+          `تغيير سعر "${line.product.name}" من ${formatMoney(list)} إلى ${formatMoney(price)}${reason ? ` — ${reason}` : ""}`,
+        )) ?? null;
+      if (!approvedBy) return;
+    }
+    pos.setLinePrice(line.key, price, { reason, approvedBy });
+    await closePrice();
+  } catch (e) {
+    sound("error");
+    toast.error(getErrorMessage(e, "تعذر تغيير السعر"));
+  }
 };
 
 // ─── الدفع ────────────────────────────────────────────────────────────────────
@@ -1547,6 +1619,7 @@ const payState = computed(() => {
 /** ما يتجاوز صلاحية الكاشير في هذه الفاتورة: يُطلب له رقم مشرف عند الإتمام */
 const payOverrides = computed(() => [
   ...pos.cartIssues.belowMin,
+  ...pos.cartIssues.reducedNoDiscount,
   ...(pos.cartIssues.discountOverLimit
     ? [`الخصم ${pos.priced.manualPercent.toFixed(1)}% يتجاوز حدّك (${pos.discountLimit}%)`]
     : []),
@@ -1565,6 +1638,13 @@ const openPay = async () => {
   if (empty) {
     sound("error");
     toast.warning(`أدخل كمية "${empty.product.name}"`);
+    return;
+  }
+  // صنف بسعر مفتوح بلا سعر: تُفتح نافذته بدل رسالة فقط
+  const unpriced = pos.cart.find((line) => line.pricePending);
+  if (unpriced) {
+    sound("error");
+    editPrice(unpriced);
     return;
   }
   if (pos.cartIssues.blocked.length) {
@@ -1822,12 +1902,14 @@ const modalOpen = computed(
     showCustomer.value ||
     showDiscount.value ||
     showShortcuts.value ||
+    !!priceLine.value ||
     !!approval.value?.isOpen,
 );
 
 const closeTopModal = () => {
   if (approval.value?.isOpen) return; // لها زر إلغاء يسجّل الرفض
-  if (showPay.value) showPay.value = false;
+  if (priceLine.value) void closePrice();
+  else if (showPay.value) showPay.value = false;
   else if (doneSale.value) void finishSale();
   else
     for (const flag of [
@@ -1911,6 +1993,8 @@ const onKeydown = (event: KeyboardEvent) => {
       return line && handle(() => focusInput(qtyInputs));
     case "/":
       return line && handle(() => focusInput(discountInputs));
+    case "=":
+      return line && handle(() => editPrice(line));
     case "Delete":
       return line && handle(() => void removeLine(line));
   }
@@ -2463,6 +2547,29 @@ onBeforeUnmount(() => {
   }
   s {
     color: $stb-text-muted;
+  }
+  // السعر قابل للضغط: يفتح نافذة سعر هذه الفاتورة
+  &__price {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+    padding: 2px $space-2;
+    font-size: $font-size-xs;
+    color: $stb-text-secondary;
+    background: transparent;
+    border: 1px dashed transparent;
+    border-radius: $radius-sm;
+    cursor: pointer;
+
+    &:hover {
+      color: $stb-accent;
+      border-color: $stb-border-light;
+    }
+    &.is-pending {
+      font-weight: 700;
+      color: $stb-danger;
+      border-color: $stb-danger;
+    }
   }
 }
 

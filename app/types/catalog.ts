@@ -76,6 +76,8 @@ export interface Product {
   minSalePrice?: number | null;
   allowDiscount: boolean;
   isWeighted: boolean;
+  /** سعر مفتوح: يُكتب على شاشة الكاشير عند البيع */
+  openPrice?: boolean;
   description?: string | null;
   imagePath?: string | null;
   isActive: boolean;
@@ -98,6 +100,7 @@ export interface ProductPayload {
   minSalePrice?: number | null;
   allowDiscount?: boolean;
   isWeighted?: boolean;
+  openPrice?: boolean;
   description?: string;
   isActive?: boolean;
   barcodes?: ProductBarcode[];

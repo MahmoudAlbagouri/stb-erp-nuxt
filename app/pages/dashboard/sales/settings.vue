@@ -99,6 +99,13 @@
             <input v-model="pos.approvals.manualDrawer" type="checkbox" />
             <span>فتح الدرج بلا بيع</span>
           </label>
+          <label class="checkbox-label">
+            <input v-model="pos.approvals.priceChange" type="checkbox" />
+            <span>
+              تغيير سعر صنف في الفاتورة — بدونها يغيّره الكاشير بنفسه في حدود خصمه
+              (إن ملك الصلاحية)
+            </span>
+          </label>
         </section>
 
         <section class="doc-section">
@@ -198,7 +205,12 @@ const pos = reactive<PosOptions>({
     valueType: "weight",
     valueDecimals: 3,
   },
-  approvals: { void: false, cashOut: false, manualDrawer: false },
+  approvals: {
+    void: false,
+    cashOut: false,
+    manualDrawer: false,
+    priceChange: false,
+  },
 });
 const scalePrefixes = ref(pos.scale.prefixes.join(","));
 

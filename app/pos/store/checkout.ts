@@ -8,9 +8,11 @@ import {
   newUuid,
   POS_PRICES_INCLUDE_TAX,
   returnShare,
+  roundAmount,
   sumAmounts,
 } from "@/pos/calc";
 import { posDb } from "@/pos/db";
+import { isRepriced } from "@/pos/promotions";
 import type {
   LocalReturn,
   LocalSale,
@@ -90,6 +92,7 @@ export const createCheckout = (
     // ما يتجاوز صلاحية الكاشير: بموافقة مشرف، أو يُمنع إن لم يوجد من يوافق
     const overrides = [
       ...issues.belowMin,
+      ...issues.reducedNoDiscount,
       ...(issues.discountOverLimit
         ? [`الخصم يتجاوز حدّ الكاشير (${discountLimit.value}%)`]
         : []),
@@ -117,6 +120,13 @@ export const createCheckout = (
       total: p.total,
       baseQuantity: roundQuantity(Number(p.line.quantity) * p.line.factor),
       promoName: p.promoName,
+      // سعر غيّره الكاشير لهذه الفاتورة: السيرفر يحفظ الأصلي وسببه
+      ...(isRepriced(p.line)
+        ? {
+            listPrice: p.line.listPrice!,
+            priceReason: p.line.priceReason ?? undefined,
+          }
+        : {}),
     }));
     const taxTotal = current.taxTotal;
 
@@ -196,6 +206,15 @@ export const createCheckout = (
         amount: current.manualDiscount,
         details: `${sale.number} — ${current.manualPercent.toFixed(1)}%`,
         approvedBy: issues.discountOverLimit ? approver : null,
+      });
+    }
+    // كل تغيير سعر بفاتورته: من غيّر، وكم كان وكم صار، ولماذا، ومن وافق
+    for (const p of current.lines.filter((priced) => isRepriced(priced.line))) {
+      const { line } = p;
+      await logAudit("price_changed", {
+        amount: roundAmount((line.unitPrice - line.listPrice!) * (Number(line.quantity) || 0)),
+        details: `${sale.number} — ${line.product.name} (${line.unitName}): ${line.listPrice} ← ${line.unitPrice}${line.priceReason ? ` · ${line.priceReason}` : ""}`,
+        approvedBy: line.priceApprovedBy ?? null,
       });
     }
     if (issues.belowMin.length) {

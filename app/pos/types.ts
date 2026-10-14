@@ -17,6 +17,11 @@ export interface PosProduct {
   minSalePrice: number | null;
   allowDiscount: boolean;
   isWeighted: boolean;
+  /**
+   * سعر مفتوح: الشاشة تطلب السعر عند إضافته (salePrice اقتراح فقط). غائب في
+   * بيانات نزلت قبل هذه النسخة = false
+   */
+  openPrice?: boolean;
   /** false = يُزال من الجهاز (حُذف أو أُوقف) */
   available: boolean;
   barcodes: { barcode: string; unitId: string | null }[];
@@ -174,7 +179,13 @@ export interface ScaleBarcodeOptions {
 export interface PosOptions {
   scale: ScaleBarcodeOptions;
   /** ما يحتاج رقم مشرف السري */
-  approvals: { void: boolean; cashOut: boolean; manualDrawer: boolean };
+  approvals: {
+    void: boolean;
+    cashOut: boolean;
+    manualDrawer: boolean;
+    /** تغيير سعر صنف في الفاتورة (غائب في بيانات قديمة = false) */
+    priceChange?: boolean;
+  };
 }
 
 /** الشركة كما تحفظها الشاشة: بها تعرض العملة والوقت بلا إنترنت ولا جلسة */
@@ -201,6 +212,8 @@ export interface PosCashier {
   canReturn: boolean;
   /** يوافق برقمه السري على ما يتجاوز صلاحية الكاشير */
   isSupervisor?: boolean;
+  /** يغيّر سعر صنف في الفاتورة بلا مشرف (غائب = نعم، كالسيرفر) */
+  canChangePrice?: boolean;
   /** أقصى خصم يدوي % على الفاتورة (null أو غائب = بلا حد) */
   maxDiscountPercent?: number | null;
   pinSalt: string;
@@ -214,6 +227,7 @@ export interface PosCashierRecord {
   name: string;
   canReturn: boolean;
   isSupervisor: boolean;
+  canChangePrice: boolean;
   maxDiscountPercent: number | null;
   isActive: boolean;
   createdAt: string;
@@ -225,6 +239,7 @@ export interface PosCashierPayload {
   pin?: string;
   canReturn?: boolean;
   isSupervisor?: boolean;
+  canChangePrice?: boolean;
   maxDiscountPercent?: number | null;
   isActive?: boolean;
 }
@@ -256,11 +271,25 @@ export interface CartLine {
   unitName: string;
   factor: number;
   quantity: number;
-  /** سعر القائمة (السعر الخاص يُحسب عند التسعير) */
+  /**
+   * سعر الوحدة: سعر القائمة، أو ما كتبه الكاشير (السعر الخاص يُحسب عند
+   * التسعير، ولا يُطبَّق على سطر غُيّر سعره)
+   */
   unitPrice: number;
   /** خصم الكاشير على السطر */
   discount: number;
+  /** سعر القائمة الأصلي حين غيّر الكاشير السعر (null = لم يُغيَّر) */
+  listPrice?: number | null;
+  /** سبب تغيير السعر */
+  priceReason?: string | null;
+  /** المشرف الذي وافق على تغيير السعر */
+  priceApprovedBy?: string | null;
+  /** صنف بسعر مفتوح لم يُكتب سعره بعد: لا يُدفع قبل كتابته */
+  pricePending?: boolean;
 }
+
+/** أسباب تغيير السعر الجاهزة (التخفيض يحتاج سبباً) */
+export const PRICE_REASONS = ["تالف", "تفاوض", "سعر غير محدّث"] as const;
 
 /** خصم على الفاتورة كلها: نسبة أو مبلغ */
 export interface InvoiceDiscount {
@@ -274,6 +303,12 @@ export interface StoredCartLine {
   unitId: string | null;
   quantity: number;
   discount: number;
+  /** ما كتبه الكاشير للسعر المفتوح أو المعدّل (غائب = سعر القائمة) */
+  unitPrice?: number;
+  listPrice?: number | null;
+  priceReason?: string | null;
+  priceApprovedBy?: string | null;
+  pricePending?: boolean;
 }
 
 /** سلة محفوظة: الجارية (تبقى بعد إغلاق المتصفح) أو معلّقة */
@@ -313,6 +348,7 @@ export type AuditAction =
   | "cash_out"
   | "discount"
   | "price_below_min"
+  | "price_changed"
   | "credit_over_limit"
   | "approval_denied";
 
@@ -369,6 +405,9 @@ export interface SaleLine {
   baseQuantity?: number;
   /** العرض المطبَّق (للإيصال، لا يُرفع) */
   promoName?: string | null;
+  /** السعر الأصلي حين غيّر الكاشير السعر في هذه الفاتورة */
+  listPrice?: number;
+  priceReason?: string;
 }
 
 export interface SalePayment {

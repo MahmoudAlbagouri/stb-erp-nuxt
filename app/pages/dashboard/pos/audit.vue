@@ -206,6 +206,7 @@ const ACTION_LABELS: Record<Action, string> = {
   cash_out: "سحب نقدي",
   discount: "خصم",
   price_below_min: "بيع تحت أقل سعر",
+  price_changed: "تغيير سعر في فاتورة",
   credit_over_limit: "تجاوز حد ائتمان",
   approval_denied: "طلب موافقة أُلغي",
   // يسجّلها السيرفر عند رفع عمليات الجهاز
@@ -225,6 +226,7 @@ const ACTION_TONES: Record<Action, string> = {
   cash_out: "doc-status--progress",
   discount: "doc-status--info",
   price_below_min: "badge--inactive",
+  price_changed: "doc-status--info",
   credit_over_limit: "badge--inactive",
   approval_denied: "badge--inactive",
   stock_overdrawn: "badge--inactive",

@@ -200,6 +200,13 @@
                 <span>يُسمح له بعمل مرتجع وردّ مبلغ من الدرج</span>
               </label>
               <label class="checkbox-label">
+                <input v-model="form.canChangePrice" type="checkbox" />
+                <span>
+                  يغيّر سعر صنف في الفاتورة بنفسه (في حدود خصمه) — بدونها يحتاج كل
+                  تغيير موافقة مشرف
+                </span>
+              </label>
+              <label class="checkbox-label">
                 <input v-model="form.isSupervisor" type="checkbox" />
                 <span>
                   مشرف: يوافق برقمه على خصم فوق الحد، بيع تحت أقل سعر، وما
@@ -276,6 +283,7 @@ const emptyForm = () => ({
   pin: "",
   canReturn: false,
   isSupervisor: false,
+  canChangePrice: true,
   maxDiscountPercent: "" as number | "",
   isActive: true,
 });
@@ -293,6 +301,7 @@ const openEdit = (cashier: PosCashierRecord) => {
     pin: "",
     canReturn: cashier.canReturn,
     isSupervisor: cashier.isSupervisor,
+    canChangePrice: cashier.canChangePrice ?? true,
     maxDiscountPercent: cashier.maxDiscountPercent ?? "",
     isActive: cashier.isActive,
   });
@@ -313,6 +322,7 @@ const handleSubmit = async () => {
       name: form.name,
       canReturn: form.canReturn,
       isSupervisor: form.isSupervisor,
+      canChangePrice: form.canChangePrice,
       // فارغ = بلا حد (null صريحة تزيل حداً سابقاً)
       maxDiscountPercent:
         form.maxDiscountPercent === "" ? null : Number(form.maxDiscountPercent),

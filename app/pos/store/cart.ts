@@ -1,9 +1,9 @@
 // pos/store/cart.ts — السلة: الأصناف والمسح، التسعير والعروض، الرصيد المتاح،
 // الفواتير المعلّقة، وإضافة عميل من الشاشة
 import { computed, watch } from "vue";
-import { newUuid, sumAmounts, unitPriceOf } from "@/pos/calc";
+import { newUuid, roundAmount, sumAmounts, unitPriceOf } from "@/pos/calc";
 import { posDb } from "@/pos/db";
-import { priceCart, pricingIssue } from "@/pos/promotions";
+import { isRepriced, priceCart, pricingIssue } from "@/pos/promotions";
 import { parseScaleBarcode } from "@/pos/scale";
 import type {
   CartLine,
@@ -161,7 +161,11 @@ export const createCart = (
     }
     return {
       blocked,
-      belowMin: issues.filter((issue) => !issue.blocking).map((i) => i.message),
+      belowMin: issues.filter((issue) => issue.kind === "belowMin").map((i) => i.message),
+      /** تخفيض سعر صنف لا يقبل الخصم: بموافقة مشرف */
+      reducedNoDiscount: issues
+        .filter((issue) => issue.kind === "reducedNoDiscount")
+        .map((i) => i.message),
       discountOverLimit:
         discountLimit.value !== null &&
         priced.value.manualPercent > discountLimit.value + 0.005,
@@ -175,6 +179,16 @@ export const createCart = (
       unitId: line.unitId,
       quantity: Number(line.quantity) || 0,
       discount: Number(line.discount) || 0,
+      // السعر المكتوب يبقى مع السلة؛ سعر القائمة يُقرأ من الصنف عند الاسترجاع
+      ...(line.product.openPrice || isRepriced(line)
+        ? {
+            unitPrice: line.unitPrice,
+            listPrice: line.listPrice ?? null,
+            priceReason: line.priceReason ?? null,
+            priceApprovedBy: line.priceApprovedBy ?? null,
+            pricePending: !!line.pricePending,
+          }
+        : {}),
     })),
     customerId: customerId.value,
     invoiceDiscount: invoiceDiscount.value,
@@ -194,8 +208,11 @@ export const createCart = (
       unitName: unit ? unit.name : product.baseUnitName,
       factor: unit ? unit.factor : 1,
       quantity,
+      // السعر المفتوح: سعر الصنف اقتراح يظهر في الخانة حتى يكتب الكاشير سعره
       unitPrice: unitPriceOf(product, unit ? unit.unitId : null),
       discount,
+      listPrice: null,
+      pricePending: !!product.openPrice,
     };
   };
 
@@ -204,9 +221,16 @@ export const createCart = (
     const byId = new Map(products.value.map((p) => [p.id, p]));
     cart.value = stored.lines.flatMap((line) => {
       const product = byId.get(line.productId);
-      return product
-        ? [buildLine(product, line.unitId, line.quantity, line.discount)]
-        : [];
+      if (!product) return [];
+      const restored = buildLine(product, line.unitId, line.quantity, line.discount);
+      if (line.unitPrice !== undefined) {
+        restored.unitPrice = line.unitPrice;
+        restored.listPrice = line.listPrice ?? null;
+        restored.priceReason = line.priceReason ?? null;
+        restored.priceApprovedBy = line.priceApprovedBy ?? null;
+        restored.pricePending = !!product.openPrice && !!line.pricePending;
+      }
+      return [restored];
     });
     customerId.value = customers.value.some((c) => c.id === stored.customerId)
       ? stored.customerId
@@ -257,9 +281,13 @@ export const createCart = (
       }
     }
 
-    const existing = cart.value.find(
-      (line) => line.product.id === product.id && line.unitId === (unit?.unitId ?? null),
-    );
+    // السعر المفتوح: كل إضافة سطر بسعره (الخدمة نفسها قد تُباع بسعرين)
+    const existing = product.openPrice
+      ? undefined
+      : cart.value.find(
+          (line) =>
+            line.product.id === product.id && line.unitId === (unit?.unitId ?? null),
+        );
     if (existing) {
       existing.quantity = roundQuantity((Number(existing.quantity) || 0) + quantity);
       selectedKey.value = existing.key;
@@ -293,6 +321,15 @@ export const createCart = (
       products.value.find((p) => reading.itemCodes.includes(p.sku));
     if (!product) return false;
 
+    // صنف بسعر مفتوح والميزان طبع سعره: هو سعر السطر
+    if (product.openPrice && reading.type === "price") {
+      if (!(reading.value > 0)) return false;
+      const line = addProduct(product, null, 1);
+      line.unitPrice = reading.value;
+      line.pricePending = false;
+      return true;
+    }
+
     const unitPrice = unitPriceOf(product, null);
     const quantity =
       reading.type === "weight"
@@ -305,6 +342,57 @@ export const createCart = (
     if (!(quantity > 0)) return false;
     addProduct(product, null, quantity);
     return true;
+  };
+
+  /** سعر القائمة لسطر: ما يُقارن به التخفيض والرفع */
+  const listPriceOf = (line: CartLine): number =>
+    line.listPrice ?? unitPriceOf(line.product, line.unitId);
+
+  /**
+   * يغيّر سعر وحدة سطر في هذه الفاتورة وحدها (سعر الصنف نفسه لا يتغيّر). للسعر
+   * المفتوح: يكتب السعر. سعر يساوي سعر القائمة يلغي التعديل. التخفيض يحتاج
+   * سبباً. الصلاحية وموافقة المشرف تفحصهما الشاشة قبل الاستدعاء
+   * (needsPriceApproval)، وحد الخصم وأقل سعر يُفحصان عند الدفع.
+   */
+  const setLinePrice = (
+    key: number,
+    price: number,
+    info: { reason?: string | null; approvedBy?: string | null } = {},
+  ) => {
+    const line = cart.value.find((l) => l.key === key);
+    if (!line) return;
+    const value = roundAmount(price);
+    if (!(value > 0)) throw new Error("أدخل سعراً أكبر من صفر");
+
+    if (line.product.openPrice) {
+      line.unitPrice = value;
+      line.pricePending = false;
+      return;
+    }
+
+    const list = listPriceOf(line);
+    if (Math.abs(value - list) < 1e-9) {
+      line.unitPrice = list;
+      line.listPrice = null;
+      line.priceReason = null;
+      line.priceApprovedBy = null;
+      return;
+    }
+    const reason = info.reason?.trim() || null;
+    if (value < list && !reason) throw new Error("اختر سبب تخفيض السعر");
+    line.unitPrice = value;
+    line.listPrice = list;
+    line.priceReason = reason;
+    line.priceApprovedBy = info.approvedBy ?? null;
+  };
+
+  /** يعيد سعر سطر بعد تغيير وحدته: سعر الوحدة الجديدة، ويُلغى أي تعديل */
+  const resetLinePrice = (line: CartLine) => {
+    line.unitPrice = unitPriceOf(line.product, line.unitId);
+    line.listPrice = null;
+    line.priceReason = null;
+    line.priceApprovedBy = null;
+    line.pricePending = !!line.product.openPrice;
   };
 
   const lineLabel = (line: CartLine) =>
@@ -439,6 +527,9 @@ export const createCart = (
     cartIssues,
     restoreCart,
     resetCart,
+    listPriceOf,
+    setLinePrice,
+    resetLinePrice,
     addProduct,
     scan,
     removeLine,

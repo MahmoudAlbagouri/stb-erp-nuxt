@@ -391,6 +391,14 @@
                     <span class="doc-money">
                       {{ formatCurrency(line.unitPrice) }}
                     </span>
+                    <span
+                      v-if="line.listPrice !== null && line.listPrice !== undefined"
+                      class="doc-cell__sub"
+                      :title="line.priceReason || ''"
+                    >
+                      سعر معدّل من {{ formatMoney(line.listPrice) }}
+                      <template v-if="line.priceReason">· {{ line.priceReason }}</template>
+                    </span>
                     <span v-if="line.discount > 0" class="doc-cell__sub">
                       خصم {{ formatMoney(line.discount) }}
                     </span>
