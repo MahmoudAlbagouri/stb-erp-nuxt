@@ -103,6 +103,9 @@ export interface PosShiftRecord {
   closingCash?: number | null;
   cashDifference: number;
   note?: string | null;
+  /** عمليات وصلت بعد التقفيل فأُعيد حساب الوردية (0 = الأرقام كما قُفّلت) */
+  lateOperations?: number;
+  recalculatedAt?: string | null;
 }
 
 export interface PosBootstrap {
@@ -313,13 +316,24 @@ export type AuditAction =
   | "credit_over_limit"
   | "approval_denied";
 
+/**
+ * ما يسجّله السيرفر بنفسه عند رفع عمليات الجهاز (لا ترسله الشاشة):
+ *   stock_overdrawn   بيع نزل بالرصيد تحت الصفر في مخزن لا يسمح بذلك
+ *   sale_anomaly      ضريبة تخالف نسبة الصنف، أو سعر تحت الحد بلا موافقة
+ *   late_after_close  عملية وصلت بعد تقفيل ورديتها فأُعيد حسابها
+ */
+export type ServerAuditAction =
+  | "stock_overdrawn"
+  | "sale_anomaly"
+  | "late_after_close";
+
 /** حدث تدقيق كما تعرضه لوحة التحكم */
 export interface PosAuditRecord {
   id: string;
   deviceId: string;
   deviceName: string | null;
   shiftId: string | null;
-  action: AuditAction;
+  action: AuditAction | ServerAuditAction;
   cashierName: string | null;
   approvedBy: string | null;
   amount: number | null;

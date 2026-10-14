@@ -4,7 +4,6 @@ import { defineStore } from "pinia";
 import { useApi } from "../composables/useApi";
 import type { Paginated } from "@/types/catalog";
 import type {
-  AuditAction,
   PosAuditRecord,
   PosCashierPayload,
   PosCashierRecord,
@@ -84,7 +83,7 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
     filters: {
       deviceId?: string;
       shiftId?: string;
-      action?: AuditAction | "";
+      action?: PosAuditRecord["action"] | "";
       from?: string;
       to?: string;
       page?: number;

@@ -140,6 +140,13 @@
                           : `${s.cashDifference < 0 ? "عجز" : "زيادة"} ${formatMoney(Math.abs(s.cashDifference))}`
                       }}
                     </span>
+                    <span
+                      v-if="s.lateOperations"
+                      class="doc-cell__sub"
+                      title="عمليات رُفعت بعد التقفيل (رُفضت أولاً ثم أُعيدت) — أُعيد حساب الوردية بها"
+                    >
+                      أُعيد الحساب: {{ formatNumber(s.lateOperations) }} عملية بعد التقفيل
+                    </span>
                   </div>
                   <span v-else>—</span>
                 </td>

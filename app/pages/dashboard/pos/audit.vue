@@ -177,7 +177,7 @@
 import { onMounted, reactive, ref, watch } from "vue";
 import { ScrollText, Wallet } from "lucide-vue-next";
 import { usePagedList } from "@/composables/usePagedList";
-import type { AuditAction, PosDevice } from "@/pos/types";
+import type { AuditAction, PosDevice, ServerAuditAction } from "@/pos/types";
 import { usePosAdminStore } from "@/stores/posAdmin";
 import { useAuthStore } from "@/stores/auth";
 import { fromZonedInput } from "@/utils/timezone";
@@ -194,7 +194,9 @@ const TABS: { value: View; label: string }[] = [
 ];
 const view = ref<View>("audit");
 
-const ACTION_LABELS: Record<AuditAction, string> = {
+type Action = AuditAction | ServerAuditAction;
+
+const ACTION_LABELS: Record<Action, string> = {
   line_removed: "حذف سطر",
   cart_cleared: "إفراغ سلة",
   sale_held: "تعليق فاتورة",
@@ -206,10 +208,14 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   price_below_min: "بيع تحت أقل سعر",
   credit_over_limit: "تجاوز حد ائتمان",
   approval_denied: "طلب موافقة أُلغي",
+  // يسجّلها السيرفر عند رفع عمليات الجهاز
+  stock_overdrawn: "بيع بأكثر من الرصيد",
+  sale_anomaly: "مخالفة في فاتورة",
+  late_after_close: "عملية بعد تقفيل الوردية",
 };
 
 // ما يستحق نظرة المدير أولاً يأخذ لون التنبيه
-const ACTION_TONES: Record<AuditAction, string> = {
+const ACTION_TONES: Record<Action, string> = {
   line_removed: "doc-status--progress",
   cart_cleared: "doc-status--progress",
   sale_held: "doc-status--draft",
@@ -221,11 +227,14 @@ const ACTION_TONES: Record<AuditAction, string> = {
   price_below_min: "badge--inactive",
   credit_over_limit: "badge--inactive",
   approval_denied: "badge--inactive",
+  stock_overdrawn: "badge--inactive",
+  sale_anomaly: "badge--inactive",
+  late_after_close: "badge--inactive",
 };
 
 const filters = reactive({
   deviceId: "",
-  action: "" as AuditAction | "",
+  action: "" as Action | "",
   from: "",
   to: "",
 });
