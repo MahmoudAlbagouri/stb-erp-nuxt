@@ -193,7 +193,10 @@
                 <td>
                   <div class="doc-cell">
                     <code class="doc-code">{{ o.number }}</code>
-                    <span class="doc-cell__sub">{{ formatDateTime(o.createdAt) }}</span>
+                    <span class="doc-cell__sub">
+                      {{ formatDateTime(o.createdAt) }}
+                      <template v-if="o.source === 'pos'"> · من الكاشير</template>
+                    </span>
                   </div>
                 </td>
                 <td>
@@ -318,6 +321,13 @@
                       @click="askCancel(o)"
                     >
                       <Ban :size="14" />
+                    </button>
+                    <button
+                      class="btn btn--sm btn--ghost btn--icon"
+                      :title="o.invoice.status === 'issued' ? 'طباعة الفاتورة (حراري)' : 'طباعة أمر التوصيل'"
+                      @click="printOrder(o, 'thermal')"
+                    >
+                      <Printer :size="14" />
                     </button>
                     <button
                       class="btn btn--sm btn--ghost btn--icon"
@@ -771,6 +781,14 @@
                 </li>
               </ol>
               <p v-if="details.note" class="doc-hint">ملاحظة: {{ details.note }}</p>
+              <div class="doc-actions">
+                <button type="button" class="btn btn--ghost" @click="printOrder(details, 'thermal')">
+                  <Printer :size="16" /> طباعة حراري
+                </button>
+                <button type="button" class="btn btn--ghost" @click="printOrder(details, 'a4')">
+                  <Printer :size="16" /> طباعة A4
+                </button>
+              </div>
               <p v-if="details.failReason" class="doc-hint text-danger">
                 سبب عدم التسليم: {{ details.failReason }}
               </p>
@@ -779,6 +797,8 @@
         </div>
       </Transition>
     </Teleport>
+
+    <SalesInvoicePrint ref="printer" :invoice="printTarget" :settings="sales.settings" />
 
     <ConfirmDialog
       v-model="showCancel"
@@ -792,7 +812,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import {
   Ban,
   Bike,
@@ -806,6 +826,7 @@ import {
   PackageOpen,
   PackageX,
   Plus,
+  Printer,
   RefreshCw,
   Search,
   Timer,
@@ -828,7 +849,7 @@ import type {
   DeliverySummary,
 } from "@/types/delivery";
 import type { StockLookupRow } from "@/types/inventory";
-import type { PublicSalesPaymentMethod } from "@/types/sales";
+import type { PrintableInvoice, PublicSalesPaymentMethod } from "@/types/sales";
 
 definePageMeta({ middleware: "auth" });
 
@@ -1287,6 +1308,40 @@ const doCancel = async () => {
     toast.error(getErrorMessage(e, "تعذر إلغاء الأوردر"));
   } finally {
     submitting.value = false;
+  }
+};
+
+// ─── الطباعة: فاتورة الأوردر (أو "أمر توصيل" لمسودة لم تخرج) ────────────────
+const printer = ref<{ print: (size: "a4" | "thermal") => Promise<void> } | null>(null);
+const printTarget = ref<PrintableInvoice | null>(null);
+
+const printOrder = async (o: DeliveryOrder, size: "a4" | "thermal") => {
+  try {
+    const [invoice] = await Promise.all([
+      sales.getInvoice(o.invoiceId),
+      sales.fetchSettings(),
+    ]);
+    printTarget.value = {
+      ...invoice,
+      // مسودة لم تصدر: وقت الأوردر بدل تاريخ الفاتورة وحده
+      issuedAt: invoice.issuedAt ?? o.createdAt,
+      delivery: {
+        orderNumber: o.number,
+        recipientName: o.recipientName,
+        phone: o.phone,
+        address: o.address,
+        zoneName: o.zone?.name ?? null,
+        agentName: o.agent
+          ? `${o.agent.name}${o.trackingNumber ? ` · ${o.trackingNumber}` : ""}`
+          : null,
+        collect: o.paymentMode === "cod" ? o.codAmount || invoice.total : 0,
+        note: o.note,
+      },
+    };
+    await nextTick();
+    await printer.value?.print(size);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر تجهيز الطباعة"));
   }
 };
 

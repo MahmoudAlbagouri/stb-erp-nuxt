@@ -189,6 +189,20 @@ export interface PrintBranch {
   isMain?: boolean;
 }
 
+/** بيانات التوصيل على الفاتورة المطبوعة (للطيار وللعميل) */
+export interface PrintableDelivery {
+  /** رقم أوردر التوصيل (غائب في إيصال الكاشير قبل رفعه) */
+  orderNumber?: string | null;
+  recipientName: string;
+  phone: string;
+  address: string;
+  zoneName?: string | null;
+  agentName?: string | null;
+  /** ما يحصّله الطيار من العميل (0 = مدفوع مقدماً) */
+  collect: number;
+  note?: string | null;
+}
+
 export interface PrintableInvoice {
   /** إيصال تجريبي لاختبار الطابعة (لا فاتورة حقيقية): يُطبع عليه ذلك صراحة */
   test?: boolean;
@@ -211,6 +225,8 @@ export interface PrintableInvoice {
   paidAmount: number;
   remaining: number;
   qrCode?: string | null;
+  /** فاتورة أوردر توصيل: بيانات المستلم وما يُحصَّل */
+  delivery?: PrintableDelivery | null;
   lines?: {
     id: string;
     productName: string;

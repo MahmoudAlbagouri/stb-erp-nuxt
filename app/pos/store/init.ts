@@ -7,6 +7,7 @@ import type {
   HeldCart,
   LocalShift,
   PosCashier,
+  PosDeliveryOptions,
   PosDevice,
   PosOfflinePolicy,
   PosOptions,
@@ -95,7 +96,7 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
     ]);
     await state.reloadOutbox();
 
-    const [levels, balances, promos, options, parked, moves, savedCart] =
+    const [levels, balances, promos, options, parked, moves, savedCart, delivery] =
       await Promise.all([
         posDb.getMeta<Record<string, number>>("stock"),
         posDb.getMeta<Record<string, number>>("customerBalances"),
@@ -104,6 +105,7 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
         posDb.getMeta<HeldCart[]>("held"),
         posDb.getMeta<CashMove[]>("cashMoves"),
         posDb.getMeta<StoredCart>("cart"),
+        posDb.getMeta<PosDeliveryOptions | null>("deliveryOptions"),
       ]);
     const stockComplete = await posDb.getMeta<boolean>("stockComplete");
     state.stockLevels.value = levels ?? {};
@@ -112,6 +114,7 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
     state.serverBalances.value = balances ?? {};
     state.promotions.value = promos ?? [];
     state.posOptions.value = options ?? DEFAULT_POS_OPTIONS;
+    state.deliveryOptions.value = delivery ?? null;
     state.held.value = parked ?? [];
     state.cashMoves.value = moves ?? [];
     // سلة لم تكتمل قبل إغلاق المتصفح أو انقطاع الكهرباء

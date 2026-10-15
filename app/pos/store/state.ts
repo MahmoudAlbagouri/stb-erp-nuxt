@@ -17,6 +17,7 @@ import type {
   PosCashier,
   PosCategory,
   PosCustomer,
+  PosDeliveryOptions,
   PosDevice,
   PosOfflinePolicy,
   PosOptions,
@@ -100,6 +101,8 @@ export const createPosState = () => {
   const serverBalances = ref<Record<string, number>>({});
   const promotions = ref<PosPromotion[]>([]);
   const posOptions = ref<PosOptions>(DEFAULT_POS_OPTIONS);
+  /** البيع "توصيل" (null = الباقة بلا توصيل) */
+  const deliveryOptions = ref<PosDeliveryOptions | null>(null);
   /** فواتير معلّقة على هذه الشاشة */
   const held = ref<HeldCart[]>([]);
   /** إيداعات وسحوبات الدرج في الوردية الحالية */
@@ -183,6 +186,7 @@ export const createPosState = () => {
     serverBalances,
     promotions,
     posOptions,
+    deliveryOptions,
     held,
     cashMoves,
     online,

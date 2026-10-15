@@ -41,6 +41,19 @@ export const useDeliveryStore = defineStore("delivery", () => {
     await api.del(`${BASE}/agents/${id}`);
   };
 
+  /** رابط شاشة الطيار: المفتاح يعود مرة واحدة، ورابط جديد يُبطل القديم */
+  const issueDriverAccess = async (id: string) =>
+    (
+      await api.post<{ agentId: string; key: string }>(
+        `${BASE}/agents/${id}/driver-access`,
+        {},
+      )
+    ).data;
+
+  const revokeDriverAccess = async (id: string) => {
+    await api.del(`${BASE}/agents/${id}/driver-access`);
+  };
+
   const fetchZones = async () => {
     zones.value = (await api.get<DeliveryZone[]>(`${BASE}/zones`)).data;
     return zones.value;
@@ -111,6 +124,8 @@ export const useDeliveryStore = defineStore("delivery", () => {
     createAgent,
     updateAgent,
     removeAgent,
+    issueDriverAccess,
+    revokeDriverAccess,
     fetchZones,
     createZone,
     updateZone,

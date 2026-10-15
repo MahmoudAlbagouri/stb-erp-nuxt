@@ -412,6 +412,28 @@ export const createCart = (
     }
   };
 
+  /**
+   * رسوم التوصيل سطر في الفاتورة بصنف "رسوم التوصيل" (سعره ما كُتب). صفر
+   * يزيل السطر. يعيد سطر الرسوم أو null.
+   */
+  const setDeliveryFee = (amount: number): CartLine | null => {
+    const feeProductId = state.deliveryOptions.value?.feeProductId;
+    cart.value = cart.value.filter((line) => line.product.id !== feeProductId);
+    const fee = roundAmount(amount);
+    if (!feeProductId || !(fee > 0)) return null;
+    const product = products.value.find((p) => p.id === feeProductId);
+    if (!product) {
+      throw new Error(
+        "صنف رسوم التوصيل لم يصل الجهاز بعد — اتصل بالإنترنت لتحديث البيانات",
+      );
+    }
+    const line = buildLine(product, null, 1);
+    line.unitPrice = fee;
+    line.pricePending = false;
+    cart.value.push(line);
+    return cart.value.at(-1)!;
+  };
+
   /** يفرغ السلة بلا تسجيل (بعد بيع أو تعليق) */
   const resetCart = () => {
     cart.value = [];
@@ -527,6 +549,7 @@ export const createCart = (
     cartIssues,
     restoreCart,
     resetCart,
+    setDeliveryFee,
     listPriceOf,
     setLinePrice,
     resetLinePrice,

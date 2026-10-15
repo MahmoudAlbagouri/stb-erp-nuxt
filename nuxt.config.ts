@@ -38,6 +38,8 @@ export default defineNuxtConfig({
   routeRules: {
     "/pos/**": { ssr: false },
     "/pos": { ssr: false },
+    // شاشة الطيار: رابطه محفوظ في متصفح جواله (localStorage)
+    "/driver": { ssr: false },
   },
 
   // بقية الإعدادات (head, runtimeConfig) صحيحة ولا تحتاج تعديل

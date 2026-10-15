@@ -14,6 +14,10 @@ export interface DeliveryAgent {
   codFeePercent: number;
   isActive: boolean;
   note: string | null;
+  /** متى صدر رابط شاشة الطيار (null = لا رابط) */
+  accessIssuedAt: string | null;
+  /** آخر مرة فتح الطيار شاشته */
+  lastSeenAt: string | null;
   /** مال المحل معها الآن (مسلَّم بالتحصيل ولم يُسوَّ) */
   heldAmount: number;
   /** أوردرات معها في الطريق */
@@ -90,6 +94,8 @@ export interface DeliveryOrder {
   failedAt: string | null;
   cancelledAt: string | null;
   settlementId: string | null;
+  /** من لوحة التوصيل، أو من الكاشير (فاتورته صدرت عند البيع) */
+  source: "dashboard" | "pos";
   createdAt: string;
   invoice: {
     id: string;

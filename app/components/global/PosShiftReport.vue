@@ -34,6 +34,10 @@
         <div>
           <span>شبكة / بطاقة</span><span dir="ltr">{{ formatMoney(report.card) }}</span>
         </div>
+        <div v-if="report.courier">
+          <span>توصيل (يُحصَّل مع الطيار)</span>
+          <span dir="ltr">{{ formatMoney(report.courier) }}</span>
+        </div>
         <div v-if="report.credit">
           <span>آجل (على الحساب)</span>
           <span dir="ltr">{{ formatMoney(report.credit) }}</span>
@@ -130,6 +134,8 @@ export interface ShiftReportData {
   cash: number;
   card: number;
   credit: number;
+  /** فواتير توصيل تُحصَّل عند الاستلام (مع الطيار، لا في الدرج) */
+  courier?: number;
   discounts: number;
   returnsCount: number;
   returnsTotal: number;

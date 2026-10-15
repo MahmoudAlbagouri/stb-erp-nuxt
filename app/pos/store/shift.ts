@@ -131,6 +131,8 @@ export const createShift = (state: PosState, connection: PosConnection) => {
       salesTotal: sumAmounts(own.map((sale) => sale.total)),
       cash,
       card: byMethod("card"),
+      /** فواتير توصيل تحصيلها عند الاستلام: مع الطيار، لا في الدرج */
+      courier: byMethod("courier"),
       /** ما بيع على الحساب (آجل): لم يدخل الدرج */
       credit: sumAmounts(own.map((sale) => sale.creditAmount ?? 0)),
       discounts: sumAmounts(own.map((sale) => sale.discountTotal ?? 0)),

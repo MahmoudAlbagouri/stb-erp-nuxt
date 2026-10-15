@@ -213,6 +213,7 @@ export const createConnection = (
       shift,
       promotions,
       posOptions,
+      deliveryOptions,
       tenant,
       cashiers,
       returnsAllowed,
@@ -265,6 +266,10 @@ export const createConnection = (
           : (tenant.value?.logo ?? null),
     };
 
+    // null = الباقة بلا توصيل؛ غائب (سيرفر أقدم) = يبقى المحفوظ
+    const nextDelivery =
+      data.delivery !== undefined ? data.delivery : deliveryOptions.value;
+
     await posDb.setMeta({
       device: data.device,
       settings: data.settings,
@@ -278,6 +283,7 @@ export const createConnection = (
       customerBalances: nextBalances,
       promotions: data.promotions ?? promotions.value,
       posOptions: data.posOptions ?? posOptions.value,
+      deliveryOptions: nextDelivery,
       ...(stockReceived ? { stock: nextStock, stockComplete: true } : {}),
     });
     stockLevels.value = nextStock;
@@ -285,6 +291,7 @@ export const createConnection = (
     serverBalances.value = nextBalances;
     promotions.value = data.promotions ?? promotions.value;
     posOptions.value = data.posOptions ?? posOptions.value;
+    deliveryOptions.value = nextDelivery;
     tenant.value = nextTenant;
     cashiers.value = data.cashiers;
     returnsAllowed.value = data.returnsAllowed;
@@ -524,6 +531,7 @@ export const createConnection = (
     state.held.value = [];
     state.cashMoves.value = [];
     state.promotions.value = [];
+    state.deliveryOptions.value = null;
     state.stockLevels.value = {};
     state.stockKnown.value = false;
     state.serverBalances.value = {};

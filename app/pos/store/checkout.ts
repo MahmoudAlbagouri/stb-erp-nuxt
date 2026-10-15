@@ -18,6 +18,7 @@ import type {
   LocalReturn,
   LocalSale,
   ReturnableInvoice,
+  SaleDelivery,
   SaleLine,
   SalePayment,
 } from "@/pos/types";
@@ -65,6 +66,8 @@ export const createCheckout = (
     payments: SalePayment[],
     cashReceived: number,
     approvedBy: string | null = null,
+    /** بيع "توصيل": المستلم وعنوانه والجهة (التحصيل = دفعة courier) */
+    delivery: SaleDelivery | null = null,
   ): Promise<LocalSale> => {
     if (!device.value || !shift.value) throw new Error("افتح وردية أولاً");
     if (cashierRevoked.value) {
@@ -80,6 +83,9 @@ export const createCheckout = (
     const paid = sumAmounts(payments.map((p) => p.amount));
     const creditAmount = sumAmounts([total, -paid]);
     if (creditAmount < 0) throw new Error("المقبوض أكبر من إجمالي الفاتورة");
+    if (!delivery && payments.some((p) => p.method === "courier")) {
+      throw new Error("التحصيل عبر التوصيل لفاتورة توصيل فقط");
+    }
 
     const customer = customers.value.find((c) => c.id === customerId.value);
     let creditOverLimit = false;
@@ -172,6 +178,7 @@ export const createCheckout = (
             taxTotal,
           })
         : null,
+      delivery,
     };
 
     await posDb.saveSale(
@@ -200,6 +207,21 @@ export const createCheckout = (
           payments,
           // السيرفر يُبلّغ عن سعر تحت الحد ما لم يصله اسم من وافق عليه
           approvedBy: approver ?? undefined,
+          // أسماء الجهة والمنطقة للإيصال وحده
+          ...(delivery
+            ? {
+                delivery: {
+                  recipientName: delivery.recipientName,
+                  phone: delivery.phone,
+                  address: delivery.address,
+                  zoneId: delivery.zoneId ?? undefined,
+                  deliveryFee: delivery.deliveryFee,
+                  agentId: delivery.agentId ?? undefined,
+                  dispatchNow: delivery.dispatchNow,
+                  note: delivery.note || undefined,
+                },
+              }
+            : {}),
         },
       },
       nextCounter,

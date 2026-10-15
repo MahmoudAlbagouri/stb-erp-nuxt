@@ -100,6 +100,7 @@ export const usePosStore = defineStore("pos", () => {
     cashMoves: state.cashMoves,
     promotions: state.promotions,
     posOptions: state.posOptions,
+    deliveryOptions: state.deliveryOptions,
     returns: state.returns,
     drawer: state.drawer,
 
@@ -139,6 +140,7 @@ export const usePosStore = defineStore("pos", () => {
     cartIssues: cartModule.cartIssues,
     discountLimit: cartModule.discountLimit,
     addProduct: cartModule.addProduct,
+    setDeliveryFee: cartModule.setDeliveryFee,
     listPriceOf: cartModule.listPriceOf,
     setLinePrice: cartModule.setLinePrice,
     resetLinePrice: cartModule.resetLinePrice,

@@ -119,6 +119,16 @@
                       <HandCoins :size="14" /> تسوية
                     </NuxtLink>
                     <button
+                      v-if="a.type === 'driver'"
+                      v-can="'manage_delivery_agents'"
+                      class="btn btn--sm btn--ghost"
+                      :title="linkTitle(a)"
+                      @click="openLink(a)"
+                    >
+                      <Smartphone :size="14" />
+                      {{ a.accessIssuedAt ? "الرابط مفعّل" : "رابط الجوال" }}
+                    </button>
+                    <button
                       v-can="'manage_delivery_agents'"
                       class="btn btn--sm btn--ghost"
                       @click="openAgent(a)"
@@ -343,6 +353,75 @@
       </Transition>
     </Teleport>
 
+    <!-- ══ رابط شاشة الطيار ══ -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="linkAgent" class="modal-overlay" @click.self="closeLink">
+          <div class="modal doc-modal doc-modal--sm">
+            <div class="modal__header">
+              <h3>
+                <Smartphone :size="20" class="doc-modal__icon" />
+                شاشة {{ linkAgent.name }} على جواله
+              </h3>
+              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeLink">
+                <X :size="20" />
+              </button>
+            </div>
+            <div class="doc-form">
+              <template v-if="driverLink">
+                <div class="doc-note">
+                  <Info :size="16" />
+                  <span>
+                    يفتحه الطيار على جواله (أو يمسح الرمز) فيرى أوردراته ويحدّث
+                    حالتها. الرابط يظهر هذه المرة فقط — أرسله الآن.
+                  </span>
+                </div>
+                <img v-if="linkQr" :src="linkQr" alt="رمز رابط الطيار" class="dlv-qr" />
+                <input class="form-input" dir="ltr" readonly :value="driverLink" />
+                <div class="doc-actions">
+                  <button type="button" class="btn btn--primary" @click="copyLink">
+                    <Copy :size="16" /> نسخ الرابط
+                  </button>
+                  <a
+                    v-if="linkAgent.phone"
+                    class="btn btn--success"
+                    :href="whatsappHref"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    <MessageCircle :size="16" /> إرسال واتساب
+                  </a>
+                </div>
+              </template>
+              <template v-else>
+                <p class="doc-hint">{{ linkStatus }}</p>
+                <div class="modal__footer">
+                  <button
+                    v-if="linkAgent.accessIssuedAt"
+                    type="button"
+                    class="btn btn--danger"
+                    :disabled="submitting"
+                    @click="revokeLink"
+                  >
+                    إيقاف الرابط
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn--primary"
+                    :class="{ 'btn--loading': submitting }"
+                    :disabled="submitting"
+                    @click="issueLink"
+                  >
+                    {{ linkAgent.accessIssuedAt ? "إصدار رابط جديد" : "إصدار الرابط" }}
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <ConfirmDialog
       v-model="showConfirm"
       :title="deleteTarget?.kind === 'agent' ? 'حذف جهة التوصيل' : 'حذف المنطقة'"
@@ -355,15 +434,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
+import QRCode from "qrcode";
 import {
   Bike,
   Building2,
+  Copy,
   HandCoins,
   Info,
   MapPin,
+  MessageCircle,
   Pencil,
   Plus,
+  Smartphone,
   Trash2,
   X,
 } from "lucide-vue-next";
@@ -510,5 +593,96 @@ const doDelete = async () => {
   }
 };
 
+// ─── رابط شاشة الطيار ─────────────────────────────────────────────────────────
+const linkAgent = ref<DeliveryAgent | null>(null);
+const driverLink = ref("");
+const linkQr = ref("");
+
+const linkTitle = (a: DeliveryAgent) =>
+  a.accessIssuedAt
+    ? `آخر فتح: ${a.lastSeenAt ? formatDateTime(a.lastSeenAt) : "لم يفتحه بعد"}`
+    : "رابط شاشة الطيار على جواله";
+
+const linkStatus = computed(() => {
+  const a = linkAgent.value;
+  if (!a) return "";
+  if (!a.accessIssuedAt) {
+    return "يصدر رابط خاص بالطيار يفتح به شاشة أوردراته على جواله — بلا حساب ولا كلمة مرور.";
+  }
+  const seen = a.lastSeenAt
+    ? ` — آخر فتح ${formatDateTime(a.lastSeenAt)}`
+    : " — لم يفتحه بعد";
+  return `للطيار رابط مفعّل منذ ${formatDateTime(a.accessIssuedAt)}${seen}. رابط جديد يوقف القديم (جوال ضاع أو تغيّر).`;
+});
+
+const whatsappHref = computed(() => {
+  const phone = (linkAgent.value?.phone ?? "").replace(/\D/g, "");
+  const text = `شاشة التوصيل الخاصة بك: ${driverLink.value}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+});
+
+const openLink = (agent: DeliveryAgent) => {
+  linkAgent.value = agent;
+  driverLink.value = "";
+  linkQr.value = "";
+};
+
+const closeLink = () => {
+  linkAgent.value = null;
+  driverLink.value = "";
+  linkQr.value = "";
+};
+
+const issueLink = async () => {
+  if (!linkAgent.value) return;
+  submitting.value = true;
+  try {
+    const { agentId, key } = await store.issueDriverAccess(linkAgent.value.id);
+    driverLink.value = `${window.location.origin}/driver?a=${agentId}&k=${encodeURIComponent(key)}`;
+    linkQr.value = await QRCode.toDataURL(driverLink.value, { margin: 1, width: 220 });
+    await load();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر إصدار الرابط"));
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const revokeLink = async () => {
+  if (!linkAgent.value) return;
+  submitting.value = true;
+  try {
+    await store.revokeDriverAccess(linkAgent.value.id);
+    toast.success("تم إيقاف الرابط — شاشة الطيار توقفت");
+    closeLink();
+    await load();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر إيقاف الرابط"));
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(driverLink.value);
+    toast.success("تم نسخ الرابط");
+  } catch {
+    toast.warning("انسخ الرابط من الخانة يدوياً");
+  }
+};
+
 onMounted(load);
+
 </script>
+
+<style scoped lang="scss">
+.dlv-qr {
+  display: block;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: #fff;
+}
+</style>

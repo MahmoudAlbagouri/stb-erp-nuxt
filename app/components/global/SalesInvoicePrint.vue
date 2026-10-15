@@ -30,9 +30,13 @@
       </header>
 
       <section class="invoice-print__meta">
-        <div>
+        <div v-if="invoice.number || !invoice.delivery?.orderNumber">
           <span>رقم الفاتورة</span>
           <strong dir="ltr">{{ invoice.number }}</strong>
+        </div>
+        <div v-if="invoice.delivery?.orderNumber">
+          <span>رقم الأوردر</span>
+          <strong dir="ltr">{{ invoice.delivery.orderNumber }}</strong>
         </div>
         <div>
           <span>التاريخ</span>
@@ -51,6 +55,33 @@
         <div v-if="invoice.customer?.taxNumber">
           <span>الرقم الضريبي للعميل</span>
           <strong dir="ltr">{{ invoice.customer.taxNumber }}</strong>
+        </div>
+      </section>
+
+      <!-- أوردر توصيل: لمن ولأين، ومن يوصّله -->
+      <section v-if="invoice.delivery" class="invoice-print__delivery">
+        <h3>توصيل</h3>
+        <div>
+          <span>المستلم</span>
+          <strong>{{ invoice.delivery.recipientName }}</strong>
+        </div>
+        <div>
+          <span>الجوال</span>
+          <strong dir="ltr">{{ invoice.delivery.phone }}</strong>
+        </div>
+        <div>
+          <span>العنوان</span>
+          <strong>
+            <template v-if="invoice.delivery.zoneName">{{ invoice.delivery.zoneName }} — </template>{{ invoice.delivery.address }}
+          </strong>
+        </div>
+        <div v-if="invoice.delivery.agentName">
+          <span>الطيار / الشحن</span>
+          <strong>{{ invoice.delivery.agentName }}</strong>
+        </div>
+        <div v-if="invoice.delivery.note">
+          <span>ملاحظة</span>
+          <strong>{{ invoice.delivery.note }}</strong>
         </div>
       </section>
 
@@ -107,7 +138,15 @@
           </span>
           <span dir="ltr">{{ formatMoney(invoice.total) }}</span>
         </div>
-        <div v-if="invoice.paidAmount > 0">
+        <div v-if="invoice.delivery" class="is-collect">
+          <span>
+            {{ invoice.delivery.collect > 0 ? "المطلوب تحصيله من العميل" : "مدفوع — لا يُحصَّل شيء" }}
+          </span>
+          <span v-if="invoice.delivery.collect > 0" dir="ltr">
+            {{ formatMoney(invoice.delivery.collect) }}
+          </span>
+        </div>
+        <div v-else-if="invoice.paidAmount > 0">
           <span>المدفوع</span>
           <span dir="ltr">{{ formatMoney(invoice.paidAmount) }}</span>
         </div>
@@ -180,7 +219,10 @@ const taxInvoice = computed(
     !!props.invoice?.qrCode,
 );
 const title = computed(() =>
-  taxInvoice.value && props.invoice
+  // مسودة أوردر توصيل (لم يخرج بعد): ليست فاتورة
+  props.invoice && !props.invoice.number && props.invoice.delivery
+    ? "أمر توصيل — ليس فاتورة"
+    : taxInvoice.value && props.invoice
     ? SALES_INVOICE_TYPE_LABELS[props.invoice.invoiceType]
     : "فاتورة مبيعات",
 );
@@ -357,6 +399,35 @@ defineExpose({ print });
       padding-top: 3pt;
       font-weight: 800;
       border-top: 1px dashed #000;
+    }
+    // ما يحصّله الطيار: أوضح سطر في الإيصال
+    .is-collect {
+      margin-top: 4pt;
+      padding: 4pt;
+      font-size: 1.15em;
+      font-weight: 800;
+      border: 2px solid #000;
+    }
+  }
+
+  // بيانات التوصيل
+  &__delivery {
+    margin: 4pt 0 8pt;
+    padding: 6pt;
+    border: 1px dashed #000;
+
+    h3 {
+      margin: 0 0 4pt;
+      font-size: 1.05em;
+      color: #000;
+    }
+    div {
+      display: flex;
+      justify-content: space-between;
+      gap: 8pt;
+    }
+    strong {
+      text-align: left;
     }
   }
 

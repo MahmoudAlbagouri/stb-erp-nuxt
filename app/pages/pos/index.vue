@@ -633,6 +633,16 @@
             <Percent :size="16" />
           </button>
           <button
+            v-if="pos.deliveryOptions"
+            class="btn btn--ghost pos-delivery"
+            title="بيع توصيل — طيار أو شركة شحن (F10)"
+            :disabled="!pos.cart.length"
+            @click="openDelivery"
+          >
+            <Truck :size="16" />
+            <span>توصيل</span>
+          </button>
+          <button
             class="btn btn--primary pos-pay"
             :disabled="!pos.cart.length"
             @click="openPay"
@@ -837,6 +847,12 @@
                   <span>شبكة / بطاقة</span>
                   <span class="doc-money">
                     {{ formatCurrency(pos.shiftSummary.card) }}
+                  </span>
+                </div>
+                <div v-if="pos.shiftSummary.courier">
+                  <span>توصيل (يُحصَّل مع الطيار)</span>
+                  <span class="doc-money">
+                    {{ formatCurrency(pos.shiftSummary.courier) }}
                   </span>
                 </div>
                 <div v-if="pos.shiftSummary.credit">
@@ -1053,6 +1069,14 @@
     <PosHeldModal v-model="showHeld" @resume="resumeHeld" @remove="removeHeld" />
     <PosCashMoveModal v-model="showCashMove" @submit="submitCashMove" />
     <PosCustomerModal v-model="showCustomer" />
+    <PosDeliveryModal
+      v-model="showDelivery"
+      :options="pos.deliveryOptions"
+      :items-total="itemsTotal"
+      :customer="selectedCustomer ?? null"
+      :busy="paying"
+      @submit="submitDelivery"
+    />
     <PosDiscountModal v-model="showDiscount" />
     <PosShortcutsModal v-model="showShortcuts" />
     <PosPriceModal :line="priceLine" @close="closePrice" @submit="submitPrice" />
@@ -1106,6 +1130,7 @@ import {
   Settings,
   Store,
   Trash2,
+  Truck,
   Undo2,
   Unlock,
   UserPlus,
@@ -1132,8 +1157,10 @@ import type {
   PosDevice,
   PosOptions,
   PosProduct,
+  SaleDelivery,
   SalePayment,
 } from "@/pos/types";
+import type { DeliveryPayment } from "@/components/global/PosDeliveryModal.vue";
 import { useAccessStore } from "@/stores/access";
 import { useAuthStore } from "@/stores/auth";
 import { usePosStore } from "@/stores/pos";
@@ -1707,25 +1734,31 @@ const payAll = (method: "cash" | "card") => {
   pay.card = method === "card" ? pos.cartTotals.total : "";
 };
 
-const openPay = async () => {
+/** السلة جاهزة للدفع؟ وإلا يُنبَّه الكاشير لما ينقصها */
+const cartReady = (): boolean => {
   const empty = pos.cart.find((line) => !(Number(line.quantity) > 0));
   if (empty) {
     sound("error");
     toast.warning(`أدخل كمية "${empty.product.name}"`);
-    return;
+    return false;
   }
   // صنف بسعر مفتوح بلا سعر: تُفتح نافذته بدل رسالة فقط
   const unpriced = pos.cart.find((line) => line.pricePending);
   if (unpriced) {
     sound("error");
     editPrice(unpriced);
-    return;
+    return false;
   }
   if (pos.cartIssues.blocked.length) {
     sound("error");
     toast.warning(pos.cartIssues.blocked[0]!);
-    return;
+    return false;
   }
+  return true;
+};
+
+const openPay = async () => {
+  if (!cartReady()) return;
   pay.cash = "";
   pay.card = "";
   pay.credit = false;
@@ -1775,6 +1808,89 @@ const submitPay = async () => {
   }
 };
 
+// ─── بيع توصيل ────────────────────────────────────────────────────────────────
+const showDelivery = ref(false);
+
+/** إجمالي الأصناف بلا سطر رسوم التوصيل (النافذة تضيف الرسوم التي تُكتب) */
+const itemsTotal = computed(() => {
+  const feeId = pos.deliveryOptions?.feeProductId;
+  return sumAmounts(
+    pos.priced.lines
+      .filter((p) => p.line.product.id !== feeId)
+      .map((p) => p.total),
+  );
+});
+
+const openDelivery = () => {
+  if (!pos.cart.length || !cartReady()) return;
+  pay.credit = false;
+  showDelivery.value = true;
+};
+
+/**
+ * يتم البيع "توصيل": الرسوم سطر في الفاتورة، والثمن كاملاً إما "تحصيل عبر
+ * التوصيل" (على الطيار حتى تسويته — لا يدخل الدرج) أو مدفوع الآن. يعمل بلا
+ * إنترنت: الأوردر يُنشأ في السيرفر عند رفع الفاتورة.
+ */
+const submitDelivery = async ({
+  delivery,
+  payment,
+}: {
+  delivery: SaleDelivery;
+  payment: DeliveryPayment;
+}) => {
+  paying.value = true;
+  let completed = false;
+  try {
+    pos.setDeliveryFee(delivery.deliveryFee);
+
+    let approvedBy: string | null = null;
+    if (payOverrides.value.length) {
+      if (!pos.cashiers.length) {
+        sound("error");
+        toast.error(payOverrides.value[0]!);
+        return;
+      }
+      const granted = await authorize("always", payOverrides.value.join(" · "));
+      if (!granted.ok) return;
+      approvedBy = granted.approvedBy;
+    }
+
+    const total = pos.cartTotals.total;
+    const payments: SalePayment[] =
+      total > 0
+        ? [{ method: payment === "cod" ? "courier" : payment, amount: total }]
+        : [];
+    const sale = await pos.checkout(
+      payments,
+      payment === "cash" ? total : 0,
+      approvedBy,
+      delivery,
+    );
+    completed = true;
+    sound("success");
+    if (payment === "cash") void kickDrawer();
+    showDelivery.value = false;
+    doneSale.value = sale;
+    await printSale(sale);
+    await nextTick();
+    nextEl.value?.focus();
+  } catch (e) {
+    sound("error");
+    toast.error(getErrorMessage(e, "تعذر إتمام بيع التوصيل"));
+  } finally {
+    // لم يكتمل البيع: سطر الرسوم لا يبقى في السلة
+    if (!completed) {
+      try {
+        pos.setDeliveryFee(0);
+      } catch {
+        // لا صنف رسوم: لا سطر أصلاً
+      }
+    }
+    paying.value = false;
+  }
+};
+
 const doneSale = ref<LocalSale | null>(null);
 const nextEl = ref<HTMLButtonElement | null>(null);
 
@@ -1810,6 +1926,19 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
   paidAmount: sumAmounts([sale.total, -(sale.creditAmount ?? 0)]),
   remaining: sale.creditAmount ?? 0,
   qrCode: sale.qrCode,
+  delivery: sale.delivery
+    ? {
+        recipientName: sale.delivery.recipientName,
+        phone: sale.delivery.phone,
+        address: sale.delivery.address,
+        zoneName: sale.delivery.zoneName ?? null,
+        agentName: sale.delivery.agentName ?? null,
+        collect: sumAmounts(
+          sale.payments.filter((p) => p.method === "courier").map((p) => p.amount),
+        ),
+        note: sale.delivery.note ?? null,
+      }
+    : null,
   lines: sale.lines.map((line, index) => ({
     id: String(index),
     productName: line.productName,
@@ -1945,6 +2074,7 @@ const buildShiftReport = (
     cash: summary.cash,
     card: summary.card,
     credit: summary.credit,
+    courier: summary.courier,
     discounts: summary.discounts,
     returnsCount: summary.returnsCount,
     returnsTotal: summary.returnsTotal,
@@ -2022,6 +2152,7 @@ const modalOpen = computed(
     showHeld.value ||
     showCashMove.value ||
     showCustomer.value ||
+    showDelivery.value ||
     showDiscount.value ||
     showShortcuts.value ||
     !!priceLine.value ||
@@ -2043,6 +2174,7 @@ const closeTopModal = () => {
       showHeld,
       showCashMove,
       showCustomer,
+      showDelivery,
       showDiscount,
       showShortcuts,
     ]) {
@@ -2093,6 +2225,8 @@ const onKeydown = (event: KeyboardEvent) => {
       return handle(() => pos.cart.length && (showDiscount.value = true));
     case "F9":
       return handle(() => (showCashMove.value = true));
+    case "F10":
+      return handle(() => pos.deliveryOptions && openDelivery());
   }
 
   // ما بعدها يعمل على السطر المحدد، وفقط خارج حقول الكتابة

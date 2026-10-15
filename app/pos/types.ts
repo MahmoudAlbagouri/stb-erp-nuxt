@@ -137,6 +137,37 @@ export interface PosBootstrap {
   customerBalances?: { id: string; balance: number }[];
   promotions?: PosPromotion[];
   posOptions?: PosOptions;
+  /** البيع "توصيل": null = الباقة بلا توصيل. غائب من سيرفر أقدم */
+  delivery?: PosDeliveryOptions | null;
+}
+
+/** ما ينزل للشاشة لتبيع توصيل بلا إنترنت */
+export interface PosDeliveryOptions {
+  /** صنف "رسوم التوصيل": سطر في الفاتورة */
+  feeProductId: string;
+  agents: {
+    id: string;
+    type: "driver" | "carrier";
+    name: string;
+    defaultFee: number;
+    codFeePercent: number;
+  }[];
+  zones: { id: string; name: string; fee: number; estimatedMinutes: number | null }[];
+}
+
+/** بيانات التوصيل على فاتورة الكاشير (الأسماء للإيصال فقط، لا تُرفع) */
+export interface SaleDelivery {
+  recipientName: string;
+  phone: string;
+  address: string;
+  zoneId: string | null;
+  zoneName?: string | null;
+  deliveryFee: number;
+  agentId: string | null;
+  agentName?: string | null;
+  /** خرج مع الطيار فور البيع */
+  dispatchNow: boolean;
+  note?: string | null;
 }
 
 /** عرض أو سعر خاص يطبّقه الجهاز (انظر pos/promotions.ts) */
@@ -449,6 +480,8 @@ export interface LocalSale {
   /** مجموع الخصوم: عروض + خصم الكاشير (للتقرير) */
   discountTotal?: number;
   qrCode: string | null;
+  /** فاتورة "توصيل": يُنشأ لها أوردر عند رفعها */
+  delivery?: SaleDelivery | null;
 }
 
 // ─── المرتجع ─────────────────────────────────────────────────────────────────
