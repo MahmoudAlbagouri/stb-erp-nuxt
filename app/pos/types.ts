@@ -50,6 +50,8 @@ export interface PosCategory {
 
 export interface PosDevice {
   id: string;
+  /** الشركة صاحبة الجهاز: شاشة تحمل جهاز شركة غير شركة المستخدم تُحجب */
+  tenantId?: string;
   name: string;
   code: string;
   warehouseId: string;

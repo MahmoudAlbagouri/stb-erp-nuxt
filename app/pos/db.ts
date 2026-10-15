@@ -29,7 +29,8 @@ type StoreName = keyof StoreMap;
 let connection: Promise<IDBDatabase> | null = null;
 
 const open = (): Promise<IDBDatabase> => {
-  connection ??= new Promise((resolve, reject) => {
+  if (connection) return connection;
+  const opening: Promise<IDBDatabase> = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = () => {
@@ -47,13 +48,49 @@ const open = (): Promise<IDBDatabase> => {
       ensure("outbox", { keyPath: "seq", autoIncrement: true });
       ensure("meta", { keyPath: "key" });
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      // المتصفح قد يغلق الاتصال والصفحة مفتوحة (مُسحت بيانات الموقع، أو فتح
+      // تبويب نسخة أحدث من القاعدة): ننساه فيُفتح من جديد عند أول طلب، بدل أن
+      // تفشل كل عملية بعده بـ "The database connection is closing"
+      const forget = () => {
+        if (connection === opening) connection = null;
+      };
+      db.onclose = forget;
+      db.onversionchange = () => {
+        db.close();
+        forget();
+      };
+      resolve(db);
+    };
     request.onerror = () => {
-      connection = null;
+      if (connection === opening) connection = null;
       reject(request.error ?? new Error("تعذر فتح قاعدة بيانات الجهاز"));
     };
   });
-  return connection;
+  connection = opening;
+  return opening;
+};
+
+/** اتصال أُغلق تحت أقدامنا (InvalidStateError): يستحق محاولة ثانية باتصال جديد */
+const isClosedConnection = (error: unknown): boolean =>
+  error instanceof DOMException && error.name === "InvalidStateError";
+
+/**
+ * يبدأ معاملة على القاعدة. إن كان الاتصال المحفوظ قد أُغلق يُفتح اتصال جديد
+ * ويُعاد المحاولة مرة واحدة.
+ */
+const withTransaction = async (
+  stores: StoreName | StoreName[],
+  mode: IDBTransactionMode,
+): Promise<IDBTransaction> => {
+  try {
+    return (await open()).transaction(stores, mode);
+  } catch (error) {
+    if (!isClosedConnection(error)) throw error;
+    connection = null;
+    return (await open()).transaction(stores, mode);
+  }
 };
 
 const done = <T>(request: IDBRequest<T>): Promise<T> =>
@@ -67,9 +104,8 @@ const transact = async (
   stores: StoreName[],
   work: (get: <N extends StoreName>(name: N) => IDBObjectStore) => void,
 ): Promise<void> => {
-  const db = await open();
+  const tx = await withTransaction(stores, "readwrite");
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(stores, "readwrite");
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error ?? new Error("أُلغيت المعاملة"));
@@ -79,18 +115,14 @@ const transact = async (
 
 export const posDb = {
   async all<N extends StoreName>(name: N): Promise<StoreMap[N][]> {
-    const db = await open();
-    return done(
-      db.transaction(name).objectStore(name).getAll() as IDBRequest<
-        StoreMap[N][]
-      >,
-    );
+    const tx = await withTransaction(name, "readonly");
+    return done(tx.objectStore(name).getAll() as IDBRequest<StoreMap[N][]>);
   },
 
   async getMeta<T>(key: string): Promise<T | null> {
-    const db = await open();
+    const tx = await withTransaction("meta", "readonly");
     const row = await done(
-      db.transaction("meta").objectStore("meta").get(key) as IDBRequest<
+      tx.objectStore("meta").get(key) as IDBRequest<
         StoreMap["meta"] | undefined
       >,
     );

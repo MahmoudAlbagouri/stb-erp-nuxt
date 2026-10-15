@@ -115,6 +115,7 @@ export const usePosStore = defineStore("pos", () => {
     pull: connection.pull,
     fetchDevices: connection.fetchDevices,
     bindDevice: connection.bindDevice,
+    forgetDevice: connection.forgetDevice,
     retryFailed: connection.retryFailed,
 
     // الوردية والدرج

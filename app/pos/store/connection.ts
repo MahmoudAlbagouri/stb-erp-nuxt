@@ -483,6 +483,54 @@ export const createConnection = (
   };
 
   /**
+   * يفصل هذه الشاشة عن جهاز الكاشير الذي تحمله ويمسح كل بياناته المحلية
+   * (أصناف شركته وعملاؤها وكاشيراتها ومبيعاتها). لشاشة تخص شركة أخرى غير شركة
+   * المستخدم المسجّل دخوله. يُرفض ما دام في الطابور ما لم يُرفع لتلك الشركة:
+   * مسحه يضيّع مبيعات وقعت فعلاً. معرّف الشاشة وإعداد الدرج يبقيان.
+   */
+  const forgetDevice = async () => {
+    if (outbox.value.length > 0) {
+      throw new Error(
+        `على الشاشة ${outbox.value.length} عملية لم تُرفع لشركتها بعد — لا تُمسح قبل رفعها`,
+      );
+    }
+    stop();
+    tick();
+    await posDb.reset({
+      installationId: installationId.value,
+      drawer: state.drawer.value,
+      clock: now.value,
+    });
+    bound.value = false;
+    deviceKey.value = null;
+    bindError.value = "";
+    suspended.value = "";
+    lastContactAt.value = null;
+    device.value = null;
+    state.settings.value = null;
+    state.tenant.value = null;
+    state.cashiers.value = [];
+    state.cashierName.value = "";
+    state.returnsAllowed.value = false;
+    state.counter.value = 0;
+    state.lastSync.value = null;
+    state.shift.value = null;
+    state.products.value = [];
+    state.customers.value = [];
+    state.categories.value = [];
+    state.sales.value = [];
+    state.returns.value = [];
+    state.cart.value = [];
+    state.held.value = [];
+    state.cashMoves.value = [];
+    state.promotions.value = [];
+    state.stockLevels.value = {};
+    state.stockKnown.value = false;
+    state.serverBalances.value = {};
+    await reloadOutbox();
+  };
+
+  /**
    * خطة الشركة وصلاحيات المستخدم المسجّل دخوله الآن — إن وُجد واتصلنا. يعيد
    * null إن تعذر (بلا إنترنت أو بلا جلسة)، وهذا لا يمنع البيع: الشاشة تعمل
    * بهوية جهازها.
@@ -511,6 +559,7 @@ export const createConnection = (
     stop,
     fetchDevices,
     bindDevice,
+    forgetDevice,
     fetchUserAccess,
   };
 };

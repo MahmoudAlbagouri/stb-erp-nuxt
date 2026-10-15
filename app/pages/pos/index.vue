@@ -183,6 +183,47 @@
       <div class="spinner spinner--lg" />
     </div>
 
+    <!-- الشاشة تحمل جهاز كاشير شركة غير شركة المستخدم المسجّل دخوله -->
+    <div v-else-if="otherCompany" class="pos-center">
+      <div class="card pos-setup">
+        <Building2 :size="40" class="pos-setup__icon" />
+        <h2>هذه الشاشة مربوطة بشركة أخرى</h2>
+        <p class="doc-hint">
+          الشاشة تحمل جهاز الكاشير «{{ pos.device!.name }}» لشركة
+          <strong>{{ pos.tenant?.companyName || "أخرى" }}</strong>، وأنت مسجّل الدخول
+          بحساب شركة مختلفة — بيانات تلك الشركة لا تُعرض هنا.
+        </p>
+
+        <template v-if="pos.outbox.length">
+          <p class="form-error">
+            على الشاشة {{ formatNumber(pos.outbox.length) }} عملية لم تُرفع لتلك
+            الشركة بعد، ولا تُمسح قبل رفعها. صِل الجهاز بالإنترنت (تُرفع وحدها)،
+            أو سجّل الدخول بحساب تلك الشركة.
+          </p>
+          <button class="btn btn--ghost btn--sm" @click="pos.sync({ pull: false })">
+            <RefreshCw :size="14" /> رفع الآن
+          </button>
+        </template>
+        <template v-else>
+          <p class="doc-hint">
+            افصل الشاشة عنها لتربطها بجهاز كاشير لشركتك. لا شيء يضيع: كل ما بيع
+            عليها رُفع لشركته.
+          </p>
+          <button
+            class="btn btn--primary"
+            :class="{ 'btn--loading': forgetting }"
+            :disabled="forgetting"
+            @click="forgetOtherCompany"
+          >
+            فصل الشاشة وربطها بشركتي
+          </button>
+        </template>
+        <button class="btn btn--ghost btn--sm" @click="auth.logout()">
+          <LogOut :size="14" /> تسجيل الخروج
+        </button>
+      </div>
+    </div>
+
     <AccessState
       v-else-if="accessState !== 'allowed'"
       :state="accessState"
@@ -1042,6 +1083,7 @@ import {
 import {
   AlertTriangle,
   Banknote,
+  Building2,
   ChevronLeft,
   CircleCheck,
   Inbox,
@@ -1093,6 +1135,7 @@ import type {
   SalePayment,
 } from "@/pos/types";
 import { useAccessStore } from "@/stores/access";
+import { useAuthStore } from "@/stores/auth";
 import { usePosStore } from "@/stores/pos";
 import type { PrintableInvoice } from "@/types/sales";
 import { FEATURES, PERMS } from "@/utils/access";
@@ -1117,6 +1160,7 @@ useHead({
 });
 
 const pos = usePosStore();
+const auth = useAuthStore();
 const accessStore = useAccessStore();
 const { resolve } = useAccess();
 const toast = useToast();
@@ -1171,6 +1215,31 @@ const accessState = computed<AccessStatus>(() =>
       })
     : "allowed",
 );
+
+// ─── شاشة تحمل جهاز شركة أخرى ─────────────────────────────────────────────────
+// الشاشة تعمل بهوية جهازها بلا جلسة (كاشير المحل). لكن إن سجّل الدخول عليها
+// مستخدم شركة أخرى (خرج صاحبها ودخل غيره على نفس المتصفح) فبيانات الشركة
+// الأولى لا تُعرض له: كاشيراتها وأصنافها ومبيعاتها
+const otherCompany = computed(
+  () =>
+    !!pos.device?.tenantId &&
+    auth.isAuthenticated &&
+    !!auth.tenantId &&
+    auth.tenantId !== pos.device.tenantId,
+);
+const forgetting = ref(false);
+
+const forgetOtherCompany = async () => {
+  forgetting.value = true;
+  try {
+    await pos.forgetDevice();
+    await loadDevices();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر فصل الشاشة"));
+  } finally {
+    forgetting.value = false;
+  }
+};
 
 /** تنبيه مهلة العمل بلا اتصال (انظر pos.offlineState) */
 const offlineNotice = computed(() => {
@@ -1993,6 +2062,8 @@ const moveSelection = (delta: number) => {
 
 const onKeydown = (event: KeyboardEvent) => {
   if (!pos.shift || event.ctrlKey || event.altKey || event.metaKey) return;
+  // الشاشة محجوبة (جهاز شركة أخرى): لا اختصارات تفتح نوافذ فوقها
+  if (otherCompany.value) return;
   const { key } = event;
   const handle = (action: () => void) => {
     event.preventDefault();
