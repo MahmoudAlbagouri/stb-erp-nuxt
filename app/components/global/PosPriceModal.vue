@@ -27,7 +27,7 @@
             </p>
 
             <div class="form-group">
-              <label>{{ open ? "السعر (شامل الضريبة)" : "السعر الجديد (شامل الضريبة)" }}</label>
+              <label>{{ open ? "السعر" : "السعر الجديد" }} {{ basisLabel }}</label>
               <StbNumberInput
                 ref="priceEl"
                 v-model.number="form.price"
@@ -120,6 +120,14 @@ const priceEl = ref<{ $el: HTMLInputElement } | null>(null);
 const form = reactive({ price: "" as number | "", reason: "", other: "" });
 
 const open = computed(() => !!props.line?.product.openPrice);
+/** أساس السعر المكتوب (منشأة غير مسجّلة: لا ضريبة أصلاً) */
+const basisLabel = computed(() =>
+  pos.settings?.vatRegistered === false
+    ? ""
+    : pos.settings?.pricesIncludeTax === false
+      ? "(قبل الضريبة)"
+      : "(شامل الضريبة)",
+);
 const repriced = computed(() => !!props.line && isRepriced(props.line));
 const listPrice = computed(() => (props.line ? pos.listPriceOf(props.line) : 0));
 const approvalNeeded = computed(() => pos.needsPriceApproval());

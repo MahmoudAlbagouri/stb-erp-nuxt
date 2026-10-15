@@ -13,14 +13,45 @@
     </div>
 
     <form v-else class="card settings-card doc-form" @submit.prevent="save">
-      <div v-if="!form.taxNumber" class="doc-note">
-        <Info :size="16" />
-        <span>
-          بدون الرقم الضريبي تصدر الفواتير بلا رمز QR. إن كانت منشأتك مسجّلة في
-          ضريبة القيمة المضافة فأدخل رقمها حتى تكون فواتيرك مطابقة لمتطلبات هيئة
-          الزكاة والضريبة والجمارك.
-        </span>
-      </div>
+      <section class="doc-section">
+        <h4 class="doc-section__title">ضريبة القيمة المضافة</h4>
+        <label class="checkbox-label">
+          <input v-model="form.vatRegistered" type="checkbox" />
+          <span>المنشأة مسجّلة في ضريبة القيمة المضافة</span>
+        </label>
+        <p class="doc-hint">
+          <template v-if="form.vatRegistered">
+            الفواتير ضريبية: تُحسب ضريبة كل صنف حسب نسبته، ويُطبع الرقم الضريبي
+            ورمز QR لهيئة الزكاة والضريبة والجمارك.
+          </template>
+          <template v-else>
+            منشأة غير مسجّلة (مثل المنشآت دون حد التسجيل الإلزامي): الفواتير
+            بعنوان «فاتورة مبيعات» <strong>بلا ضريبة</strong> على أي صنف، وبلا رقم
+            ضريبي ولا رمز QR. ضريبة المشتريات لا تُسترد فتدخل في تكلفة البضاعة.
+            نسب الضريبة على الأصناف تبقى كما هي وتعود للعمل إن سجّلت المنشأة.
+          </template>
+        </p>
+        <div v-if="form.vatRegistered && !form.taxNumber" class="doc-note">
+          <Info :size="16" />
+          <span>أدخل الرقم الضريبي للمنشأة (أدناه) — يُطبع على كل فاتورة وفي رمز QR.</span>
+        </div>
+
+        <label v-if="form.vatRegistered" class="checkbox-label">
+          <input v-model="form.pricesIncludeTax" type="checkbox" />
+          <span>أسعار البيع شاملة الضريبة</span>
+        </label>
+        <p v-if="form.vatRegistered" class="doc-hint">
+          {{
+            form.pricesIncludeTax
+              ? "السعر على الرف هو ما يدفعه العميل، والضريبة جزء منه. يناسب البيع للأفراد."
+              : "الضريبة تُضاف فوق السعر عند البيع (البيع بالجملة للشركات). يسري على شاشة الكاشير، وهو الافتراضي لفواتير لوحة التحكم."
+          }}
+        </p>
+        <p class="doc-hint">
+          التغيير يسري على الفواتير الجديدة فقط — الصادرة تبقى كما صدرت. شاشات
+          الكاشير تعرفه مع أول اتصال لها.
+        </p>
+      </section>
 
       <section class="doc-section">
         <h4 class="doc-section__title">بيانات المنشأة</h4>
@@ -194,6 +225,8 @@ const form = reactive({
   address: "",
   phone: "",
   invoiceFooter: "",
+  vatRegistered: true,
+  pricesIncludeTax: true,
 });
 
 /** إعدادات الكاشير (الافتراضي حتى تُحمَّل المحفوظة) */
@@ -240,6 +273,9 @@ const save = async () => {
       address: form.address || null,
       phone: form.phone || null,
       invoiceFooter: form.invoiceFooter || null,
+      vatRegistered: form.vatRegistered,
+      // غير المسجّلة لا ضريبة عندها أصلاً: الأساس يبقى كما حُفظ
+      pricesIncludeTax: form.pricesIncludeTax,
       posOptions: {
         scale: { ...pos.scale, prefixes: prefixes.length ? prefixes : pos.scale.prefixes },
         approvals: { ...pos.approvals },
@@ -263,6 +299,8 @@ onMounted(async () => {
       address: settings?.address ?? "",
       phone: settings?.phone ?? "",
       invoiceFooter: settings?.invoiceFooter ?? "",
+      vatRegistered: settings?.vatRegistered ?? true,
+      pricesIncludeTax: settings?.pricesIncludeTax ?? true,
     });
     Object.assign(pos.scale, settings?.posOptions?.scale ?? {});
     Object.assign(pos.approvals, settings?.posOptions?.approvals ?? {});

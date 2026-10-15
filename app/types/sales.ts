@@ -10,6 +10,13 @@ export interface SalesSettings {
   address?: string | null;
   phone?: string | null;
   invoiceFooter?: string | null;
+  /**
+   * مسجّلة في ضريبة القيمة المضافة. false = بلا ضريبة على أي صنف، والفاتورة
+   * "فاتورة مبيعات" بلا رقم ضريبي ولا QR (غائب في بيانات قديمة = مسجّلة)
+   */
+  vatRegistered?: boolean;
+  /** أسعار البيع شاملة الضريبة (false = تُضاف فوق السعر). غائب = شاملة */
+  pricesIncludeTax?: boolean;
   /** إعدادات شاشة الكاشير: باركود الميزان وما يحتاج موافقة مشرف */
   posOptions?: Partial<PosOptions>;
 }
@@ -172,6 +179,8 @@ export interface PrintBranch {
 }
 
 export interface PrintableInvoice {
+  /** إيصال تجريبي لاختبار الطابعة (لا فاتورة حقيقية): يُطبع عليه ذلك صراحة */
+  test?: boolean;
   /** مخزن الفاتورة وفرعه (فاتورة لوحة التحكم)؛ الكاشير يمرّر فرعه مباشرة */
   warehouse?: { branch?: PrintBranch | null } | null;
   number: string | null;

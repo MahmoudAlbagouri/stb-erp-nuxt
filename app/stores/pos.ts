@@ -13,7 +13,10 @@
 //   checkout    إتمام البيع والمرتجع
 //   init        تحميل الحالة المحفوظة على الجهاز
 import { defineStore } from "pinia";
+import { watch } from "vue";
 import { usePosApi } from "@/pos/api";
+import { posTaxMode, setTaxMode, unitPriceOf } from "@/pos/calc";
+import { isRepriced } from "@/pos/promotions";
 import { createCart } from "@/pos/store/cart";
 import { createCheckout } from "@/pos/store/checkout";
 import { createConnection } from "@/pos/store/connection";
@@ -28,6 +31,30 @@ export const usePosStore = defineStore("pos", () => {
   const cartModule = createCart(state, connection, shiftModule);
   const checkoutModule = createCheckout(state, connection, shiftModule, cartModule);
   const { init } = createInit(state, cartModule);
+
+  // وضع الضريبة (مسجّلة؟ الأسعار شاملة؟) من إعدادات الفوترة التي تنزل للجهاز.
+  // إن تغيّر والسلة ممتلئة: أسطرها بسعر القائمة تُعاد بالوضع الجديد (ما كتبه
+  // الكاشير بيده يبقى)
+  watch(
+    () => state.settings.value,
+    (settings) => {
+      const before = posTaxMode();
+      setTaxMode(settings);
+      const after = posTaxMode();
+      if (
+        before.vatRegistered === after.vatRegistered &&
+        before.pricesIncludeTax === after.pricesIncludeTax
+      ) {
+        return;
+      }
+      for (const line of state.cart.value) {
+        if (!isRepriced(line) && !line.product.openPrice) {
+          line.unitPrice = unitPriceOf(line.product, line.unitId);
+        }
+      }
+    },
+    { immediate: true },
+  );
 
   const reset = () => {
     connection.stop();

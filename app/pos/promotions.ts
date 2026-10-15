@@ -2,7 +2,13 @@
 //
 // كل ما هنا يُحسب بلا إنترنت. أثر العرض يصل السيرفر كسعر أو خصم على سطر
 // الفاتورة (السيرفر لا يعرف العروض: يتحقق من اتساق المبالغ ويعتمدها).
-import { lineAmounts, roundAmount, sumAmounts, toGrossPrice } from "./calc";
+import {
+  lineAmounts,
+  roundAmount,
+  sumAmounts,
+  taxRateOf,
+  toSalePrice,
+} from "./calc";
 import type { CartLine, InvoiceDiscount, PosPromotion } from "./types";
 import { currencyDecimals } from "../utils/format";
 
@@ -87,7 +93,7 @@ const benefitOf = (
 
   if (promo.type === "special_price") {
     if (!baseUnit || promo.price === null) return null;
-    const special = toGrossPrice(line.product, promo.price);
+    const special = toSalePrice(line.product, promo.price);
     if (special >= list) return null;
     return { saving: (list - special) * quantity, unitPrice: special, discount: 0 };
   }
@@ -197,7 +203,7 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
         quantity: Number(draft.line.quantity) || 0,
         unitPrice: draft.unitPrice,
         discount,
-        taxRate: draft.line.product.taxRate,
+        taxRate: taxRateOf(draft.line.product),
       }),
     };
   });
@@ -276,7 +282,7 @@ export const pricingIssue = (priced: PricedLine): PricingIssue | null => {
   if (product.minSalePrice !== null && cashierPriced) {
     const effective =
       (priced.gross - priced.promoDiscount - cashierDiscount) / quantity / line.factor;
-    const minimum = toGrossPrice(product, product.minSalePrice);
+    const minimum = toSalePrice(product, product.minSalePrice);
     // نصف أصغر جزء من العملة: فرق التقريب لا يُعدّ بيعاً تحت الحد
     if (effective + 0.5 / 10 ** currencyDecimals() < minimum) {
       return {

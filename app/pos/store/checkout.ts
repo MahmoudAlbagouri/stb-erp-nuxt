@@ -6,10 +6,11 @@ import { OfflineError } from "@/pos/api";
 import {
   buildZatcaQr,
   newUuid,
-  POS_PRICES_INCLUDE_TAX,
+  posTaxMode,
   returnShare,
   roundAmount,
   sumAmounts,
+  taxRateOf,
 } from "@/pos/calc";
 import { posDb } from "@/pos/db";
 import { isRepriced } from "@/pos/promotions";
@@ -114,7 +115,8 @@ export const createCheckout = (
       quantity: Number(p.line.quantity),
       unitPrice: p.unitPrice,
       discount: p.discount,
-      taxRate: p.line.product.taxRate,
+      // صفر لمنشأة غير مسجّلة في الضريبة
+      taxRate: taxRateOf(p.line.product),
       subtotal: p.subtotal,
       taxAmount: p.taxAmount,
       total: p.total,
@@ -149,7 +151,7 @@ export const createCheckout = (
       customerBalance: customer
         ? sumAmounts([customerBalance(customer.id), creditAmount])
         : null,
-      pricesIncludeTax: POS_PRICES_INCLUDE_TAX,
+      pricesIncludeTax: posTaxMode().pricesIncludeTax,
       lines,
       payments,
       subtotal: current.subtotal,
@@ -159,7 +161,9 @@ export const createCheckout = (
       change: Math.max(sumAmounts([cashReceived, -cashPaid]), 0),
       creditAmount,
       discountTotal: sumAmounts([current.promoDiscount, current.manualDiscount]),
-      qrCode: settings.value?.taxNumber
+      // رمز هيئة الزكاة والضريبة للمنشأة المسجّلة فقط — كالسيرفر
+      qrCode:
+        settings.value?.vatRegistered !== false && settings.value?.taxNumber
         ? buildZatcaQr({
             sellerName: settings.value.sellerName ?? "",
             taxNumber: settings.value.taxNumber,

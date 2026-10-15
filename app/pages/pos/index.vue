@@ -548,18 +548,21 @@
               − {{ formatCurrency(pos.priced.manualDiscount) }}
             </span>
           </div>
-          <div>
-            <span>قبل الضريبة</span>
-            <span class="doc-money">
-              {{ formatCurrency(pos.cartTotals.subtotal) }}
-            </span>
-          </div>
-          <div>
-            <span>الضريبة</span>
-            <span class="doc-money">
-              {{ formatCurrency(pos.cartTotals.taxTotal) }}
-            </span>
-          </div>
+          <!-- منشأة غير مسجّلة في الضريبة: الإجمالي وحده -->
+          <template v-if="pos.settings?.vatRegistered !== false">
+            <div>
+              <span>قبل الضريبة</span>
+              <span class="doc-money">
+                {{ formatCurrency(pos.cartTotals.subtotal) }}
+              </span>
+            </div>
+            <div>
+              <span>الضريبة</span>
+              <span class="doc-money">
+                {{ formatCurrency(pos.cartTotals.taxTotal) }}
+              </span>
+            </div>
+          </template>
         </div>
 
         <div class="pos-cart__actions">
@@ -1005,7 +1008,7 @@
     </Teleport>
 
     <PosReturnModal v-model="showReturn" @done="onReturned" />
-    <PosScreenSettings v-model="showSettings" />
+    <PosScreenSettings v-model="showSettings" @test-print="printTestReceipt" />
     <PosHeldModal v-model="showHeld" @resume="resumeHeld" @remove="removeHeld" />
     <PosCashMoveModal v-model="showCashMove" @submit="submitCashMove" />
     <PosCustomerModal v-model="showCustomer" />
@@ -1074,7 +1077,7 @@ import { useAccess } from "@/composables/useAccess";
 import type { AccessState as AccessStatus } from "@/composables/useAccess";
 import { useToast } from "@/composables/useToast";
 import type { ShiftReportData } from "@/components/global/PosShiftReport.vue";
-import { sumAmounts, unitPriceOf } from "@/pos/calc";
+import { lineAmounts, sumAmounts, unitPriceOf } from "@/pos/calc";
 import { isRepriced } from "@/pos/promotions";
 import { createDisplayPublisher, type DisplayState } from "@/pos/display";
 import { verifyCashierPin } from "@/pos/cashiers";
@@ -1755,6 +1758,49 @@ const printSale = async (sale: LocalSale) => {
     await nextTick();
     await printer.value?.print("thermal");
   } catch (e) {
+    toast.error(getErrorMessage(e, "تعذرت الطباعة"));
+  }
+};
+
+/**
+ * إيصال تجريبي لاختبار الطابعة ومقاس الورق: أصناف وهمية بحساب الشاشة نفسه
+ * (وضع الضريبة الحالي)، بلا رقم فاتورة ولا QR ولا أي أثر على الوردية أو الطابور
+ */
+const printTestReceipt = async () => {
+  const samples = [
+    { productName: "صنف تجريبي 1", unitName: "قطعة", quantity: 2, unitPrice: 10 },
+    { productName: "صنف تجريبي باسم أطول ليُرى الالتفاف", unitName: "كيلوجرام", quantity: 1.5, unitPrice: 24 },
+    { productName: "صنف تجريبي 3", unitName: "كرتون", quantity: 1, unitPrice: 55 },
+  ];
+  const rate = pos.settings?.vatRegistered === false ? 0 : (pos.products[0]?.taxRate ?? 15);
+  const lines = samples.map((sample, index) => ({
+    id: `test-${index}`,
+    ...sample,
+    discount: 0,
+    ...lineAmounts({ ...sample, discount: 0, taxRate: rate }),
+  }));
+  const issuedAt = new Date().toISOString();
+  showSettings.value = false;
+  try {
+    printTarget.value = {
+      test: true,
+      number: "TEST",
+      invoiceType: "simplified",
+      customer: null,
+      invoiceDate: issuedAt,
+      issuedAt,
+      subtotal: sumAmounts(lines.map((l) => l.subtotal)),
+      taxTotal: sumAmounts(lines.map((l) => l.taxAmount)),
+      total: sumAmounts(lines.map((l) => l.total)),
+      paidAmount: sumAmounts(lines.map((l) => l.total)),
+      remaining: 0,
+      qrCode: null,
+      lines,
+    };
+    await nextTick();
+    await printer.value?.print("thermal");
+  } catch (e) {
+    sound("error");
     toast.error(getErrorMessage(e, "تعذرت الطباعة"));
   }
 };

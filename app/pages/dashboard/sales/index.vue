@@ -576,10 +576,13 @@
               <section class="doc-section">
                 <div class="section-head">
                   <h4 class="doc-section__title">الأصناف</h4>
-                  <label class="checkbox-label">
+                  <label v-if="vatRegistered" class="checkbox-label">
                     <input v-model="form.pricesIncludeTax" type="checkbox" />
                     <span>الأسعار شاملة الضريبة</span>
                   </label>
+                  <span v-else class="doc-hint">
+                    المنشأة غير مسجّلة في الضريبة — بلا ضريبة
+                  </span>
                 </div>
 
                 <StockProductPicker
@@ -1082,6 +1085,9 @@ const addDays = (date: string, days: number) => {
   return result.toISOString().slice(0, 10);
 };
 
+/** المنشأة مسجّلة في ضريبة القيمة المضافة (قبل تحميل الإعدادات: نعم) */
+const vatRegistered = computed(() => store.settings?.vatRegistered !== false);
+
 /** تاريخ الاستحقاق = تاريخ الفاتورة + مهلة سداد العميل (النقدي: نفس اليوم) */
 const suggestDueDate = () => {
   if (!form.invoiceDate) return;
@@ -1089,8 +1095,10 @@ const suggestDueDate = () => {
   form.dueDate = addDays(form.invoiceDate, customer?.paymentTermsDays ?? 0);
 };
 
-const openCreate = () => {
+const openCreate = async () => {
   viewing.value = null;
+  // أساس التسعير الافتراضي والتسجيل في الضريبة من إعدادات الفوترة
+  await store.fetchSettings().catch(() => null);
   Object.assign(form, {
     id: null,
     customerId: filters.customerId,
@@ -1101,7 +1109,7 @@ const openCreate = () => {
     invoiceDate: todayStamp(),
     dueDate: "",
     note: "",
-    pricesIncludeTax: true,
+    pricesIncludeTax: store.settings?.pricesIncludeTax ?? true,
     lines: [],
   });
   suggestDueDate();
@@ -1172,7 +1180,8 @@ const addLine = async (row: StockLookupRow) => {
       productId: product.id,
       name: product.name,
       sku: product.sku,
-      taxRate: product.taxRate?.rate ?? 0,
+      // منشأة غير مسجّلة: بلا ضريبة (السيرفر يفرض نفس القاعدة)
+      taxRate: vatRegistered.value ? (product.taxRate?.rate ?? 0) : 0,
       productPriceIncludesTax: product.priceIncludesTax,
       allowDiscount: product.allowDiscount,
       units: [

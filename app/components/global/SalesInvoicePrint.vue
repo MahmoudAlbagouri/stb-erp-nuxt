@@ -17,13 +17,16 @@
         <p v-if="branchLine">{{ branchLine }}</p>
         <p v-if="address">{{ address }}</p>
         <p v-if="phone" dir="ltr">{{ phone }}</p>
-        <p v-if="settings?.taxNumber">
+        <p v-if="taxInvoice && settings?.taxNumber">
           الرقم الضريبي: <span dir="ltr">{{ settings.taxNumber }}</span>
         </p>
         <p v-if="settings?.commercialRegister">
           السجل التجاري: <span dir="ltr">{{ settings.commercialRegister }}</span>
         </p>
-        <h2>{{ SALES_INVOICE_TYPE_LABELS[invoice.invoiceType] }}</h2>
+        <h2>{{ title }}</h2>
+        <p v-if="invoice.test" class="invoice-print__test">
+          إيصال تجريبي لاختبار الطابعة — ليس فاتورة
+        </p>
       </header>
 
       <section class="invoice-print__meta">
@@ -86,16 +89,22 @@
       </section>
 
       <section class="invoice-print__totals">
-        <div>
-          <span>الإجمالي قبل الضريبة</span>
-          <span dir="ltr">{{ formatMoney(invoice.subtotal) }}</span>
-        </div>
-        <div>
-          <span>ضريبة القيمة المضافة</span>
-          <span dir="ltr">{{ formatMoney(invoice.taxTotal) }}</span>
-        </div>
+        <!-- منشأة غير مسجّلة في الضريبة: لا سطر ضريبة أصلاً -->
+        <template v-if="taxInvoice">
+          <div>
+            <span>الإجمالي قبل الضريبة</span>
+            <span dir="ltr">{{ formatMoney(invoice.subtotal) }}</span>
+          </div>
+          <div>
+            <span>ضريبة القيمة المضافة</span>
+            <span dir="ltr">{{ formatMoney(invoice.taxTotal) }}</span>
+          </div>
+        </template>
         <div class="is-grand">
-          <span>الإجمالي شامل الضريبة ({{ currencyLabel() }})</span>
+          <span>
+            {{ taxInvoice ? "الإجمالي شامل الضريبة" : "الإجمالي" }}
+            ({{ currencyLabel() }})
+          </span>
           <span dir="ltr">{{ formatMoney(invoice.total) }}</span>
         </div>
         <div v-if="invoice.paidAmount > 0">
@@ -159,6 +168,22 @@ const totalQuantity = computed(() =>
   ),
 );
 const customerBalance = computed(() => Number(props.invoice?.customer?.balance) || 0);
+
+/**
+ * فاتورة ضريبية؟ منشأة مسجّلة في الضريبة، أو فاتورة صدرت بضريبة أو برمز QR
+ * (أُصدرت قبل أن تُلغى الشركة تسجيلها: تُعاد طباعتها كما صدرت)
+ */
+const taxInvoice = computed(
+  () =>
+    props.settings?.vatRegistered !== false ||
+    (props.invoice?.taxTotal ?? 0) > 0 ||
+    !!props.invoice?.qrCode,
+);
+const title = computed(() =>
+  taxInvoice.value && props.invoice
+    ? SALES_INVOICE_TYPE_LABELS[props.invoice.invoiceType]
+    : "فاتورة مبيعات",
+);
 
 // عنوان الفرع وهاتفه يُطبعان بدل عنوان الشركة؛ ما لم يُدخَل للفرع يبقى للشركة
 const printBranch = computed(
@@ -260,6 +285,13 @@ defineExpose({ print });
     max-height: 22mm;
     margin: 0 auto 4pt;
     object-fit: contain;
+  }
+
+  &__test {
+    margin-top: 4pt;
+    padding: 2pt;
+    font-weight: 800;
+    border: 1px dashed #000;
   }
 
   // عدد الأصناف وإجمالي الكميات

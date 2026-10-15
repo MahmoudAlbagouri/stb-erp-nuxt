@@ -15,6 +15,18 @@
           </div>
 
           <div class="doc-form">
+            <!-- ══ الطابعة ══ -->
+            <h4 class="pos-settings__title"><Printer :size="16" /> الطابعة</h4>
+            <p class="doc-hint">
+              يطبع إيصالاً تجريبياً بأصناف وهمية لتجربة الطابعة ومقاس الورق — لا
+              فاتورة ولا رقم ولا أثر على الوردية.
+            </p>
+            <div class="doc-actions">
+              <button type="button" class="btn btn--sm btn--primary" @click="emit('test-print')">
+                <Printer :size="14" /> طباعة إيصال تجريبي
+              </button>
+            </div>
+
             <!-- ══ درج النقود ══ -->
             <h4 class="pos-settings__title"><Inbox :size="16" /> درج النقود</h4>
             <p class="doc-hint">
@@ -140,6 +152,7 @@ import {
   CircleCheck,
   Inbox,
   MonitorDown,
+  Printer,
   Settings,
   Share,
   Volume2,
@@ -159,7 +172,11 @@ import {
 import { usePosStore } from "@/stores/pos";
 
 const props = defineProps<{ modelValue: boolean }>();
-const emit = defineEmits<{ "update:modelValue": [value: boolean] }>();
+const emit = defineEmits<{
+  "update:modelValue": [value: boolean];
+  /** طباعة إيصال تجريبي (تتولاها شاشة البيع: عندها نسخة الطباعة) */
+  "test-print": [];
+}>();
 
 const pos = usePosStore();
 const toast = useToast();
