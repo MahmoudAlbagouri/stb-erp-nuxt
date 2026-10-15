@@ -130,7 +130,7 @@
                   <label>طريقة الردّ</label>
                   <select v-model="form.refundMethod" class="form-select">
                     <option
-                      v-for="(label, method) in SALES_PAYMENT_METHOD_LABELS"
+                      v-for="(label, method) in PUBLIC_SALES_PAYMENT_METHOD_LABELS"
                       :key="method"
                       :value="method"
                     >

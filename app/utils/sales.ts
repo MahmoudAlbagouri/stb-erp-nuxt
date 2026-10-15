@@ -2,6 +2,7 @@
 import type {
   CustomerStatementEntryType,
   SalesInvoiceStatus,
+  PublicSalesPaymentMethod,
   SalesInvoiceType,
   SalesPaymentMethod,
   SalesReturnStatus,
@@ -31,6 +32,18 @@ export const SALES_INVOICE_TYPE_LABELS: Record<SalesInvoiceType, string> = {
 };
 
 export const SALES_PAYMENT_METHOD_LABELS: Record<SalesPaymentMethod, string> = {
+  cash: "نقدي",
+  card: "شبكة / بطاقة",
+  bank_transfer: "تحويل بنكي",
+  cheque: "شيك",
+  courier: "تحصيل عبر التوصيل",
+};
+
+/** طرق الدفع في نماذج القبض والردّ (التحصيل عبر التوصيل من أوردرات التوصيل وحدها) */
+export const PUBLIC_SALES_PAYMENT_METHOD_LABELS: Record<
+  PublicSalesPaymentMethod,
+  string
+> = {
   cash: "نقدي",
   card: "شبكة / بطاقة",
   bank_transfer: "تحويل بنكي",

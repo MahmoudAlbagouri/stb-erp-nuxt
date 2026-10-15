@@ -136,6 +136,10 @@ export const PERMS = {
   POS_USE: "use_pos",
   POS_RETURN: "process_pos_returns",
   POS_DEVICE_MANAGE: "manage_pos_devices",
+  DELIVERY_VIEW: "view_delivery",
+  DELIVERY_MANAGE: "manage_delivery",
+  DELIVERY_AGENTS_MANAGE: "manage_delivery_agents",
+  DELIVERY_SETTLE: "settle_delivery",
   SYSTEM_STATS: "system:view_platform_stats",
 } as const;
 
@@ -160,6 +164,7 @@ export const FEATURES = {
   PURCHASING_MODULE: "purchasing_module",
   SALES_MODULE: "sales_module",
   POS_MODULE: "pos_module",
+  DELIVERY_MODULE: "delivery_module",
   REPORTS_EXPORT: "reports_export",
   BIOMETRIC_INTEGRATION: "biometric_integration",
   MULTI_BRANCH: "multi_branch",
@@ -187,6 +192,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   purchasing_module: "المشتريات والموردون",
   sales_module: "المبيعات والعملاء",
   pos_module: "نقاط البيع (الكاشير)",
+  delivery_module: "التوصيل والشحن",
   reports_export: "تصدير التقارير (Excel / PDF)",
   biometric_integration: "ربط أجهزة البصمة (ZKTeco)",
   multi_branch: "دعم الفروع المتعددة",

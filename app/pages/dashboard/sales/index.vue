@@ -203,11 +203,22 @@
                     <span v-if="inv.status === 'issued'" class="doc-cell__sub">
                       {{ PAYMENT_STATUS[inv.paymentStatus].label }}
                     </span>
+                    <span v-if="inv.isDelivery" class="doc-cell__sub">
+                      <Truck :size="12" /> أوردر توصيل
+                    </span>
                   </div>
                 </td>
                 <td>
                   <div class="doc-actions">
-                    <template v-if="inv.status === 'draft'">
+                    <NuxtLink
+                      v-if="inv.status === 'draft' && inv.isDelivery"
+                      to="/dashboard/delivery"
+                      class="btn btn--sm btn--ghost"
+                      title="فاتورة أوردر توصيل: تصدر عند خروجه مع الطيار أو شركة الشحن"
+                    >
+                      <Truck :size="14" /> من التوصيل
+                    </NuxtLink>
+                    <template v-else-if="inv.status === 'draft'">
                       <button
                         v-can="'issue_sales'"
                         v-quota="'max_invoices'"
@@ -890,6 +901,7 @@ import {
   Search,
   Trash2,
   TrendingUp,
+  Truck,
   X,
 } from "lucide-vue-next";
 import { useAccess } from "@/composables/useAccess";
@@ -1120,7 +1132,8 @@ const openCreate = async () => {
 const openForm = async (invoice: SalesInvoice) => {
   try {
     const full = await store.getInvoice(invoice.id);
-    if (full.status !== "draft") {
+    // مسودة أوردر التوصيل تُدار من شاشة التوصيل: هنا للعرض فقط
+    if (full.status !== "draft" || full.isDelivery) {
       viewing.value = full;
       showForm.value = true;
       return;

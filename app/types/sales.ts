@@ -107,7 +107,16 @@ export interface SalesSummary {
 export type SalesInvoiceStatus = "draft" | "issued" | "cancelled";
 export type SalesInvoiceType = "simplified" | "standard";
 export type SalesPaymentStatus = "unpaid" | "partial" | "paid";
-export type SalesPaymentMethod = "cash" | "card" | "bank_transfer" | "cheque";
+/** courier = تحصيل عند التسليم عبر طيار أو شركة شحن (يسجّله موديول التوصيل وحده) */
+export type SalesPaymentMethod =
+  | "cash"
+  | "card"
+  | "bank_transfer"
+  | "cheque"
+  | "courier";
+
+/** طرق الدفع التي يختارها المستخدم يدوياً */
+export type PublicSalesPaymentMethod = Exclude<SalesPaymentMethod, "courier">;
 
 export interface SalesInvoiceLine {
   id: string;
@@ -139,6 +148,8 @@ export interface SalesInvoice {
   uuid: string;
   /** null للمسودة — الرقم يُعطى عند الإصدار */
   number: string | null;
+  /** فاتورة أوردر توصيل: تُدار (تصدر/تُلغى) من شاشة التوصيل وحدها */
+  isDelivery?: boolean;
   invoiceType: SalesInvoiceType;
   customerId?: string | null;
   customer?: Customer | null;

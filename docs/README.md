@@ -135,6 +135,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/purchasing` · `/returns` · `/payments` · `/suppliers` | purchasing | `purchasing` |
 | `/dashboard/sales` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
 | `/pos` · `/pos/display` · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/audit` | pos | `pos` · `posAdmin` |
+| `/dashboard/delivery` · `/agents` · `/settlements` | delivery | `delivery` |
 | `/dashboard/quotations` | quotation | `quotations` |
 | `/dashboard/employees` · `/employees/[id]` | employees | `employees` |
 | `/dashboard/contracts` · `/salaries` · `/payroll` | contracts · salaries · payroll | بنفس الاسم |

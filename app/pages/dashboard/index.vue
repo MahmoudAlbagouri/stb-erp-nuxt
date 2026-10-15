@@ -1067,6 +1067,7 @@ const PAYMENT_METHODS: Record<string, { label: string; slot: number }> = {
   card: { label: "شبكة / بطاقة", slot: 1 },
   bank_transfer: { label: "تحويل بنكي", slot: 2 },
   cheque: { label: "شيك", slot: 3 },
+  courier: { label: "تحصيل عبر التوصيل", slot: 4 },
 };
 
 const paymentSlices = computed<DonutSlice[]>(() =>
