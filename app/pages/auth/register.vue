@@ -76,6 +76,14 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>شعار الشركة (اختياري)</label>
+        <CompanyLogoPicker
+          v-model="logo"
+          hint="يظهر على الفواتير والتقارير. تقدر تضيفه أو تغيّره لاحقاً من الملف الشخصي."
+        />
+      </div>
+
       <div class="auth-form__section">
         <UserCog :size="14" />
         <span>بيانات المدير</span>
@@ -184,9 +192,11 @@ const form = reactive({
 });
 
 const selectedCountry = computed(() => getCountry(form.country));
+/** شعار مصغّر جاهز للرفع بعد إنشاء الحساب (null = بلا شعار) */
+const logo = ref<string | null>(null);
 
 const handleRegister = async () => {
-  await auth.register({ ...form, phone: form.phone || undefined });
+  await auth.register({ ...form, phone: form.phone || undefined }, logo.value);
 };
 </script>
 

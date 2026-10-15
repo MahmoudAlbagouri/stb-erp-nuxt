@@ -144,6 +144,11 @@ export const createCheckout = (
       customerId: customer?.id ?? null,
       customerName: customer?.name ?? null,
       customerTaxNumber: customer?.taxNumber ?? null,
+      customerPhone: customer?.phone ?? null,
+      // ما عليه بعد هذه الفاتورة: آخر ما عرفه السيرفر + ما بيع هنا آجلاً ولم يُرفع
+      customerBalance: customer
+        ? sumAmounts([customerBalance(customer.id), creditAmount])
+        : null,
       pricesIncludeTax: POS_PRICES_INCLUDE_TAX,
       lines,
       payments,

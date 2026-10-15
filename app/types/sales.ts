@@ -176,7 +176,13 @@ export interface PrintableInvoice {
   warehouse?: { branch?: PrintBranch | null } | null;
   number: string | null;
   invoiceType: SalesInvoiceType;
-  customer?: { name: string; taxNumber?: string | null } | null;
+  customer?: {
+    name: string;
+    taxNumber?: string | null;
+    phone?: string | null;
+    /** ما على العميل (إجمالي الآجل) — يُطبع إن كان موجباً */
+    balance?: number | null;
+  } | null;
   invoiceDate: string;
   issuedAt?: string | null;
   subtotal: number;

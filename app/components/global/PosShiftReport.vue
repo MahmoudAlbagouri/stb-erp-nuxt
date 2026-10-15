@@ -6,6 +6,7 @@
 <template>
   <Teleport to="body">
     <div v-if="report" class="print-area shift-report" dir="rtl">
+      <img v-if="logo" :src="logo" alt="" class="shift-report__logo" />
       <h1>{{ report.company }}</h1>
       <p v-if="report.branch">{{ report.branch }}</p>
       <h2>
@@ -143,6 +144,9 @@ export interface ShiftReportData {
   moves: CashMove[];
 }
 
+/** شعار الشركة (Data URL) من نسخة الجهاز */
+defineProps<{ logo?: string | null }>();
+
 const report = ref<ShiftReportData | null>(null);
 
 const difference = computed(() =>
@@ -162,6 +166,12 @@ const print = async (data: ShiftReportData) => {
   style.textContent = "@page { size: 80mm auto; margin: 3mm; }";
   document.head.appendChild(style);
   await nextTick();
+  // الشعار يُرسم قبل فتح الطباعة
+  await Promise.all(
+    Array.from(document.querySelectorAll<HTMLImageElement>(".shift-report img")).map(
+      (img) => img.decode?.().catch(() => {}),
+    ),
+  );
   window.print();
   style.remove();
   // لا يبقى في الصفحة: الإيصال التالي يُطبع وحده

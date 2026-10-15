@@ -17,6 +17,24 @@
       </button>
     </div>
 
+    <!-- شعار الشركة: لمدير الشركة — يُطبع على الفواتير والتقارير -->
+    <div v-if="canEditLogo" class="card company-logo-card">
+      <div class="card__header">
+        <h3 class="card__title">
+          <Building2 :size="18" class="title-icon" /> شعار الشركة
+        </h3>
+      </div>
+      <CompanyLogoPicker
+        :model-value="company.branding?.logo ?? null"
+        :disabled="savingLogo"
+        hint="يظهر على الفواتير (A4 والإيصال الحراري) وتقارير الوردية وتقارير PDF. PNG أو JPG، ويُفضّل خلفية بيضاء أو شفافة."
+        @update:model-value="saveLogo"
+      />
+      <p v-if="auth.logoFailed && !company.branding?.logo" class="form-error">
+        تعذر رفع الشعار عند إنشاء الحساب — اختره مرة أخرى من هنا.
+      </p>
+    </div>
+
     <!-- Loading State -->
     <div v-if="store.loading && !store.data" class="empty-state">
       <div class="spinner spinner--lg" />
@@ -420,9 +438,12 @@ definePageMeta({ middleware: "auth" });
 
 import { ref, computed, onMounted } from "vue";
 import { useProfileStore } from "@/stores/profile";
+import { useAuthStore } from "@/stores/auth";
+import { useCompanyStore } from "@/stores/company";
 import { useToast } from "../../composables/useToast";
 
 import {
+  Building2,
   RefreshCw,
   Hash,
   Phone,
@@ -439,7 +460,29 @@ import {
 } from "lucide-vue-next";
 
 const store = useProfileStore();
+const auth = useAuthStore();
+const company = useCompanyStore();
 const toast = useToast();
+
+// ─── شعار الشركة ──────────────────────────────────────────────────────────────
+/** مدير الشركة وحده يغيّر شعارها (السيرفر يفرض نفس القاعدة) */
+const canEditLogo = computed(() => auth.isSuperAdmin && !!auth.tenantId);
+const savingLogo = ref(false);
+
+/** يُحفظ فور اختياره (أو إزالته) */
+const saveLogo = async (logo: string | null) => {
+  savingLogo.value = true;
+  try {
+    if (logo) await company.setLogo(logo);
+    else await company.removeLogo();
+    auth.logoFailed = false;
+    toast.success(logo ? "تم حفظ شعار الشركة" : "تمت إزالة الشعار");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر حفظ الشعار"));
+  } finally {
+    savingLogo.value = false;
+  }
+};
 
 const activeTab = ref<"advances" | "loans">("advances");
 const rejectedTab = ref<"advances" | "loans">("advances");
@@ -504,12 +547,17 @@ const refreshData = async () => {
 
 onMounted(() => {
   if (!store.isLoaded) store.fetchProfile();
+  if (canEditLogo.value) void company.fetchBranding();
 });
 </script>
 
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
+.company-logo-card {
+  margin-bottom: $space-4;
+}
 
 .profile-grid {
   display: grid;

@@ -256,13 +256,22 @@ export const createConnection = (
       };
     }
 
+    // الشعار لا يُعاد مع كل سحب: غيابه = لم يتغيّر، فتبقى النسخة المحفوظة
+    const nextTenant = {
+      ...data.tenant,
+      logo:
+        data.tenant.logo !== undefined
+          ? data.tenant.logo
+          : (tenant.value?.logo ?? null),
+    };
+
     await posDb.setMeta({
       device: data.device,
       settings: data.settings,
       lastSync: data.serverTime,
       counter: nextCounter,
       shift: nextShift,
-      tenant: data.tenant,
+      tenant: nextTenant,
       cashiers: data.cashiers,
       returnsAllowed: data.returnsAllowed,
       offlinePolicy: data.offlinePolicy,
@@ -276,7 +285,7 @@ export const createConnection = (
     serverBalances.value = nextBalances;
     promotions.value = data.promotions ?? promotions.value;
     posOptions.value = data.posOptions ?? posOptions.value;
-    tenant.value = data.tenant;
+    tenant.value = nextTenant;
     cashiers.value = data.cashiers;
     returnsAllowed.value = data.returnsAllowed;
     offlinePolicy.value = data.offlinePolicy;

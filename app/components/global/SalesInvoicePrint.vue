@@ -12,6 +12,7 @@
       dir="rtl"
     >
       <header class="invoice-print__header">
+        <img v-if="logoSrc" :src="logoSrc" alt="" class="invoice-print__logo" />
         <h1>{{ settings?.sellerName || "فاتورة" }}</h1>
         <p v-if="branchLine">{{ branchLine }}</p>
         <p v-if="address">{{ address }}</p>
@@ -39,6 +40,10 @@
         <div>
           <span>العميل</span>
           <strong>{{ customerLabel(invoice.customer) }}</strong>
+        </div>
+        <div v-if="invoice.customer?.phone">
+          <span>جوال العميل</span>
+          <strong dir="ltr">{{ invoice.customer.phone }}</strong>
         </div>
         <div v-if="invoice.customer?.taxNumber">
           <span>الرقم الضريبي للعميل</span>
@@ -73,6 +78,13 @@
         </tbody>
       </table>
 
+      <section class="invoice-print__count">
+        <span>عدد الأصناف: <strong dir="ltr">{{ formatNumber(itemsCount) }}</strong></span>
+        <span>
+          إجمالي الكميات: <strong dir="ltr">{{ formatNumber(totalQuantity) }}</strong>
+        </span>
+      </section>
+
       <section class="invoice-print__totals">
         <div>
           <span>الإجمالي قبل الضريبة</span>
@@ -94,6 +106,11 @@
           <span>المتبقي</span>
           <span dir="ltr">{{ formatMoney(invoice.remaining) }}</span>
         </div>
+        <!-- ما على العميل كله (هذه الفاتورة وما قبلها) — لعميل مسجّل عليه آجل -->
+        <div v-if="customerBalance > 0" class="is-balance">
+          <span>إجمالي الآجل على العميل</span>
+          <span dir="ltr">{{ formatMoney(customerBalance) }}</span>
+        </div>
       </section>
 
       <footer class="invoice-print__footer">
@@ -107,6 +124,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import QRCode from "qrcode";
+import { useCompanyStore } from "@/stores/company";
 import type {
   PrintBranch,
   PrintableInvoice,
@@ -120,7 +138,27 @@ const props = defineProps<{
   settings: SalesSettings | null;
   /** فرع البيع؛ إن غاب يؤخذ من مخزن الفاتورة */
   branch?: PrintBranch | null;
+  /**
+   * شعار الشركة (Data URL). غائب = من هوية الشركة في لوحة التحكم؛ شاشة
+   * الكاشير تمرّر نسختها المحفوظة (تطبع بلا إنترنت)
+   */
+  logo?: string | null;
 }>();
+
+const company = useCompanyStore();
+const logoSrc = computed(() =>
+  props.logo !== undefined ? props.logo : (company.branding?.logo ?? null),
+);
+
+/** عدد أسطر الفاتورة، ومجموع كمياتها (بوحدات البيع كما كُتبت) */
+const itemsCount = computed(() => props.invoice?.lines?.length ?? 0);
+const totalQuantity = computed(() =>
+  (props.invoice?.lines ?? []).reduce(
+    (sum, line) => Math.round((sum + (Number(line.quantity) || 0)) * 10000) / 10000,
+    0,
+  ),
+);
+const customerBalance = computed(() => Number(props.invoice?.customer?.balance) || 0);
 
 // عنوان الفرع وهاتفه يُطبعان بدل عنوان الشركة؛ ما لم يُدخَل للفرع يبقى للشركة
 const printBranch = computed(
@@ -157,6 +195,8 @@ const PAGE_RULES: Record<PrintSize, string> = {
 /** يطبع الفاتورة بالمقاس المطلوب */
 const print = async (target: PrintSize = "a4") => {
   size.value = target;
+  // شعار لوحة التحكم: يُجلب مرة في الجلسة (فشله لا يمنع الطباعة)
+  if (props.logo === undefined) await company.fetchBranding();
   await renderQr();
 
   // مقاس الصفحة يختلف بين المقاسين، فنحقنه لحظة الطباعة ثم نزيله
@@ -164,6 +204,12 @@ const print = async (target: PrintSize = "a4") => {
   style.textContent = PAGE_RULES[target];
   document.head.appendChild(style);
   await nextTick();
+  // الشعار ورمز QR يُرسمان قبل فتح الطباعة، وإلا قد يخرجان فارغين
+  await Promise.all(
+    Array.from(document.querySelectorAll<HTMLImageElement>(".invoice-print img")).map(
+      (img) => img.decode?.().catch(() => {}),
+    ),
+  );
 
   window.print();
   style.remove();
@@ -206,6 +252,22 @@ defineExpose({ print });
     padding-bottom: 8pt;
     text-align: center;
     border-bottom: 1px dashed #000;
+  }
+
+  &__logo {
+    display: block;
+    max-width: 45mm;
+    max-height: 22mm;
+    margin: 0 auto 4pt;
+    object-fit: contain;
+  }
+
+  // عدد الأصناف وإجمالي الكميات
+  &__count {
+    display: flex;
+    justify-content: space-between;
+    gap: 8pt;
+    padding-top: 6pt;
   }
 
   &__meta {
@@ -258,6 +320,12 @@ defineExpose({ print });
       border-top: 1px solid #000;
       border-bottom: 1px solid #000;
     }
+    .is-balance {
+      margin-top: 3pt;
+      padding-top: 3pt;
+      font-weight: 800;
+      border-top: 1px dashed #000;
+    }
   }
 
   &__footer {
@@ -270,10 +338,23 @@ defineExpose({ print });
     }
   }
 
-  // ورق حراري 80مم: عمود واحد وخط أصغر
+  // ورق حراري 80مم: عمود واحد وخط أصغر. العرض المطبوع 72مم؛ هامش داخلي يمين
+  // وشمال فلا يلامس الكلام حافة الورق (الطباعة غالباً بلا هوامش)
   &--thermal {
+    box-sizing: border-box;
     width: 72mm;
+    margin: 0 auto;
+    padding: 2mm 3mm;
     font-size: 9pt;
+
+    // الرمادي يخرج باهتاً على الورق الحراري: خطوط سوداء
+    .invoice-print__lines td {
+      border-bottom-color: #000;
+    }
+    .invoice-print__logo {
+      max-width: 40mm;
+      max-height: 18mm;
+    }
 
     h1 {
       font-size: 12pt;

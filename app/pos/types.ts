@@ -194,6 +194,11 @@ export interface PosTenantProfile {
   country: string;
   currency: string;
   currencyDecimals: number;
+  /**
+   * شعار الشركة (Data URL) يُطبع على الإيصال. null = بلا شعار. في السحب: غائب
+   * = لم يتغيّر (تبقى النسخة المحفوظة على الشاشة)
+   */
+  logo?: string | null;
   timezone: string;
   /** فرع الجهاز: يُطبع على الإيصال (غائب في بيانات محفوظة قبل هذه النسخة) */
   branch?: {
@@ -425,6 +430,9 @@ export interface LocalSale {
   customerId: string | null;
   customerName: string | null;
   customerTaxNumber: string | null;
+  /** جوال العميل وما عليه بعد هذه الفاتورة — يُطبعان على الإيصال (غائبان في فواتير أقدم) */
+  customerPhone?: string | null;
+  customerBalance?: number | null;
   pricesIncludeTax: boolean;
   lines: SaleLine[];
   payments: SalePayment[];

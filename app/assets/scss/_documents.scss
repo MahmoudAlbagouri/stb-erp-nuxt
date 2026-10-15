@@ -524,5 +524,13 @@
   html,
   body {
     background: #fff !important;
+    // overflow-x: hidden على الصفحة (‎_responsive) يجعل المتصفح يرسم شريط
+    // تمرير يُطبع مع المستند: الطباعة بلا تمرير ولا ارتفاع ثابت
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  ::-webkit-scrollbar {
+    display: none !important;
   }
 }

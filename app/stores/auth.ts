@@ -160,11 +160,21 @@ export const useAuthStore = defineStore("auth", () => {
       goAfterAuth();
     }, "خطأ في تسجيل الدخول");
 
-  // ✅ التسجيل يعيد Tokens: نحفظها ونوجّه المستخدم لمرحلة الإقرار
-  const register = (payload: RegisterPayload) =>
+  /** رُفض رفع الشعار عند التسجيل (الحساب أُنشئ): الملف الشخصي يعرض تنبيهاً */
+  const logoFailed = ref(false);
+
+  // ✅ التسجيل يعيد Tokens: نحفظها ونوجّه المستخدم لمرحلة الإقرار. الشعار
+  // (اختياري) يُرفع بعدها بتوكن المدير الجديد — فشله لا يُلغي التسجيل: يُرفع
+  // لاحقاً من الملف الشخصي
+  const register = (payload: RegisterPayload, logo: string | null = null) =>
     runAuthAction(async () => {
       const res = await api.post<AuthTokens>("/auth/register", payload, false);
       persist(res.data);
+      if (logo) {
+        await api.patch("/tenants/me/logo", { logo }).catch(() => {
+          logoFailed.value = true;
+        });
+      }
       goAfterAuth();
     }, "خطأ في إنشاء الحساب");
 
@@ -264,6 +274,7 @@ export const useAuthStore = defineStore("auth", () => {
     exitSupport,
     login,
     register,
+    logoFailed,
     acceptDisclaimer,
     logout,
     forgotPassword,

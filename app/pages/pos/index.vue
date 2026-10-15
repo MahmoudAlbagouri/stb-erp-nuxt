@@ -1013,13 +1013,15 @@
     <PosShortcutsModal v-model="showShortcuts" />
     <PosPriceModal :line="priceLine" @close="closePrice" @submit="submitPrice" />
     <PosApprovalModal ref="approval" />
-    <PosShiftReport ref="shiftReport" />
+    <PosShiftReport ref="shiftReport" :logo="pos.tenant?.logo ?? null" />
 
+    <!-- الشعار من نسخة الجهاز: يُطبع بلا إنترنت ولا جلسة -->
     <SalesInvoicePrint
       ref="printer"
       :invoice="printTarget"
       :settings="pos.settings"
       :branch="pos.tenant?.branch"
+      :logo="pos.tenant?.logo ?? null"
     />
   </div>
 </template>
@@ -1721,7 +1723,12 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
   number: sale.number,
   invoiceType: sale.customerTaxNumber ? "standard" : "simplified",
   customer: sale.customerName
-    ? { name: sale.customerName, taxNumber: sale.customerTaxNumber }
+    ? {
+        name: sale.customerName,
+        taxNumber: sale.customerTaxNumber,
+        phone: sale.customerPhone ?? null,
+        balance: sale.customerBalance ?? null,
+      }
     : null,
   invoiceDate: sale.issuedAt,
   issuedAt: sale.issuedAt,
