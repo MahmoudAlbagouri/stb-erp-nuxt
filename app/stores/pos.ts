@@ -29,7 +29,12 @@ export const usePosStore = defineStore("pos", () => {
   const connection = createConnection(state, usePosApi());
   const shiftModule = createShift(state, connection);
   const cartModule = createCart(state, connection, shiftModule);
-  const checkoutModule = createCheckout(state, connection, shiftModule, cartModule);
+  const checkoutModule = createCheckout(
+    state,
+    connection,
+    shiftModule,
+    cartModule,
+  );
   const { init } = createInit(state, cartModule);
 
   // وضع الضريبة (مسجّلة؟ الأسعار شاملة؟) من إعدادات الفوترة التي تنزل للجهاز.
