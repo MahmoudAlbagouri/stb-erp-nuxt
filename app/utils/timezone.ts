@@ -4,6 +4,8 @@
 // لا بتوقيت متصفح المستخدم: مدير يتابع من دولة أخرى يرى ويُدخل نفس الساعة
 // التي يراها موظفوه على جهاز البصمة.
 
+import { useAuthStore } from "../stores/auth";
+
 const pad = (value: number): string => String(value).padStart(2, "0");
 
 /** مكوّنات اللحظة كما تظهر على ساعة حائط في المنطقة */
@@ -78,3 +80,21 @@ export const fromZonedInput = (wall: string, timeZone: string): string => {
 /** الآن بصيغة datetime-local بتوقيت المنطقة (لحدّ max في حقول الإدخال) */
 export const nowZonedInput = (timeZone: string): string =>
   toZonedInput(new Date(), timeZone);
+
+/**
+ * اليوم بتوقيت الشركة (YYYY-MM-DD): التاريخ الافتراضي للمستندات (فاتورة، سند،
+ * مرتجع) ولمقارنة الاستحقاق. ليس todayStamp (بتوقيت UTC، لأسماء الملفات):
+ * بعد منتصف الليل في الرياض وقبل الثالثة فجراً، UTC ما زال في الأمس.
+ */
+export const companyToday = (): string => {
+  let timeZone: string | undefined;
+  try {
+    timeZone = useAuthStore().timezone;
+  } catch {
+    // خارج سياق التطبيق: توقيت المتصفح
+  }
+  return toZonedInput(
+    new Date(),
+    timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+  ).slice(0, 10);
+};

@@ -188,7 +188,7 @@ watch(
       supplierId: fixedSupplier.value?.id ?? "",
       // الافتراضي: سداد كامل المتبقي على الفاتورة
       amount: props.invoice ? props.invoice.remaining : "",
-      paymentDate: todayStamp(),
+      paymentDate: companyToday(),
       method: "cash",
       reference: "",
       note: "",

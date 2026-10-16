@@ -534,3 +534,35 @@
     display: none !important;
   }
 }
+
+// تقارير المحاسبة (utils/print.ts): أبيض وأسود، الجداول بحدود، بلا أزرار
+@media print {
+  .report-print {
+    color: #000;
+    font-size: 11px;
+
+    * {
+      color: #000 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    button {
+      display: none !important;
+    }
+    .card {
+      border: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th,
+    td {
+      padding: 3px 6px;
+      border: 1px solid #999;
+    }
+    .table-responsive {
+      overflow: visible !important;
+    }
+  }
+}

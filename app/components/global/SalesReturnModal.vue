@@ -235,7 +235,7 @@ watch(
     invoice.value = null;
     lines.value = [];
     Object.assign(form, {
-      returnDate: todayStamp(),
+      returnDate: companyToday(),
       reason: "",
       refundAmount: "",
       refundMethod: "cash",

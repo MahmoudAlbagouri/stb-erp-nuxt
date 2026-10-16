@@ -183,7 +183,7 @@ watch(
     if (!open || !props.invoiceId) return;
     invoice.value = null;
     lines.value = [];
-    form.returnDate = todayStamp();
+    form.returnDate = companyToday();
     form.reason = "";
     try {
       const full = await store.getInvoice(props.invoiceId);

@@ -809,7 +809,7 @@ const togglePayment = (payment: "due" | "overdue") => {
 };
 
 const isOverdue = (invoice: PurchaseInvoice) =>
-  !!invoice.dueDate && invoice.dueDate < todayStamp();
+  !!invoice.dueDate && invoice.dueDate < companyToday();
 
 const activeWarehouses = computed(() =>
   inventory.warehouses.filter((w) => w.isActive),
@@ -909,7 +909,7 @@ const openCreate = () => {
     supplierId: filters.supplierId,
     warehouseId:
       activeWarehouses.value.find((w) => w.type === "main")?.id ?? "",
-    invoiceDate: todayStamp(),
+    invoiceDate: companyToday(),
     dueDate: "",
     supplierReference: "",
     note: "",

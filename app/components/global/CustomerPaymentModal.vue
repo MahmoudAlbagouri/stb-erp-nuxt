@@ -178,7 +178,7 @@ watch(
       customerId: props.customer?.id ?? "",
       // الافتراضي: قبض كامل المتبقي على الفاتورة
       amount: props.invoice ? props.invoice.remaining : "",
-      paymentDate: todayStamp(),
+      paymentDate: companyToday(),
       method: "cash",
       reference: "",
       note: "",
