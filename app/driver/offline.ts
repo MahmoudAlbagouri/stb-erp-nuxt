@@ -7,12 +7,18 @@
 //
 // ما يراه = آخر ما عرفه السيرفر + ما فعله ولم يُرفع بعد (overlay). السيرفر
 // يحسم: عملية رفضها (أُلغي الأوردر، أُسند لغيره) تبقى ظاهرة بسببها حتى يراها.
+import type { DeviceLocale } from "@/stores/auth";
 import type { DeliveryOrder } from "@/types/delivery";
 import { sumMoney } from "../utils/purchasing";
 
 export interface DriverBoard {
   agent: { id: string; name: string; heldAmount: number; unsettledCount: number };
   company: string;
+  /**
+   * دولة الشركة وعملتها وتوقيتها (الطيار بلا توكن يحملها). غائبة في نسخة
+   * حُفظت على الجوال قبل إضافتها — تصل مع أول تحديث
+   */
+  tenant?: DeviceLocale;
   orders: DeliveryOrder[];
 }
 

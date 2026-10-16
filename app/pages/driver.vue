@@ -211,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   AlertTriangle,
   Bike,
@@ -228,6 +228,7 @@ import {
   WifiOff,
 } from "lucide-vue-next";
 import { useToast } from "@/composables/useToast";
+import { useAuthStore } from "@/stores/auth";
 import {
   codOf,
   loadSnapshot,
@@ -291,6 +292,17 @@ const failedOps = computed(() => outbox.value.filter((op) => op.error));
 /** ما يراه الطيار: نسخة السيرفر وفوقها ما فعله ولم يُرفع */
 const board = computed(() => overlay(serverBoard.value, pendingOps.value));
 
+// المبالغ بعملة الشركة لا بالافتراضية: الطيار بلا توكن، فعملة شركته تنزل مع
+// أوردراته (ومحفوظة معها للعمل بلا إنترنت) — نفس ما تفعله شاشة الكاشير
+const auth = useAuthStore();
+watch(
+  () => serverBoard.value?.tenant,
+  (tenant) => {
+    if (tenant) auth.setDeviceLocale(tenant);
+  },
+  { immediate: true },
+);
+
 const openOrders = computed(() =>
   (board.value?.orders ?? []).filter(
     (o) => o.status === "assigned" || o.status === "out_for_delivery",
@@ -306,10 +318,12 @@ const toCollect = computed(() =>
   sumMoney(openOrders.value.filter((o) => o.paymentMode === "cod").map(codOf)),
 );
 
+/** الساعة بتوقيت الشركة (كباقي النظام) */
 const clock = (ms: number) =>
   new Date(ms).toLocaleTimeString(DISPLAY_LOCALE, {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: auth.timezone,
   });
 
 const status = computed(() => {
@@ -595,6 +609,7 @@ onBeforeUnmount(() => {
   if (poller) clearInterval(poller);
   window.removeEventListener("online", onOnline);
   document.removeEventListener("visibilitychange", onVisible);
+  auth.setDeviceLocale(null);
 });
 </script>
 
