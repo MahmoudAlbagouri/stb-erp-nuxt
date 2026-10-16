@@ -13,6 +13,7 @@ import {
 } from "../utils/auth";
 import { getErrorMessage } from "../utils/errors";
 import { getCountry } from "../utils/countries";
+import { clearFormDrafts } from "../utils/form-drafts";
 import {
   SUPPORT_COOKIE,
   supportCookieOptions,
@@ -244,7 +245,12 @@ export const useAuthStore = defineStore("auth", () => {
     window.location.assign("/dashboard/companies");
   };
 
-  const logout = () => {
+  /**
+   * `expired`: السيرفر أنهى الجلسة (لا المستخدم) — مسودات النماذج تبقى ليجدها
+   * حين يدخل من جديد. الخروج بإرادته يمسحها: لا تبقى لمن يستخدم الجهاز بعده.
+   */
+  const logout = (options: { expired?: boolean } = {}) => {
+    if (!options.expired) clearFormDrafts();
     resetAllStores();
     clearAuth();
     router.push(LOGIN_PATH);

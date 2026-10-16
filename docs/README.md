@@ -94,6 +94,8 @@ public/sw.js              الـ service worker لشاشة الكاشير
 | `CustomerPaymentModal` `SupplierPaymentModal` | القبض والسداد |
 | `DocPager` | ترقيم القوائم |
 | `SupportBanner` `OwnerHome` | وضع الدعم وصفحة مالك النظام |
+| `ConnectionBanner` | شريط انقطاع الاتصال في لوحة التحكم (`useConnection`) |
+| `FormDraftNotice` | «لديك نسخة لم تُحفظ» في النماذج الطويلة (`useFormDraft`) |
 
 رسوم الصفحة الرئيسية في `components/dashboard` (`ChartBox` `ChartCard`
 `DonutChart` `StatTile`) على Apache ECharts، وألوانها من `utils/charts.ts`.
@@ -120,6 +122,19 @@ public/sw.js              الـ service worker لشاشة الكاشير
 service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل بهوية الجهاز لا
 المستخدم. الشرح الكامل: `back-end/erp-sass/docs/pos-offline.md`.
 
+## العمل بلا إنترنت
+
+- **شاشات تعمل بلا إنترنت** (كلها `ssr: false` ويخزّن هيكلها `public/sw.js`،
+  وتسجّله بـ `registerOfflineShell()`): الكاشير `/pos`، الطيار `/driver`
+  (`app/driver/offline.ts` — طابور في localStorage)، والعدّ `/stocktake/[id]`
+  (`app/stocktake/` — IndexedDB).
+- **لوحة التحكم تتحمل الانقطاع** ولا تعمل بدونه: `useApi` يحوّل فشل الشبكة إلى
+  `NetworkError` برسالة واضحة ويحدّث `useConnection` (الشريط)، ولا يُخرج
+  المستخدم إلا إن رفض السيرفر الجلسة صراحة. النماذج الطويلة تحفظ مسودتها على
+  الجهاز بـ `useFormDraft` — لنموذج طويل جديد: `draft.start()` عند الفتح،
+  `draft.saved()` بعد الحفظ، و`<FormDraftNotice :draft="draft" />` في النافذة.
+- الشرح الكامل: `back-end/erp-sass/docs/offline.md`.
+
 ## خريطة الصفحات ← الموديولات
 
 | الصفحة | الموديول (في الباك إند) | المخزن |
@@ -131,7 +146,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/companies` · `/plans` · `/admin/subscriptions` · `/subscription` | tenants · plans · subscriptions | `tenants` · `plans` · `subscription` |
 | `/dashboard/notifications` · `/profile` | notifications · profile | `notifications` · `profile` |
 | `/dashboard/products` · `/products/settings` | catalog | `catalog` |
-| `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` | inventory | `inventory` |
+| `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` · `/stocktake/[id]` (شاشة العدّ، بلا إنترنت) | inventory | `inventory` |
 | `/dashboard/purchasing` · `/returns` · `/payments` · `/suppliers` | purchasing | `purchasing` |
 | `/dashboard/sales` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
 | `/pos` · `/pos/display` · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/audit` | pos | `pos` · `posAdmin` |

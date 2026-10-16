@@ -153,6 +153,8 @@ export interface StockTransfer {
   receivedAt?: string | null;
   lines?: TransferLine[];
   linesCount?: number;
+  /** آخر تعديل على السيرفر — مسودة النموذج على الجهاز تقارن به */
+  updatedAt?: string;
 }
 
 export interface TransferPayload {
@@ -192,12 +194,61 @@ export interface Stocktake {
   postedAt?: string | null;
   lines?: StocktakeLine[];
   linesCount?: number;
+  /** آخر تعديل: يُرسل مع الحفظ (expectedUpdatedAt) فلا يمسح ما عُدّ بعد الفتح */
+  updatedAt?: string;
 }
 
 export interface StocktakePayload {
   warehouseId: string;
   note?: string;
   lines: { productId: string; countedQuantity: number }[];
+  /** updatedAt كما فُتح الجرد: تغيّر بعدها (عُدّ من شاشة العدّ) ← 409 */
+  expectedUpdatedAt?: string;
+}
+
+// ─── شاشة العدّ ──────────────────────────────────────────────────────────────
+export interface StocktakeCountLine {
+  productId: string;
+  countedQuantity: number;
+  countedAt: string | null;
+}
+
+/** ما عُدّ في الجرد على السيرفر الآن */
+export interface StocktakeCounts {
+  id: string;
+  number: string;
+  status: StocktakeStatus;
+  warehouseId: string;
+  warehouseName: string;
+  updatedAt: string;
+  lines: StocktakeCountLine[];
+}
+
+export interface StocktakeCountInput {
+  productId: string;
+  /** null = أُزيل الصنف من الجرد */
+  countedQuantity: number | null;
+  /** وقت العدّ على الجهاز: الأحدث يكسب إن عدّ الصنف جهازان */
+  countedAt: string;
+}
+
+/** ok سُجّل، stale عند السيرفر عدّ أحدث، error رُفض بسببه */
+export interface StocktakeCountResult {
+  productId: string;
+  status: "ok" | "stale" | "error";
+  message?: string;
+}
+
+/** صنف في نسخة شاشة العدّ للبحث بلا إنترنت */
+export interface StocktakeCatalogProduct {
+  id: string;
+  name: string;
+  sku: string;
+  unit: string;
+  allowsFractions: boolean;
+  isActive: boolean;
+  /** factor: كم وحدة أساس يعدّها الباركود (باركود الكرتونة = 24) */
+  barcodes: { code: string; factor: number }[];
 }
 
 export interface DocumentFilters<S extends string> {

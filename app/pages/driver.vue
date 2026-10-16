@@ -4,6 +4,9 @@
   تُفتح برابط يصدره المدير من صفحة الطيارين (‎/driver?a=…&k=…): الرابط يُحفظ
   في متصفح الجوال ثم يُزال من شريط العنوان، فلا يحتاج الطيار حساباً ولا كلمة
   مرور. يرى أوردراته وحده: يستلمها، يسلّمها، أو يسجّل أنها لم تُسلَّم.
+
+  تعمل بلا إنترنت: ما يفعله يُسجَّل على الجوال فوراً ويُرفع بترتيبه متى عاد
+  الاتصال، والشاشة تفتح بآخر أوردرات عرفها (انظر driver/offline.ts).
 -->
 <template>
   <div class="driver" dir="rtl">
@@ -24,11 +27,23 @@
           class="driver__icon-btn"
           :class="{ 'is-spinning': loading }"
           aria-label="تحديث"
-          @click="load"
+          @click="sync"
         >
           <RefreshCw :size="20" />
         </button>
       </header>
+
+      <button
+        type="button"
+        class="driver__status"
+        :class="`is-${status.tone}`"
+        @click="sync"
+      >
+        <WifiOff v-if="status.tone === 'offline'" :size="16" />
+        <CloudUpload v-else-if="status.tone === 'pending'" :size="16" />
+        <Wifi v-else :size="16" />
+        <span>{{ status.text }}</span>
+      </button>
 
       <section class="driver__held">
         <div>
@@ -41,9 +56,26 @@
         </div>
       </section>
 
-      <p v-if="error" class="driver__error">
-        <WifiOff :size="16" /> {{ error }}
+      <p v-if="notice" class="driver__error">
+        <AlertTriangle :size="16" /> {{ notice }}
       </p>
+
+      <!-- ══ ما رفضه السيرفر: الإدارة غيّرت الأوردر والطيار بلا إنترنت ══ -->
+      <section v-if="failedOps.length" class="driver__rejected">
+        <h3>
+          <AlertTriangle :size="18" /> لم يقبلها المحل ({{ failedOps.length }})
+        </h3>
+        <article v-for="op in failedOps" :key="op.id">
+          <strong>{{ op.orderNumber }} — {{ OP_LABEL[op.type] }}</strong>
+          <p>{{ op.error }}</p>
+          <div class="driver__rejected-actions">
+            <button type="button" @click="retryOp(op)">إعادة المحاولة</button>
+            <button type="button" class="is-ghost" @click="dismissOp(op)">
+              فهمت، إخفاء
+            </button>
+          </div>
+        </article>
+      </section>
 
       <nav class="driver__tabs">
         <button :class="{ 'is-active': tab === 'open' }" @click="tab = 'open'">
@@ -55,6 +87,10 @@
       </nav>
 
       <div v-if="!board && loading" class="driver__state">جارٍ التحميل…</div>
+      <div v-else-if="!board" class="driver__state">
+        لا أوردرات محفوظة على هذا الجوال بعد — افتح الشاشة وأنت متصل مرة،
+        وبعدها تعمل بلا إنترنت.
+      </div>
       <div v-else-if="!visible.length" class="driver__state">
         {{ tab === "open" ? "لا أوردرات معك الآن 👌" : "لم تُنهِ أوردرات اليوم بعد" }}
       </div>
@@ -115,15 +151,15 @@
         </div>
 
         <div v-if="o.status === 'assigned'" class="driver__actions">
-          <button class="is-primary" :disabled="busyId === o.id" @click="act(o, 'pickup')">
+          <button class="is-primary" @click="pickup(o)">
             <Truck :size="20" /> استلمته وخرجت
           </button>
         </div>
         <div v-else-if="o.status === 'out_for_delivery'" class="driver__actions">
-          <button class="is-success" :disabled="busyId === o.id" @click="confirmDeliver(o)">
+          <button class="is-success" @click="confirmDeliver(o)">
             <PackageCheck :size="20" /> تم التسليم
           </button>
-          <button class="is-ghost" :disabled="busyId === o.id" @click="openFail(o)">
+          <button class="is-ghost" @click="openFail(o)">
             <PackageX :size="20" /> لم يُسلَّم
           </button>
         </div>
@@ -141,7 +177,7 @@
         </p>
         <p v-else>الأوردر مدفوع مقدماً — سلّمه فقط.</p>
         <div class="driver__actions">
-          <button class="is-success" :disabled="!!busyId" @click="deliverNow">تأكيد التسليم</button>
+          <button class="is-success" @click="deliverNow">تأكيد التسليم</button>
           <button class="is-ghost" @click="deliverTarget = null">رجوع</button>
         </div>
       </div>
@@ -164,7 +200,7 @@
         <input v-model.trim="failReason" class="form-input" maxlength="300" placeholder="أو اكتب السبب" />
         <p class="driver__hint">ارجع بالبضاعة للمحل — تعود للمخزن تلقائياً.</p>
         <div class="driver__actions">
-          <button class="is-danger" :disabled="!failReason || !!busyId" @click="failNow">
+          <button class="is-danger" :disabled="!failReason" @click="failNow">
             تسجيل عدم التسليم
           </button>
           <button class="is-ghost" @click="failTarget = null">رجوع</button>
@@ -177,7 +213,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
+  AlertTriangle,
   Bike,
+  CloudUpload,
   MapPin,
   MessageCircle,
   Navigation,
@@ -186,22 +224,30 @@ import {
   Phone,
   RefreshCw,
   Truck,
+  Wifi,
   WifiOff,
 } from "lucide-vue-next";
 import { useToast } from "@/composables/useToast";
+import {
+  codOf,
+  loadSnapshot,
+  OP_LABEL,
+  overlay,
+  saveSnapshot,
+  type DriverBoard,
+  type DriverOp,
+  type DriverOpType,
+} from "@/driver/offline";
+import { newUuid } from "@/pos/calc";
 import type { DeliveryOrder, DeliveryOrderStatus } from "@/types/delivery";
 
 definePageMeta({ layout: false });
 useHead({ title: "شاشة الطيار" });
 
-interface DriverBoard {
-  agent: { id: string; name: string; heldAmount: number; unsettledCount: number };
-  company: string;
-  orders: DeliveryOrder[];
-}
-
 const STORAGE_KEY = "stb-driver";
 const POLL_MS = 30_000;
+/** أقصى عمليات في رفعة واحدة (حد السيرفر 100) */
+const SYNC_BATCH = 50;
 
 const STATUS_LABEL: Record<DeliveryOrderStatus, string> = {
   new: "جديد",
@@ -227,11 +273,23 @@ const apiBase = useRuntimeConfig().public.apiBase;
 
 const credentials = ref<{ a: string; k: string } | null>(null);
 const authError = ref("");
-const board = ref<DriverBoard | null>(null);
+/** آخر ما عرفه السيرفر (بلا ما لم يُرفع بعد) */
+const serverBoard = ref<DriverBoard | null>(null);
+const fetchedAt = ref<number | null>(null);
+/** ما فعله الطيار على الجوال بترتيبه: يُحذف ما قبله السيرفر */
+const outbox = ref<DriverOp[]>([]);
 const loading = ref(false);
-const error = ref("");
+/** null = لم نعرف بعد */
+const online = ref<boolean | null>(null);
+/** ما يمنع العمل غير انقطاع النت (اشتراك الشركة موقوف...) */
+const notice = ref("");
 const tab = ref<"open" | "done">("open");
-const busyId = ref<string | null>(null);
+
+const pendingOps = computed(() => outbox.value.filter((op) => !op.error));
+const failedOps = computed(() => outbox.value.filter((op) => op.error));
+
+/** ما يراه الطيار: نسخة السيرفر وفوقها ما فعله ولم يُرفع */
+const board = computed(() => overlay(serverBoard.value, pendingOps.value));
 
 const openOrders = computed(() =>
   (board.value?.orders ?? []).filter(
@@ -245,12 +303,34 @@ const doneOrders = computed(() =>
 );
 const visible = computed(() => (tab.value === "open" ? openOrders.value : doneOrders.value));
 const toCollect = computed(() =>
-  sumMoney(
-    openOrders.value
-      .filter((o) => o.paymentMode === "cod")
-      .map((o) => o.codAmount || o.invoice.total),
-  ),
+  sumMoney(openOrders.value.filter((o) => o.paymentMode === "cod").map(codOf)),
 );
+
+const clock = (ms: number) =>
+  new Date(ms).toLocaleTimeString(DISPLAY_LOCALE, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const status = computed(() => {
+  const updated = fetchedAt.value ? `آخر تحديث ${clock(fetchedAt.value)}` : "";
+  const waiting = pendingOps.value.length;
+  if (online.value === false) {
+    return {
+      tone: "offline",
+      text: [
+        "بلا إنترنت",
+        updated,
+        waiting ? `${waiting} عملية محفوظة على الجوال تُرفع وحدها` : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    };
+  }
+  if (waiting) return { tone: "pending", text: `جارٍ رفع ${waiting} عملية…` };
+  if (online.value === null) return { tone: "pending", text: "جارٍ الاتصال…" };
+  return { tone: "online", text: ["متصل", updated].filter(Boolean).join(" · ") };
+});
 
 /** أصناف الأوردر بلا سطر رسوم التوصيل (خدمة لا تُسلَّم) */
 const itemsOf = (o: DeliveryOrder) => (o.invoice.lines ?? []).filter((l) => l.isStocked);
@@ -265,8 +345,29 @@ const mapLink = (o: DeliveryOrder) =>
     [o.address, o.zone?.name].filter(Boolean).join("، "),
   )}`;
 
+// ─── الحفظ على الجوال ─────────────────────────────────────────────────────────
+const persist = () => {
+  if (!credentials.value) return;
+  saveSnapshot(credentials.value.a, {
+    board: serverBoard.value,
+    fetchedAt: fetchedAt.value,
+    outbox: outbox.value,
+  });
+};
+
 // ─── الاتصال بالسيرفر (برابط الطيار، بلا جلسة مستخدم) ─────────────────────────
+/** الرابط أُبطل أو الطيار أُوقف: لا نعيد المحاولة به */
 class LinkError extends Error {}
+/** لم نصل للسيرفر: الطابور ينتظر */
+class OfflineError extends Error {}
+class RequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
 
 const call = async <T,>(method: "GET" | "POST", path: string, body?: object): Promise<T> => {
   const creds = credentials.value!;
@@ -282,8 +383,15 @@ const call = async <T,>(method: "GET" | "POST", path: string, body?: object): Pr
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error("لا يوجد اتصال بالإنترنت");
+    online.value = false;
+    throw new OfflineError("لا يوجد اتصال بالإنترنت");
   }
+  // البروكسي يرد والسيرفر خلفه متوقف (رفع نسخة جديدة): كأنه انقطاع
+  if ([502, 503, 504].includes(res.status)) {
+    online.value = false;
+    throw new OfflineError("السيرفر غير متاح الآن");
+  }
+  online.value = true;
   const json = (await res.json().catch(() => null)) as {
     data?: T;
     message?: string | string[];
@@ -293,14 +401,15 @@ const call = async <T,>(method: "GET" | "POST", path: string, body?: object): Pr
       (Array.isArray(json?.message) ? json?.message[0] : json?.message) ||
       `تعذر تنفيذ الطلب (${res.status})`;
     if (res.status === 401) throw new LinkError(message);
-    throw new Error(message);
+    throw new RequestError(message, res.status);
   }
   return json?.data as T;
 };
 
 const handleError = (e: unknown) => {
   if (e instanceof LinkError) {
-    // الرابط أُبطل: لا نعيد المحاولة به
+    // الرابط وحده يُنسى: أوردرات الطيار وطابوره تبقى على الجوال، وتُرفع إن
+    // أصدر له المدير رابطاً جديداً
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -310,15 +419,59 @@ const handleError = (e: unknown) => {
     authError.value = e.message;
     return;
   }
-  error.value = (e as Error).message;
+  // الانقطاع يظهر في شريط الحالة؛ غيره (اشتراك موقوف…) رسالة صريحة
+  if (!(e instanceof OfflineError)) notice.value = (e as Error).message;
 };
 
-const load = async () => {
+type SyncResult = { id: string; status: "ok" | "duplicate" | "error"; message?: string };
+
+/** ما قبله السيرفر يُحذف من الطابور، وما رفضه يبقى بسببه */
+const settle = (results: SyncResult[]) => {
+  const byId = new Map(results.map((r) => [r.id, r]));
+  outbox.value = outbox.value.flatMap((op) => {
+    const result = byId.get(op.id);
+    if (!result) return [op];
+    if (result.status === "error") return [{ ...op, error: result.message || "رُفضت" }];
+    return [];
+  });
+  persist();
+};
+
+/** يرفع الطابور بترتيبه ثم ينزّل الأوردرات. مرة واحدة في اللحظة */
+const runSync = async () => {
   if (!credentials.value) return;
   loading.value = true;
   try {
-    board.value = await call<DriverBoard>("GET", "/board");
-    error.value = "";
+    while (pendingOps.value.length) {
+      const batch = pendingOps.value.slice(0, SYNC_BATCH);
+      let results: SyncResult[];
+      try {
+        results = (
+          await call<{ results: SyncResult[] }>("POST", "/sync", {
+            operations: batch.map(({ id, type, orderId, occurredAt, reason }) => ({
+              id,
+              type,
+              orderId,
+              occurredAt,
+              ...(reason ? { reason } : {}),
+            })),
+          })
+        ).results;
+      } catch (e) {
+        // الدفعة نفسها مرفوضة (400): تظهر بسببها بدل أن تسدّ الطابور للأبد
+        if (e instanceof RequestError && e.status === 400) {
+          results = batch.map((op) => ({ id: op.id, status: "error", message: e.message }));
+        } else {
+          throw e;
+        }
+      }
+      settle(results);
+      if (!results.some((r) => batch.some((op) => op.id === r.id))) break;
+    }
+    serverBoard.value = await call<DriverBoard>("GET", "/board");
+    fetchedAt.value = Date.now();
+    notice.value = "";
+    persist();
   } catch (e) {
     handleError(e);
   } finally {
@@ -326,28 +479,41 @@ const load = async () => {
   }
 };
 
-const act = async (o: DeliveryOrder, action: "pickup" | "deliver", body?: object) => {
-  busyId.value = o.id;
-  try {
-    await call("POST", `/orders/${o.id}/${action}`, body);
-    toast.success(action === "pickup" ? `خرجت بالأوردر ${o.number}` : `تم تسليم ${o.number}`);
-    await load();
-  } catch (e) {
-    toast.error((e as Error).message);
-    handleError(e);
-    await load();
-  } finally {
-    busyId.value = null;
-  }
+let syncing: Promise<void> | null = null;
+const sync = (): Promise<void> =>
+  (syncing ??= runSync().finally(() => {
+    syncing = null;
+  }));
+
+// ─── ما يفعله الطيار: يُسجَّل فوراً ويُرفع في الخلفية ───────────────────────────
+const SAVED_OFFLINE = " — محفوظ على الجوال ويُرفع عند عودة الإنترنت";
+
+const record = (o: DeliveryOrder, type: DriverOpType, done: string, reason?: string) => {
+  outbox.value = [
+    ...outbox.value,
+    {
+      id: newUuid(),
+      type,
+      orderId: o.id,
+      orderNumber: o.number,
+      occurredAt: new Date().toISOString(),
+      ...(reason ? { reason } : {}),
+    },
+  ];
+  persist();
+  toast.success(done + (online.value === false ? SAVED_OFFLINE : ""));
+  void sync();
 };
+
+const pickup = (o: DeliveryOrder) => record(o, "pickup", `خرجت بالأوردر ${o.number}`);
 
 const deliverTarget = ref<DeliveryOrder | null>(null);
 const confirmDeliver = (o: DeliveryOrder) => (deliverTarget.value = o);
-const deliverNow = async () => {
+const deliverNow = () => {
   const o = deliverTarget.value;
   if (!o) return;
   deliverTarget.value = null;
-  await act(o, "deliver");
+  record(o, "deliver", `تم تسليم ${o.number}`);
 };
 
 const failTarget = ref<DeliveryOrder | null>(null);
@@ -356,27 +522,39 @@ const openFail = (o: DeliveryOrder) => {
   failTarget.value = o;
   failReason.value = "";
 };
-const failNow = async () => {
+const failNow = () => {
   const o = failTarget.value;
   if (!o || !failReason.value) return;
-  busyId.value = o.id;
-  try {
-    await call("POST", `/orders/${o.id}/fail`, { reason: failReason.value });
-    toast.success("سُجّل — ارجع بالبضاعة للمحل");
-    failTarget.value = null;
-    await load();
-  } catch (e) {
-    toast.error((e as Error).message);
-    handleError(e);
-  } finally {
-    busyId.value = null;
-  }
+  failTarget.value = null;
+  record(o, "fail", "سُجّل — ارجع بالبضاعة للمحل", failReason.value);
+};
+
+/** عملية رفضها السيرفر: تعود للطابور بمكانها (ربما رُفضت لخطأ عابر) */
+const retryOp = (op: DriverOp) => {
+  outbox.value = outbox.value.map((item) => {
+    if (item.id !== op.id) return item;
+    const { error: _error, ...rest } = item;
+    return rest;
+  });
+  persist();
+  void sync();
+};
+
+/** الطيار رأى سبب الرفض: الأوردر كما يعرفه السيرفر */
+const dismissOp = (op: DriverOp) => {
+  outbox.value = outbox.value.filter((item) => item.id !== op.id);
+  persist();
 };
 
 // ─── الرابط والتحديث الدوري ───────────────────────────────────────────────────
 let poller: ReturnType<typeof setInterval> | null = null;
+const onOnline = () => void sync();
+const onVisible = () => {
+  if (document.visibilityState === "visible") void sync();
+};
 
 onMounted(async () => {
+  registerOfflineShell();
   const a = typeof route.query.a === "string" ? route.query.a : "";
   const k = typeof route.query.k === "string" ? route.query.k : "";
   if (a && k) {
@@ -396,14 +574,27 @@ onMounted(async () => {
       // لا رابط محفوظ
     }
   }
-  await load();
+
+  // آخر ما عُرف يظهر فوراً — ولو بلا إنترنت
+  if (credentials.value) {
+    const saved = loadSnapshot(credentials.value.a);
+    serverBoard.value = saved.board;
+    fetchedAt.value = saved.fetchedAt;
+    outbox.value = saved.outbox;
+  }
+
+  await sync();
   poller = setInterval(() => {
-    if (document.visibilityState === "visible" && !busyId.value) void load();
+    if (document.visibilityState === "visible") void sync();
   }, POLL_MS);
+  window.addEventListener("online", onOnline);
+  document.addEventListener("visibilitychange", onVisible);
 });
 
 onBeforeUnmount(() => {
   if (poller) clearInterval(poller);
+  window.removeEventListener("online", onOnline);
+  document.removeEventListener("visibilitychange", onVisible);
 });
 </script>
 
@@ -727,6 +918,87 @@ onBeforeUnmount(() => {
   &__hint {
     font-size: 0.85rem;
     color: var(--stb-text-muted);
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: start;
+    cursor: pointer;
+
+    svg {
+      flex-shrink: 0;
+    }
+    &.is-online {
+      color: var(--stb-success);
+      background: color-mix(in srgb, var(--stb-success) 10%, transparent);
+    }
+    &.is-pending {
+      color: var(--stb-accent);
+      background: color-mix(in srgb, var(--stb-accent) 10%, transparent);
+    }
+    &.is-offline {
+      color: var(--stb-warning);
+      background: color-mix(in srgb, var(--stb-warning) 12%, transparent);
+      border-color: color-mix(in srgb, var(--stb-warning) 40%, transparent);
+    }
+  }
+
+  &__rejected {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--stb-danger) 45%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--stb-danger) 8%, transparent);
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1rem;
+      color: var(--stb-danger);
+    }
+    article {
+      padding-top: 8px;
+      border-top: 1px dashed var(--stb-border);
+    }
+    p {
+      margin: 4px 0 8px;
+      color: var(--stb-text-secondary);
+    }
+  }
+
+  &__rejected-actions {
+    display: flex;
+    gap: 6px;
+
+    button {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--stb-border);
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 700;
+      color: var(--stb-on-accent);
+      background: var(--stb-accent);
+
+      &.is-ghost {
+        color: var(--stb-text-primary);
+        background: transparent;
+      }
+    }
   }
 }
 

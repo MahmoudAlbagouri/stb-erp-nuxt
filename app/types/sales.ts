@@ -175,6 +175,8 @@ export interface SalesInvoice {
   qrCode?: string | null;
   lines?: SalesInvoiceLine[];
   linesCount?: number;
+  /** آخر تعديل على السيرفر — مسودة النموذج على الجهاز تقارن به */
+  updatedAt?: string;
 }
 
 /**

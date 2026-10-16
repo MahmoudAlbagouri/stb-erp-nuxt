@@ -100,12 +100,20 @@
                 <td>
                   <div class="doc-actions">
                     <template v-if="s.status === 'draft'">
+                      <NuxtLink
+                        v-can="'manage_stocktakes'"
+                        :to="`/stocktake/${s.id}`"
+                        class="btn btn--sm btn--primary"
+                        title="عدّ بالباركود من الجوال أو التابلت — يعمل بلا إنترنت"
+                      >
+                        <ScanBarcode :size="14" /> شاشة العدّ
+                      </NuxtLink>
                       <button
                         v-can="'manage_stocktakes'"
-                        class="btn btn--sm btn--primary"
+                        class="btn btn--sm btn--secondary"
                         @click="openForm(s)"
                       >
-                        <Pencil :size="14" /> متابعة العدّ
+                        <Pencil :size="14" /> مراجعة واعتماد
                       </button>
                       <button
                         v-can="'manage_stocktakes'"
@@ -160,6 +168,7 @@
             </div>
 
             <form class="doc-form" @submit.prevent="submitForm(false)">
+              <FormDraftNotice v-if="!readOnly" :draft="draft" />
               <div class="doc-grid">
                 <div class="form-group">
                   <label>المخزن *</label>
@@ -298,7 +307,9 @@
                 <Info :size="16" />
                 <span>
                   الاعتماد يجعل رصيد كل صنف مساوياً للكمية المعدودة ولا يمكن
-                  التراجع عنه. الأصناف غير المدرجة لا تتغير.
+                  التراجع عنه. الأصناف غير المدرجة لا تتغير. للعدّ بالباركود من
+                  الجوال داخل المخزن (يعمل بلا إنترنت) افتح «شاشة العدّ»، ثم
+                  ارجع هنا للمراجعة والاعتماد بعد رفع كل العدّ.
                 </span>
               </div>
 
@@ -307,6 +318,14 @@
                   {{ readOnly ? "إغلاق" : "إلغاء" }}
                 </button>
                 <template v-if="!readOnly">
+                  <button
+                    type="button"
+                    class="btn btn--ghost"
+                    :disabled="submitting || !form.warehouseId"
+                    @click="openCountingScreen"
+                  >
+                    <ScanBarcode :size="16" /> شاشة العدّ
+                  </button>
                   <button
                     type="submit"
                     class="btn btn--secondary"
@@ -362,10 +381,12 @@ import {
   ListPlus,
   Pencil,
   Plus,
+  ScanBarcode,
   Trash2,
   X,
 } from "lucide-vue-next";
 import { useInventoryStore } from "@/stores/inventory";
+import { useFormDraft } from "@/composables/useFormDraft";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
 import type {
@@ -431,8 +452,21 @@ const form = reactive({
   note: "",
   lines: [] as FormLine[],
 });
+/**
+ * updatedAt كما فُتح الجرد: يُرسل مع الحفظ، فإن عُدّ شيء من شاشة العدّ بعدها
+ * يرفض السيرفر الحفظ (409) بدل أن يمسحه
+ */
+const loadedVersion = ref<string | null>(null);
 
 const readOnly = computed(() => form.status !== "draft");
+
+// عدّ طويل في النافذة لا يضيع إن أُغلقت أو انقطع النت قبل الحفظ
+const draft = useFormDraft("stocktake", {
+  open: showForm,
+  documentId: () => form.id,
+  snapshot: () => form,
+  apply: (data) => Object.assign(form, data),
+});
 
 // جرد قديم قد يكون على مخزن أُوقف لاحقاً: يبقى ظاهراً في العرض
 const warehouseOptions = computed(() =>
@@ -462,7 +496,9 @@ const openCreate = () => {
     note: "",
     lines: [],
   });
+  loadedVersion.value = null;
   showForm.value = true;
+  draft.start();
 };
 
 const openForm = async (stocktake: Stocktake) => {
@@ -487,7 +523,9 @@ const openForm = async (stocktake: Stocktake) => {
         }),
       ),
     });
+    loadedVersion.value = full.updatedAt ?? null;
     showForm.value = true;
+    if (full.status === "draft") draft.start(loadedVersion.value);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل الجرد"));
   }
@@ -553,7 +591,29 @@ const buildPayload = (): StocktakePayload => ({
     productId: l.productId,
     countedQuantity: Number(l.counted),
   })),
+  expectedUpdatedAt: (form.id && loadedVersion.value) || undefined,
 });
+
+/** حفظ ما في النافذة ثم فتح شاشة العدّ عليه (جرد جديد يُنشأ فارغاً إن لزم) */
+const openCountingScreen = async (event: MouseEvent) => {
+  const formEl = (event.currentTarget as HTMLElement).closest("form");
+  if (formEl && !formEl.reportValidity()) return;
+  submitting.value = true;
+  try {
+    const saved = form.id
+      ? await store.updateStocktake(form.id, buildPayload())
+      : await store.createStocktake(buildPayload());
+    form.id = saved.id;
+    loadedVersion.value = saved.updatedAt ?? null;
+    draft.saved(loadedVersion.value);
+    showForm.value = false;
+    await navigateTo(`/stocktake/${saved.id}`);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر حفظ الجرد"));
+  } finally {
+    submitting.value = false;
+  }
+};
 
 // ─── الحفظ والاعتماد ──────────────────────────────────────────────────────────
 const showPostConfirm = ref(false);
@@ -574,6 +634,8 @@ const submitForm = async (post: boolean) => {
     // من هنا فشل الاعتماد يُبقي المسودة محفوظة: نكمل عليها
     form.id = saved.id;
     form.number = saved.number;
+    loadedVersion.value = saved.updatedAt ?? null;
+    draft.saved(loadedVersion.value);
 
     if (post) {
       await store.postStocktake(saved.id);

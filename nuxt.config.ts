@@ -38,8 +38,11 @@ export default defineNuxtConfig({
   routeRules: {
     "/pos/**": { ssr: false },
     "/pos": { ssr: false },
-    // شاشة الطيار: رابطه محفوظ في متصفح جواله (localStorage)
+    // شاشة الطيار: رابطه وأوردراته وطابوره محفوظة في متصفح جواله، وتفتح
+    // بلا إنترنت مثل الكاشير
     "/driver": { ssr: false },
+    // شاشة العدّ: جرد بالباركود داخل المخزن، يعمل بلا إنترنت (IndexedDB)
+    "/stocktake/**": { ssr: false },
   },
 
   // بقية الإعدادات (head, runtimeConfig) صحيحة ولا تحتاج تعديل

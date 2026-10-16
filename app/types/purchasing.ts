@@ -123,6 +123,8 @@ export interface PurchaseInvoice {
   note?: string | null;
   lines?: PurchaseInvoiceLine[];
   linesCount?: number;
+  /** آخر تعديل على السيرفر — مسودة النموذج على الجهاز تقارن به */
+  updatedAt?: string;
 }
 
 export interface PurchaseLinePayload {

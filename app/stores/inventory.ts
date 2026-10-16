@@ -14,6 +14,10 @@ import type {
   StockRow,
   StockSummary,
   Stocktake,
+  StocktakeCatalogProduct,
+  StocktakeCountInput,
+  StocktakeCountResult,
+  StocktakeCounts,
   StocktakePayload,
   StocktakeStatus,
   StockTransfer,
@@ -164,6 +168,28 @@ export const useInventoryStore = defineStore("inventory", () => {
   const cancelStocktake = async (id: string) =>
     (await api.post<Stocktake>(`${BASE}/stocktakes/${id}/cancel`, {})).data;
 
+  // ─── شاشة العدّ (pages/stocktake/[id].vue) ──────────────────────────────────
+  const fetchStocktakeCounts = async (id: string) =>
+    (await api.get<StocktakeCounts>(`${BASE}/stocktakes/${id}/counts`)).data;
+
+  const pushStocktakeCounts = async (
+    id: string,
+    counts: StocktakeCountInput[],
+  ) =>
+    (
+      await api.post<{
+        results: StocktakeCountResult[];
+        stocktake: StocktakeCounts;
+      }>(`${BASE}/stocktakes/${id}/counts`, { counts })
+    ).data;
+
+  const fetchStocktakeCatalog = async (id: string) =>
+    (
+      await api.get<{ products: StocktakeCatalogProduct[] }>(
+        `${BASE}/stocktakes/${id}/catalog`,
+      )
+    ).data.products;
+
   const reset = () => {
     warehouses.value = [];
     warehousesLoaded.value = false;
@@ -197,6 +223,9 @@ export const useInventoryStore = defineStore("inventory", () => {
     updateStocktake,
     postStocktake,
     cancelStocktake,
+    fetchStocktakeCounts,
+    pushStocktakeCounts,
+    fetchStocktakeCatalog,
     reset,
   };
 });

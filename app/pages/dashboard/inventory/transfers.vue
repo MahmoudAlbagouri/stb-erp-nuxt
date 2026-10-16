@@ -176,6 +176,7 @@
             </div>
 
             <form class="doc-form" @submit.prevent="submitForm(false)">
+              <FormDraftNotice :draft="draft" />
               <div class="doc-grid">
                 <div class="form-group">
                   <label>من مخزن *</label>
@@ -492,6 +493,7 @@ import {
   X,
 } from "lucide-vue-next";
 import { useInventoryStore } from "@/stores/inventory";
+import { useFormDraft } from "@/composables/useFormDraft";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
 import type {
@@ -560,6 +562,14 @@ const form = reactive({
   lines: [] as FormLine[],
 });
 
+// تحويل طويل لا يضيع إن أُغلقت النافذة أو انقطع النت قبل الحفظ
+const draft = useFormDraft("stock-transfer", {
+  open: showForm,
+  documentId: () => editingId.value,
+  snapshot: () => form,
+  apply: (data) => Object.assign(form, data),
+});
+
 const exceeds = (line: FormLine) =>
   line.available !== null &&
   line.quantity !== "" &&
@@ -574,6 +584,7 @@ const openCreate = () => {
   form.note = "";
   form.lines = [];
   showForm.value = true;
+  draft.start();
 };
 
 const openEdit = async (transfer: StockTransfer) => {
@@ -594,6 +605,7 @@ const openEdit = async (transfer: StockTransfer) => {
       quantity: line.quantity,
     }));
     showForm.value = true;
+    draft.start(full.updatedAt ?? null);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل التحويل"));
   }
@@ -635,6 +647,7 @@ const submitForm = async (send: boolean) => {
     // من هنا أي فشل (في الإرسال) يُبقي المسودة محفوظة: نكمل التعديل عليها
     editingId.value = saved.id;
     editingNumber.value = saved.number;
+    draft.saved(saved.updatedAt ?? null);
 
     if (send) {
       await store.sendTransfer(saved.id);

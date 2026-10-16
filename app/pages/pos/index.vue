@@ -2294,26 +2294,8 @@ const retryFailed = async () => {
 };
 
 // ─── التشغيل ──────────────────────────────────────────────────────────────────
-/** يسجّل الـ service worker الذي يجعل الشاشة تفتح بلا إنترنت (الإنتاج فقط) */
-const registerOfflineShell = () => {
-  if (import.meta.dev || !("serviceWorker" in navigator)) return;
-  navigator.serviceWorker
-    .register("/sw.js")
-    .then(() => navigator.serviceWorker.ready)
-    .then((registration) => {
-      // ما حُمِّل قبل أن يتحكم الـ service worker بالصفحة لم يمر به: نرسله
-      // ليخزّنه، فتفتح الشاشة بلا إنترنت من أول زيارة
-      registration.active?.postMessage({
-        type: "warm",
-        urls: performance.getEntriesByType("resource").map((entry) => entry.name),
-      });
-    })
-    .catch(() => {
-      // بلا service worker الشاشة تعمل، لكن إعادة تحميلها تحتاج إنترنت
-    });
-};
-
 onMounted(async () => {
+  // الـ service worker يجعل الشاشة تفتح بلا إنترنت (utils/offline-shell)
   registerOfflineShell();
   // أول ضغطة أو زر يفتح الصوت (سياسة المتصفحات)، فتُسمع أصوات المؤقتات بعدها
   installSoundUnlock();

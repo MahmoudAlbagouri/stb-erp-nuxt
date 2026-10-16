@@ -517,6 +517,7 @@
 
             <!-- ── إدخال / تعديل مسودة ── -->
             <form v-else class="doc-form" @submit.prevent="submitForm(false)">
+              <FormDraftNotice :draft="draft" />
               <div class="doc-grid">
                 <div class="form-group">
                   <label>العميل</label>
@@ -909,6 +910,7 @@ import { useAccessStore } from "@/stores/access";
 import { useCatalogStore } from "@/stores/catalog";
 import { useInventoryStore } from "@/stores/inventory";
 import { useSalesStore } from "@/stores/sales";
+import { useFormDraft } from "@/composables/useFormDraft";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
 import type { StockLookupRow } from "@/types/inventory";
@@ -1056,6 +1058,17 @@ const form = reactive({
   lines: [] as FormLine[],
 });
 
+// فاتورة طويلة لا تضيع إن أُغلقت النافذة أو انقطع النت قبل الحفظ
+const draft = useFormDraft("sales-invoice", {
+  open: showForm,
+  documentId: () => form.id,
+  snapshot: () => form,
+  apply: (data) => {
+    Object.assign(form, data);
+    form.lines.forEach((line) => (line.key = ++lineKey));
+  },
+});
+
 const amountsOf = (line: FormLine) =>
   previewPurchaseLine({
     quantity: Number(line.quantity) || 0,
@@ -1126,6 +1139,7 @@ const openCreate = async () => {
   });
   suggestDueDate();
   showForm.value = true;
+  draft.start();
 };
 
 /** مسودة ← نموذج التعديل، غيرها ← العرض */
@@ -1175,6 +1189,7 @@ const openForm = async (invoice: SalesInvoice) => {
       ),
     });
     showForm.value = true;
+    draft.start(full.updatedAt ?? null);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل الفاتورة"));
   }
@@ -1248,6 +1263,7 @@ const submitForm = async (issue: boolean) => {
       ? await store.updateInvoice(form.id, buildPayload())
       : await store.createInvoice(buildPayload());
     form.id = saved.id;
+    draft.saved(saved.updatedAt ?? null);
     showForm.value = false;
 
     if (issue) {

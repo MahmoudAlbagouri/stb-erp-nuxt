@@ -17,6 +17,7 @@
     </Transition>
     <div class="app-main">
       <SupportBanner />
+      <ConnectionBanner />
       <AppTopbar />
       <main class="app-content">
         <!-- ✅ حماية الصفحات: الدخول بالرابط المباشر يخضع لنفس قواعد القائمة -->

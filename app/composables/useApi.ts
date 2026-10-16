@@ -14,8 +14,34 @@ import {
   supportCookieOptions,
   type SupportTarget,
 } from "../utils/support";
+import {
+  NetworkError,
+  OFFLINE_MESSAGE,
+  SERVER_BUSY_MESSAGE,
+  useConnection,
+} from "./useConnection";
 
 type ResponseType = "json" | "blob";
+
+/**
+ * نتيجة تجديد الجلسة. rejected وحدها تُخرج المستخدم: السيرفر قال صراحة إن
+ * الجلسة انتهت. unavailable (النت انقطع، أو السيرفر يُعاد تشغيله) تُبقيه حيث
+ * هو بما كتبه، ويُعاد التجديد مع أول طلب بعد عودة الاتصال.
+ */
+type RefreshOutcome =
+  | { status: "refreshed"; accessToken: string }
+  | { status: "rejected" }
+  | { status: "unavailable" };
+
+/**
+ * تجديد واحد في اللحظة الواحدة: عشرة طلبات انتهى توكنها معاً تنتظر نفس
+ * التجديد بدل عشرة تجديدات (في المتصفح فقط — على السيرفر الطلبات لمستخدمين
+ * مختلفين).
+ */
+let refreshing: Promise<RefreshOutcome> | null = null;
+
+/** ردود البروكسي حين يكون السيرفر خلفه متوقفاً (أثناء رفع نسخة جديدة مثلاً) */
+const GATEWAY_STATUSES = [502, 503, 504];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -63,17 +89,37 @@ export const useApi = () => {
     supportCookieOptions,
   );
 
+  const connection = useConnection();
+
+  /** `token`: توكن جُدّد للتو (قد لا يكون كوكي هذه النسخة قرأه بعد) */
   const getHeaders = (
     withAuth = true,
     isFormData = false,
+    token: string | null = accessTokenCookie.value ?? null,
   ): Record<string, string> => {
     const headers: Record<string, string> = {};
     if (!isFormData) headers["Content-Type"] = "application/json";
-    if (withAuth) {
-      const token = accessTokenCookie.value;
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-    }
+    if (withAuth && token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
+  };
+
+  /**
+   * fetch يميّز "لم نصل للسيرفر" عن "السيرفر رفض": الأول NetworkError برسالة
+   * واضحة بدل "Failed to fetch"، ويُعلم شريط الاتصال. أي رد يعني أننا متصلون.
+   */
+  const reach = async (url: string, options: RequestInit): Promise<Response> => {
+    let res: Response;
+    try {
+      res = await fetch(url, options);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error;
+      }
+      connection.markOffline();
+      throw new NetworkError(OFFLINE_MESSAGE);
+    }
+    connection.markOnline();
+    return res;
   };
 
   const readBody = async (response: Response): Promise<unknown> => {
@@ -89,6 +135,10 @@ export const useApi = () => {
     const data = await readBody(response);
 
     if (!response.ok) {
+      // صفحة خطأ البروكسي (HTML) لا تُعرض للمستخدم كرسالة
+      if (GATEWAY_STATUSES.includes(response.status)) {
+        throw new NetworkError(SERVER_BUSY_MESSAGE);
+      }
       throw new Error(extractMessage(data, `HTTP ${response.status}`));
     }
 
@@ -104,49 +154,74 @@ export const useApi = () => {
     };
   };
 
-  const refreshTokens = async (): Promise<boolean> => {
+  const requestRefresh = async (): Promise<RefreshOutcome> => {
     const currentRefreshToken = refreshTokenCookie.value;
-    if (!currentRefreshToken) return false;
+    if (!currentRefreshToken) return { status: "rejected" };
 
+    let res: Response;
     try {
-      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      res = await reach(`${BASE_URL}/auth/refresh`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentRefreshToken}`,
         },
       });
-
-      if (!res.ok) throw new Error("Refresh failed");
-      const apiResponse = await handleResponse<{
-        accessToken: string;
-        refreshToken: string;
-      }>(res);
-      const tokens = apiResponse.data;
-
-      if (tokens?.accessToken && tokens?.refreshToken) {
-        // وضع الدعم: التوكن المجدَّد توكن المالك؛ نستبدله بتوكن دعم جديد لنفس
-        // الشركة. إذا رفضه السيرفر نخرج من وضع الدعم ونعود لحساب المالك.
-        if (supportCookie.value) {
-          const supportToken = await requestSupportToken(
-            BASE_URL,
-            tokens.accessToken,
-            supportCookie.value.tenantId,
-          );
-          if (supportToken) tokens.accessToken = supportToken;
-          else supportCookie.value = null;
-        }
-        accessTokenCookie.value = tokens.accessToken;
-        refreshTokenCookie.value = tokens.refreshToken;
-        // ✅ تحديث التوكن المفكوك أيضاً: الصلاحيات الجديدة تظهر فوراً في الواجهة
-        useAuthStore().applyTokens(tokens);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      return false;
+    } catch {
+      return { status: "unavailable" };
     }
+    // 401 توكن التجديد منتهٍ أو غير صالح، 403 الحساب أُوقف: انتهت فعلاً
+    if (res.status === 401 || res.status === 403) return { status: "rejected" };
+    if (!res.ok) return { status: "unavailable" };
+
+    let tokens: { accessToken?: string; refreshToken?: string } | undefined;
+    try {
+      tokens = (
+        await handleResponse<{ accessToken: string; refreshToken: string }>(
+          res,
+        )
+      ).data;
+    } catch {
+      return { status: "unavailable" };
+    }
+    if (!tokens?.accessToken || !tokens.refreshToken) {
+      return { status: "unavailable" };
+    }
+
+    let accessToken = tokens.accessToken;
+    // وضع الدعم: التوكن المجدَّد توكن المالك؛ نستبدله بتوكن دعم جديد لنفس
+    // الشركة. إذا رفضه السيرفر نخرج من وضع الدعم ونعود لحساب المالك.
+    if (supportCookie.value) {
+      let supportToken: string | null;
+      try {
+        supportToken = await requestSupportToken(
+          BASE_URL,
+          accessToken,
+          supportCookie.value.tenantId,
+        );
+      } catch {
+        // انقطع النت بين الطلبين: لا نغيّر شيئاً، ويُعاد التجديد لاحقاً
+        connection.markOffline();
+        return { status: "unavailable" };
+      }
+      if (supportToken) accessToken = supportToken;
+      else supportCookie.value = null;
+    }
+
+    const fresh = { accessToken, refreshToken: tokens.refreshToken };
+    accessTokenCookie.value = fresh.accessToken;
+    refreshTokenCookie.value = fresh.refreshToken;
+    // ✅ تحديث التوكن المفكوك أيضاً: الصلاحيات الجديدة تظهر فوراً في الواجهة
+    useAuthStore().applyTokens(fresh);
+    return { status: "refreshed", accessToken };
+  };
+
+  const refreshTokens = (): Promise<RefreshOutcome> => {
+    if (!import.meta.client) return requestRefresh();
+    refreshing ??= requestRefresh().finally(() => {
+      refreshing = null;
+    });
+    return refreshing;
   };
 
   // ✅ التنفيذ الداخلي: يعيد الـ Response الخام بعد معالجة 401 (تجديد التوكن مرة واحدة)
@@ -156,25 +231,37 @@ export const useApi = () => {
     auth: boolean,
     isRetry = false,
   ): Promise<Response> => {
-    const res = await fetch(`${BASE_URL}${path}`, options);
+    const res = await reach(`${BASE_URL}${path}`, options);
 
     if (res.status !== 401 || !auth || isRetry) return res;
 
-    if (await refreshTokens()) {
+    const outcome = await refreshTokens();
+    if (outcome.status === "refreshed") {
       const isFormData = options.body instanceof FormData;
       return send(
         path,
-        { ...options, headers: getHeaders(auth, isFormData) },
+        {
+          ...options,
+          headers: getHeaders(auth, isFormData, outcome.accessToken),
+        },
         auth,
         true,
       );
     }
 
+    if (outcome.status === "unavailable") {
+      // الجلسة لم تنتهِ: تعذّر تجديدها الآن. المستخدم يبقى حيث هو بما كتبه
+      throw new NetworkError(
+        connection.state.value.offline ? OFFLINE_MESSAGE : SERVER_BUSY_MESSAGE,
+      );
+    }
+
     accessTokenCookie.value = null;
     refreshTokenCookie.value = null;
-    useAuthStore().logout();
+    // مسودات النماذج تبقى: يجدها بعد تسجيل الدخول من جديد
+    useAuthStore().logout({ expired: true });
     if (import.meta.client) router.push(LOGIN_PATH);
-    throw new Error("Session expired. Please login again.");
+    throw new Error("انتهت الجلسة — سجّل الدخول من جديد");
   };
 
   const requestJson = async <T>(
@@ -190,6 +277,9 @@ export const useApi = () => {
       auth,
     );
     if (!res.ok) {
+      if (GATEWAY_STATUSES.includes(res.status)) {
+        throw new NetworkError(SERVER_BUSY_MESSAGE);
+      }
       const body = await readBody(res).catch(() => null);
       throw new Error(extractMessage(body, `HTTP ${res.status}`));
     }
