@@ -16,7 +16,9 @@ import type {
   PosDevice,
   PosDevicePayload,
   PosPromotionPayload,
+  PosFeatures,
   PosPromotionRecord,
+  PosScreenSettings,
   PosShiftRecord,
   RestaurantSettingsRecord,
 } from "@/pos/types";
@@ -56,6 +58,16 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
   const removeCashier = async (id: string) => {
     await api.del(`${BASE}/cashiers/${id}`);
   };
+
+  // ─── مميزات شاشة الكاشير ───
+  const fetchScreenSettings = async () =>
+    (await api.get<PosScreenSettings>(`${BASE}/screen-settings`)).data;
+
+  const updateScreenSettings = async (payload: {
+    template?: string;
+    features?: Partial<PosFeatures>;
+  }) =>
+    (await api.patch<PosScreenSettings>(`${BASE}/screen-settings`, payload)).data;
 
   // ─── المطاعم: الطاولات وإعدادات المطبخ وشاشته ───
   const fetchTables = async () =>
@@ -155,6 +167,8 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
     ).data;
 
   return {
+    fetchScreenSettings,
+    updateScreenSettings,
     fetchTables,
     createTable,
     createTables,

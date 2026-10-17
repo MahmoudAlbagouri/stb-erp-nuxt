@@ -54,7 +54,9 @@ export const createRestaurant = (
   const { sync, deviceApi, markContact } = connection;
   const { priced, serializeCart, restoreCart, resetCart, holdCart } = cartModule;
 
-  const enabled = computed(() => !!restaurant.value);
+  /** الطاولات والمطبخ ميزتان منفصلتان (كافيه سفري بمطبخ بلا طاولات مثلاً) */
+  const tablesEnabled = computed(() => state.features.value.tables);
+  const kitchenEnabled = computed(() => state.features.value.kitchen);
   const tables = computed<DiningTableInfo[]>(() => restaurant.value?.tables ?? []);
 
   // ─── حفظ الطلب الجاري ───────────────────────────────────────────────────────
@@ -124,7 +126,7 @@ export const createRestaurant = (
 
   /** ما لم يصل المطبخ بعد من الطلب الجاري */
   const pendingKitchen = computed<KitchenLine[]>(() =>
-    enabled.value ? diffLines(kitchenLinesOf(cart.value), order.value.sent) : [],
+    kitchenEnabled.value ? diffLines(kitchenLinesOf(cart.value), order.value.sent) : [],
   );
 
   // ─── بون المطبخ ─────────────────────────────────────────────────────────────
@@ -249,7 +251,7 @@ export const createRestaurant = (
         tableOrders.value = [...others, snapshot()];
       } else {
         // الطاولة أُلغيت: ما وصل المطبخ منها يُلغى
-        if (enabled.value && order.value.sent.length) {
+        if (kitchenEnabled.value && order.value.sent.length) {
           ticket = await sendTicket(
             order.value,
             diffLines([], order.value.sent),
@@ -364,8 +366,7 @@ export const createRestaurant = (
   ) => {
     const { context, pending, customerName } = captured;
     order.value = newOrderContext();
-    if (!enabled.value) return;
-    if (pending.length && restaurant.value?.sendOnPayment) {
+    if (kitchenEnabled.value && pending.length && restaurant.value?.sendOnPayment) {
       const ticket = await sendTicket(context, pending, {
         label: [sale.number, customerName].filter(Boolean).join(" — "),
         orderType: sale.delivery ? "delivery" : context.type,
@@ -394,7 +395,7 @@ export const createRestaurant = (
 
   /** يسأل السيرفر عن حالة بونات هذه الشاشة (بلا إنترنت: تبقى آخر حالة معروفة) */
   const refreshKitchen = async () => {
-    if (!enabled.value || !state.device.value || !state.deviceKey.value) return;
+    if (!kitchenEnabled.value || !state.device.value || !state.deviceKey.value) return;
     try {
       kitchenOrders.value = await deviceApi().get<DeviceKitchenOrder[]>("/kitchen");
       online.value = true;
@@ -422,7 +423,8 @@ export const createRestaurant = (
   };
 
   return {
-    enabled,
+    tablesEnabled,
+    kitchenEnabled,
     tables,
     tableStatus,
     pendingKitchen,

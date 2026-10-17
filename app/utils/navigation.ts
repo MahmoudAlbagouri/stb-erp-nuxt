@@ -232,6 +232,14 @@ export const NAV_SECTIONS: NavSection[] = [
         tenantOnly: true,
       },
       {
+        to: "/dashboard/pos/settings",
+        label: "إعدادات شاشة الكاشير",
+        icon: SlidersHorizontal,
+        permissions: [P.POS_VIEW],
+        feature: F.POS_MODULE,
+        tenantOnly: true,
+      },
+      {
         to: "/dashboard/pos/restaurant",
         label: "الطاولات والمطبخ",
         icon: Armchair,

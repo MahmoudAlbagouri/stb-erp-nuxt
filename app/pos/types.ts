@@ -291,6 +291,37 @@ export interface ScaleBarcodeOptions {
   valueDecimals: number;
 }
 
+/**
+ * مميزات الشاشة التي تُشغَّل وتُقفل لكل شركة (مرآة
+ * src/common/constants/pos-features في الباك إند)
+ */
+export const POS_FEATURE_KEYS = [
+  "customers",
+  "addCustomer",
+  "creditSales",
+  "lineDiscount",
+  "invoiceDiscount",
+  "priceChange",
+  "units",
+  "holdSales",
+  "cardPayments",
+  "quickPay",
+  "autoPrint",
+  "cashMoves",
+  "manualDrawer",
+  "returns",
+  "scaleBarcode",
+  "showStock",
+  "numpad",
+  "customerDisplay",
+  "delivery",
+  "tables",
+  "kitchen",
+] as const;
+
+export type PosFeatureKey = (typeof POS_FEATURE_KEYS)[number];
+export type PosFeatures = Record<PosFeatureKey, boolean>;
+
 /** إعدادات الكاشير على مستوى الشركة */
 export interface PosOptions {
   scale: ScaleBarcodeOptions;
@@ -302,6 +333,29 @@ export interface PosOptions {
     /** تغيير سعر صنف في الفاتورة (غائب في بيانات قديمة = false) */
     priceChange?: boolean;
   };
+  /** المميزات الظاهرة (غائبة من سيرفر أقدم = كلها مفعّلة) */
+  features?: Partial<PosFeatures>;
+  template?: string;
+}
+
+/** صفحة "إعدادات شاشة الكاشير" في لوحة التحكم */
+export interface PosScreenSettings {
+  template: string;
+  features: PosFeatures;
+  /** ما تسمح به الباقة (false = "ليست في باقتك") */
+  available: Partial<Record<PosFeatureKey, boolean>>;
+  groups: {
+    title: string;
+    features: { key: PosFeatureKey; label: string; description: string }[];
+  }[];
+  templates: {
+    key: string;
+    label: string;
+    description: string;
+    features: PosFeatures;
+  }[];
+  /** ميزة لا تعمل بدون أخرى (البيع الآجل يحتاج اختيار عميل) */
+  requires: Partial<Record<PosFeatureKey, PosFeatureKey>>;
 }
 
 /** الشركة كما تحفظها الشاشة: بها تعرض العملة والوقت بلا إنترنت ولا جلسة */

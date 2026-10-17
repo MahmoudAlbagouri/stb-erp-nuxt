@@ -82,7 +82,7 @@
                 <select v-model="form.payment" class="form-select">
                   <option value="cod">تحصيل عند الاستلام</option>
                   <option value="cash">مدفوع الآن نقداً</option>
-                  <option value="card">مدفوع الآن شبكة</option>
+                  <option v-if="pos.features.cardPayments" value="card">مدفوع الآن شبكة</option>
                   <option value="bank_transfer">مدفوع بتحويل</option>
                 </select>
               </div>
@@ -137,6 +137,7 @@ import { nextTick, reactive, ref, watch } from "vue";
 import { Printer, Truck, X } from "lucide-vue-next";
 import { sumAmounts } from "@/pos/calc";
 import type { PosDeliveryOptions, SaleDelivery } from "@/pos/types";
+import { usePosStore } from "@/stores/pos";
 
 export type DeliveryPayment = "cod" | "cash" | "card" | "bank_transfer";
 
@@ -154,6 +155,7 @@ const emit = defineEmits<{
   submit: [payload: { delivery: SaleDelivery; payment: DeliveryPayment }];
 }>();
 
+const pos = usePosStore();
 const nameEl = ref<HTMLInputElement | null>(null);
 const emptyForm = () => ({
   recipientName: props.customer?.name ?? "",

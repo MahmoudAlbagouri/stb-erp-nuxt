@@ -47,8 +47,9 @@
           <span>{{ formatNumber(pos.failedEntries.length) }} مرفوضة</span>
         </button>
 
-        <template v-if="pos.shift && pos.restaurantEnabled">
+        <template v-if="pos.shift">
           <button
+            v-if="pos.features.tables"
             class="btn btn--sm btn--ghost pos-tables-btn"
             :class="{ 'is-on': pos.order.type === 'dine_in' }"
             title="الطاولات"
@@ -61,6 +62,7 @@
             </span>
           </button>
           <button
+            v-if="pos.features.kitchen"
             class="btn btn--sm btn--ghost"
             :class="{ 'pos-kitchen-ready': pos.readyOrders.length }"
             title="حالة الطلبات في المطبخ"
@@ -74,7 +76,7 @@
           </button>
         </template>
         <button
-          v-if="pos.shift && pos.canReturn"
+          v-if="pos.shift && pos.canReturn && pos.features.returns"
           class="btn btn--sm btn--ghost pos-return-btn"
           @click="showReturn = true"
         >
@@ -91,7 +93,7 @@
           <span class="pos-status__count">{{ formatNumber(pos.held.length) }}</span>
         </button>
         <button
-          v-if="pos.shift"
+          v-if="pos.shift && pos.features.cashMoves"
           class="btn btn--sm btn--ghost"
           title="إيداع أو سحب نقدي من الدرج (F9)"
           @click="showCashMove = true"
@@ -99,7 +101,7 @@
           <Wallet :size="15" /> <span class="pos-hide-sm">نقد</span>
         </button>
         <button
-          v-if="pos.shift && pos.drawer.mode !== 'off'"
+          v-if="pos.shift && pos.drawer.mode !== 'off' && pos.features.manualDrawer"
           class="btn btn--sm btn--ghost pos-drawer-btn"
           title="فتح الدرج بلا بيع — يُسجَّل على الوردية"
           @click="kickDrawer(true)"
@@ -121,7 +123,7 @@
           <LockKeyhole :size="15" /> <span class="pos-hide-sm">تقفيل الوردية</span>
         </button>
         <button
-          v-if="pos.device"
+          v-if="pos.device && pos.features.customerDisplay"
           class="btn btn--sm btn--ghost btn--icon"
           title="شاشة العميل: نافذة تُسحب للشاشة الثانية"
           @click="openCustomerDisplay"
@@ -129,7 +131,7 @@
           <MonitorUp :size="15" />
         </button>
         <button
-          v-if="pos.shift"
+          v-if="pos.shift && pos.features.numpad"
           class="btn btn--sm btn--ghost btn--icon"
           :class="{ 'is-on': showNumpad }"
           title="لوحة الأرقام (F3)"
@@ -465,7 +467,7 @@
             <span class="pos-tile__name">{{ p.name }}</span>
             <span class="pos-tile__foot">
               <span
-                v-if="pos.stockOf(p) !== null"
+                v-if="pos.features.showStock && pos.stockOf(p) !== null"
                 class="pos-tile__stock"
                 :title="`المتاح في المخزن: ${pos.stockOf(p)} ${p.baseUnitName}`"
               >
@@ -489,7 +491,7 @@
       <!-- السلة -->
       <section class="pos-cart card">
         <button
-          v-if="pos.restaurantEnabled"
+          v-if="pos.features.tables"
           type="button"
           class="pos-cart__order"
           :class="{ 'is-table': pos.order.type === 'dine_in' }"
@@ -502,7 +504,7 @@
           </span>
           <span class="pos-cart__order-change">تغيير</span>
         </button>
-        <div class="pos-cart__customer">
+        <div v-if="pos.features.customers" class="pos-cart__customer">
           <select v-model="pos.customerId" class="form-select">
             <option value="">عميل نقدي</option>
             <option v-for="c in pos.customers" :key="c.id" :value="c.id">
@@ -510,6 +512,7 @@
             </option>
           </select>
           <button
+            v-if="pos.features.addCustomer"
             class="btn btn--ghost btn--icon"
             title="عميل جديد"
             @click="showCustomer = true"
@@ -551,7 +554,7 @@
                 <span v-if="line.note" class="pos-line__note">{{ line.note }}</span>
               </span>
               <button
-                v-if="pos.restaurantEnabled"
+                v-if="pos.features.kitchen"
                 class="btn btn--sm btn--ghost btn--icon"
                 :class="{ 'is-on': noteKey === line.key || !!line.note }"
                 title="ملاحظة للمطبخ"
@@ -608,7 +611,7 @@
                 </button>
               </div>
               <select
-                v-if="line.product.units.length"
+                v-if="line.product.units.length && pos.features.units"
                 class="form-select pos-line__unit"
                 :value="line.unitId ?? ''"
                 @change="changeUnit(line, ($event.target as HTMLSelectElement).value)"
@@ -639,13 +642,19 @@
                   </s>
                   {{ formatMoney(unitPrice) }}
                 </template>
-                <Pencil :size="11" />
+                <Pencil
+                  v-if="pos.features.priceChange || line.product.openPrice"
+                  :size="11"
+                />
               </button>
               <strong class="doc-money pos-line__total">
                 {{ formatMoney(total) }}
               </strong>
             </div>
-            <div v-if="line.product.allowDiscount" class="pos-line__discount">
+            <div
+              v-if="line.product.allowDiscount && pos.features.lineDiscount"
+              class="pos-line__discount"
+            >
               <label>خصم</label>
               <StbNumberInput
                 :ref="(el) => trackInput(discountInputs, line.key, el)"
@@ -707,7 +716,7 @@
             <Trash2 :size="16" />
           </button>
           <button
-            v-if="pos.order.type !== 'dine_in'"
+            v-if="pos.order.type !== 'dine_in' && pos.features.holdSales"
             class="btn btn--ghost btn--icon"
             title="تعليق الفاتورة (F6)"
             :disabled="!pos.cart.length"
@@ -716,6 +725,7 @@
             <PauseCircle :size="16" />
           </button>
           <button
+            v-if="pos.features.invoiceDiscount"
             class="btn btn--ghost btn--icon"
             :class="{ 'is-on': !!pos.invoiceDiscount }"
             title="خصم على الفاتورة (F8)"
@@ -725,7 +735,7 @@
             <Percent :size="16" />
           </button>
           <button
-            v-if="pos.restaurantEnabled"
+            v-if="pos.features.kitchen"
             class="btn btn--ghost pos-kitchen"
             title="إرسال الجديد للمطبخ (والإلغاءات)"
             :disabled="!pos.pendingKitchen.length || sendingKitchen"
@@ -738,7 +748,7 @@
             </span>
           </button>
           <button
-            v-if="pos.deliveryOptions"
+            v-if="pos.features.delivery"
             class="btn btn--ghost pos-delivery"
             title="بيع توصيل — طيار أو شركة شحن (F10)"
             :disabled="!pos.cart.length"
@@ -748,11 +758,23 @@
             <span>توصيل</span>
           </button>
           <button
-            class="btn btn--primary pos-pay"
-            :disabled="!pos.cart.length"
-            @click="openPay"
+            v-if="quickMode"
+            class="btn btn--ghost pos-pay-other"
+            title="شبكة، أو مبلغ مستلَم لحساب الباقي (شاشة الدفع)"
+            :disabled="!pos.cart.length || paying"
+            @click="openPay(true)"
           >
-            <span>دفع</span>
+            <CreditCard :size="16" />
+            <span>دفع آخر</span>
+          </button>
+          <button
+            class="btn btn--primary pos-pay"
+            :class="{ 'btn--loading': paying && quickMode }"
+            :disabled="!pos.cart.length || paying"
+            :title="quickMode ? 'دفع نقدي بالمبلغ بالضبط وطباعة فوراً (F4)' : 'الدفع (F4)'"
+            @click="openPay()"
+          >
+            <span>{{ quickMode ? "دفع نقدي" : "دفع" }}</span>
             <strong>{{ formatCurrency(pos.cartTotals.total) }}</strong>
           </button>
         </div>
@@ -775,7 +797,7 @@
               </button>
             </div>
 
-            <form class="doc-form" @submit.prevent="submitPay">
+            <form class="doc-form" @submit.prevent="submitPay()">
               <div class="doc-totals">
                 <span>المطلوب</span>
                 <strong class="doc-money">
@@ -795,7 +817,7 @@
                     placeholder="0"
                   />
                 </div>
-                <div class="form-group">
+                <div v-if="pos.features.cardPayments" class="form-group">
                   <label>شبكة / بطاقة</label>
                   <StbNumberInput
                     v-model.number="pay.card"
@@ -811,7 +833,12 @@
                 <button type="button" class="btn btn--sm btn--ghost" @click="payAll('cash')">
                   نقداً بالضبط
                 </button>
-                <button type="button" class="btn btn--sm btn--ghost" @click="payAll('card')">
+                <button
+                  v-if="pos.features.cardPayments"
+                  type="button"
+                  class="btn btn--sm btn--ghost"
+                  @click="payAll('card')"
+                >
                   الكل شبكة
                 </button>
                 <button
@@ -825,13 +852,15 @@
                 </button>
               </div>
 
-              <label v-if="selectedCustomer" class="checkbox-label">
+              <label v-if="selectedCustomer && pos.features.creditSales" class="checkbox-label">
                 <input v-model="pay.credit" type="checkbox" />
                 <span>
                   الباقي على حساب العميل (آجل) — {{ selectedCustomer.name }}
                 </span>
               </label>
-              <p v-else class="doc-hint">للبيع الآجل اختر عميلاً مسجّلاً أولاً.</p>
+              <p v-else-if="pos.features.creditSales" class="doc-hint">
+                للبيع الآجل اختر عميلاً مسجّلاً أولاً.
+              </p>
 
               <div
                 v-if="payState.credit > 0"
@@ -905,7 +934,8 @@
             </p>
             <div class="modal__footer">
               <button class="btn btn--ghost" @click="printSale(doneSale)">
-                <Printer :size="16" /> طباعة مرة أخرى
+                <Printer :size="16" />
+                {{ pos.features.autoPrint ? "طباعة مرة أخرى" : "طباعة" }}
               </button>
               <button ref="nextEl" class="btn btn--primary" @click="finishSale">
                 فاتورة جديدة
@@ -1236,6 +1266,7 @@ import {
   ChefHat,
   ChevronLeft,
   CircleCheck,
+  CreditCard,
   Inbox,
   Keyboard,
   CloudOff,
@@ -1706,7 +1737,7 @@ const showCustomer = ref(false);
 const showShortcuts = ref(false);
 
 const hold = async () => {
-  if (!pos.cart.length) return;
+  if (!pos.cart.length || !pos.features.holdSales) return;
   try {
     await pos.holdCart();
     toast.success("عُلّقت الفاتورة — تجدها في «معلّقة»");
@@ -1770,6 +1801,11 @@ const changeUnit = (line: CartLine, unitId: string) => {
 const priceLine = ref<CartLine | null>(null);
 
 const editPrice = (line: CartLine) => {
+  // الصنف بسعر مفتوح يُكتب سعره دائماً؛ تغيير سعر غيره ميزة تُقفل
+  if (!pos.features.priceChange && !line.product.openPrice) {
+    toast.info("تغيير السعر في الفاتورة غير مفعّل لهذه الشاشة");
+    return;
+  }
   pos.selectedKey = line.key;
   priceLine.value = line;
 };
@@ -1892,8 +1928,22 @@ const cartReady = (): boolean => {
   return true;
 };
 
-const openPay = async () => {
+/** الدفع السريع: عميل نقدي وزر الدفع يتم البيع بلا شاشة دفع */
+const quickMode = computed(() => pos.features.quickPay && !selectedCustomer.value);
+
+/**
+ * زر الدفع (وF4): في الدفع السريع يتم البيع نقداً بالمبلغ بالضبط؛ `full`
+ * تفتح شاشة الدفع دائماً (شبكة، أو مبلغ مستلَم لحساب الباقي)
+ */
+const openPay = async (full = false) => {
   if (!cartReady()) return;
+  if (!full && quickMode.value) {
+    if (paying.value) return;
+    pay.cash = pos.cartTotals.total;
+    pay.card = "";
+    pay.credit = false;
+    return submitPay(true);
+  }
   pay.cash = "";
   pay.card = "";
   pay.credit = false;
@@ -1902,7 +1952,8 @@ const openPay = async () => {
   cashEl.value?.$el.focus();
 };
 
-const submitPay = async () => {
+/** `quick`: دفع سريع — بلا شاشة "تم البيع"، والكاشير ينتقل للعميل التالي */
+const submitPay = async (quick = false) => {
   if (payState.value.short > 0 || payState.value.error) return;
   paying.value = true;
   try {
@@ -1931,11 +1982,16 @@ const submitPay = async () => {
     sound("success");
     if (payments.some((p) => p.method === "cash")) void kickDrawer();
     showPay.value = false;
-    doneSale.value = sale;
-    await printSale(sale);
+    if (quick) {
+      toast.success(`تم البيع ${sale.number} — ${formatCurrency(sale.total)}`);
+    } else {
+      doneSale.value = sale;
+    }
+    if (pos.features.autoPrint) await printSale(sale);
     await printPendingKitchen();
     await nextTick();
-    nextEl.value?.focus();
+    if (quick) searchEl.value?.focus();
+    else nextEl.value?.focus();
   } catch (e) {
     sound("error");
     toast.error(getErrorMessage(e, "تعذر إتمام البيع"));
@@ -2008,7 +2064,7 @@ const submitDelivery = async ({
     if (payment === "cash") void kickDrawer();
     showDelivery.value = false;
     doneSale.value = sale;
-    await printSale(sale);
+    if (pos.features.autoPrint) await printSale(sale);
     await printPendingKitchen();
     await nextTick();
     nextEl.value?.focus();
@@ -2381,6 +2437,7 @@ const showNumpad = ref(false);
 const pendingQty = ref<number | null>(null);
 
 const toggleNumpad = () => {
+  if (!pos.features.numpad) return;
   showNumpad.value = !showNumpad.value;
   try {
     localStorage.setItem(NUMPAD_OPEN_KEY, showNumpad.value ? "1" : "0");
@@ -2421,6 +2478,20 @@ const onNumpadEnter = (value: string) => {
   onSearchEnter();
 };
 
+// ─── مميزات الشاشة: ما أُقفل منها يختفي أثره فوراً ─────────────────────────────
+watch(
+  () => pos.features.customers,
+  (on) => {
+    if (!on) pos.customerId = "";
+  },
+);
+watch(
+  () => pos.features.numpad,
+  (on) => {
+    if (!on) showNumpad.value = false;
+  },
+);
+
 // ─── شاشة العميل ──────────────────────────────────────────────────────────────
 const displayState = (): DisplayState => ({
   company: pos.settings?.sellerName || pos.tenant?.companyName || "",
@@ -2446,6 +2517,7 @@ const display = createDisplayPublisher(displayState);
 watch([() => pos.priced, doneSale], () => display.publish(), { deep: false });
 
 const openCustomerDisplay = () => {
+  if (!pos.features.customerDisplay) return;
   const opened = window.open(
     "/pos/display",
     "stb-pos-display",
@@ -2541,13 +2613,18 @@ const onKeydown = (event: KeyboardEvent) => {
     case "F6":
       return handle(() => void hold());
     case "F7":
-      return handle(() => (showHeld.value = true));
+      // المعلّقة القديمة تُسترجع ولو أُقفل التعليق بعدها
+      return handle(
+        () => (pos.features.holdSales || pos.held.length) && (showHeld.value = true),
+      );
     case "F8":
-      return handle(() => pos.cart.length && (showDiscount.value = true));
+      return handle(
+        () => pos.cart.length && pos.features.invoiceDiscount && (showDiscount.value = true),
+      );
     case "F9":
-      return handle(() => (showCashMove.value = true));
+      return handle(() => pos.features.cashMoves && (showCashMove.value = true));
     case "F10":
-      return handle(() => pos.deliveryOptions && openDelivery());
+      return handle(() => pos.features.delivery && openDelivery());
   }
 
   // ما بعدها يعمل على السطر المحدد، وفقط خارج حقول الكتابة
@@ -2571,7 +2648,7 @@ const onKeydown = (event: KeyboardEvent) => {
     case "*":
       return line && handle(() => focusInput(qtyInputs));
     case "/":
-      return line && handle(() => focusInput(discountInputs));
+      return line && pos.features.lineDiscount && handle(() => focusInput(discountInputs));
     case "=":
       return line && handle(() => editPrice(line));
     case "Delete":
@@ -2971,7 +3048,8 @@ onBeforeUnmount(() => {
 }
 
 .pos-kitchen,
-.pos-delivery {
+.pos-delivery,
+.pos-pay-other {
   flex: 1 1 auto;
   justify-content: center;
 }

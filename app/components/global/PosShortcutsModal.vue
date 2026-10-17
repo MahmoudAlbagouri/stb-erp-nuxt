@@ -12,7 +12,7 @@
           </div>
           <div class="doc-form">
             <div class="pos-rows">
-              <div v-for="item in POS_SHORTCUTS" :key="item.keys" class="pos-rows__row">
+              <div v-for="item in shortcuts" :key="item.keys" class="pos-rows__row">
                 <span class="pos-rows__main">{{ item.label }}</span>
                 <span>
                   <kbd v-for="key in item.keys.split(' ')" :key="key" class="pos-key">
@@ -33,11 +33,22 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { Keyboard, X } from "lucide-vue-next";
+import type { PosFeatureKey } from "@/pos/types";
+import { usePosStore } from "@/stores/pos";
 
 defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{ "update:modelValue": [value: boolean] }>();
 const close = () => emit("update:modelValue", false);
+
+const pos = usePosStore();
+/** اختصارات المميزات المفعّلة فقط */
+const shortcuts = computed(() =>
+  POS_SHORTCUTS.filter(
+    (item) => !("feature" in item) || pos.features[item.feature as PosFeatureKey],
+  ),
+);
 </script>
 
 <script lang="ts">
@@ -45,18 +56,18 @@ const close = () => emit("update:modelValue", false);
 export const POS_SHORTCUTS = [
   { keys: "F1", label: "هذه القائمة" },
   { keys: "F2", label: "البحث / مسح الباركود" },
-  { keys: "F3", label: "لوحة الأرقام (تُسحب لأي مكان)" },
+  { keys: "F3", label: "لوحة الأرقام (تُسحب لأي مكان)", feature: "numpad" },
   { keys: "F4", label: "الدفع — وداخل نافذة الدفع: نقداً بالضبط" },
-  { keys: "F6", label: "تعليق الفاتورة" },
-  { keys: "F7", label: "الفواتير المعلّقة" },
-  { keys: "F8", label: "خصم على الفاتورة" },
-  { keys: "F9", label: "حركة نقدية في الدرج" },
-  { keys: "F10", label: "بيع توصيل (طيار أو شركة شحن)" },
+  { keys: "F6", label: "تعليق الفاتورة", feature: "holdSales" },
+  { keys: "F7", label: "الفواتير المعلّقة", feature: "holdSales" },
+  { keys: "F8", label: "خصم على الفاتورة", feature: "invoiceDiscount" },
+  { keys: "F9", label: "حركة نقدية في الدرج", feature: "cashMoves" },
+  { keys: "F10", label: "بيع توصيل (طيار أو شركة شحن)", feature: "delivery" },
   { keys: "↑ ↓", label: "تحديد سطر في السلة" },
   { keys: "+ −", label: "زيادة / إنقاص كمية السطر المحدد" },
   { keys: "*", label: "كتابة كمية السطر المحدد" },
-  { keys: "/", label: "كتابة خصم السطر المحدد" },
-  { keys: "=", label: "تغيير سعر السطر المحدد في هذه الفاتورة" },
+  { keys: "/", label: "كتابة خصم السطر المحدد", feature: "lineDiscount" },
+  { keys: "=", label: "تغيير سعر السطر المحدد في هذه الفاتورة", feature: "priceChange" },
   { keys: "Delete", label: "حذف السطر المحدد" },
   { keys: "Esc", label: "إغلاق النافذة المفتوحة" },
 ] as const;

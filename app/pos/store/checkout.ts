@@ -83,6 +83,9 @@ export const createCheckout = (
     const paid = sumAmounts(payments.map((p) => p.amount));
     const creditAmount = sumAmounts([total, -paid]);
     if (creditAmount < 0) throw new Error("المقبوض أكبر من إجمالي الفاتورة");
+    if (creditAmount > 0 && !state.features.value.creditSales) {
+      throw new Error("البيع الآجل غير مفعّل — المبلغ كله يُدفع الآن");
+    }
     if (!delivery && payments.some((p) => p.method === "courier")) {
       throw new Error("التحصيل عبر التوصيل لفاتورة توصيل فقط");
     }

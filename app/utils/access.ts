@@ -136,6 +136,7 @@ export const PERMS = {
   POS_USE: "use_pos",
   POS_RETURN: "process_pos_returns",
   POS_DEVICE_MANAGE: "manage_pos_devices",
+  POS_SETTINGS_MANAGE: "manage_pos_settings",
   RESTAURANT_MANAGE: "manage_restaurant",
   KITCHEN_DISPLAY: "use_kitchen_display",
   DELIVERY_VIEW: "view_delivery",

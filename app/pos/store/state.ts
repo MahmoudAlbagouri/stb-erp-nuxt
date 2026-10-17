@@ -27,6 +27,7 @@ import type {
   PosOfflinePolicy,
   PosOptions,
   PosProduct,
+  PosFeatures,
   PosPromotion,
   PosRestaurantOptions,
   PosTenantProfile,
@@ -47,6 +48,31 @@ export const DEFAULT_OFFLINE_POLICY: PosOfflinePolicy = {
   warnAfterHours: 72,
   blockAfterHours: 168,
 };
+/** كل المميزات مفعّلة إلا الدفع السريع: الشاشة كما كانت قبل إعدادها */
+export const DEFAULT_POS_FEATURES: PosFeatures = {
+  customers: true,
+  addCustomer: true,
+  creditSales: true,
+  lineDiscount: true,
+  invoiceDiscount: true,
+  priceChange: true,
+  units: true,
+  holdSales: true,
+  cardPayments: true,
+  quickPay: false,
+  autoPrint: true,
+  cashMoves: true,
+  manualDrawer: true,
+  returns: true,
+  scaleBarcode: true,
+  showStock: true,
+  numpad: true,
+  customerDisplay: true,
+  delivery: true,
+  tables: true,
+  kitchen: true,
+};
+
 /** إعدادات الكاشير قبل أن تصل من السيرفر (نفس قيمه الافتراضية) */
 export const DEFAULT_POS_OPTIONS: PosOptions = {
   scale: {
@@ -137,6 +163,23 @@ export const createPosState = () => {
   const kitchenTickets = ref<LocalKitchenTicket[]>([]);
   /** حالة بونات هذه الشاشة في المطبخ (من السيرفر) */
   const kitchenOrders = ref<DeviceKitchenOrder[]>([]);
+  /**
+   * المميزات الظاهرة فعلاً: إعداد الشركة، وما تسمح به الباقة (التوصيل
+   * والمطاعم ينزلان لمن في باقته)، وما تحتاجه كل ميزة
+   */
+  const features = computed<PosFeatures>(() => {
+    const saved = { ...DEFAULT_POS_FEATURES, ...(posOptions.value.features ?? {}) };
+    return {
+      ...saved,
+      addCustomer: saved.addCustomer && saved.customers,
+      creditSales: saved.creditSales && saved.customers,
+      scaleBarcode: posOptions.value.scale.enabled,
+      delivery: saved.delivery && !!deliveryOptions.value,
+      tables: saved.tables && !!restaurant.value,
+      kitchen: saved.kitchen && !!restaurant.value,
+    };
+  });
+
   /** فواتير معلّقة على هذه الشاشة */
   const held = ref<HeldCart[]>([]);
   /** إيداعات وسحوبات الدرج في الوردية الحالية */
@@ -222,6 +265,7 @@ export const createPosState = () => {
     posOptions,
     deliveryOptions,
     restaurant,
+    features,
     order,
     tableOrders,
     kitchenTickets,

@@ -135,6 +135,7 @@ export const usePosStore = defineStore("pos", () => {
     cashMoves: state.cashMoves,
     promotions: state.promotions,
     posOptions: state.posOptions,
+    features: state.features,
     deliveryOptions: state.deliveryOptions,
     returns: state.returns,
     drawer: state.drawer,
@@ -197,7 +198,8 @@ export const usePosStore = defineStore("pos", () => {
     refund: checkoutModule.refund,
 
     // المطاعم
-    restaurantEnabled: restaurant.enabled,
+    tablesEnabled: restaurant.tablesEnabled,
+    kitchenEnabled: restaurant.kitchenEnabled,
     tables: restaurant.tables,
     tableStatus: restaurant.tableStatus,
     pendingKitchen: restaurant.pendingKitchen,

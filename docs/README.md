@@ -122,6 +122,11 @@ public/sw.js              الـ service worker لشاشة الكاشير
 `store/restaurant.ts` الطاولات والإرسال للمطبخ). مرجع الاستخدام:
 `back-end/erp-sass/docs/pos-screen.md`.
 
+مميزات الشاشة لكل شركة: `pos.features` (في `pos/store/state.ts`: إعداد الشركة ×
+الباقة × ما تحتاجه كل ميزة) — كل زر واختصار في الشاشة يُشرط بميزته. القائمة
+والقوالب يقرأها `/dashboard/pos/settings` من السيرفر (`GET /pos/screen-settings`)،
+ومرآة المفاتيح والافتراضي في `pos/types.ts` و`state.ts`.
+
 شاشة المطبخ `/kitchen` (`pages/kitchen.vue`) صفحة بجلسة مستخدم (صلاحية
 `use_kitchen_display`) تسأل `/pos/kitchen/orders` كل 5 ثوانٍ — ليست جزءاً من
 تطبيق الكاشير الذي يعمل بلا إنترنت.
@@ -157,7 +162,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` · `/stocktake/[id]` (شاشة العدّ، بلا إنترنت) | inventory | `inventory` |
 | `/dashboard/purchasing` · `/returns` · `/payments` · `/suppliers` | purchasing | `purchasing` |
 | `/dashboard/sales` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
-| `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
+| `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/settings` (مميزات الشاشة) · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
 | `/dashboard/delivery` · `/agents` · `/settlements` · `/driver` (شاشة الطيار على جواله، برابطه بلا تسجيل دخول) | delivery | `delivery` |
 | `/dashboard/accounting` · `/chart` · `/journals` · `/expenses` · `/ledger` · `/trial-balance` · `/statements` · `/vat-return` | accounting | `accounting` |
 | `/dashboard/quotations` | quotation | `quotations` |
