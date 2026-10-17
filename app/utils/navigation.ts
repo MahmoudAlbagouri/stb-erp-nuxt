@@ -5,6 +5,8 @@
 import type { Component } from "vue";
 import {
   ArrowLeftRight,
+  Armchair,
+  ChefHat,
   Scale,
   Percent,
   ListTree,
@@ -166,6 +168,14 @@ export const NAV_SECTIONS: NavSection[] = [
         tenantOnly: true,
       },
       {
+        to: "/kitchen",
+        label: "شاشة المطبخ",
+        icon: ChefHat,
+        permissions: [P.KITCHEN_DISPLAY],
+        feature: F.RESTAURANT_MODULE,
+        tenantOnly: true,
+      },
+      {
         to: "/dashboard/sales",
         label: "فواتير البيع",
         icon: ReceiptText,
@@ -219,6 +229,14 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: UserRound,
         permissions: [P.POS_VIEW],
         feature: F.POS_MODULE,
+        tenantOnly: true,
+      },
+      {
+        to: "/dashboard/pos/restaurant",
+        label: "الطاولات والمطبخ",
+        icon: Armchair,
+        permissions: [P.POS_VIEW],
+        feature: F.RESTAURANT_MODULE,
         tenantOnly: true,
       },
       {

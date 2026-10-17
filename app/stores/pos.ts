@@ -11,6 +11,7 @@
 //   shift       الوردية، كاشيرها، الدرج، موافقة المشرف، سجل التدقيق
 //   cart        السلة والتسعير والرصيد، التعليق، عميل من الشاشة
 //   checkout    إتمام البيع والمرتجع
+//   restaurant  الطاولات والإرسال للمطبخ وحالة الطلبات فيه
 //   init        تحميل الحالة المحفوظة على الجهاز
 import { defineStore } from "pinia";
 import { watch } from "vue";
@@ -21,6 +22,7 @@ import { createCart } from "@/pos/store/cart";
 import { createCheckout } from "@/pos/store/checkout";
 import { createConnection } from "@/pos/store/connection";
 import { createInit } from "@/pos/store/init";
+import { createRestaurant } from "@/pos/store/restaurant";
 import { createShift } from "@/pos/store/shift";
 import { createPosState } from "@/pos/store/state";
 
@@ -35,7 +37,29 @@ export const usePosStore = defineStore("pos", () => {
     shiftModule,
     cartModule,
   );
+  const restaurant = createRestaurant(state, connection, cartModule);
   const { init } = createInit(state, cartModule);
+
+  /**
+   * البيع، ثم المطبخ والطاولة: ما لم يصل المطبخ يُرسل (البون للطباعة في
+   * takeKitchenTicket)، والطاولة تُخلى
+   */
+  const checkout = async (
+    ...args: Parameters<typeof checkoutModule.checkout>
+  ) => {
+    const captured = restaurant.captureOrder();
+    const sale = await checkoutModule.checkout(...args);
+    await restaurant.completeOrder(sale, captured);
+    return sale;
+  };
+
+  /** التقفيل: طاولة مفتوحة على الشاشة تُحفظ عليها وتُحاسب في الوردية التالية */
+  const closeShift = async (
+    ...args: Parameters<typeof shiftModule.closeShift>
+  ) => {
+    await restaurant.parkActiveTable();
+    return shiftModule.closeShift(...args);
+  };
 
   // وضع الضريبة (مسجّلة؟ الأسعار شاملة؟) من إعدادات الفوترة التي تنزل للجهاز.
   // إن تغيّر والسلة ممتلئة: أسطرها بسعر القائمة تُعاد بالوضع الجديد (ما كتبه
@@ -63,6 +87,7 @@ export const usePosStore = defineStore("pos", () => {
 
   const reset = () => {
     connection.stop();
+    restaurant.stopKitchen();
     // السلة تبقى محفوظة على الجهاز: تعود عند فتح الشاشة من جديد
     state.ready.value = false;
     state.cart.value = [];
@@ -98,6 +123,11 @@ export const usePosStore = defineStore("pos", () => {
     pendingCount: state.pendingCount,
     failedEntries: state.failedEntries,
     cart: state.cart,
+    order: state.order,
+    tableOrders: state.tableOrders,
+    kitchenTickets: state.kitchenTickets,
+    kitchenOrders: state.kitchenOrders,
+    restaurant: state.restaurant,
     customerId: state.customerId,
     invoiceDiscount: state.invoiceDiscount,
     selectedKey: state.selectedKey,
@@ -129,7 +159,7 @@ export const usePosStore = defineStore("pos", () => {
     cashierRevoked: shiftModule.cashierRevoked,
     canReturn: shiftModule.canReturn,
     openShift: shiftModule.openShift,
-    closeShift: shiftModule.closeShift,
+    closeShift,
     shiftSummary: shiftModule.shiftSummary,
     addCashMove: shiftModule.addCashMove,
     supervisors: shiftModule.supervisors,
@@ -153,7 +183,7 @@ export const usePosStore = defineStore("pos", () => {
     removeLine: cartModule.removeLine,
     clearCart: cartModule.clearCart,
     holdCart: cartModule.holdCart,
-    resumeHeld: cartModule.resumeHeld,
+    resumeHeld: restaurant.resumeHeld,
     deleteHeld: cartModule.deleteHeld,
     addCustomer: cartModule.addCustomer,
     customerBalance: cartModule.customerBalance,
@@ -161,10 +191,26 @@ export const usePosStore = defineStore("pos", () => {
     stockEnforced: cartModule.stockEnforced,
 
     // البيع والمرتجع
-    checkout: checkoutModule.checkout,
+    checkout,
     lookupInvoice: checkoutModule.lookupInvoice,
     refundPreview: checkoutModule.refundPreview,
     refund: checkoutModule.refund,
+
+    // المطاعم
+    restaurantEnabled: restaurant.enabled,
+    tables: restaurant.tables,
+    tableStatus: restaurant.tableStatus,
+    pendingKitchen: restaurant.pendingKitchen,
+    sendToKitchen: restaurant.sendToKitchen,
+    takeKitchenTicket: restaurant.takeTicketToPrint,
+    openTable: restaurant.openTable,
+    switchToTakeaway: restaurant.switchToTakeaway,
+    moveTable: restaurant.moveTable,
+    readyOrders: restaurant.readyOrders,
+    refreshKitchen: restaurant.refreshKitchen,
+    markServed: restaurant.markServed,
+    startKitchen: restaurant.startKitchen,
+    stopKitchen: restaurant.stopKitchen,
 
     init,
     reset,

@@ -45,6 +45,7 @@ const close = () => emit("update:modelValue", false);
 export const POS_SHORTCUTS = [
   { keys: "F1", label: "هذه القائمة" },
   { keys: "F2", label: "البحث / مسح الباركود" },
+  { keys: "F3", label: "لوحة الأرقام (تُسحب لأي مكان)" },
   { keys: "F4", label: "الدفع — وداخل نافذة الدفع: نقداً بالضبط" },
   { keys: "F6", label: "تعليق الفاتورة" },
   { keys: "F7", label: "الفواتير المعلّقة" },

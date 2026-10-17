@@ -44,6 +44,10 @@
             {{ formatDateTime(invoice.issuedAt || invoice.invoiceDate) }}
           </strong>
         </div>
+        <div v-if="invoice.tableName">
+          <span>الطاولة</span>
+          <strong>{{ invoice.tableName }}</strong>
+        </div>
         <div>
           <span>العميل</span>
           <strong>{{ customerLabel(invoice.customer) }}</strong>

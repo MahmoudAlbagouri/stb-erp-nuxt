@@ -193,3 +193,63 @@
     }
   }
 }
+
+// ─── بون المطبخ المطبوع على الورق الحراري ───
+.kitchen-ticket {
+  box-sizing: border-box;
+  width: 72mm;
+  margin: 0 auto;
+  padding: 2mm 3mm;
+  font-family: "Cairo", sans-serif;
+  font-size: 13px;
+  color: #000;
+
+  p {
+    margin: 0;
+    text-align: center;
+  }
+  &__no {
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-align: center;
+  }
+  &__type {
+    margin: 4px 0;
+    padding: 3px 0;
+    font-size: 15px;
+    font-weight: 800;
+    text-align: center;
+    border-block: 1px dashed #000;
+  }
+  &__lines {
+    margin-top: 8px;
+    border-top: 1px solid #000;
+
+    > div {
+      padding: 4px 0;
+      border-bottom: 1px dashed #000;
+    }
+    // الإلغاء بإطار كامل: لا يُقرأ إضافة بالخطأ
+    .is-cancel {
+      margin: 3px 0;
+      padding: 4px;
+      border: 2px solid #000;
+    }
+  }
+  &__line {
+    display: flex;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+
+    small {
+      font-weight: 400;
+    }
+  }
+  &__note {
+    padding-inline-start: 24px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+}

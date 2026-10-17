@@ -115,10 +115,16 @@ public/sw.js              الـ service worker لشاشة الكاشير
 ## شاشة الكاشير (`/pos`)
 
 نوافذها مكوّنات `components/global/Pos*` (موافقة المشرف، المعلّقة، حركة الدرج،
-العميل، الخصم، تقرير الوردية، الاختصارات)، وأنماطها المشتركة في
+العميل، الخصم، تقرير الوردية، الاختصارات، الطاولات، حالة المطبخ، بون المطبخ
+المطبوع، ولوحة الأرقام العائمة `PosNumpad`)، وأنماطها المشتركة في
 `assets/scss/_pos.scss`. منطقها في `app/pos/` (`promotions.ts` تسعير السلة
-والعروض، `scale.ts` باركود الميزان، `display.ts` شاشة العميل). مرجع الاستخدام:
+والعروض، `scale.ts` باركود الميزان، `display.ts` شاشة العميل،
+`store/restaurant.ts` الطاولات والإرسال للمطبخ). مرجع الاستخدام:
 `back-end/erp-sass/docs/pos-screen.md`.
+
+شاشة المطبخ `/kitchen` (`pages/kitchen.vue`) صفحة بجلسة مستخدم (صلاحية
+`use_kitchen_display`) تسأل `/pos/kitchen/orders` كل 5 ثوانٍ — ليست جزءاً من
+تطبيق الكاشير الذي يعمل بلا إنترنت.
 
 تطبيق داخل التطبيق: يُرسم في المتصفح فقط (`ssr: false`)، هيكله يخزّنه الـ
 service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل بهوية الجهاز لا
@@ -151,7 +157,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` · `/stocktake/[id]` (شاشة العدّ، بلا إنترنت) | inventory | `inventory` |
 | `/dashboard/purchasing` · `/returns` · `/payments` · `/suppliers` | purchasing | `purchasing` |
 | `/dashboard/sales` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
-| `/pos` · `/pos/display` · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/audit` | pos | `pos` · `posAdmin` |
+| `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
 | `/dashboard/delivery` · `/agents` · `/settlements` · `/driver` (شاشة الطيار على جواله، برابطه بلا تسجيل دخول) | delivery | `delivery` |
 | `/dashboard/accounting` · `/chart` · `/journals` · `/expenses` · `/ledger` · `/trial-balance` · `/statements` · `/vat-return` | accounting | `accounting` |
 | `/dashboard/quotations` | quotation | `quotations` |

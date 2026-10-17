@@ -47,6 +47,32 @@
           <span>{{ formatNumber(pos.failedEntries.length) }} مرفوضة</span>
         </button>
 
+        <template v-if="pos.shift && pos.restaurantEnabled">
+          <button
+            class="btn btn--sm btn--ghost pos-tables-btn"
+            :class="{ 'is-on': pos.order.type === 'dine_in' }"
+            title="الطاولات"
+            @click="showTables = true"
+          >
+            <Armchair :size="15" />
+            <span>{{ pos.order.type === "dine_in" ? pos.order.tableName : "سفري" }}</span>
+            <span v-if="openTablesCount" class="pos-status__count">
+              {{ formatNumber(openTablesCount) }}
+            </span>
+          </button>
+          <button
+            class="btn btn--sm btn--ghost"
+            :class="{ 'pos-kitchen-ready': pos.readyOrders.length }"
+            title="حالة الطلبات في المطبخ"
+            @click="openKitchen"
+          >
+            <ChefHat :size="15" />
+            <span class="pos-hide-sm">المطبخ</span>
+            <span v-if="pos.readyOrders.length" class="pos-status__count">
+              {{ formatNumber(pos.readyOrders.length) }} جاهز
+            </span>
+          </button>
+        </template>
         <button
           v-if="pos.shift && pos.canReturn"
           class="btn btn--sm btn--ghost pos-return-btn"
@@ -101,6 +127,15 @@
           @click="openCustomerDisplay"
         >
           <MonitorUp :size="15" />
+        </button>
+        <button
+          v-if="pos.shift"
+          class="btn btn--sm btn--ghost btn--icon"
+          :class="{ 'is-on': showNumpad }"
+          title="لوحة الأرقام (F3)"
+          @click="toggleNumpad"
+        >
+          <Calculator :size="15" />
         </button>
         <button
           class="btn btn--sm btn--ghost btn--icon"
@@ -385,9 +420,19 @@
             v-model="search"
             class="form-input"
             placeholder="امسح الباركود أو ابحث بالاسم / الكود..."
+            aria-label="البحث"
             autocomplete="off"
             @keydown.enter.prevent="onSearchEnter"
           />
+          <button
+            v-if="pendingQty"
+            type="button"
+            class="pos-times"
+            title="كمية الصنف التالي — اضغط للإلغاء"
+            @click="pendingQty = null"
+          >
+            × {{ formatNumber(pendingQty) }} <X :size="12" />
+          </button>
         </div>
 
         <div v-if="pos.categories.length" class="doc-tabs pos-categories">
@@ -443,6 +488,20 @@
 
       <!-- السلة -->
       <section class="pos-cart card">
+        <button
+          v-if="pos.restaurantEnabled"
+          type="button"
+          class="pos-cart__order"
+          :class="{ 'is-table': pos.order.type === 'dine_in' }"
+          @click="showTables = true"
+        >
+          <component :is="pos.order.type === 'dine_in' ? Armchair : ShoppingBag" :size="16" />
+          <strong>{{ pos.order.type === "dine_in" ? pos.order.tableName : "سفري" }}</strong>
+          <span v-if="pos.order.rounds" class="doc-cell__sub">
+            أُرسل للمطبخ {{ formatNumber(pos.order.rounds) }} مرة
+          </span>
+          <span class="pos-cart__order-change">تغيير</span>
+        </button>
         <div class="pos-cart__customer">
           <select v-model="pos.customerId" class="form-select">
             <option value="">عميل نقدي</option>
@@ -489,7 +548,17 @@
                 >
                   سعر معدّل
                 </span>
+                <span v-if="line.note" class="pos-line__note">{{ line.note }}</span>
               </span>
+              <button
+                v-if="pos.restaurantEnabled"
+                class="btn btn--sm btn--ghost btn--icon"
+                :class="{ 'is-on': noteKey === line.key || !!line.note }"
+                title="ملاحظة للمطبخ"
+                @click.stop="toggleNote(line)"
+              >
+                <MessageSquare :size="14" />
+              </button>
               <button
                 class="btn btn--sm btn--danger btn--icon"
                 title="حذف (Delete)"
@@ -497,6 +566,28 @@
               >
                 <Trash2 :size="14" />
               </button>
+            </div>
+            <div v-if="noteKey === line.key" class="pos-line__note-edit" @click.stop>
+              <input
+                :ref="(el) => (noteEl = el as HTMLInputElement | null)"
+                v-model="line.note"
+                class="form-input"
+                maxlength="200"
+                placeholder="ملاحظة للمطبخ: بدون بصل، سبايسي…"
+                aria-label="ملاحظة للمطبخ"
+                @keydown.enter.prevent="noteKey = null"
+              />
+              <div class="pos-line__note-chips">
+                <button
+                  v-for="chip in NOTE_CHIPS"
+                  :key="chip"
+                  type="button"
+                  class="doc-tab"
+                  @click="line.note = line.note ? `${line.note}، ${chip}` : chip"
+                >
+                  {{ chip }}
+                </button>
+              </div>
             </div>
             <div class="pos-line__body">
               <div class="pos-qty">
@@ -616,6 +707,7 @@
             <Trash2 :size="16" />
           </button>
           <button
+            v-if="pos.order.type !== 'dine_in'"
             class="btn btn--ghost btn--icon"
             title="تعليق الفاتورة (F6)"
             :disabled="!pos.cart.length"
@@ -631,6 +723,19 @@
             @click="showDiscount = true"
           >
             <Percent :size="16" />
+          </button>
+          <button
+            v-if="pos.restaurantEnabled"
+            class="btn btn--ghost pos-kitchen"
+            title="إرسال الجديد للمطبخ (والإلغاءات)"
+            :disabled="!pos.pendingKitchen.length || sendingKitchen"
+            @click="sendKitchen"
+          >
+            <ChefHat :size="16" />
+            <span>المطبخ</span>
+            <span v-if="pos.pendingKitchen.length" class="pos-status__count">
+              {{ formatNumber(pos.pendingKitchen.length) }}
+            </span>
           </button>
           <button
             v-if="pos.deliveryOptions"
@@ -1082,6 +1187,24 @@
     <PosPriceModal :line="priceLine" @close="closePrice" @submit="submitPrice" />
     <PosApprovalModal ref="approval" />
     <PosShiftReport ref="shiftReport" :logo="pos.tenant?.logo ?? null" />
+    <PosTablesModal
+      v-model="showTables"
+      @open="openTable"
+      @move="moveTable"
+      @takeaway="toTakeaway"
+    />
+    <PosKitchenModal
+      v-model="showKitchen"
+      @served="markServed"
+      @reprint="printKitchen"
+    />
+    <PosKitchenTicket ref="kitchenPrinter" />
+    <PosNumpad
+      v-model="showNumpad"
+      :multiplier="pendingQty"
+      @multiply="onMultiply"
+      @enter="onNumpadEnter"
+    />
 
     <!-- الشعار من نسخة الجهاز: يُطبع بلا إنترنت ولا جلسة -->
     <SalesInvoicePrint
@@ -1106,8 +1229,11 @@ import {
 } from "vue";
 import {
   AlertTriangle,
+  Armchair,
   Banknote,
   Building2,
+  Calculator,
+  ChefHat,
   ChevronLeft,
   CircleCheck,
   Inbox,
@@ -1116,6 +1242,7 @@ import {
   CloudUpload,
   LockKeyhole,
   LogOut,
+  MessageSquare,
   Minus,
   MonitorSmartphone,
   MonitorUp,
@@ -1128,6 +1255,7 @@ import {
   RefreshCw,
   ScanBarcode,
   Settings,
+  ShoppingBag,
   Store,
   Trash2,
   Truck,
@@ -1151,6 +1279,8 @@ import { verifyCashierPin } from "@/pos/cashiers";
 import type {
   CartLine,
   CashMove,
+  DiningTableInfo,
+  LocalKitchenTicket,
   LocalReturn,
   LocalSale,
   OutboxType,
@@ -1206,6 +1336,8 @@ const OUTBOX_LABELS: Record<OutboxType, string> = {
   "cash.move": "حركة نقدية",
   audit: "سجل تدقيق",
   "shift.close": "تقفيل وردية",
+  "kitchen.send": "بون مطبخ",
+  "kitchen.close": "إغلاق طلب طاولة",
 };
 
 // ─── موافقة المشرف ────────────────────────────────────────────────────────────
@@ -1338,6 +1470,7 @@ const bind = async (target: PosDevice) => {
   try {
     await pos.bindDevice(target);
     pos.start();
+    pos.startKitchen();
     toast.success(`تم ربط الجهاز "${target.name}" وتنزيل ${pos.products.length} صنف`);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر ربط الجهاز"));
@@ -1475,6 +1608,7 @@ const onSearchEnter = () => {
     if (pos.scan(term)) {
       sound("scan");
       search.value = "";
+      applyPendingToScanned();
       promptPendingPrice();
       return;
     }
@@ -1506,7 +1640,7 @@ const onSearchEnter = () => {
  */
 const add = (product: PosProduct): boolean => {
   try {
-    pos.addProduct(product);
+    pos.addProduct(product, null, takePendingQty(product));
     promptPendingPrice();
     return true;
   } catch (e) {
@@ -1583,8 +1717,9 @@ const hold = async () => {
 };
 
 const resumeHeld = async (id: string) => {
-  await pos.resumeHeld(id);
+  const ticket = await pos.resumeHeld(id);
   showHeld.value = false;
+  if (ticket) await printKitchen(ticket);
 };
 
 const removeHeld = async (id: string) => {
@@ -1798,6 +1933,7 @@ const submitPay = async () => {
     showPay.value = false;
     doneSale.value = sale;
     await printSale(sale);
+    await printPendingKitchen();
     await nextTick();
     nextEl.value?.focus();
   } catch (e) {
@@ -1873,6 +2009,7 @@ const submitDelivery = async ({
     showDelivery.value = false;
     doneSale.value = sale;
     await printSale(sale);
+    await printPendingKitchen();
     await nextTick();
     nextEl.value?.focus();
   } catch (e) {
@@ -1926,6 +2063,7 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
   paidAmount: sumAmounts([sale.total, -(sale.creditAmount ?? 0)]),
   remaining: sale.creditAmount ?? 0,
   qrCode: sale.qrCode,
+  tableName: sale.tableName ?? null,
   delivery: sale.delivery
     ? {
         recipientName: sale.delivery.recipientName,
@@ -2105,6 +2243,184 @@ const printShiftReport = (kind: ShiftReportData["kind"]) => {
   if (report) void printReport(report);
 };
 
+// ─── المطاعم: الطاولات والمطبخ ────────────────────────────────────────────────
+const showTables = ref(false);
+const showKitchen = ref(false);
+const sendingKitchen = ref(false);
+const kitchenPrinter = ref<{ print: (ticket: LocalKitchenTicket) => Promise<void> } | null>(
+  null,
+);
+
+/** ملاحظات جاهزة للمطبخ (تُضاف بضغطة) */
+const NOTE_CHIPS = ["بدون بصل", "بدون صوص", "سبايسي", "زيادة", "خفيف", "سفري"];
+
+/** طاولات مشغولة (المفتوح على الشاشة وغيره) */
+const openTablesCount = computed(() => pos.tableStatus.size);
+
+const printKitchen = async (ticket: LocalKitchenTicket) => {
+  try {
+    // الإيصال السابق لا يُطبع مع البون
+    printTarget.value = null;
+    await nextTick();
+    await kitchenPrinter.value?.print(ticket);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذرت طباعة بون المطبخ"));
+  }
+};
+
+/** بون أُرسل تلقائياً مع البيع: يُطبع بعد الإيصال */
+const printPendingKitchen = async () => {
+  const ticket = pos.takeKitchenTicket();
+  if (ticket) await printKitchen(ticket);
+};
+
+const sendKitchen = async () => {
+  if (!pos.pendingKitchen.length) return;
+  sendingKitchen.value = true;
+  try {
+    const sent = pos.pendingKitchen.length;
+    const ticket = await pos.sendToKitchen();
+    sound("scan");
+    toast.success(
+      pos.online
+        ? `أُرسل للمطبخ (${formatNumber(sent)} صنف)`
+        : "بلا إنترنت: اطبع البون للمطبخ — يصل شاشته عند عودة الاتصال",
+    );
+    if (ticket) await printKitchen(ticket);
+  } catch (e) {
+    sound("error");
+    toast.error(getErrorMessage(e, "تعذر الإرسال للمطبخ"));
+  } finally {
+    sendingKitchen.value = false;
+  }
+};
+
+const openTable = async (table: DiningTableInfo) => {
+  const hadTakeaway = pos.order.type !== "dine_in" && pos.cart.length > 0;
+  try {
+    const ticket = await pos.openTable(table);
+    showTables.value = false;
+    if (hadTakeaway) toast.info("عُلّقت الفاتورة السفري الجارية — تجدها في «معلّقة»");
+    if (ticket) await printKitchen(ticket);
+    await nextTick();
+    searchEl.value?.focus();
+  } catch (e) {
+    sound("error");
+    toast.error(getErrorMessage(e, "تعذر فتح الطاولة"));
+  }
+};
+
+const toTakeaway = async () => {
+  try {
+    const ticket = await pos.switchToTakeaway();
+    showTables.value = false;
+    if (ticket) await printKitchen(ticket);
+    searchEl.value?.focus();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر الرجوع للسفري"));
+  }
+};
+
+const moveTable = (table: DiningTableInfo) => {
+  try {
+    const from = pos.order.tableName;
+    pos.moveTable(table);
+    showTables.value = false;
+    toast.success(`نُقل الطلب من ${from} إلى ${table.name}`);
+  } catch (e) {
+    toast.warning(getErrorMessage(e, "تعذر نقل الطلب"));
+  }
+};
+
+const openKitchen = () => {
+  showKitchen.value = true;
+  void pos.refreshKitchen();
+};
+
+const markServed = async (id: string) => {
+  try {
+    await pos.markServed(id);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر تسجيل الاستلام"));
+  }
+};
+
+// الجاهز في المطبخ: صوت وتنبيه مرة لكل طلب
+const announcedReady = new Set<string>();
+watch(
+  () => pos.readyOrders.map((o) => o.id).join(","),
+  () => {
+    const fresh = pos.readyOrders.filter((o) => !announcedReady.has(o.id));
+    fresh.forEach((o) => announcedReady.add(o.id));
+    if (!fresh.length) return;
+    sound("success");
+    toast.info(
+      fresh
+        .map((o) => `طلب #${o.ticketNo} جاهز${o.tableName ? ` — ${o.tableName}` : o.label ? ` — ${o.label}` : ""}`)
+        .join(" · "),
+    );
+  },
+);
+
+// ملاحظة للمطبخ على سطر
+const noteKey = ref<number | null>(null);
+const noteEl = ref<HTMLInputElement | null>(null);
+const toggleNote = async (line: CartLine) => {
+  pos.selectedKey = line.key;
+  noteKey.value = noteKey.value === line.key ? null : line.key;
+  if (noteKey.value !== null) {
+    await nextTick();
+    noteEl.value?.focus();
+  }
+};
+
+// ─── لوحة الأرقام ─────────────────────────────────────────────────────────────
+const NUMPAD_OPEN_KEY = "stb-pos-numpad-open";
+const showNumpad = ref(false);
+/** كمية الصنف التالي ("3 ×" ثم الصنف) */
+const pendingQty = ref<number | null>(null);
+
+const toggleNumpad = () => {
+  showNumpad.value = !showNumpad.value;
+  try {
+    localStorage.setItem(NUMPAD_OPEN_KEY, showNumpad.value ? "1" : "0");
+  } catch {
+    // يكفي لهذه الجلسة
+  }
+};
+
+/** الكمية المعلّقة للصنف المضاف (وتُمسح). الصنف بسعر مفتوح يُضاف بقطعة */
+const takePendingQty = (product: PosProduct): number => {
+  const quantity = pendingQty.value;
+  pendingQty.value = null;
+  if (!quantity || product.openPrice) return 1;
+  return product.allowsFractions ? quantity : Math.round(quantity) || 1;
+};
+
+/** بعد مسح باركود: الكمية المعلّقة على السطر (لا على الموزون: الوزن من الميزان) */
+const applyPendingToScanned = () => {
+  const quantity = pendingQty.value;
+  pendingQty.value = null;
+  const line = selectedLine();
+  if (!quantity || !line || line.product.isWeighted || line.product.openPrice) return;
+  const extra = (line.product.allowsFractions ? quantity : Math.round(quantity)) - 1;
+  if (extra > 0) line.quantity = (Number(line.quantity) || 0) + extra;
+};
+
+const onMultiply = (value: number, input: HTMLInputElement | null) => {
+  // "×" في حقل غير البحث (كمية، مبلغ) لا معنى له
+  if (input && input !== searchEl.value) return;
+  pendingQty.value = value;
+  if (input) search.value = "";
+  searchEl.value?.focus();
+};
+
+/** "إدخال" بلا حقل مركّز: الرقم باركود أو كود صنف */
+const onNumpadEnter = (value: string) => {
+  search.value = value;
+  onSearchEnter();
+};
+
 // ─── شاشة العميل ──────────────────────────────────────────────────────────────
 const displayState = (): DisplayState => ({
   company: pos.settings?.sellerName || pos.tenant?.companyName || "",
@@ -2155,6 +2471,8 @@ const modalOpen = computed(
     showDelivery.value ||
     showDiscount.value ||
     showShortcuts.value ||
+    showTables.value ||
+    showKitchen.value ||
     !!priceLine.value ||
     !!approval.value?.isOpen,
 );
@@ -2177,6 +2495,8 @@ const closeTopModal = () => {
       showDelivery,
       showDiscount,
       showShortcuts,
+      showTables,
+      showKitchen,
     ]) {
       flag.value = false;
     }
@@ -2203,6 +2523,7 @@ const onKeydown = (event: KeyboardEvent) => {
   };
 
   if (key === "Escape") return handle(closeTopModal);
+  if (key === "F3") return handle(toggleNumpad);
   if (modalOpen.value) {
     // داخل نافذة الدفع: F4 = نقداً بالضبط
     if (key === "F4" && showPay.value) handle(() => payAll("cash"));
@@ -2316,8 +2637,15 @@ onMounted(async () => {
     accessKnown.value = true;
   });
 
+  try {
+    showNumpad.value = localStorage.getItem(NUMPAD_OPEN_KEY) === "1";
+  } catch {
+    // مقفلة
+  }
+
   if (pos.device) {
     pos.start();
+    pos.startKitchen();
     await nextTick();
     searchEl.value?.focus();
   } else {
@@ -2328,6 +2656,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", onKeydown);
   display.close();
+  pos.stopKitchen();
   pos.stop();
 });
 </script>
@@ -2843,5 +3172,96 @@ onBeforeUnmount(() => {
 
 .pos-recent__actions {
   padding: 0 $space-4 $space-3;
+}
+
+// ─── المطاعم ولوحة الأرقام ───────────────────────────────────────────────────
+// الكمية المعلّقة (× 3) داخل حقل البحث، على يسار النص
+.pos-times {
+  position: absolute;
+  left: $space-2;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px $space-3;
+  font-family: inherit;
+  font-weight: 800;
+  color: $stb-on-accent;
+  background: $stb-accent;
+  border: 0;
+  border-radius: $radius-full;
+  cursor: pointer;
+  direction: ltr;
+}
+
+// نوع الطلب أعلى السلة: سفري أو الطاولة (يفتح الطاولات)
+.pos-cart__order {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2 $space-3;
+  font-family: inherit;
+  color: $stb-text-primary;
+  background: $stb-surface-2;
+  border: 1px solid $stb-border-light;
+  border-radius: $radius-md;
+  cursor: pointer;
+
+  &.is-table {
+    border-color: $stb-warning;
+    background: rgba($stb-warning, 0.1);
+  }
+  &:hover {
+    border-color: $stb-accent;
+  }
+}
+.pos-cart__order-change {
+  margin-inline-start: auto;
+  font-size: $font-size-xs;
+  color: $stb-accent;
+}
+
+.pos-line__note {
+  display: block;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  color: $stb-warning;
+}
+.pos-line__note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+.pos-line__note-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-1;
+
+  .doc-tab {
+    padding: 2px $space-2;
+    font-size: $font-size-xs;
+  }
+}
+.pos-line__head .btn.is-on {
+  color: $stb-warning;
+}
+
+.pos-kitchen .pos-status__count,
+.pos-tables-btn .pos-status__count {
+  margin-inline-start: $space-1;
+}
+.pos-tables-btn.is-on {
+  color: $stb-warning;
+}
+// طلب جاهز في المطبخ: الزر ينبض حتى يُفتح
+.pos-kitchen-ready {
+  color: $stb-success;
+  animation: pos-ready-pulse 1.6s ease-in-out infinite;
+}
+@keyframes pos-ready-pulse {
+  50% {
+    box-shadow: 0 0 0 4px rgba($stb-success, 0.25);
+  }
 }
 </style>

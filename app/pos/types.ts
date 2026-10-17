@@ -139,6 +139,89 @@ export interface PosBootstrap {
   posOptions?: PosOptions;
   /** البيع "توصيل": null = الباقة بلا توصيل. غائب من سيرفر أقدم */
   delivery?: PosDeliveryOptions | null;
+  /** المطاعم (الطاولات والمطبخ): null = الباقة بلا مطاعم. غائب من سيرفر أقدم */
+  restaurant?: PosRestaurantOptions | null;
+}
+
+// ─── المطاعم: الطاولات والمطبخ ───────────────────────────────────────────────
+export interface DiningTableInfo {
+  id: string;
+  name: string;
+  /** القسم: صالة، تراس، عائلات… */
+  area: string | null;
+  seats: number;
+}
+
+/** ما ينزل للشاشة: طاولات فرعها وإعدادات المطبخ */
+export interface PosRestaurantOptions {
+  tables: DiningTableInfo[];
+  /** تصنيفات تُحضَّر في المطبخ. فارغة = كل الأصناف */
+  kitchenCategoryIds: string[];
+  /** طباعة بون المطبخ مع كل إرسال (بلا إنترنت يُطبع دائماً) */
+  printKitchenTicket: boolean;
+  /** ما لم يُرسل للمطبخ يُرسل تلقائياً عند الدفع */
+  sendOnPayment: boolean;
+}
+
+export type OrderType = "takeaway" | "dine_in";
+
+/** سطر في بون المطبخ. الكمية السالبة = إلغاء ما أُرسل من قبل */
+export interface KitchenLine {
+  productId: string;
+  unitId: string | null;
+  name: string;
+  unitName: string;
+  quantity: number;
+  note: string;
+}
+
+/**
+ * الطلب الجاري على الشاشة: سفري أو طاولة. `sent` ما وصل المطبخ منه — منه
+ * تُحسب الإضافات والإلغاءات في الإرسال التالي.
+ */
+export interface OrderContext {
+  /** يجمع بونات نفس الطلب في المطبخ */
+  ref: string;
+  type: OrderType;
+  tableId: string | null;
+  tableName: string | null;
+  openedAt: string;
+  sent: KitchenLine[];
+  /** كم مرة أُرسل للمطبخ */
+  rounds: number;
+}
+
+/** طلب طاولة مفتوح لم يُدفع (محفوظ على هذا الجهاز) */
+export interface TableOrder extends StoredCart {
+  order: OrderContext;
+  total: number;
+  items: number;
+  updatedAt: string;
+}
+
+/** بون مطبخ أُرسل من هذه الشاشة (للطباعة وإعادتها) */
+export interface LocalKitchenTicket {
+  id: string;
+  ticketNo: number;
+  orderRef: string;
+  round: number;
+  orderType: OrderType | "delivery";
+  tableName: string | null;
+  label: string | null;
+  cashierName: string | null;
+  sentAt: string;
+  lines: KitchenLine[];
+}
+
+/** حالة بون كما يعرفها السيرفر (من شاشة المطبخ) */
+export interface DeviceKitchenOrder {
+  id: string;
+  ticketNo: number;
+  orderRef: string;
+  tableName: string | null;
+  label: string | null;
+  status: "new" | "preparing" | "ready";
+  readyAt: string | null;
 }
 
 /** ما ينزل للشاشة لتبيع توصيل بلا إنترنت */
@@ -324,6 +407,8 @@ export interface CartLine {
   priceApprovedBy?: string | null;
   /** صنف بسعر مفتوح لم يُكتب سعره بعد: لا يُدفع قبل كتابته */
   pricePending?: boolean;
+  /** ملاحظة للمطبخ ("بدون بصل") — لا تظهر في الفاتورة */
+  note?: string;
 }
 
 /** أسباب تغيير السعر الجاهزة (التخفيض يحتاج سبباً) */
@@ -347,6 +432,7 @@ export interface StoredCartLine {
   priceReason?: string | null;
   priceApprovedBy?: string | null;
   pricePending?: boolean;
+  note?: string;
 }
 
 /** سلة محفوظة: الجارية (تبقى بعد إغلاق المتصفح) أو معلّقة */
@@ -363,6 +449,8 @@ export interface HeldCart extends StoredCart {
   label: string;
   total: number;
   items: number;
+  /** ما أُرسل منها للمطبخ قبل تعليقها (غائب في معلّقة أقدم) */
+  order?: OrderContext | null;
 }
 
 /** إيداع أو سحب نقدي من الدرج خلال الوردية */
@@ -482,6 +570,8 @@ export interface LocalSale {
   qrCode: string | null;
   /** فاتورة "توصيل": يُنشأ لها أوردر عند رفعها */
   delivery?: SaleDelivery | null;
+  /** طاولة الطلب (للإيصال فقط، لا يُرفع) */
+  tableName?: string | null;
 }
 
 // ─── المرتجع ─────────────────────────────────────────────────────────────────
@@ -536,7 +626,9 @@ export type OutboxType =
   | "return"
   | "cash.move"
   | "audit"
-  | "shift.close";
+  | "shift.close"
+  | "kitchen.send"
+  | "kitchen.close";
 
 /** عملية في طابور الرفع: تبقى حتى يؤكد السيرفر استلامها */
 export interface OutboxEntry {
@@ -554,4 +646,69 @@ export interface SyncResult {
   id: string;
   status: "ok" | "duplicate" | "error";
   message?: string;
+}
+
+// ─── المطاعم في لوحة التحكم ──────────────────────────────────────────────────
+/** طاولة كما تديرها لوحة التحكم */
+export interface DiningTableRecord {
+  id: string;
+  name: string;
+  area: string | null;
+  seats: number;
+  /** null = تظهر في كل الفروع */
+  branchId: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface DiningTablePayload {
+  name?: string;
+  area?: string | null;
+  seats?: number;
+  branchId?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface BulkTablesPayload {
+  prefix?: string;
+  from: number;
+  to: number;
+  area?: string | null;
+  seats?: number;
+  branchId?: string | null;
+}
+
+export interface RestaurantSettingsRecord {
+  kitchenCategoryIds: string[];
+  printKitchenTicket: boolean;
+  sendOnPayment: boolean;
+}
+
+export type KitchenOrderStatus = "new" | "preparing" | "ready" | "served" | "cancelled";
+
+/** بون كما تعرضه شاشة المطبخ */
+export interface KitchenOrderRecord {
+  id: string;
+  deviceId: string;
+  branchId: string | null;
+  ticketNo: number;
+  orderType: "dine_in" | "takeaway" | "delivery";
+  tableName: string | null;
+  label: string | null;
+  orderRef: string;
+  round: number;
+  cashierName: string | null;
+  note: string | null;
+  lines: {
+    productId: string | null;
+    name: string;
+    unitName: string | null;
+    quantity: number;
+    note: string | null;
+  }[];
+  status: KitchenOrderStatus;
+  sentAt: string;
+  startedAt: string | null;
+  readyAt: string | null;
 }

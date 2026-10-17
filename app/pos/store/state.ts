@@ -3,16 +3,21 @@
 // كل الحالة هنا: أجزاء المتجر (الاتصال، الوردية، السلة، البيع) تقرأ وتكتب
 // نفس الـ refs، ومتجر stores/pos.ts يجمعها ويعرضها كمتجر واحد.
 import { computed, ref } from "vue";
+import { newUuid } from "@/pos/calc";
 import { posDb } from "@/pos/db";
 import { DEFAULT_DRAWER, type DrawerConfig } from "@/pos/drawer";
 import type {
   CartLine,
   CashMove,
+  DeviceKitchenOrder,
   HeldCart,
   InvoiceDiscount,
   LocalReturn,
   LocalSale,
+  LocalKitchenTicket,
   LocalShift,
+  OrderContext,
+  OrderType,
   OutboxEntry,
   PosCashier,
   PosCategory,
@@ -23,7 +28,9 @@ import type {
   PosOptions,
   PosProduct,
   PosPromotion,
+  PosRestaurantOptions,
   PosTenantProfile,
+  TableOrder,
 } from "@/pos/types";
 import type { SalesSettings } from "@/types/sales";
 
@@ -62,6 +69,23 @@ export const CART_SAVE_DELAY_MS = 300;
 export const WEIGHT_DECIMALS = 3;
 /** "آخر اتصال" وساعة الجهاز يُحفظان على القرص بهذه الوتيرة لا مع كل نبضة */
 export const PERSIST_EVERY_MS = 60_000;
+
+/** طلب جديد على الشاشة: سفري، أو طاولة */
+export const newOrderContext = (
+  type: OrderType = "takeaway",
+  table: { id: string; name: string } | null = null,
+): OrderContext => ({
+  ref: newUuid(),
+  type,
+  tableId: table?.id ?? null,
+  tableName: table?.name ?? null,
+  openedAt: new Date().toISOString(),
+  sent: [],
+  rounds: 0,
+});
+
+/** كم بون مطبخ يُحفظ على الشاشة لإعادة طباعته */
+export const KEEP_KITCHEN_TICKETS = 40;
 
 /** الكميات بأربع خانات كما في السيرفر: يزيل ضجيج الفاصلة العائمة */
 export const roundQuantity = (value: number): number =>
@@ -103,6 +127,16 @@ export const createPosState = () => {
   const posOptions = ref<PosOptions>(DEFAULT_POS_OPTIONS);
   /** البيع "توصيل" (null = الباقة بلا توصيل) */
   const deliveryOptions = ref<PosDeliveryOptions | null>(null);
+  /** المطاعم: الطاولات وإعدادات المطبخ (null = الباقة بلا مطاعم) */
+  const restaurant = ref<PosRestaurantOptions | null>(null);
+  /** الطلب الجاري (سفري أو طاولة) وما أُرسل منه للمطبخ */
+  const order = ref<OrderContext>(newOrderContext());
+  /** طلبات الطاولات المفتوحة على هذا الجهاز (غير الجاري) */
+  const tableOrders = ref<TableOrder[]>([]);
+  /** آخر بونات المطبخ من هذه الشاشة (لإعادة الطباعة) */
+  const kitchenTickets = ref<LocalKitchenTicket[]>([]);
+  /** حالة بونات هذه الشاشة في المطبخ (من السيرفر) */
+  const kitchenOrders = ref<DeviceKitchenOrder[]>([]);
   /** فواتير معلّقة على هذه الشاشة */
   const held = ref<HeldCart[]>([]);
   /** إيداعات وسحوبات الدرج في الوردية الحالية */
@@ -187,6 +221,11 @@ export const createPosState = () => {
     promotions,
     posOptions,
     deliveryOptions,
+    restaurant,
+    order,
+    tableOrders,
+    kitchenTickets,
+    kitchenOrders,
     held,
     cashMoves,
     online,

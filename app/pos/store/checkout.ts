@@ -179,6 +179,9 @@ export const createCheckout = (
           })
         : null,
       delivery,
+      // طلب طاولة: اسمها على الإيصال
+      tableName:
+        state.order.value.type === "dine_in" ? state.order.value.tableName : null,
     };
 
     await posDb.saveSale(

@@ -229,6 +229,8 @@ export interface PrintableInvoice {
   qrCode?: string | null;
   /** فاتورة أوردر توصيل: بيانات المستلم وما يُحصَّل */
   delivery?: PrintableDelivery | null;
+  /** طاولة الطلب (مطعم) */
+  tableName?: string | null;
   lines?: {
     id: string;
     productName: string;

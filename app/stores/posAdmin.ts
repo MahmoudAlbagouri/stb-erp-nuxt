@@ -4,6 +4,11 @@ import { defineStore } from "pinia";
 import { useApi } from "../composables/useApi";
 import type { Paginated } from "@/types/catalog";
 import type {
+  BulkTablesPayload,
+  DiningTablePayload,
+  DiningTableRecord,
+  KitchenOrderRecord,
+  KitchenOrderStatus,
   PosAuditRecord,
   PosCashierPayload,
   PosCashierRecord,
@@ -13,6 +18,7 @@ import type {
   PosPromotionPayload,
   PosPromotionRecord,
   PosShiftRecord,
+  RestaurantSettingsRecord,
 } from "@/pos/types";
 
 const BASE = "/pos";
@@ -50,6 +56,50 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
   const removeCashier = async (id: string) => {
     await api.del(`${BASE}/cashiers/${id}`);
   };
+
+  // ─── المطاعم: الطاولات وإعدادات المطبخ وشاشته ───
+  const fetchTables = async () =>
+    (await api.get<DiningTableRecord[]>(`${BASE}/restaurant/tables`)).data;
+
+  const createTable = async (payload: DiningTablePayload) =>
+    (await api.post<DiningTableRecord>(`${BASE}/restaurant/tables`, payload)).data;
+
+  const createTables = async (payload: BulkTablesPayload) =>
+    (
+      await api.post<{ created: number; skipped: number }>(
+        `${BASE}/restaurant/tables/bulk`,
+        payload,
+      )
+    ).data;
+
+  const updateTable = async (id: string, payload: DiningTablePayload) =>
+    (await api.patch<DiningTableRecord>(`${BASE}/restaurant/tables/${id}`, payload))
+      .data;
+
+  const removeTable = async (id: string) => {
+    await api.del(`${BASE}/restaurant/tables/${id}`);
+  };
+
+  const fetchRestaurantSettings = async () =>
+    (await api.get<RestaurantSettingsRecord>(`${BASE}/restaurant/settings`)).data;
+
+  const updateRestaurantSettings = async (
+    payload: Partial<RestaurantSettingsRecord>,
+  ) =>
+    (
+      await api.patch<RestaurantSettingsRecord>(`${BASE}/restaurant/settings`, payload)
+    ).data;
+
+  const fetchKitchenBoard = async (branchId?: string) =>
+    (
+      await api.get<KitchenOrderRecord[]>(
+        `${BASE}/kitchen/orders${toQueryString({ branchId })}`,
+      )
+    ).data;
+
+  const setKitchenStatus = async (id: string, status: KitchenOrderStatus) =>
+    (await api.patch<KitchenOrderRecord>(`${BASE}/kitchen/orders/${id}`, { status }))
+      .data;
 
   const fetchShifts = async (
     filters: { deviceId?: string; status?: string; page?: number } = {},
@@ -105,6 +155,15 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
     ).data;
 
   return {
+    fetchTables,
+    createTable,
+    createTables,
+    updateTable,
+    removeTable,
+    fetchRestaurantSettings,
+    updateRestaurantSettings,
+    fetchKitchenBoard,
+    setKitchenStatus,
     fetchPromotions,
     createPromotion,
     updatePromotion,

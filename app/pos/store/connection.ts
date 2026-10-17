@@ -24,6 +24,7 @@ import { useAuthStore } from "@/stores/auth";
 import {
   HEARTBEAT_MS,
   HOUR_MS,
+  newOrderContext,
   PERSIST_EVERY_MS,
   PULL_EVERY_MS,
   PUSH_BATCH,
@@ -214,6 +215,7 @@ export const createConnection = (
       promotions,
       posOptions,
       deliveryOptions,
+      restaurant,
       tenant,
       cashiers,
       returnsAllowed,
@@ -269,6 +271,9 @@ export const createConnection = (
     // null = الباقة بلا توصيل؛ غائب (سيرفر أقدم) = يبقى المحفوظ
     const nextDelivery =
       data.delivery !== undefined ? data.delivery : deliveryOptions.value;
+    // المطاعم كالتوصيل: null = الباقة بلا مطاعم؛ غائب = يبقى المحفوظ
+    const nextRestaurant =
+      data.restaurant !== undefined ? data.restaurant : restaurant.value;
 
     await posDb.setMeta({
       device: data.device,
@@ -284,6 +289,7 @@ export const createConnection = (
       promotions: data.promotions ?? promotions.value,
       posOptions: data.posOptions ?? posOptions.value,
       deliveryOptions: nextDelivery,
+      restaurant: nextRestaurant,
       ...(stockReceived ? { stock: nextStock, stockComplete: true } : {}),
     });
     stockLevels.value = nextStock;
@@ -292,6 +298,7 @@ export const createConnection = (
     promotions.value = data.promotions ?? promotions.value;
     posOptions.value = data.posOptions ?? posOptions.value;
     deliveryOptions.value = nextDelivery;
+    restaurant.value = nextRestaurant;
     tenant.value = nextTenant;
     cashiers.value = data.cashiers;
     returnsAllowed.value = data.returnsAllowed;
@@ -480,6 +487,10 @@ export const createConnection = (
     state.cart.value = [];
     state.held.value = [];
     state.cashMoves.value = [];
+    state.tableOrders.value = [];
+    state.kitchenTickets.value = [];
+    state.kitchenOrders.value = [];
+    state.order.value = newOrderContext();
     state.stockLevels.value = {};
     state.stockKnown.value = false;
     state.serverBalances.value = {};
@@ -532,6 +543,11 @@ export const createConnection = (
     state.cashMoves.value = [];
     state.promotions.value = [];
     state.deliveryOptions.value = null;
+    state.restaurant.value = null;
+    state.tableOrders.value = [];
+    state.kitchenTickets.value = [];
+    state.kitchenOrders.value = [];
+    state.order.value = newOrderContext();
     state.stockLevels.value = {};
     state.stockKnown.value = false;
     state.serverBalances.value = {};

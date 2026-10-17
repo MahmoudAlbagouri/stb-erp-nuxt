@@ -5,15 +5,19 @@ import { DEFAULT_DRAWER, type DrawerConfig } from "@/pos/drawer";
 import type {
   CashMove,
   HeldCart,
+  LocalKitchenTicket,
   LocalShift,
+  OrderContext,
   PosCashier,
   PosDeliveryOptions,
   PosDevice,
   PosOfflinePolicy,
   PosOptions,
   PosPromotion,
+  PosRestaurantOptions,
   PosTenantProfile,
   StoredCart,
+  TableOrder,
 } from "@/pos/types";
 import { useAuthStore } from "@/stores/auth";
 import type { SalesSettings } from "@/types/sales";
@@ -21,6 +25,7 @@ import type { PosCart } from "./cart";
 import {
   DEFAULT_OFFLINE_POLICY,
   DEFAULT_POS_OPTIONS,
+  newOrderContext,
   type PosState,
 } from "./state";
 
@@ -107,7 +112,13 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
         posDb.getMeta<StoredCart>("cart"),
         posDb.getMeta<PosDeliveryOptions | null>("deliveryOptions"),
       ]);
-    const stockComplete = await posDb.getMeta<boolean>("stockComplete");
+    const [stockComplete, dining, savedOrder, tables, tickets] = await Promise.all([
+      posDb.getMeta<boolean>("stockComplete"),
+      posDb.getMeta<PosRestaurantOptions | null>("restaurant"),
+      posDb.getMeta<OrderContext>("order"),
+      posDb.getMeta<TableOrder[]>("tableOrders"),
+      posDb.getMeta<LocalKitchenTicket[]>("kitchenTickets"),
+    ]);
     state.stockLevels.value = levels ?? {};
     // نسخة كاملة من الأرصدة استُلمت من قبل؟ بدونها لا تُعرض ولا يُمنع بها بيع
     state.stockKnown.value = stockComplete === true;
@@ -115,6 +126,11 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
     state.promotions.value = promos ?? [];
     state.posOptions.value = options ?? DEFAULT_POS_OPTIONS;
     state.deliveryOptions.value = delivery ?? null;
+    state.restaurant.value = dining ?? null;
+    state.tableOrders.value = tables ?? [];
+    state.kitchenTickets.value = tickets ?? [];
+    // الطلب الجاري (طاولة مفتوحة على الشاشة) يعود مع سلته
+    state.order.value = savedOrder && sh ? savedOrder : newOrderContext();
     state.held.value = parked ?? [];
     state.cashMoves.value = moves ?? [];
     // سلة لم تكتمل قبل إغلاق المتصفح أو انقطاع الكهرباء

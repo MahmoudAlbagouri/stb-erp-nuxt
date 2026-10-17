@@ -16,6 +16,7 @@ import type { PosConnection } from "./connection";
 import type { PosShiftModule } from "./shift";
 import {
   CART_SAVE_DELAY_MS,
+  newOrderContext,
   roundQuantity,
   WEIGHT_DECIMALS,
   type PosState,
@@ -179,6 +180,7 @@ export const createCart = (
       unitId: line.unitId,
       quantity: Number(line.quantity) || 0,
       discount: Number(line.discount) || 0,
+      ...(line.note?.trim() ? { note: line.note.trim() } : {}),
       // السعر المكتوب يبقى مع السلة؛ سعر القائمة يُقرأ من الصنف عند الاسترجاع
       ...(line.product.openPrice || isRepriced(line)
         ? {
@@ -223,6 +225,7 @@ export const createCart = (
       const product = byId.get(line.productId);
       if (!product) return [];
       const restored = buildLine(product, line.unitId, line.quantity, line.discount);
+      if (line.note) restored.note = line.note;
       if (line.unitPrice !== undefined) {
         restored.unitPrice = line.unitPrice;
         restored.listPrice = line.listPrice ?? null;
@@ -281,12 +284,15 @@ export const createCart = (
       }
     }
 
-    // السعر المفتوح: كل إضافة سطر بسعره (الخدمة نفسها قد تُباع بسعرين)
+    // السعر المفتوح: كل إضافة سطر بسعره (الخدمة نفسها قد تُباع بسعرين). وسطر
+    // له ملاحظة للمطبخ ("بدون بصل") لا تُضاف عليه قطعة عادية
     const existing = product.openPrice
       ? undefined
       : cart.value.find(
           (line) =>
-            line.product.id === product.id && line.unitId === (unit?.unitId ?? null),
+            line.product.id === product.id &&
+            line.unitId === (unit?.unitId ?? null) &&
+            !line.note?.trim(),
         );
     if (existing) {
       existing.quantity = roundQuantity((Number(existing.quantity) || 0) + quantity);
@@ -457,6 +463,9 @@ export const createCart = (
   /** يعلّق السلة الحالية ليخدم الكاشير عميلاً آخر */
   const holdCart = async (label = "") => {
     if (!cart.value.length) throw new Error("السلة فارغة");
+    if (state.order.value.type === "dine_in") {
+      throw new Error("طلب الطاولة محفوظ عليها — اختر طاولة أخرى أو سفري");
+    }
     const entry: HeldCart = {
       ...serializeCart(),
       id: newUuid(),
@@ -464,10 +473,13 @@ export const createCart = (
       label: label.trim(),
       total: priced.value.total,
       items: priced.value.items,
+      // ما أُرسل منها للمطبخ يعود معها: لا يُرسل مرتين
+      order: state.order.value.rounds ? state.order.value : null,
     };
     held.value = [...held.value, entry];
     await saveHeld();
     resetCart();
+    state.order.value = newOrderContext();
     await logAudit("sale_held", {
       amount: entry.total,
       details: entry.label || undefined,
@@ -482,6 +494,7 @@ export const createCart = (
     held.value = held.value.filter((h) => h.id !== id);
     await saveHeld();
     restoreCart(entry);
+    state.order.value = entry.order ?? newOrderContext();
   };
 
   const deleteHeld = async (id: string, approvedBy: string | null = null) => {
@@ -547,6 +560,7 @@ export const createCart = (
     cartTotals,
     discountLimit,
     cartIssues,
+    serializeCart,
     restoreCart,
     resetCart,
     setDeliveryFee,
