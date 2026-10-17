@@ -1,4 +1,4 @@
-// stores/accounting.ts — المحاسبة: التفعيل، شجرة الحسابات، القيود، والتقارير
+// stores/accounting.ts — المحاسبة: التفعيل، الشجرة، القيود، سندات الصرف، إقفال السنة، والتقارير
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useApi } from "../composables/useApi";
@@ -8,6 +8,11 @@ import type {
   AccountingStatus,
   AccountPayload,
   BalanceSheet,
+  ExpenseFilters,
+  ExpenseVoucher,
+  ExpenseVoucherPayload,
+  ExpenseVoucherView,
+  FiscalYears,
   IncomeStatement,
   JournalEntry,
   JournalEntryView,
@@ -19,6 +24,7 @@ import type {
   SettingsPayload,
   TemplateAccount,
   TrialBalance,
+  VatReturn,
 } from "@/types/accounting";
 
 const BASE = "/accounting";
@@ -136,6 +142,43 @@ export const useAccountingStore = defineStore("accounting", () => {
       )
     ).data;
 
+  const vatReturn = async (query: { from: string; to: string }) =>
+    (
+      await api.get<VatReturn>(`${BASE}/reports/vat-return${toQueryString(query)}`)
+    ).data;
+
+  // ─── سندات الصرف ────────────────────────────────────────────────────────────
+  const fetchExpenses = async (filters: ExpenseFilters = {}) =>
+    (
+      await api.get<Paginated<ExpenseVoucher>>(
+        `${BASE}/expenses${toQueryString(filters)}`,
+      )
+    ).data;
+
+  const getExpense = async (id: string) =>
+    (await api.get<ExpenseVoucherView>(`${BASE}/expenses/${id}`)).data;
+
+  const createExpense = async (payload: ExpenseVoucherPayload) =>
+    (await api.post<ExpenseVoucherView>(`${BASE}/expenses`, payload)).data;
+
+  const cancelExpense = async (id: string, date: string, reason: string) =>
+    (
+      await api.post<ExpenseVoucherView>(`${BASE}/expenses/${id}/cancel`, {
+        date,
+        reason,
+      })
+    ).data;
+
+  // ─── إقفال السنة ────────────────────────────────────────────────────────────
+  const fetchYears = async () =>
+    (await api.get<FiscalYears>(`${BASE}/year-end`)).data;
+
+  const closeYear = async (year: number) =>
+    (await api.post<FiscalYears>(`${BASE}/year-end/${year}/close`, {})).data;
+
+  const reopenYear = async (year: number) =>
+    (await api.post<FiscalYears>(`${BASE}/year-end/${year}/reopen`, {})).data;
+
   const reset = () => {
     status.value = null;
     accounts.value = [];
@@ -161,6 +204,14 @@ export const useAccountingStore = defineStore("accounting", () => {
     ledger,
     incomeStatement,
     balanceSheet,
+    vatReturn,
+    fetchExpenses,
+    getExpense,
+    createExpense,
+    cancelExpense,
+    fetchYears,
+    closeYear,
+    reopenYear,
     reset,
   };
 });

@@ -7,6 +7,12 @@
         <p>حركة حساب (أو مجموعة حسابات) في فترة، برصيد أول المدة والرصيد بعد كل حركة</p>
       </div>
       <div class="page-header__actions">
+        <ReportExport
+          v-if="result"
+          path="/accounting/reports/ledger/export"
+          :query="shownQuery"
+          :filename="`ledger_${result.account.code}_${result.from}_${result.to}`"
+        />
         <button class="btn btn--ghost" :disabled="!result" @click="print">
           <Printer :size="16" /> طباعة
         </button>
@@ -121,6 +127,8 @@ const notActive = ref(false);
 const loading = ref(false);
 const result = ref<Ledger | null>(null);
 const viewing = ref<string | null>(null);
+/** فلاتر الكشف المعروض (للتصدير) */
+const shownQuery = ref<object>({});
 
 const today = companyToday();
 const query = reactive({
@@ -138,12 +146,14 @@ const load = async () => {
   if (!query.accountId) return;
   loading.value = true;
   try {
-    result.value = await store.ledger({
+    const params = {
       accountId: query.accountId,
       from: query.from,
       to: query.to,
       branchId: query.branchId || undefined,
-    });
+    };
+    result.value = await store.ledger(params);
+    shownQuery.value = params;
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل كشف الحساب"));
   } finally {

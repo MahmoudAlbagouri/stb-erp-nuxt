@@ -7,6 +7,12 @@
         <p>رصيد كل حساب أول الفترة وحركته فيها ورصيده الختامي — مجموع المدين يساوي مجموع الدائن</p>
       </div>
       <div class="page-header__actions">
+        <ReportExport
+          v-if="result"
+          path="/accounting/reports/trial-balance/export"
+          :query="shownQuery"
+          :filename="`trial_balance_${result.from}_${result.to}`"
+        />
         <button class="btn btn--ghost" :disabled="!result" @click="print">
           <Printer :size="16" /> طباعة
         </button>
@@ -103,6 +109,8 @@ const notActive = ref(false);
 const loading = ref(false);
 const result = ref<TrialBalance | null>(null);
 const hideZero = ref(true);
+/** فلاتر التقرير المعروض (للتصدير) */
+const shownQuery = ref<object>({});
 
 const today = companyToday();
 const query = reactive({
@@ -139,12 +147,14 @@ const rootSum = (field: "opening" | "closing", column: "d" | "c") =>
 const load = async () => {
   loading.value = true;
   try {
-    result.value = await store.trialBalance({
+    const params = {
       from: query.from,
       to: query.to,
       level: query.level || undefined,
       branchId: query.branchId || undefined,
-    });
+    };
+    result.value = await store.trialBalance(params);
+    shownQuery.value = params;
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل ميزان المراجعة"));
   } finally {

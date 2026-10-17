@@ -6,6 +6,7 @@ import type { Component } from "vue";
 import {
   ArrowLeftRight,
   Scale,
+  Percent,
   ListTree,
   ChartColumn,
   BookOpen,
@@ -307,6 +308,14 @@ export const NAV_SECTIONS: NavSection[] = [
         tenantOnly: true,
       },
       {
+        to: "/dashboard/accounting/expenses",
+        label: "سندات الصرف",
+        icon: ReceiptText,
+        permissions: [P.ACCOUNTING_VIEW],
+        feature: F.ACCOUNTING_MODULE,
+        tenantOnly: true,
+      },
+      {
         to: "/dashboard/accounting/ledger",
         label: "كشف حساب",
         icon: FileText,
@@ -326,6 +335,14 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/dashboard/accounting/statements",
         label: "القوائم المالية",
         icon: ChartColumn,
+        permissions: [P.ACCOUNTING_VIEW],
+        feature: F.ACCOUNTING_MODULE,
+        tenantOnly: true,
+      },
+      {
+        to: "/dashboard/accounting/vat-return",
+        label: "إقرار الضريبة",
+        icon: Percent,
         permissions: [P.ACCOUNTING_VIEW],
         feature: F.ACCOUNTING_MODULE,
         tenantOnly: true,

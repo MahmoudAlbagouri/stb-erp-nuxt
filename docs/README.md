@@ -97,6 +97,7 @@ public/sw.js              الـ service worker لشاشة الكاشير
 | `ConnectionBanner` | شريط انقطاع الاتصال في لوحة التحكم (`useConnection`) |
 | `FormDraftNotice` | «لديك نسخة لم تُحفظ» في النماذج الطويلة (`useFormDraft`) |
 | `AccountSelect` `JournalEntryModal` `AccountingInactive` | اختيار حساب من الشجرة، عرض قيد وعكسه، ودعوة تفعيل المحاسبة |
+| `ReportExport` | زرا تصدير Excel / PDF لمسار تصدير في الباك إند بفلاتر التقرير المعروض (يظهران لباقة فيها `reports_export`) |
 
 رسوم الصفحة الرئيسية في `components/dashboard` (`ChartBox` `ChartCard`
 `DonutChart` `StatTile`) على Apache ECharts، وألوانها من `utils/charts.ts`.
@@ -152,7 +153,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/sales` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
 | `/pos` · `/pos/display` · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/audit` | pos | `pos` · `posAdmin` |
 | `/dashboard/delivery` · `/agents` · `/settlements` · `/driver` (شاشة الطيار على جواله، برابطه بلا تسجيل دخول) | delivery | `delivery` |
-| `/dashboard/accounting` · `/chart` · `/journals` · `/ledger` · `/trial-balance` · `/statements` | accounting | `accounting` |
+| `/dashboard/accounting` · `/chart` · `/journals` · `/expenses` · `/ledger` · `/trial-balance` · `/statements` · `/vat-return` | accounting | `accounting` |
 | `/dashboard/quotations` | quotation | `quotations` |
 | `/dashboard/employees` · `/employees/[id]` | employees | `employees` |
 | `/dashboard/contracts` · `/salaries` · `/payroll` | contracts · salaries · payroll | بنفس الاسم |

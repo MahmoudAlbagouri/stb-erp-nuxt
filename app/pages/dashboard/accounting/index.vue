@@ -133,6 +133,75 @@
 
       <div class="card section">
         <div class="section__head">
+          <h3><CalendarCheck :size="18" /> إقفال السنة المالية</h3>
+          <p>
+            بعد انتهاء السنة ومراجعتها: قيد بتاريخ 31/12 يصفّر الإيرادات والمصروفات
+            في «{{ years?.retainedEarningsAccount?.name ?? "الأرباح المحتجزة" }}»، وتُقفل
+            الفترة حتى نهايتها. السنوات تُقفل بالترتيب، وآخر سنة مقفلة يمكن إعادة
+            فتحها (بقيد عكسي) لتسجيل تسويات ثم إقفالها ثانية.
+          </p>
+        </div>
+        <div v-if="!years" class="empty-state"><div class="spinner" /></div>
+        <div v-else class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>السنة</th>
+                <th>الإيرادات</th>
+                <th>المصروفات</th>
+                <th>صافي الربح</th>
+                <th>الحالة</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="y in years.years" :key="y.year">
+                <td>
+                  <strong class="doc-num">{{ y.year }}</strong>
+                  <span class="doc-cell__sub">{{ y.from }} — {{ y.to }}</span>
+                </td>
+                <td class="doc-num">{{ formatMoney(y.revenue) }}</td>
+                <td class="doc-num">{{ formatMoney(y.expenses) }}</td>
+                <td class="doc-num" :class="y.netProfit < 0 ? 'doc-money--out' : 'doc-money--in'">
+                  {{ formatMoney(y.netProfit) }}
+                </td>
+                <td>
+                  <span v-if="y.status === 'closed'" class="badge doc-status--done">
+                    مقفلة <template v-if="y.closingEntry">({{ y.closingEntry.number }})</template>
+                  </span>
+                  <span v-else-if="y.status === 'current'" class="badge doc-status--progress">جارية</span>
+                  <span v-else class="badge doc-status--draft">مفتوحة</span>
+                </td>
+                <td>
+                  <button
+                    v-if="y.canClose"
+                    v-can="'manage_accounting_settings'"
+                    class="btn btn--sm btn--primary"
+                    :disabled="!!yearBusy"
+                    :class="{ 'btn--loading': yearBusy === y.year }"
+                    @click="closeYear(y.year, y.netProfit)"
+                  >
+                    إقفال السنة
+                  </button>
+                  <button
+                    v-else-if="y.canReopen"
+                    v-can="'manage_accounting_settings'"
+                    class="btn btn--sm btn--ghost"
+                    :disabled="!!yearBusy"
+                    :class="{ 'btn--loading': yearBusy === y.year }"
+                    @click="reopenYear(y.year)"
+                  >
+                    إعادة فتح
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card section">
+        <div class="section__head">
           <h3><Wallet :size="18" /> حسابات طرق الدفع</h3>
           <p>
             إلى أي حساب يدخل ما يُقبض بكل طريقة، ومن أي حساب يُدفع للموردين
@@ -236,6 +305,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import {
   AlertTriangle,
+  CalendarCheck,
   CheckCheck,
   Landmark,
   Lock,
@@ -246,7 +316,11 @@ import {
 import { useAccountingStore } from "@/stores/accounting";
 import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/composables/useToast";
-import { JOURNAL_SOURCE_LABEL, type TemplateAccount } from "@/types/accounting";
+import {
+  JOURNAL_SOURCE_LABEL,
+  type FiscalYears,
+  type TemplateAccount,
+} from "@/types/accounting";
 
 definePageMeta({ middleware: "auth" });
 
@@ -294,6 +368,7 @@ const activate = async () => {
     await store.activate(country.value);
     await store.fetchAccounts(true);
     fillMethods();
+    void loadYears();
     toast.success("فُعّلت المحاسبة وسُجّل القيد الافتتاحي");
     showActivate.value = false;
   } catch (e) {
@@ -343,6 +418,55 @@ const saveMethods = async () => {
   }
 };
 
+// ─── إقفال السنة ───
+const years = ref<FiscalYears | null>(null);
+const yearBusy = ref<number | null>(null);
+
+const loadYears = async () => {
+  try {
+    years.value = await store.fetchYears();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر تحميل السنوات المالية"));
+  }
+};
+
+const closeYear = async (year: number, netProfit: number) => {
+  if (
+    !confirm(
+      `إقفال سنة ${year}: يُقيَّد صافي ${netProfit < 0 ? "الخسارة" : "الربح"} (${formatMoney(Math.abs(netProfit))}) في الأرباح المحتجزة وتُقفل الفترة حتى ${year}-12-31. متابعة؟`,
+    )
+  )
+    return;
+  yearBusy.value = year;
+  try {
+    years.value = await store.closeYear(year);
+    await store.fetchStatus();
+    fillMethods();
+    toast.success(`أُقفلت سنة ${year}`);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر إقفال السنة"));
+  } finally {
+    yearBusy.value = null;
+  }
+};
+
+const reopenYear = async (year: number) => {
+  if (!confirm(`إعادة فتح سنة ${year}: يُعكس قيد إقفالها. قفل الفترة يبقى كما هو — عدّله لتسجيل التسويات. متابعة؟`)) {
+    return;
+  }
+  yearBusy.value = year;
+  try {
+    years.value = await store.reopenYear(year);
+    await store.fetchStatus();
+    fillMethods();
+    toast.success(`أُعيد فتح سنة ${year}`);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر إعادة فتح السنة"));
+  } finally {
+    yearBusy.value = null;
+  }
+};
+
 const syncNow = async () => {
   syncing.value = true;
   try {
@@ -365,6 +489,7 @@ onMounted(async () => {
     if (store.status?.active) {
       await store.fetchAccounts(true);
       fillMethods();
+      void loadYears();
     } else {
       await loadPreview();
     }

@@ -7,6 +7,18 @@
         <p>قائمة الدخل لفترة، والمركز المالي (الميزانية) في تاريخ — من القيود مباشرة</p>
       </div>
       <div class="page-header__actions">
+        <ReportExport
+          v-if="tab === 'income' && income"
+          path="/accounting/reports/income-statement/export"
+          :query="incomeQuery"
+          :filename="`income_statement_${income.from}_${income.to}`"
+        />
+        <ReportExport
+          v-else-if="tab === 'balance' && sheet"
+          path="/accounting/reports/balance-sheet/export"
+          :query="sheetQuery"
+          :filename="`balance_sheet_${sheet.asOf}`"
+        />
         <button class="btn btn--ghost" @click="print"><Printer :size="16" /> طباعة</button>
       </div>
     </div>
@@ -65,7 +77,7 @@
         <StatementSection title="الخصوم" :rows="shown(sheet.liabilities)" :total="sheet.totals.liabilities" />
         <StatementSection title="حقوق الملكية" :rows="shown(sheet.equity)">
           <div class="statement__line">
-            <span>أرباح (خسائر) السنوات السابقة غير المقفلة</span>
+            <span>أرباح (خسائر) سنوات سابقة لم تُقفل بعد</span>
             <span class="doc-num">{{ formatMoney(sheet.earnings.retained) }}</span>
           </div>
           <div class="statement__line">
@@ -112,6 +124,9 @@ const period = reactive({ from: `${today.slice(0, 4)}-01-01`, to: today });
 const asOf = ref(today);
 const income = ref<IncomeStatement | null>(null);
 const sheet = ref<BalanceSheet | null>(null);
+/** فلاتر القائمة المعروضة (للتصدير) */
+const incomeQuery = ref<object>({});
+const sheetQuery = ref<object>({});
 
 /** الملخص: المجموعات حتى المستوى الثالث بلا أصفار؛ "كل الحسابات" يعرض الفرعية */
 const shown = (rows: AmountRow[]) =>
@@ -156,16 +171,17 @@ const load = async () => {
   loading.value = true;
   try {
     if (tab.value === "income") {
-      income.value = await store.incomeStatement({
+      const params = {
         from: period.from,
         to: period.to,
         branchId: branchId.value || undefined,
-      });
+      };
+      income.value = await store.incomeStatement(params);
+      incomeQuery.value = params;
     } else {
-      sheet.value = await store.balanceSheet({
-        asOf: asOf.value,
-        branchId: branchId.value || undefined,
-      });
+      const params = { asOf: asOf.value, branchId: branchId.value || undefined };
+      sheet.value = await store.balanceSheet(params);
+      sheetQuery.value = params;
     }
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل القائمة"));

@@ -143,6 +143,7 @@ export const PERMS = {
   ACCOUNTING_VIEW: "view_accounting",
   ACCOUNTS_MANAGE: "manage_chart_of_accounts",
   JOURNAL_CREATE: "create_journal_entries",
+  EXPENSE_VOUCHER_MANAGE: "manage_expense_vouchers",
   ACCOUNTING_SETTINGS_MANAGE: "manage_accounting_settings",
   SYSTEM_STATS: "system:view_platform_stats",
 } as const;

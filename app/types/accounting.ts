@@ -63,7 +63,9 @@ export type JournalSource =
   | "bonus"
   | "leave_settlement"
   | "customer_opening"
-  | "supplier_opening";
+  | "supplier_opening"
+  | "expense_voucher"
+  | "year_closing";
 
 export const JOURNAL_SOURCE_LABEL: Record<JournalSource, string> = {
   manual: "قيد يدوي",
@@ -86,6 +88,8 @@ export const JOURNAL_SOURCE_LABEL: Record<JournalSource, string> = {
   leave_settlement: "بدل إجازة",
   customer_opening: "رصيد افتتاحي لعميل",
   supplier_opening: "رصيد افتتاحي لمورد",
+  expense_voucher: "سند صرف",
+  year_closing: "إقفال السنة المالية",
 };
 
 export interface JournalEntry {
@@ -163,6 +167,8 @@ export interface AccountingSettings {
   activatedAt: string;
   startDate: string;
   lockDate: string | null;
+  /** آخر سنة مالية مقفلة */
+  closedThroughYear: number | null;
   chartCountry: string;
   lastSyncAt: string | null;
 }
@@ -278,4 +284,133 @@ export interface PeriodQuery {
   from: string;
   to: string;
   branchId?: string;
+}
+
+// ══════════════════════════ سندات الصرف ══════════════════════════
+
+export type ExpenseVoucherStatus = "posted" | "cancelled";
+
+export interface ExpenseVoucher {
+  id: string;
+  number: string;
+  date: string;
+  paidFromAccountId: string;
+  paidFromAccount?: { id: string; code: string; name: string } | null;
+  payee: string;
+  payeeTaxNumber: string | null;
+  reference: string | null;
+  description: string;
+  status: ExpenseVoucherStatus;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  /** الضريبة إلى ضريبة المدخلات (المنشأة مسجّلة)؛ وإلا جزء من المصروف */
+  taxRecoverable: boolean;
+  journalEntryId: string | null;
+  cancelledAt: string | null;
+  cancelDate: string | null;
+  cancelReason: string | null;
+  cancelJournalEntryId: string | null;
+  createdAt: string;
+}
+
+export interface ExpenseVoucherLine {
+  id: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  description: string | null;
+  amount: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  branchId: string | null;
+  branchName: string | null;
+}
+
+export interface ExpenseVoucherView extends ExpenseVoucher {
+  paidFromName: string;
+  lines: ExpenseVoucherLine[];
+}
+
+export interface ExpenseLinePayload {
+  accountId: string;
+  amount: number;
+  taxRate?: number;
+  description?: string | null;
+  branchId?: string | null;
+}
+
+export interface ExpenseVoucherPayload {
+  date: string;
+  paidFromAccountId: string;
+  payee: string;
+  payeeTaxNumber?: string | null;
+  reference?: string | null;
+  description: string;
+  lines: ExpenseLinePayload[];
+}
+
+export interface ExpenseFilters {
+  from?: string;
+  to?: string;
+  status?: ExpenseVoucherStatus | "";
+  accountId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ══════════════════════════ إقرار الضريبة ══════════════════════════
+
+export interface VatReturnRow {
+  key: string;
+  label: string;
+  rate: number | null;
+  /** قيمة المستندات قبل الضريبة */
+  amount: number;
+  /** المرتجعات والإلغاءات (سالبة) */
+  adjustment: number;
+  /** صافي الضريبة بعد التعديلات */
+  tax: number;
+  /** ضريبة مدفوعة لا تُسترد (لا تُخصم) */
+  nonRecoverable?: boolean;
+}
+
+export interface VatReturnSection {
+  rows: VatReturnRow[];
+  totals: { amount: number; adjustment: number; net: number; tax: number };
+}
+
+export interface VatReturn {
+  from: string;
+  to: string;
+  taxNumber: string | null;
+  vatRegistered: boolean;
+  sales: VatReturnSection;
+  purchases: VatReturnSection;
+  totals: { outputTax: number; inputTax: number; netVat: number };
+  /** حركة حسابي الضريبة في الدفاتر للفترة (null قبل تفعيل المحاسبة) */
+  ledger: { outputTax: number; inputTax: number; netVat: number } | null;
+}
+
+// ══════════════════════════ إقفال السنة ══════════════════════════
+
+export interface FiscalYear {
+  year: number;
+  from: string;
+  to: string;
+  status: "closed" | "open" | "current";
+  revenue: number;
+  expenses: number;
+  netProfit: number;
+  closingEntry: { id: string; number: string } | null;
+  canClose: boolean;
+  canReopen: boolean;
+}
+
+export interface FiscalYears {
+  closedThroughYear: number | null;
+  retainedEarningsAccount: { id: string; code: string; name: string } | null;
+  years: FiscalYear[];
 }

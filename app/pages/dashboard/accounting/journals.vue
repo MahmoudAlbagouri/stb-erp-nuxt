@@ -10,6 +10,12 @@
         </p>
       </div>
       <div class="page-header__actions">
+        <ReportExport
+          v-if="!notActive"
+          path="/accounting/journals/export"
+          :query="exportQuery"
+          :filename="`journal_${filters.from || 'all'}_${filters.to || 'all'}`"
+        />
         <button
           v-can="'create_journal_entries'"
           class="btn btn--primary"
@@ -232,6 +238,14 @@ const list = usePagedList(
     }),
   "تعذر تحميل القيود",
 );
+
+/** أسطر القيود بنفس فلاتر الصفحة */
+const exportQuery = computed(() => ({
+  search: filters.search || undefined,
+  sourceType: filters.sourceType || undefined,
+  from: filters.from || undefined,
+  to: filters.to || undefined,
+}));
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 const onSearch = () => {
