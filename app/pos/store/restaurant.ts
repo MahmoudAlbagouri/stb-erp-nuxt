@@ -29,7 +29,7 @@ import {
 } from "./state";
 
 /** كل كم تسأل الشاشة عن حالة طلباتها في المطبخ */
-export const KITCHEN_POLL_MS = 15_000;
+export const KITCHEN_POLL_MS = 10_000;
 
 const lineKey = (line: Pick<KitchenLine, "productId" | "unitId" | "note">) =>
   `${line.productId}|${line.unitId ?? ""}|${line.note}`;
@@ -209,11 +209,14 @@ export const createRestaurant = (
     if (!lines.length) return null;
     const customer = state.customers.value.find((c) => c.id === state.customerId.value);
     const ticket = await sendTicket(order.value, lines, { label: customer?.name ?? null });
-    order.value = {
-      ...order.value,
-      sent: kitchenLinesOf(cart.value),
-      rounds: order.value.rounds + 1,
-    };
+    order.value =
+      order.value.type === "takeaway" && !cart.value.length
+        ? newOrderContext()
+        : {
+            ...order.value,
+            sent: kitchenLinesOf(cart.value),
+            rounds: order.value.rounds + 1,
+          };
     return shouldPrint() ? ticket : null;
   };
 

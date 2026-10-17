@@ -191,6 +191,7 @@ const POS_SOUNDS: SoundName[] = [
   "offline",
   "online",
   "rejected",
+  "kitchenReady",
 ];
 
 const supported = drawerSupported();

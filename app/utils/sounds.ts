@@ -28,7 +28,9 @@ export type SoundName =
   /** السيرفر رفض عمليات من الطابور */
   | "rejected"
   /** إشعار جديد في لوحة التحكم */
-  | "notification";
+  | "notification"
+  /** المطبخ جهّز طلباً (شاشة الكاشير) */
+  | "kitchenReady";
 
 export type SoundScope = "pos" | "dashboard";
 
@@ -48,6 +50,7 @@ export const SOUND_LABELS: Record<SoundName, string> = {
   online: "عاد الاتصال",
   rejected: "عمليات رفضها السيرفر",
   notification: "إشعار جديد",
+  kitchenReady: "طلب جاهز في المطبخ",
 };
 
 const DEFAULTS: Record<SoundScope, SoundSettings> = {
@@ -103,6 +106,12 @@ const TONES: Record<SoundName, Note[]> = {
   notification: [
     { freq: 1047, duration: 0.1, wave: "sine", gap: 0.03, gain: 0.5 },
     { freq: 1319, duration: 0.18, wave: "sine", gain: 0.5 },
+  ],
+  // جرس الاستلام في المطاعم: ثلاث دقات عالية، الأخيرة أطول — يُسمع وسط الزحمة
+  kitchenReady: [
+    { freq: 1568, duration: 0.16, wave: "sine", gap: 0.07 },
+    { freq: 1568, duration: 0.16, wave: "sine", gap: 0.07 },
+    { freq: 2093, duration: 0.42, wave: "sine" },
   ],
 };
 

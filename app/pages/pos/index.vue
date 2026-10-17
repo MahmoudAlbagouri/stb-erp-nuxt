@@ -497,7 +497,7 @@
         >
           <component :is="pos.order.type === 'dine_in' ? Armchair : ShoppingBag" :size="16" />
           <strong>{{ pos.order.type === "dine_in" ? pos.order.tableName : "سفري" }}</strong>
-          <span v-if="pos.order.rounds" class="doc-cell__sub">
+          <span v-if="pos.order.rounds && pos.cart.length" class="doc-cell__sub">
             أُرسل للمطبخ {{ formatNumber(pos.order.rounds) }} مرة
           </span>
           <span class="pos-cart__order-change">تغيير</span>
@@ -2353,7 +2353,7 @@ watch(
     const fresh = pos.readyOrders.filter((o) => !announcedReady.has(o.id));
     fresh.forEach((o) => announcedReady.add(o.id));
     if (!fresh.length) return;
-    sound("success");
+    sound("kitchenReady");
     toast.info(
       fresh
         .map((o) => `طلب #${o.ticketNo} جاهز${o.tableName ? ` — ${o.tableName}` : o.label ? ` — ${o.label}` : ""}`)
@@ -2953,20 +2953,40 @@ onBeforeUnmount(() => {
     }
   }
 
+  // صف واحد ما اتسع: الأدوات ثم الدفع. مع المطبخ والتوصيل ينزل الدفع لصف
+  // كامل تحتها بدل أن يُقصّ خارج السلة
   &__actions {
     display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
     gap: $space-2;
+
+    > .btn {
+      white-space: nowrap;
+    }
+    > .btn--icon {
+      flex: none;
+    }
   }
 }
 
+.pos-kitchen,
+.pos-delivery {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
 .pos-pay {
-  flex: 1;
+  flex: 1 1 220px;
+  min-width: 0;
   justify-content: space-between;
+  gap: $space-3;
   padding-block: $space-4;
   font-size: $font-size-lg;
 
   strong {
     font-size: $font-size-xl;
+    direction: ltr;
   }
 }
 
