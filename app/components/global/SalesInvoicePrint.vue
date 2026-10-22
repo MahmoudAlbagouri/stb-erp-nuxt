@@ -158,10 +158,29 @@
           <span>المتبقي</span>
           <span dir="ltr">{{ formatMoney(invoice.remaining) }}</span>
         </div>
-        <!-- ما على العميل كله (هذه الفاتورة وما قبلها) — لعميل مسجّل عليه آجل -->
-        <div v-if="customerBalance > 0" class="is-balance">
+        <!-- ما على العميل كله الآن — فاتورة لوحة التحكم (رصيده لحظتها غير معروف) -->
+        <div v-if="!account && customerBalance > 0" class="is-balance">
           <span>إجمالي الآجل على العميل</span>
           <span dir="ltr">{{ formatMoney(customerBalance) }}</span>
+        </div>
+      </section>
+
+      <!-- إيصال الكاشير: ما كان على العميل + آجل هذه الفاتورة = ما عليه الآن -->
+      <section v-if="account" class="invoice-print__account">
+        <h3>حساب العميل</h3>
+        <div>
+          <span>{{ account.previous < 0 ? "رصيد سابق له (يُخصم)" : "الرصيد السابق" }}</span>
+          <span dir="ltr">{{ formatMoney(Math.abs(account.previous)) }}</span>
+        </div>
+        <div>
+          <span>+ آجل هذه الفاتورة</span>
+          <span dir="ltr">{{ formatMoney(account.credit) }}</span>
+        </div>
+        <div class="is-total">
+          <span>
+            {{ account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق على العميل" }}
+          </span>
+          <span dir="ltr">{{ formatMoney(Math.abs(account.balance)) }}</span>
         </div>
       </section>
 
@@ -211,6 +230,22 @@ const totalQuantity = computed(() =>
   ),
 );
 const customerBalance = computed(() => Number(props.invoice?.customer?.balance) || 0);
+
+/**
+ * حساب العميل مفصّلاً (إيصال الكاشير — يعرف رصيده لحظة البيع): السابق + ما بقي
+ * عليه من هذه الفاتورة = ما عليه الآن. لا يُطبع لعميل لا رصيد له ولا آجل
+ */
+const account = computed(() => {
+  const previous = props.invoice?.customer?.previousBalance;
+  if (previous == null) return null;
+  const credit = Number(props.invoice?.remaining) || 0;
+  if (previous === 0 && credit <= 0) return null;
+  return {
+    previous,
+    credit,
+    balance: Math.round((previous + credit) * 1000) / 1000,
+  };
+});
 
 /**
  * فاتورة ضريبية؟ منشأة مسجّلة في الضريبة، أو فاتورة صدرت بضريبة أو برمز QR
@@ -414,6 +449,34 @@ defineExpose({ print });
     }
   }
 
+  // حساب العميل الآجل: السابق + الفاتورة = الإجمالي، في صندوق آخر الإيصال
+  &__account {
+    width: 55%;
+    margin-top: 6pt;
+    margin-inline-start: auto;
+    padding: 4pt 6pt;
+    border: 1px solid #000;
+
+    h3 {
+      margin: 0 0 3pt;
+      font-size: 1em;
+      text-align: center;
+      color: #000;
+    }
+    div {
+      display: flex;
+      justify-content: space-between;
+      gap: 8pt;
+    }
+    .is-total {
+      margin-top: 3pt;
+      padding-top: 3pt;
+      font-size: 1.1em;
+      font-weight: 800;
+      border-top: 1px solid #000;
+    }
+  }
+
   // بيانات التوصيل
   &__delivery {
     margin: 4pt 0 8pt;
@@ -472,7 +535,8 @@ defineExpose({ print });
     .invoice-print__meta {
       grid-template-columns: 1fr;
     }
-    .invoice-print__totals {
+    .invoice-print__totals,
+    .invoice-print__account {
       width: 100%;
     }
     .invoice-print__footer img {

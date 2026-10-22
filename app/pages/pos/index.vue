@@ -2109,6 +2109,11 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
         taxNumber: sale.customerTaxNumber,
         phone: sale.customerPhone ?? null,
         balance: sale.customerBalance ?? null,
+        // الرصيد المحفوظ بعد الفاتورة − آجلها = ما كان عليه قبلها
+        previousBalance:
+          sale.customerBalance != null
+            ? sumAmounts([sale.customerBalance, -(sale.creditAmount ?? 0)])
+            : null,
       }
     : null,
   invoiceDate: sale.issuedAt,

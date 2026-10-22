@@ -218,6 +218,11 @@ export interface PrintableInvoice {
     phone?: string | null;
     /** ما على العميل (إجمالي الآجل) — يُطبع إن كان موجباً */
     balance?: number | null;
+    /**
+     * ما كان عليه قبل هذه الفاتورة (سالب = له رصيد عندنا). إيصال الكاشير يعرفه
+     * لحظة البيع، فيُطبع حساب العميل مفصّلاً: السابق + آجل الفاتورة = الإجمالي
+     */
+    previousBalance?: number | null;
   } | null;
   invoiceDate: string;
   issuedAt?: string | null;
