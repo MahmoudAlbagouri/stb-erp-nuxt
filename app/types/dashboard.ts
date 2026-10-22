@@ -40,8 +40,13 @@ export interface SalesOverview {
   grossProfit: number;
   previousGrossProfit: number;
   returnsTotal: number;
-  /** ما لم يُحصَّل من كل الفواتير حتى الآن (لا يتقيد بالفترة) */
+  /**
+   * ما على العملاء الآن (لا يتقيد بالفترة): للشركة كلها مجموع أرصدتهم كصفحة
+   * العملاء، ومع فرع المتبقي على فواتيره فقط
+   */
   receivables: number;
+  /** من أين حُسب `receivables` و`topDebtors` */
+  receivablesBasis: "balances" | "invoices";
   daily: { date: string; total: number; invoices: number }[];
   /** الفترة السابقة يوماً بيوم، بنفس طول `daily` وترتيبه */
   previousDaily: number[];

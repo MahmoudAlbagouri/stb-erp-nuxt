@@ -295,7 +295,7 @@
 
           <ChartCard
             title="أكبر المديونيات"
-            subtitle="عملاء عليهم مبالغ لم تُحصَّل حتى الآن"
+            :subtitle="receivablesScope || 'عملاء عليهم مبالغ لم تُحصَّل حتى الآن'"
             :empty="!overview.sales.topDebtors.length"
             empty-text="لا مديونيات على العملاء"
             :empty-icon="CircleCheck"
@@ -627,6 +627,16 @@ const branchName = computed(
   () => branchOptions.value.find((b) => b.id === branchId.value)?.name ?? "",
 );
 
+/**
+ * المستحق على العملاء للشركة كلها من أرصدتهم (كصفحة العملاء). مع فرع أو
+ * لمستخدم مقيَّد بفروع: من فواتيرها فقط، فالرصيد الافتتاحي والقبض على الحساب
+ * بلا فرع — "" إن كان من الأرصدة
+ */
+const receivablesScope = computed(() => {
+  if (overview.value?.sales?.receivablesBasis !== "invoices") return "";
+  return branchId.value ? "المتبقي على فواتير الفرع" : "المتبقي على فواتير فروعك";
+});
+
 const hasAnySection = computed(() => {
   const o = overview.value;
   return !!o && !!(o.sales || o.purchasing || o.inventory || o.hr || o.attendance);
@@ -734,7 +744,7 @@ const salesTiles = computed<Tile[]>(() => {
       label: "مستحق على العملاء",
       value: formatCurrency(s.receivables),
       icon: Wallet,
-      hint: "لم يُحصَّل حتى الآن",
+      hint: receivablesScope.value || "لم يُحصَّل حتى الآن",
       tone: s.receivables > 0 ? "warning" : "accent",
       to: "/dashboard/sales/customers",
     },
