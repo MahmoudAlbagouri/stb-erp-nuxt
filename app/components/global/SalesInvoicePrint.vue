@@ -165,20 +165,24 @@
         </div>
       </section>
 
-      <!-- إيصال الكاشير: ما كان على العميل + آجل هذه الفاتورة = ما عليه الآن -->
+      <!-- إيصال الكاشير: الفاتورة + ما كان على العميل − ما دفعه = ما عليه الآن -->
       <section v-if="account" class="invoice-print__account">
         <h3>حساب العميل</h3>
+        <div>
+          <span>الإجمالي</span>
+          <span dir="ltr">{{ formatMoney(account.total) }}</span>
+        </div>
         <div>
           <span>{{ account.previous < 0 ? "رصيد سابق له (يُخصم)" : "الرصيد السابق" }}</span>
           <span dir="ltr">{{ formatMoney(Math.abs(account.previous)) }}</span>
         </div>
-        <div>
-          <span>+ آجل هذه الفاتورة</span>
-          <span dir="ltr">{{ formatMoney(account.credit) }}</span>
+        <div v-if="account.paid > 0">
+          <span>تنزيل</span>
+          <span dir="ltr">{{ formatMoney(account.paid) }}</span>
         </div>
         <div class="is-total">
           <span>
-            {{ account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق على العميل" }}
+            {{ account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق" }}
           </span>
           <span dir="ltr">{{ formatMoney(Math.abs(account.balance)) }}</span>
         </div>
@@ -232,17 +236,20 @@ const totalQuantity = computed(() =>
 const customerBalance = computed(() => Number(props.invoice?.customer?.balance) || 0);
 
 /**
- * حساب العميل مفصّلاً (إيصال الكاشير — يعرف رصيده لحظة البيع): السابق + ما بقي
- * عليه من هذه الفاتورة = ما عليه الآن. لا يُطبع لعميل لا رصيد له ولا آجل
+ * حساب العميل مفصّلاً (إيصال الكاشير — يعرف رصيده لحظة البيع): إجمالي الفاتورة
+ * + السابق − ما دفعه منها (التنزيل) = ما عليه الآن. لا يُطبع لعميل لا رصيد له ولا آجل
  */
 const account = computed(() => {
   const previous = props.invoice?.customer?.previousBalance;
   if (previous == null) return null;
+  const total = Number(props.invoice?.total) || 0;
   const credit = Number(props.invoice?.remaining) || 0;
   if (previous === 0 && credit <= 0) return null;
   return {
+    total,
     previous,
-    credit,
+    // من الإجمالي والباقي لا من paidAmount: فيبقى الصندوق متّسقاً حسابياً
+    paid: Math.round((total - credit) * 1000) / 1000,
     balance: Math.round((previous + credit) * 1000) / 1000,
   };
 });
@@ -449,7 +456,7 @@ defineExpose({ print });
     }
   }
 
-  // حساب العميل الآجل: السابق + الفاتورة = الإجمالي، في صندوق آخر الإيصال
+  // حساب العميل الآجل: الفاتورة + السابق − التنزيل = المستحق، في صندوق آخر الإيصال
   &__account {
     width: 55%;
     margin-top: 6pt;
