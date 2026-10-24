@@ -150,42 +150,36 @@
             {{ formatMoney(invoice.delivery.collect) }}
           </span>
         </div>
-        <div v-else-if="invoice.paidAmount > 0">
-          <span>المدفوع</span>
-          <span dir="ltr">{{ formatMoney(invoice.paidAmount) }}</span>
-        </div>
-        <div v-if="invoice.remaining > 0">
-          <span>المتبقي</span>
-          <span dir="ltr">{{ formatMoney(invoice.remaining) }}</span>
-        </div>
-        <!-- ما على العميل كله الآن — فاتورة لوحة التحكم (رصيده لحظتها غير معروف) -->
-        <div v-if="!account && customerBalance > 0" class="is-balance">
-          <span>إجمالي الآجل على العميل</span>
-          <span dir="ltr">{{ formatMoney(customerBalance) }}</span>
-        </div>
-      </section>
-
-      <!-- إيصال الكاشير: الفاتورة + ما كان على العميل − ما دفعه = ما عليه الآن -->
-      <section v-if="account" class="invoice-print__account">
-        <h3>حساب العميل</h3>
-        <div>
-          <span>الإجمالي</span>
-          <span dir="ltr">{{ formatMoney(account.total) }}</span>
-        </div>
-        <div>
-          <span>{{ account.previous < 0 ? "رصيد سابق له (يُخصم)" : "الرصيد السابق" }}</span>
-          <span dir="ltr">{{ formatMoney(Math.abs(account.previous)) }}</span>
-        </div>
-        <div v-if="account.paid > 0">
-          <span>تنزيل</span>
-          <span dir="ltr">{{ formatMoney(account.paid) }}</span>
-        </div>
-        <div class="is-total">
-          <span>
-            {{ account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق" }}
-          </span>
-          <span dir="ltr">{{ formatMoney(Math.abs(account.balance)) }}</span>
-        </div>
+        <!-- إيصال الكاشير لعميل يُعرف رصيده: الإجمالي + السابق − التنزيل = المستحق -->
+        <template v-if="account">
+          <div>
+            <span>{{ account.previous < 0 ? "رصيد سابق له (يُخصم)" : "الرصيد السابق" }}</span>
+            <span dir="ltr">{{ formatMoney(Math.abs(account.previous)) }}</span>
+          </div>
+          <div v-if="account.paid > 0">
+            <span>تنزيل</span>
+            <span dir="ltr">{{ formatMoney(account.paid) }}</span>
+          </div>
+          <div class="is-due">
+            <span>{{ account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق" }}</span>
+            <span dir="ltr">{{ formatMoney(Math.abs(account.balance)) }}</span>
+          </div>
+        </template>
+        <template v-else>
+          <div v-if="!invoice.delivery && invoice.paidAmount > 0">
+            <span>المدفوع</span>
+            <span dir="ltr">{{ formatMoney(invoice.paidAmount) }}</span>
+          </div>
+          <div v-if="invoice.remaining > 0">
+            <span>المتبقي</span>
+            <span dir="ltr">{{ formatMoney(invoice.remaining) }}</span>
+          </div>
+          <!-- ما على العميل كله الآن — فاتورة لوحة التحكم (رصيده لحظتها غير معروف) -->
+          <div v-if="customerBalance > 0" class="is-balance">
+            <span>إجمالي الآجل على العميل</span>
+            <span dir="ltr">{{ formatMoney(customerBalance) }}</span>
+          </div>
+        </template>
       </section>
 
       <footer class="invoice-print__footer">
@@ -236,7 +230,7 @@ const totalQuantity = computed(() =>
 const customerBalance = computed(() => Number(props.invoice?.customer?.balance) || 0);
 
 /**
- * حساب العميل مفصّلاً (إيصال الكاشير — يعرف رصيده لحظة البيع): إجمالي الفاتورة
+ * حساب العميل تحت الإجمالي (إيصال الكاشير — يعرف رصيده لحظة البيع): إجمالي الفاتورة
  * + السابق − ما دفعه منها (التنزيل) = ما عليه الآن. لا يُطبع لعميل لا رصيد له ولا آجل
  */
 const account = computed(() => {
@@ -246,7 +240,6 @@ const account = computed(() => {
   const credit = Number(props.invoice?.remaining) || 0;
   if (previous === 0 && credit <= 0) return null;
   return {
-    total,
     previous,
     // من الإجمالي والباقي لا من paidAmount: فيبقى الصندوق متّسقاً حسابياً
     paid: Math.round((total - credit) * 1000) / 1000,
@@ -446,6 +439,14 @@ defineExpose({ print });
       font-weight: 800;
       border-top: 1px dashed #000;
     }
+    // ما على العميل بعد الفاتورة والتنزيل: آخر سطر وأوضحه
+    .is-due {
+      margin-top: 3pt;
+      padding-top: 3pt;
+      font-size: 1.1em;
+      font-weight: 800;
+      border-top: 1px solid #000;
+    }
     // ما يحصّله الطيار: أوضح سطر في الإيصال
     .is-collect {
       margin-top: 4pt;
@@ -453,34 +454,6 @@ defineExpose({ print });
       font-size: 1.15em;
       font-weight: 800;
       border: 2px solid #000;
-    }
-  }
-
-  // حساب العميل الآجل: الفاتورة + السابق − التنزيل = المستحق، في صندوق آخر الإيصال
-  &__account {
-    width: 55%;
-    margin-top: 6pt;
-    margin-inline-start: auto;
-    padding: 4pt 6pt;
-    border: 1px solid #000;
-
-    h3 {
-      margin: 0 0 3pt;
-      font-size: 1em;
-      text-align: center;
-      color: #000;
-    }
-    div {
-      display: flex;
-      justify-content: space-between;
-      gap: 8pt;
-    }
-    .is-total {
-      margin-top: 3pt;
-      padding-top: 3pt;
-      font-size: 1.1em;
-      font-weight: 800;
-      border-top: 1px solid #000;
     }
   }
 
@@ -542,8 +515,7 @@ defineExpose({ print });
     .invoice-print__meta {
       grid-template-columns: 1fr;
     }
-    .invoice-print__totals,
-    .invoice-print__account {
+    .invoice-print__totals {
       width: 100%;
     }
     .invoice-print__footer img {
