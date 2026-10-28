@@ -13,7 +13,8 @@ export default defineNuxtConfig({
   ],
 
   // استخدام @ يشير تلقائياً إلى داخل مجلد app/
-  css: ["@/assets/scss/main.scss"],
+  // شريط التمرير (plugins/scrollbars.client.ts) قبل أنماطنا: _scrollbars.scss يعدّله
+  css: ["overlayscrollbars/overlayscrollbars.css", "@/assets/scss/main.scss"],
 
   vite: {
     css: {
@@ -51,7 +52,14 @@ export default defineNuxtConfig({
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
       title: "STB ERP - نظام إدارة المؤسسات",
-      htmlAttrs: { lang: "ar", dir: "rtl" },
+      // data-overlayscrollbars-initialize: شريط الصفحة الأصلي مخفي من أول رسم
+      // حتى يحل محله شريط plugins/scrollbars (بدل أن يظهر ثم يُستبدل)
+      htmlAttrs: {
+        lang: "ar",
+        dir: "rtl",
+        "data-overlayscrollbars-initialize": "",
+      },
+      bodyAttrs: { "data-overlayscrollbars-initialize": "" },
       link: [
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {

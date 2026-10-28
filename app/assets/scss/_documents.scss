@@ -486,7 +486,8 @@
     border-bottom: 1px solid $stb-border;
     cursor: pointer;
 
-    &:last-child {
+    // لا ‎:last-child: آخر أبناء القائمة شريط التمرير
+    &:last-of-type {
       border-bottom: 0;
     }
     &:hover:not(:disabled),

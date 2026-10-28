@@ -17,7 +17,12 @@
 //   PosRequestError           السيرفر رفض الطلب برسالة
 import { useCookie, useRuntimeConfig } from "nuxt/app";
 import { useAuthStore } from "@/stores/auth";
-import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/utils/auth";
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  accessCookieOptions,
+  refreshCookieOptions,
+} from "@/utils/auth";
 import {
   requestSupportToken,
   SUPPORT_COOKIE,
@@ -64,10 +69,6 @@ export interface DeviceCredentials {
 const TIMEOUT_MS = 15_000;
 const HTTP_SUBSCRIPTION_INACTIVE = 402;
 
-const isSecure = process.env.NODE_ENV === "production";
-const cookieOptions = (maxAge: number) =>
-  ({ maxAge, sameSite: "lax", secure: isSecure, path: "/" }) as const;
-
 type Method = "GET" | "POST";
 type Headers = Record<string, string>;
 
@@ -75,11 +76,11 @@ export const usePosApi = () => {
   const baseUrl = useRuntimeConfig().public.apiBase;
   const accessToken = useCookie<string | null>(
     ACCESS_TOKEN_COOKIE,
-    cookieOptions(60 * 15),
+    accessCookieOptions,
   );
   const refreshToken = useCookie<string | null>(
     REFRESH_TOKEN_COOKIE,
-    cookieOptions(60 * 60 * 24 * 7),
+    refreshCookieOptions,
   );
 
   const supportCookie = useCookie<SupportTarget | null>(

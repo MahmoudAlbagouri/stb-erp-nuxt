@@ -2655,6 +2655,7 @@ const calculateContractDates = () => {
   background: $stb-surface-2;
   gap: 2px;
   overflow-x: auto;
+  scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
   }
@@ -2706,13 +2707,6 @@ const calculateContractDates = () => {
   flex: 1;
   overflow-y: auto;
   padding: $space-5;
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: $stb-border;
-    border-radius: 4px;
-  }
 }
 .ob-section {
   display: flex;
@@ -2926,13 +2920,6 @@ const calculateContractDates = () => {
   max-height: 220px;
   overflow-y: auto;
   padding: $space-1;
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: $stb-border;
-    border-radius: 4px;
-  }
 }
 .perm-checkbox {
   @include flex(row, center, flex-start, $space-2);

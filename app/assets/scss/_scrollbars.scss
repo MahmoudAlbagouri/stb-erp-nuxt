@@ -1,0 +1,61 @@
+// ============================================
+// شريط التمرير — OverlayScrollbars (plugins/scrollbars.client.ts)
+// ============================================
+// رفيع وهو ساكن (6px)، يتّسع إلى 10px حين يقترب منه المؤشر أو يُسحب، ومساحة
+// إمساكه أعرض من شكله. الألوان من متغيرات الثيم فيعمل في الوضعين.
+// المسار (track) لا يستقبل الضغط: الشريط فوق المحتوى، فلا يحجب ما تحته.
+
+@use "variables" as *;
+
+.os-theme-stb {
+  box-sizing: border-box;
+  --os-size: 16px;
+  --os-padding-perpendicular: 3px;
+  --os-padding-axis: 3px;
+  --os-track-border-radius: #{$radius-full};
+  --os-track-bg-hover: color-mix(in srgb, #{$stb-text-muted} 15%, transparent);
+  --os-track-bg-active: color-mix(in srgb, #{$stb-text-muted} 15%, transparent);
+  --os-handle-border-radius: #{$radius-full};
+  --os-handle-min-size: 40px;
+  --os-handle-perpendicular-size: 60%;
+  --os-handle-perpendicular-size-hover: 100%;
+  --os-handle-perpendicular-size-active: 100%;
+  --os-handle-interactive-area-offset: 4px;
+  --os-handle-bg: #{$stb-text-muted};
+  --os-handle-bg-hover: #{$stb-primary-light};
+  --os-handle-bg-active: #{$stb-accent};
+}
+
+// شريط الصفحة: المكتبة تثبّته يمين الشاشة فوق كل شيء. نضعه يساراً كباقي
+// الأشرطة (الواجهة RTL، والقائمة الجانبية ثابتة يميناً فيغطيها)، وتحت القوائم
+// المنسدلة والنوافذ
+body > .os-scrollbar {
+  z-index: $z-topbar + 1;
+}
+
+body > .os-scrollbar-vertical {
+  right: auto;
+  left: 0;
+
+  .os-scrollbar-handle {
+    right: auto;
+    left: 0;
+
+    &::before {
+      right: calc((var(--os-padding-perpendicular) + var(--os-handle-interactive-area-offset)) * -1);
+      left: calc(var(--os-padding-perpendicular) * -1);
+    }
+  }
+}
+
+body > .os-scrollbar-horizontal {
+  right: 0;
+  left: var(--os-size);
+}
+
+// تقرير يُنسخ للطباعة (utils/print) قد يحمل أشرطة عناصره
+@media print {
+  .os-scrollbar {
+    display: none !important;
+  }
+}

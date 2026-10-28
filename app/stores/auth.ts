@@ -9,7 +9,9 @@ import {
   DISCLAIMER_PATH,
   LOGIN_PATH,
   REFRESH_TOKEN_COOKIE,
+  accessCookieOptions,
   decodeJwt,
+  refreshCookieOptions,
 } from "../utils/auth";
 import { getErrorMessage } from "../utils/errors";
 import { getCountry } from "../utils/countries";
@@ -37,8 +39,14 @@ export const useAuthStore = defineStore("auth", () => {
   const api = useApi();
   const router = useRouter();
 
-  const accessTokenCookie = useCookie<string | null>(ACCESS_TOKEN_COOKIE);
-  const refreshTokenCookie = useCookie<string | null>(REFRESH_TOKEN_COOKIE);
+  const accessTokenCookie = useCookie<string | null>(
+    ACCESS_TOKEN_COOKIE,
+    accessCookieOptions,
+  );
+  const refreshTokenCookie = useCookie<string | null>(
+    REFRESH_TOKEN_COOKIE,
+    refreshCookieOptions,
+  );
 
   // وضع الدعم: الشركة التي يعمل مالك النظام داخلها (انظر utils/support)
   const supportCookie = useCookie<SupportTarget | null>(
@@ -58,7 +66,12 @@ export const useAuthStore = defineStore("auth", () => {
   const error = ref<string | null>(null);
 
   // --- Computed ---
-  const isAuthenticated = computed(() => !!accessTokenCookie.value);
+  // الجلسة قائمة ما بقي توكن التجديد: كوكي الوصول يختفي بعد ربع ساعة، وكان
+  // اختفاؤه يُقرأ "لا صلاحية" فتُحجب الصفحة المفتوحة. أول طلب يجدّده، وحتى
+  // ذلك الحين تبقى الصلاحيات من التوكن المفكوك
+  const isAuthenticated = computed(
+    () => !!accessTokenCookie.value || !!refreshTokenCookie.value,
+  );
 
   // ✅ التوكن المفكوك هو المصدر الوحيد للحقيقة لبيانات المستخدم والصلاحيات
   const userId = computed(() => decodedToken.value?.sub ?? null);

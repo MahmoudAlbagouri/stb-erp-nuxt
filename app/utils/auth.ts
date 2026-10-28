@@ -3,6 +3,24 @@
 export const ACCESS_TOKEN_COOKIE = "stb_access_token";
 export const REFRESH_TOKEN_COOKIE = "stb_refresh_token";
 
+const isSecure = process.env.NODE_ENV === "production";
+
+/**
+ * إعدادات كوكي التوكنين — كل من يكتبهما يمرّرها، حتى لا يُكتب الكوكي نفسه
+ * بعمرين مختلفين. العمر يطابق صلاحية التوكن في الباك إند (15 دقيقة / 7 أيام).
+ */
+export const accessCookieOptions = {
+  maxAge: 60 * 15,
+  sameSite: "lax",
+  secure: isSecure,
+  path: "/",
+} as const;
+
+export const refreshCookieOptions = {
+  ...accessCookieOptions,
+  maxAge: 60 * 60 * 24 * 7,
+} as const;
+
 export const LOGIN_PATH = "/auth/login";
 export const DISCLAIMER_PATH = "/disclaimer";
 export const DASHBOARD_PATH = "/dashboard";

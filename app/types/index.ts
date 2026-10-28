@@ -655,6 +655,9 @@ export interface DecodedToken {
   country?: string;
   currency?: string;
   timezone?: string;
+  /** وقت الإصدار والانتهاء بالثواني (يضيفهما توقيع الـ JWT) */
+  iat?: number;
+  exp?: number;
 }
 
 // --- Toast ---

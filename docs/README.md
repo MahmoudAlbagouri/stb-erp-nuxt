@@ -34,6 +34,8 @@ app/                      (srcDir — والاختصار @ يشير إليه)
   stores/                 مخزن Pinia لكل موديول (يطابق موديول الباك إند)
   composables/            useApi · useAccess · useToast · useTheme · useUpload…
   plugins/access.ts       التوجيهات v-can و v-feature و v-quota
+  plugins/session-refresh يجدّد الجلسة قبل انتهاء توكن الوصول بدقيقة
+  plugins/scrollbars      شريط تمرير موحّد (OverlayScrollbars) لكل ما يتمرر
   middleware/             auth.global: حماية الصفحات وقواعد الوصول
   pos/                    منطق الكاشير: api · db (IndexedDB) · calc · cashiers · drawer
   types/                  أنواع البيانات (تطابق ما يعيده الباك إند)
@@ -47,6 +49,11 @@ public/sw.js              الـ service worker لشاشة الكاشير
 - **`useApi()`** (`composables/useApi.ts`): كل الطلبات تمرّ منه. يضيف التوكن،
   يجدّده تلقائياً عند انتهائه، يفكّ غلاف الاستجابة (`data`)، ويحوّل الخطأ إلى
   رسالة عربية تُعرض بـ `getErrorMessage(e, 'نص بديل')`.
+- **الجلسة**: توكن الوصول 15 دقيقة وتوكن التجديد 7 أيام. `plugins/session-refresh.client.ts`
+  يجدّد قبل الانتهاء بدقيقة (وعند العودة للتبويب)، و`useApi` يجدّد عند 401 إن
+  فات ذلك. الجلسة قائمة ما بقي توكن التجديد (`auth.isAuthenticated`)، فلا تُحجب
+  الصفحة حين يختفي كوكي الوصول. إعدادات الكوكيين في `utils/auth.ts` وحدها
+  (`accessCookieOptions` و`refreshCookieOptions`): كل من يكتبهما يمرّرها.
 - **المخازن** (`stores/*.ts`): مخزن لكل موديول يحمل بياناته ودوال طلباته، وله
   `reset()` تُستدعى عند تسجيل الخروج. الأصل أن تطلب الصفحة عبر مخزنها (قليل من
   الصفحات، كالرئيسية، يستدعي `useApi` مباشرة لطلب واحد خاص بها).
@@ -110,6 +117,12 @@ public/sw.js              الـ service worker لشاشة الكاشير
   `table-responsive`، `btn btn--primary`، `form-group`، `form-input`،
   `form-select`، `badge`، `modal`، وأصناف المستندات `doc-*` (`_documents.scss`).
 - الجداول تتحول لبطاقات على الجوال تلقائياً (`plugins/table-labels.client.ts`).
+- **شريط التمرير** (OverlayScrollbars، `plugins/scrollbars.client.ts`): الصفحة
+  وكل عنصر `overflow: auto | scroll` يأخذه تلقائياً بلا تعديل في الصفحة. رفيع
+  ويتّسع عند الاقتراب، وشكله في `_scrollbars.scss`. الشريط يُضاف **آخر أبناء**
+  العنصر المتمرر: لعناصر قائمة تتمرر استخدم `:last-of-type` أو `& + &` بدل
+  `:last-child`. شريط مخفي عمداً: `scrollbar-width: none`. عنصر يبقى بشريط
+  المتصفح: `data-native-scroll`.
 - الأيقونات من `lucide-vue-next`.
 
 ## شاشة الكاشير (`/pos`)

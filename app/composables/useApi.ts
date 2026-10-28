@@ -6,6 +6,8 @@ import {
   ACCESS_TOKEN_COOKIE,
   LOGIN_PATH,
   REFRESH_TOKEN_COOKIE,
+  accessCookieOptions,
+  refreshCookieOptions,
 } from "../utils/auth";
 import { saveBlob } from "../utils/download";
 import {
@@ -67,21 +69,15 @@ export const useApi = () => {
   const router = useRouter();
   const BASE_URL = config.public.apiBase;
 
-  const isSecure = process.env.NODE_ENV === "production";
+  const accessTokenCookie = useCookie<string | null>(
+    ACCESS_TOKEN_COOKIE,
+    accessCookieOptions,
+  );
 
-  const accessTokenCookie = useCookie<string | null>(ACCESS_TOKEN_COOKIE, {
-    maxAge: 60 * 15,
-    sameSite: "lax",
-    secure: isSecure,
-    path: "/",
-  });
-
-  const refreshTokenCookie = useCookie<string | null>(REFRESH_TOKEN_COOKIE, {
-    maxAge: 60 * 60 * 24 * 7,
-    sameSite: "lax",
-    secure: isSecure,
-    path: "/",
-  });
+  const refreshTokenCookie = useCookie<string | null>(
+    REFRESH_TOKEN_COOKIE,
+    refreshCookieOptions,
+  );
 
   // وضع الدعم: الشركة التي يعمل مالك النظام داخلها (انظر utils/support)
   const supportCookie = useCookie<SupportTarget | null>(
@@ -342,5 +338,6 @@ export const useApi = () => {
     saveBlob(blob, fileName);
   };
 
-  return { get, post, patch, del, download };
+  // refreshSession: تجديد الجلسة قبل أن يُرفض طلب (plugins/session-refresh)
+  return { get, post, patch, del, download, refreshSession: refreshTokens };
 };

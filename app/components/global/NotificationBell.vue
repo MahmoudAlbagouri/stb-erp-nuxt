@@ -323,7 +323,6 @@ onBeforeUnmount(() => {
 .notif-item {
   @include flex(row, flex-start, flex-start, $space-3);
   padding: $space-3 $space-4;
-  border-bottom: 1px solid rgba($stb-border, 0.3);
   cursor: pointer;
   transition: background $transition-fast;
   position: relative;
@@ -333,8 +332,9 @@ onBeforeUnmount(() => {
   &.is-unread {
     background: rgba($stb-accent, 0.03);
   }
-  &:last-child {
-    border-bottom: none;
+  // فاصل بين العناصر (لا ‎:last-child: آخر أبناء القائمة شريط التمرير)
+  & + & {
+    border-top: 1px solid rgba($stb-border, 0.3);
   }
 }
 

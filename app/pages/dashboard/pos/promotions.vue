@@ -592,7 +592,8 @@ onMounted(async () => {
     &:hover {
       background: $stb-surface-3;
     }
-    &:last-child {
+    // لا ‎:last-child: آخر أبناء القائمة شريط التمرير
+    &:last-of-type {
       border-bottom: 0;
     }
   }
