@@ -3,11 +3,11 @@
     <!-- Logo -->
     <div class="sidebar-logo">
       <div class="sidabar-logo-image">
-        <img src="/images/logo.png" alt="STB HR Logo" />
+        <img src="/images/logo.png" alt="STB ERP Logo" />
       </div>
       <div class="sidebar-logo__text">
-        <span class="sidebar-logo__name">STB HR</span>
-        <span class="sidebar-logo__sub">نظام إدارة الموارد البشرية</span>
+        <span class="sidebar-logo__name">STB ERP</span>
+        <span class="sidebar-logo__sub">نظام إدارة المؤسسات</span>
       </div>
     </div>
 

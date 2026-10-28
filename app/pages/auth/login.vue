@@ -2,7 +2,7 @@
   <div class="auth-card">
     <!-- ✅ استبدال SVG بالصورة -->
     <div class="auth-card__logo">
-      <img src="/images/logo.png" alt="STB HR Logo" />
+      <img src="/images/logo.png" alt="STB ERP Logo" />
     </div>
 
     <h1 class="auth-card__title">مرحباً بك</h1>

@@ -15,12 +15,12 @@
           <h1 class="welcome-title">
             <template v-if="auth.isSuperAdmin">
               مرحباً شريكنا {{ username }}<br />
-              <span class="text-accent">أهلاً بك في STB HR</span><br />
-              نتمنى لك يومًا مثمرًا وإدارة ناجحة لمواردك البشرية.
+              <span class="text-accent">أهلاً بك في STB ERP</span><br />
+              نتمنى لك يومًا مثمرًا وإدارة ناجحة لمؤسستك.
             </template>
             <template v-else>
               مرحباً، {{ profileStore.fullName || username }} 👋<br />
-              <span class="text-accent">أهلاً بك في نظام STB HR</span><br />
+              <span class="text-accent">أهلاً بك في نظام STB ERP</span><br />
               نتمنى لك يوماً سعيداً ومثمراً.
             </template>
           </h1>
@@ -135,6 +135,109 @@
 
     <!-- إعادة التحميل تُبقي الصفحة كما هي بشفافية أقل: بلا وميض ولا قفز -->
     <div v-else class="home-body" :class="{ 'is-refreshing': loading }">
+      <!-- ════════════════ الموارد البشرية ════════════════ -->
+      <section v-if="overview.hr || overview.attendance" class="home-section">
+        <h2 class="home-section__title">
+          <Users :size="18" /> الموارد البشرية
+          <span v-if="branchName" class="home-section__tag">{{ branchName }}</span>
+        </h2>
+
+        <div v-if="overview.hr" class="home-kpis">
+          <StatTile v-for="tile in hrTiles" :key="tile.label" v-bind="tile" />
+        </div>
+
+        <div class="home-grid home-grid--three">
+          <ChartCard
+            v-if="overview.hr"
+            title="الموظفون حسب القسم"
+            subtitle="النشطون فقط"
+            :table="departmentsTable"
+            :empty="!departmentSlices.length"
+            empty-text="لا يوجد موظفون نشطون"
+          >
+            <DonutChart :slices="departmentSlices" center-label="موظف" />
+          </ChartCard>
+
+          <ChartCard
+            v-if="overview.attendance"
+            title="حضور اليوم"
+            :subtitle="dayLabel(overview.attendance.date)"
+            :table="attendanceTable"
+            :empty="!attendanceSlices.length"
+            empty-text="لا يوجد موظفون نشطون"
+          >
+            <DonutChart
+              :slices="attendanceSlices"
+              center-label="حضروا"
+              :center-value="attendedText"
+            />
+          </ChartCard>
+
+          <ChartCard
+            v-if="overview.hr"
+            title="بانتظار الموافقة"
+            subtitle="طلبات لم يُبتّ فيها"
+          >
+            <ul class="home-pending">
+              <li v-for="item in pendingItems" :key="item.label">
+                <NuxtLink :to="item.to" class="home-pending__row">
+                  <span class="home-pending__icon">
+                    <component :is="item.icon" :size="16" />
+                  </span>
+                  <span class="home-pending__label">{{ item.label }}</span>
+                  <!-- شريط بطول نسبي: المقارنة بين الأنواع بنظرة -->
+                  <span class="home-meter">
+                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
+                  </span>
+                  <strong class="home-pending__count">
+                    {{ formatNumber(item.count) }}
+                  </strong>
+                </NuxtLink>
+              </li>
+            </ul>
+          </ChartCard>
+        </div>
+
+        <div
+          v-if="overview.hr && (overview.hr.payroll || hrBranches.length > 1)"
+          class="home-grid"
+        >
+          <ChartCard
+            v-if="hrBranches.length > 1"
+            title="الموظفون حسب الفرع"
+            subtitle="النشطون فقط"
+          >
+            <ul class="home-pending">
+              <li v-for="item in hrBranches" :key="item.name">
+                <div class="home-pending__row">
+                  <span class="home-pending__icon">
+                    <Building2 :size="16" />
+                  </span>
+                  <span class="home-pending__label">{{ item.name }}</span>
+                  <span class="home-meter">
+                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
+                  </span>
+                  <strong class="home-pending__count">
+                    {{ formatNumber(item.count) }}
+                  </strong>
+                </div>
+              </li>
+            </ul>
+          </ChartCard>
+
+          <ChartCard
+            v-if="overview.hr.payroll"
+            title="مسيرات الرواتب"
+            :subtitle="`صافي آخر المسيرات (${currencyLabel()})`"
+            :table="payrollTable"
+            :empty="!overview.hr.payroll.length"
+            empty-text="لم يُعدّ أي مسير رواتب بعد"
+          >
+            <ChartBox :option="payrollOption" :height="270" />
+          </ChartCard>
+        </div>
+      </section>
+
       <!-- ════════════════ المبيعات ════════════════ -->
       <section v-if="overview.sales" class="home-section">
         <h2 class="home-section__title">
@@ -380,109 +483,6 @@
                 </div>
               </li>
             </ul>
-          </ChartCard>
-        </div>
-      </section>
-
-      <!-- ════════════════ الموارد البشرية ════════════════ -->
-      <section v-if="overview.hr || overview.attendance" class="home-section">
-        <h2 class="home-section__title">
-          <Users :size="18" /> الموارد البشرية
-          <span v-if="branchName" class="home-section__tag">{{ branchName }}</span>
-        </h2>
-
-        <div v-if="overview.hr" class="home-kpis">
-          <StatTile v-for="tile in hrTiles" :key="tile.label" v-bind="tile" />
-        </div>
-
-        <div class="home-grid home-grid--three">
-          <ChartCard
-            v-if="overview.hr"
-            title="الموظفون حسب القسم"
-            subtitle="النشطون فقط"
-            :table="departmentsTable"
-            :empty="!departmentSlices.length"
-            empty-text="لا يوجد موظفون نشطون"
-          >
-            <DonutChart :slices="departmentSlices" center-label="موظف" />
-          </ChartCard>
-
-          <ChartCard
-            v-if="overview.attendance"
-            title="حضور اليوم"
-            :subtitle="dayLabel(overview.attendance.date)"
-            :table="attendanceTable"
-            :empty="!attendanceSlices.length"
-            empty-text="لا يوجد موظفون نشطون"
-          >
-            <DonutChart
-              :slices="attendanceSlices"
-              center-label="حضروا"
-              :center-value="attendedText"
-            />
-          </ChartCard>
-
-          <ChartCard
-            v-if="overview.hr"
-            title="بانتظار الموافقة"
-            subtitle="طلبات لم يُبتّ فيها"
-          >
-            <ul class="home-pending">
-              <li v-for="item in pendingItems" :key="item.label">
-                <NuxtLink :to="item.to" class="home-pending__row">
-                  <span class="home-pending__icon">
-                    <component :is="item.icon" :size="16" />
-                  </span>
-                  <span class="home-pending__label">{{ item.label }}</span>
-                  <!-- شريط بطول نسبي: المقارنة بين الأنواع بنظرة -->
-                  <span class="home-meter">
-                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
-                  </span>
-                  <strong class="home-pending__count">
-                    {{ formatNumber(item.count) }}
-                  </strong>
-                </NuxtLink>
-              </li>
-            </ul>
-          </ChartCard>
-        </div>
-
-        <div
-          v-if="overview.hr && (overview.hr.payroll || hrBranches.length > 1)"
-          class="home-grid"
-        >
-          <ChartCard
-            v-if="hrBranches.length > 1"
-            title="الموظفون حسب الفرع"
-            subtitle="النشطون فقط"
-          >
-            <ul class="home-pending">
-              <li v-for="item in hrBranches" :key="item.name">
-                <div class="home-pending__row">
-                  <span class="home-pending__icon">
-                    <Building2 :size="16" />
-                  </span>
-                  <span class="home-pending__label">{{ item.name }}</span>
-                  <span class="home-meter">
-                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
-                  </span>
-                  <strong class="home-pending__count">
-                    {{ formatNumber(item.count) }}
-                  </strong>
-                </div>
-              </li>
-            </ul>
-          </ChartCard>
-
-          <ChartCard
-            v-if="overview.hr.payroll"
-            title="مسيرات الرواتب"
-            :subtitle="`صافي آخر المسيرات (${currencyLabel()})`"
-            :table="payrollTable"
-            :empty="!overview.hr.payroll.length"
-            empty-text="لم يُعدّ أي مسير رواتب بعد"
-          >
-            <ChartBox :option="payrollOption" :height="270" />
           </ChartCard>
         </div>
       </section>

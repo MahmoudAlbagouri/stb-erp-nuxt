@@ -1,7 +1,7 @@
 <template>
   <div class="disclaimer-card">
     <div class="disclaimer-card__logo">
-      <img src="/images/logo.png" alt="STB HR Logo" />
+      <img src="/images/logo.png" alt="STB ERP Logo" />
     </div>
 
     <div class="disclaimer-card__badge">
@@ -10,14 +10,14 @@
 
     <h1 class="disclaimer-card__title">الإقرار والموافقة على الشروط</h1>
     <p class="disclaimer-card__subtitle">
-      خطوة أخيرة لإتمام تفعيل حسابك في نظام STB HR
+      خطوة أخيرة لإتمام تفعيل حسابك في نظام STB ERP
     </p>
 
     <div v-if="auth.error" class="disclaimer-error">{{ auth.error }}</div>
 
     <div class="disclaimer-text">
       <p>
-        أقر بأنني مسؤول عن استخدام حسابي في نظام STB HR، وألتزم بالمحافظة على
+        أقر بأنني مسؤول عن استخدام حسابي في نظام STB ERP، وألتزم بالمحافظة على
         سرية بيانات الدخول وعدم مشاركتها مع أي شخص. كما أتحمل مسؤولية جميع
         العمليات والبيانات التي تتم من خلال حسابي، وأوافق على أن شركة التقنية
         الذكية للأعمال STB غير مسؤولة عن أي استخدام ناتج عن إهمال أو إساءة
