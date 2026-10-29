@@ -196,7 +196,9 @@
                 <td>
                   <div class="dept-cell">
                     <span class="job">{{ item.employee.jobTitle }}</span>
-                    <span class="dept">{{ item.employee.department }}</span>
+                    <span class="dept">{{
+                      item.employee.department?.name
+                    }}</span>
                   </div>
                 </td>
                 <td class="text-right font-medium">

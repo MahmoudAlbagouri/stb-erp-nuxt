@@ -52,7 +52,7 @@
             }}</span>
             <p class="text-muted">
               {{ store.data.personal.employee?.jobTitle || "-" }} |
-              {{ store.data.personal.employee?.department || "-" }}
+              {{ store.data.personal.employee?.department?.name || "-" }}
             </p>
           </div>
         </div>

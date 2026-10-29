@@ -91,7 +91,8 @@
             ><span>{{ employee.jobTitle || "—" }}</span>
           </div>
           <div class="info-item">
-            <label>القسم</label><span>{{ employee.department || "—" }}</span>
+            <label>القسم</label
+            ><span>{{ employee.department?.name || "—" }}</span>
           </div>
           <div class="info-item full-width">
             <label>المناوبة</label

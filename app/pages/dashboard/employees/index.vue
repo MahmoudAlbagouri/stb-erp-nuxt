@@ -338,7 +338,24 @@
             <span v-if="emp.user" class="mini-badge mini-badge--user"
               ><ShieldCheck :size="11" /> مستخدم</span
             >
-            <span v-if="emp.contract" class="mini-badge mini-badge--contract"
+            <!-- زر العقد: يعرض مرفقاته مثل الهوية -->
+            <button
+              v-if="emp.contract?.attachmentPaths?.length"
+              class="mini-badge mini-badge--contract view-contract-btn"
+              @click="
+                openFileViewer(
+                  emp.contract.attachmentPaths,
+                  `عقد الموظف: ${emp.fullName}`,
+                )
+              "
+              title="عرض مرفقات العقد"
+            >
+              <Eye :size="11" /> عقد
+            </button>
+            <span
+              v-else-if="emp.contract"
+              class="mini-badge mini-badge--contract"
+              title="العقد بلا مرفقات"
               ><FileText :size="11" /> عقد</span
             >
 
@@ -722,84 +739,12 @@
       </Transition>
     </Teleport>
 
-    <!-- ✅ Universal File Viewer Modal (للصور و PDF) -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showFileViewer"
-          class="modal-overlay"
-          @click.self="closeFileViewer"
-        >
-          <div class="modal modal-lg file-viewer-modal">
-            <div class="modal__header">
-              <h3>
-                <FileText :size="20" class="modal-icon" />
-                {{ viewerTitle }}
-              </h3>
-              <button
-                class="btn btn--icon btn--ghost"
-                @click="closeFileViewer"
-                aria-label="إغلاق"
-              >
-                <X :size="20" />
-              </button>
-            </div>
-            <div class="modal__body file-preview-container">
-              <div v-if="currentFileUrl" class="file-content-wrapper">
-                <!-- حالة الصورة -->
-                <img
-                  v-if="isImage(currentFileUrl)"
-                  :src="currentFileUrl"
-                  alt="معاينة الملف"
-                  class="preview-image"
-                />
-
-                <!-- حالة PDF -->
-                <div v-else-if="isPdf(currentFileUrl)" class="pdf-preview">
-                  <div class="pdf-icon-large">
-                    <FileText :size="64" />
-                  </div>
-                  <p class="pdf-hint">ملف PDF - يرجى تحميله للمشاهدة الكاملة</p>
-                </div>
-
-                <!-- حالة أخرى -->
-                <div v-else class="file-preview-fallback">
-                  <File :size="48" class="fallback-icon" />
-                  <p>نوع الملف غير مدعوم للمعاينة المباشرة</p>
-                </div>
-
-                <!-- أزرار التحكم -->
-                <div class="file-actions-bar">
-                  <a
-                    :href="currentFileUrl"
-                    target="_blank"
-                    class="btn btn--primary"
-                  >
-                    <ExternalLink :size="16" /> فتح في تبويب جديد
-                  </a>
-
-                  <!-- ✅ زر التحميل القسري -->
-                  <button
-                    @click="forceDownload(currentFileUrl)"
-                    class="btn btn--outline"
-                  >
-                    <Download :size="16" /> تحميل الملف
-                  </button>
-                </div>
-              </div>
-              <div v-else class="empty-state-mini">
-                <p>لا يوجد ملف للعرض</p>
-              </div>
-            </div>
-            <div class="modal__footer">
-              <button class="btn btn--ghost" @click="closeFileViewer">
-                إغلاق
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- ✅ معاينة الملفات (الهوية، مرفقات العقد، المؤهلات) -->
+    <FileViewerModal
+      v-model="showFileViewer"
+      :title="viewerTitle"
+      :files="viewerFiles"
+    />
 
     <ConfirmDialog
       v-model="showConfirm"
@@ -828,10 +773,10 @@ import type {
   UpdateEmployeePayload,
 } from "@/types";
 import OnboardingModal from "@/components/employees/OnboardingModal.vue";
+import FileViewerModal from "@/components/global/FileViewerModal.vue";
 import {
   FileSpreadsheet,
   FileText,
-  File,
   UserPlus,
   Search,
   Users,
@@ -847,7 +792,6 @@ import {
   Link as LinkIcon,
   Unlink,
   Eye,
-  ExternalLink,
   Download,
   GraduationCap,
   Plus,
@@ -1008,44 +952,16 @@ const handleExportFiltered = async (type: "excel" | "pdf") => {
 
 // ─── Universal File Viewer Logic ──────────────────────────────────────────
 const showFileViewer = ref(false);
-const currentFileUrl = ref<string>("");
+const viewerFiles = ref<string[]>([]);
 const viewerTitle = ref<string>("");
 
-const openFileViewer = (url: string, title: string = "عرض الملف") => {
-  currentFileUrl.value = url;
+const openFileViewer = (
+  urls: string | string[],
+  title: string = "عرض الملف",
+) => {
+  viewerFiles.value = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
   viewerTitle.value = title;
   showFileViewer.value = true;
-};
-
-const closeFileViewer = () => {
-  showFileViewer.value = false;
-  currentFileUrl.value = "";
-  viewerTitle.value = "";
-};
-
-const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-const isPdf = (url: string) => /\.pdf$/i.test(url);
-
-const forceDownload = async (url: string) => {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    const fileName = url.split("/").pop() || "downloaded_file";
-    link.download = fileName;
-
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (error) {
-    console.error("فشل في تحميل الملف:", error);
-    toast.error("حدث خطأ أثناء محاولة تحميل الملف");
-  }
 };
 
 const showEditModal = ref(false);
@@ -1841,7 +1757,8 @@ onMounted(() => {
   cursor: default;
 
   &.view-id-btn,
-  &.view-edu-btn {
+  &.view-edu-btn,
+  &.view-contract-btn {
     cursor: pointer;
     border: 1px solid transparent;
     transition: all 0.2s;
@@ -1858,6 +1775,13 @@ onMounted(() => {
   &--contract {
     background: rgba($stb-success, 0.1);
     color: $stb-success;
+    &.view-contract-btn {
+      background: rgba($stb-success, 0.15);
+      border-color: rgba($stb-success, 0.3);
+      &:hover {
+        background: rgba($stb-success, 0.25);
+      }
+    }
   }
   &--edu {
     background: rgba($stb-info, 0.1);
@@ -2097,61 +2021,6 @@ onMounted(() => {
     align-self: flex-start;
     font-size: $font-size-xs;
   }
-}
-
-.file-viewer-modal {
-  max-width: 900px;
-}
-.file-preview-container {
-  padding: $space-4;
-  background: $stb-surface-2;
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-.file-content-wrapper {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $space-4;
-}
-.preview-image {
-  max-width: 100%;
-  max-height: 60vh;
-  object-fit: contain;
-  border-radius: $radius-md;
-  box-shadow: $shadow-md;
-}
-.pdf-preview {
-  text-align: center;
-  padding: $space-8;
-  .pdf-icon-large {
-    color: $stb-danger;
-    margin-bottom: $space-3;
-  }
-  .pdf-hint {
-    color: $stb-text-muted;
-    font-size: $font-size-sm;
-  }
-}
-.file-preview-fallback {
-  text-align: center;
-  color: $stb-text-muted;
-  .fallback-icon {
-    margin-bottom: $space-2;
-  }
-}
-.file-actions-bar {
-  display: flex;
-  gap: $space-3;
-  margin-top: $space-2;
-}
-.empty-state-mini {
-  color: $stb-text-muted;
-  text-align: center;
 }
 
 /* Transitions */
