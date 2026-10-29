@@ -265,6 +265,8 @@ export interface Employee {
   id: string;
   fullName: string;
   employeeCode: string;
+  /** رقمه على جهاز البصمة إن اختلف عن كوده (فارغ = كوده) */
+  attendancePin?: string | null;
 
   // حقول الجنسية والجواز/الإقامة
   nationalityType: NationalityType;
@@ -384,6 +386,8 @@ export interface CreateEmployeePayload {
   departmentId?: string;
   branchId?: string;
   shiftId?: string;
+  /** رقمه على جهاز البصمة إن اختلف عن كوده */
+  attendancePin?: string | null;
   status?: "active" | "inactive" | "terminated";
   userId?: string;
 
@@ -403,6 +407,8 @@ export interface UpdateEmployeePayload {
   departmentId?: string | null;
   branchId?: string;
   shiftId?: string | null;
+  /** رقمه على جهاز البصمة؛ null = يعرفه الجهاز بكوده */
+  attendancePin?: string | null;
   status?: "active" | "inactive" | "terminated";
   userId?: string | null;
 
@@ -554,6 +560,9 @@ export type PunchType =
   | "overtime_out"
   | "leave";
 
+/** كيف يوصل الجهاز بصماته: ZKTeco (ADMS)، Hikvision، أو أي جهاز عبر الـ API */
+export type DeviceProtocol = "zk_adms" | "hikvision" | "api";
+
 export interface BiometricDevice {
   id: string;
   serialNumber: string;
@@ -561,6 +570,13 @@ export interface BiometricDevice {
   ipAddress?: string;
   location?: string;
   model?: string;
+  protocol: DeviceProtocol;
+  /** عناوين IP المسموح الاتصال منها (مفصولة بفواصل)؛ فارغة = أي عنوان */
+  allowedIps?: string | null;
+  /** إصدار بروتوكول Push كما أعلنه جهاز ZKTeco */
+  pushVersion?: string | null;
+  /** مفتاح الإرسال (Hikvision / API): يصل مرة واحدة عند الإنشاء أو التجديد */
+  pushKey?: string;
   /** منطقة ساعة الجهاز (IANA)؛ فارغة = منطقة الشركة */
   timezone?: string | null;
   /** الفرع المركَّب فيه الجهاز */
@@ -601,10 +617,159 @@ export interface CreateDevicePayload {
   alias?: string;
   location?: string;
   model?: string;
+  protocol?: DeviceProtocol;
+  allowedIps?: string | null;
   /** تُترك فارغة ليتبع الجهاز منطقة الشركة */
   timezone?: string;
   /** يُترك فارغاً للفرع الرئيسي */
   branchId?: string;
+}
+
+export type UpdateDevicePayload = Partial<CreateDevicePayload> & {
+  status?: DeviceStatus;
+};
+
+/** ما يُكتب في الجهاز ليتصل بالسيرفر (GET /attendance/devices/:id/setup) */
+export interface DeviceSetup {
+  protocol: DeviceProtocol;
+  serialNumber: string;
+  zk?: { serverAddress: string; serverPort: number; https: boolean; path: string };
+  hikvision?: { host: string; port: number; https: boolean; urlPath: string };
+  api?: { url: string; deviceIdHeader: string; deviceKeyHeader: string };
+}
+
+export type AttendanceStatus =
+  | "present"
+  | "late"
+  | "early_leave"
+  | "late_and_early_leave"
+  | "incomplete"
+  | "absent"
+  | "on_leave"
+  | "off_day"
+  | "holiday"
+  | "unclassified"
+  | "not_employed";
+
+export interface DailySummaryRow {
+  employeeId?: string;
+  employeeCode: string;
+  employeeName?: string;
+  shiftName?: string;
+  firstPunch: string | null;
+  lastPunch: string | null;
+  totalMinutes: number;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  overtimeMinutes: number;
+  status: AttendanceStatus;
+  leaveReason?: string;
+  holidayName?: string;
+}
+
+export interface MonthlyReportDay {
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  minutes: number;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  overtimeMinutes: number;
+  status: AttendanceStatus;
+  leaveReason?: string;
+  holidayName?: string;
+  workHours?: number;
+  overtimeHours?: number;
+}
+
+export interface MonthlyReport {
+  employeeId: string;
+  month: number;
+  year: number;
+  shiftName?: string;
+  totalDays: number;
+  elapsedDays: number;
+  notEmployedDays: number;
+  offDays: number;
+  holidayDays: number;
+  workingDays: number;
+  presentDays: number;
+  leaveDays: number;
+  absentDays: number;
+  incompleteDays: number;
+  totalMinutes: number;
+  totalLateMinutes: number;
+  totalEarlyLeaveMinutes: number;
+  totalOvertimeMinutes: number;
+  totalWorkHours: number;
+  totalOvertimeHours: number;
+  dailyBreakdown: MonthlyReportDay[];
+}
+
+/** سياسة الحضور للشركة (GET/PATCH /attendance/settings) */
+export interface AttendanceSettings {
+  /** أيام الراحة الأسبوعية (0 = الأحد … 6 = السبت) */
+  weeklyOffDays: number[];
+  deductAbsence: boolean;
+  deductLateness: boolean;
+  payOvertime: boolean;
+  /** أجر الساعة الإضافية نسبةً من أجر الساعة (150 = مرة ونصف) */
+  overtimeRatePercent: number;
+  overtimeMinMinutes: number;
+  syncBiometrics: boolean;
+}
+
+export interface PublicHoliday {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+/** رقم وصلت منه بصمات ولا يقابله موظف */
+export interface UnlinkedPin {
+  pin: string;
+  punches: number;
+  firstPunch: string;
+  lastPunch: string;
+  devices: string[];
+}
+
+export type ImportDateOrder = "DMY" | "MDY" | "YMD";
+
+export interface ImportPreview {
+  headerRow: number;
+  headers: string[];
+  rows: string[][];
+  totalRows: number;
+  guess: {
+    pinColumn: number | null;
+    dateTimeColumn: number | null;
+    dateColumn: number | null;
+    timeColumn: number | null;
+    typeColumn: number | null;
+    dateOrder: ImportDateOrder;
+  };
+}
+
+export interface ImportMapping {
+  pinColumn: number;
+  dateTimeColumn?: number;
+  dateColumn?: number;
+  timeColumn?: number;
+  typeColumn?: number;
+  headerRow?: number;
+  dateOrder?: ImportDateOrder;
+  deviceId?: string;
+}
+
+export interface ImportResult {
+  total: number;
+  imported: number;
+  duplicates: number;
+  unlinked: number;
+  skipped: number;
+  errors: { row: number; reason: string }[];
 }
 
 // --- Subscriptions ---

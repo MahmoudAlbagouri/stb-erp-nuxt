@@ -32,6 +32,14 @@ export interface PayrollItem {
   unpaidLeaveDeduction: string;
   otherDeductions: string;
 
+  // من الحضور (حسب إعدادات الحضور للشركة)
+  absenceDays: number;
+  absenceDeduction: string;
+  /** دقائق التأخير والانصراف المبكر */
+  lateMinutes: number;
+  lateDeduction: string;
+  overtimeMinutes: number;
+
   netSalary: string;
   notes: string | null;
   employee: Employee;

@@ -9,6 +9,8 @@ export interface Shift {
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
   gracePeriod: number;
+  /** أيام راحتها (0 = الأحد)؛ null = أيام راحة الشركة، [] = كل الأسبوع */
+  offDays?: number[] | null;
   tenantId: string;
   createdAt: string;
 }
@@ -18,6 +20,7 @@ export interface CreateShiftPayload {
   startTime: string;
   endTime: string;
   gracePeriod: number;
+  offDays?: number[] | null;
 }
 
 export type UpdateShiftPayload = Partial<CreateShiftPayload>;

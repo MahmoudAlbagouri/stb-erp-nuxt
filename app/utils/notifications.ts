@@ -30,6 +30,7 @@ import {
   UserPlus,
   Wallet,
   WifiOff,
+  ShieldAlert,
 } from "lucide-vue-next";
 import type {
   NotificationDetail,
@@ -58,6 +59,7 @@ const ICONS: Record<string, Component> = {
   scale: Scale,
   fingerprint: Fingerprint,
   "wifi-off": WifiOff,
+  "shield-alert": ShieldAlert,
   "package-x": PackageX,
   truck: Truck,
   receipt: Receipt,

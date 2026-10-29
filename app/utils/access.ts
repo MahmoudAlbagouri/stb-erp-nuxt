@@ -41,6 +41,8 @@ export const PERMS = {
   ATTENDANCE_LOGS_UPDATE: "update_attendance_log",
   ATTENDANCE_SUMMARY_VIEW: "view_attendance_summary",
   ATTENDANCE_REPORTS_VIEW: "view_attendance_reports",
+  ATTENDANCE_LOGS_IMPORT: "import_attendance_logs",
+  ATTENDANCE_SETTINGS_MANAGE: "manage_attendance_settings",
   CONTRACT_CREATE: "create_contract",
   CONTRACT_VIEW: "view_contracts",
   CONTRACT_UPDATE: "update_contract",

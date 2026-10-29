@@ -208,9 +208,21 @@
                     :title="`منها ${formatCurrency(calculateItemPrepaid(item))} مصروفة سلفاً`"
                     >*</span
                   >
+                  <span v-if="item.overtimeMinutes" class="attendance-note">
+                    إضافي {{ minutesText(item.overtimeMinutes) }}:
+                    {{ formatCurrency(item.overtimeAmount) }}
+                  </span>
                 </td>
                 <td class="text-right text-danger">
                   {{ formatCurrency(calculateItemDeductions(item)) }}
+                  <span v-if="item.absenceDays" class="attendance-note">
+                    غياب {{ item.absenceDays }} يوم:
+                    {{ formatCurrency(item.absenceDeduction) }}
+                  </span>
+                  <span v-if="item.lateMinutes" class="attendance-note">
+                    تأخير {{ minutesText(item.lateMinutes) }}:
+                    {{ formatCurrency(item.lateDeduction) }}
+                  </span>
                 </td>
                 <td class="text-right font-bold text-accent">
                   {{ formatCurrency(item.netSalary) }}
@@ -313,6 +325,8 @@ const calculateItemDeductions = (item: PayrollItem) =>
   Number(item.loanDeduction) +
   Number(item.advanceDeduction) +
   Number(item.unpaidLeaveDeduction) +
+  Number(item.absenceDeduction ?? 0) +
+  Number(item.lateDeduction ?? 0) +
   Number(item.otherDeductions) +
   calculateItemPrepaid(item);
 
@@ -379,6 +393,13 @@ const getMonthName = (m: number) =>
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
+.attendance-note {
+  display: block;
+  font-size: $font-size-xs;
+  color: $stb-text-muted;
+  font-weight: 400;
+}
 
 .content-wrapper {
   animation: fadeIn 0.3s ease-in-out;

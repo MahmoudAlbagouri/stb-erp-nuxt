@@ -535,6 +535,21 @@
                   ><StbPhoneInput v-model="editForm.phone" />
                 </div>
                 <div class="form-group">
+                  <label>رقم البصمة على الجهاز</label>
+                  <input
+                    v-model="editForm.attendancePin"
+                    type="text"
+                    class="form-input"
+                    dir="ltr"
+                    maxlength="20"
+                    :placeholder="editingEmployee?.employeeCode"
+                  />
+                  <small class="form-hint">
+                    فارغ = الجهاز يعرفه بكوده. اكتب رقمه إن سُجّل على الجهاز
+                    برقم آخر — وتُنسب له بصماته السابقة بهذا الرقم.
+                  </small>
+                </div>
+                <div class="form-group">
                   <label>الحالة الوظيفية</label>
                   <select v-model="editForm.status" class="form-select">
                     <option value="active">✅ نشط</option>
@@ -977,6 +992,7 @@ interface EditFormType {
   jobTitle: string;
   departmentId: string;
   branchId: string;
+  attendancePin: string;
   status: "active" | "inactive" | "terminated";
   userId: string | null;
   educations: Education[];
@@ -991,6 +1007,7 @@ const editForm = reactive<EditFormType>({
   jobTitle: "",
   departmentId: "",
   branchId: "",
+  attendancePin: "",
   status: "active",
   userId: null,
   educations: [],
@@ -1038,6 +1055,7 @@ const openEdit = async (emp: Employee) => {
     jobTitle: emp.jobTitle ?? "",
     departmentId: emp.department?.id ?? "",
     branchId: emp.branchId ?? "",
+    attendancePin: emp.attendancePin ?? "",
     status: emp.status,
     userId: emp.user?.id ?? null,
     educations: emp.educations
@@ -1073,6 +1091,8 @@ const handleUpdate = async () => {
       jobTitle: editForm.jobTitle || undefined,
       departmentId: editForm.departmentId || undefined,
       branchId: editForm.branchId || undefined,
+      // null = يعود الجهاز يعرفه بكوده
+      attendancePin: editForm.attendancePin.trim() || null,
       status: editForm.status,
       userId: editForm.userId || undefined,
       educations: cleanEducations,

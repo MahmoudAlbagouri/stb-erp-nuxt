@@ -43,6 +43,7 @@
               <th>وقت النهاية</th>
               <th>النوع</th>
               <th>فترة السماحية</th>
+              <th>أيام الراحة</th>
               <th>إجراءات</th>
             </tr>
           </thead>
@@ -65,6 +66,15 @@
                 </span>
               </td>
               <td>{{ shift.gracePeriod }} دقيقة</td>
+              <td>
+                {{
+                  shift.offDays == null
+                    ? "أيام راحة الشركة"
+                    : shift.offDays.length
+                      ? weekdaysText(shift.offDays)
+                      : "تعمل كل الأسبوع"
+                }}
+              </td>
               <td>
                 <button
                   v-can="'update_shift'"
@@ -150,6 +160,24 @@
                 </small>
               </div>
 
+              <div class="form-group">
+                <label>أيام الراحة</label>
+                <select v-model="offDaysMode" class="form-select">
+                  <option value="company">أيام راحة الشركة (من إعدادات الحضور)</option>
+                  <option value="custom">أيام خاصة بهذه الوردية</option>
+                </select>
+                <div v-if="offDaysMode === 'custom'" class="days">
+                  <label v-for="d in WEEKDAYS" :key="d.value" class="checkbox-label day">
+                    <input v-model="form.offDays" type="checkbox" :value="d.value" />
+                    {{ d.label }}
+                  </label>
+                </div>
+                <small class="form-hint">
+                  لا يُحسب فيها غياب، والعمل فيها إضافي كله. بلا أي يوم = الوردية
+                  تعمل كل الأسبوع (حراسة مثلاً).
+                </small>
+              </div>
+
               <!-- تنبيه للوقت دوام الليلي -->
               <div v-if="isOvernightForm" class="info-note">
                 <Info :size="15" />
@@ -205,7 +233,10 @@ const form = reactive({
   startTime: "",
   endTime: "",
   gracePeriod: 30,
+  offDays: [] as number[],
 });
+/** company = أيام راحة الشركة (offDays: null) */
+const offDaysMode = ref<"company" | "custom">("company");
 
 // ✅ نفس منطق اكتشاف اوقات الدوام الليلي المستخدم في الباك اند (endTime <= startTime)
 const isOvernight = (shift: Shift) => shift.endTime <= shift.startTime;
@@ -218,6 +249,8 @@ const resetForm = () => {
   form.startTime = "";
   form.endTime = "";
   form.gracePeriod = 30;
+  form.offDays = [];
+  offDaysMode.value = "company";
   editingId.value = null;
 };
 
@@ -232,17 +265,27 @@ const openEditModal = (shift: Shift) => {
   form.startTime = shift.startTime;
   form.endTime = shift.endTime;
   form.gracePeriod = shift.gracePeriod;
+  form.offDays = [...(shift.offDays ?? [])];
+  offDaysMode.value = shift.offDays == null ? "company" : "custom";
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
+    if (offDaysMode.value === "custom" && form.offDays.length === 7) {
+      toast.error("لا بد من يوم عمل واحد على الأقل في الأسبوع");
+      return;
+    }
+    const payload = {
+      ...form,
+      offDays: offDaysMode.value === "custom" ? form.offDays : null,
+    };
     if (isEdit.value && editingId.value) {
-      await store.update(editingId.value, { ...form });
+      await store.update(editingId.value, payload);
       toast.success("تم تحديث اوقات الدوام بنجاح");
     } else {
-      await store.create({ ...form });
+      await store.create(payload);
       toast.success("تم إضافة اوقات الدوام بنجاح");
     }
     showModal.value = false;
@@ -262,6 +305,18 @@ onMounted(() => {
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  margin-top: $space-2;
+}
+.day {
+  padding: $space-1 $space-3;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+}
 
 .page-header__actions {
   display: flex;

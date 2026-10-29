@@ -108,3 +108,11 @@ export const formatDateTime = (value: DateInput): string =>
   toDate(value)?.toLocaleString(DISPLAY_LOCALE, {
     timeZone: tenantTimeZone(),
   }) ?? EMPTY;
+
+/** الساعة فقط: 3:45 PM — بتوقيت الشركة */
+export const formatTime = (value: DateInput): string =>
+  toDate(value)?.toLocaleTimeString(DISPLAY_LOCALE, {
+    timeZone: tenantTimeZone(),
+    hour: "numeric",
+    minute: "2-digit",
+  }) ?? EMPTY;

@@ -25,7 +25,38 @@
         <ClipboardList :size="18" />
         سجل الحضور والانصراف
       </button>
+      <button
+        v-can="'view_attendance_summary'"
+        :class="['tab-btn', { active: activeTab === 'summary' }]"
+        @click="activeTab = 'summary'"
+      >
+        <CalendarCheck :size="18" />
+        الملخص اليومي
+      </button>
+      <button
+        v-can="'view_attendance_reports'"
+        :class="['tab-btn', { active: activeTab === 'monthly' }]"
+        @click="activeTab = 'monthly'"
+      >
+        <CalendarRange :size="18" />
+        التقرير الشهري
+      </button>
+      <button
+        v-can="'view_attendance_summary'"
+        :class="['tab-btn', { active: activeTab === 'settings' }]"
+        @click="activeTab = 'settings'"
+      >
+        <Settings2 :size="18" />
+        الإعدادات والعطلات
+      </button>
     </div>
+
+    <DailySummary v-if="activeTab === 'summary'" />
+    <MonthlyReport
+      v-if="activeTab === 'monthly'"
+      :employees="employeesStore.employees"
+    />
+    <AttendanceSettingsPanel v-if="activeTab === 'settings'" />
 
     <!-- ══ Tab Content: Devices ═════════════════════════════════════════════ -->
     <div v-if="activeTab === 'devices'" class="tab-content">
@@ -57,9 +88,14 @@
             <div class="device-card__icon">
               <Fingerprint :size="28" />
             </div>
-            <span :class="['badge', DEVICE_STATUS[dev.status].badge]">
-              {{ DEVICE_STATUS[dev.status].label }}
-            </span>
+            <div class="device-card__tags">
+              <span class="badge badge--system">
+                {{ DEVICE_PROTOCOLS[dev.protocol]?.label ?? dev.protocol }}
+              </span>
+              <span :class="['badge', DEVICE_STATUS[dev.status].badge]">
+                {{ DEVICE_STATUS[dev.status].label }}
+              </span>
+            </div>
           </div>
           <div class="device-card__body">
             <h3>{{ dev.alias || dev.serialNumber }}</h3>
@@ -89,15 +125,53 @@
               <Globe :size="12" class="inline-icon" />
               توقيت الجهاز: <span dir="ltr">{{ dev.timezone }}</span>
             </p>
+            <p class="device-meta">
+              <ShieldCheck
+                v-if="dev.allowedIps"
+                :size="12"
+                class="inline-icon text-success"
+              />
+              <ShieldAlert v-else :size="12" class="inline-icon" />
+              <template v-if="dev.allowedIps">
+                مقفول على: <span dir="ltr">{{ dev.allowedIps }}</span>
+              </template>
+              <template v-else>
+                غير مقفول على عنوان
+                <span v-if="dev.ipAddress" dir="ltr">(آخر: {{ dev.ipAddress }})</span>
+              </template>
+            </p>
           </div>
           <div class="device-card__footer">
+            <button class="btn btn--sm btn--ghost" @click="openSetup(dev)">
+              <PlugZap :size="14" />
+              طريقة التوصيل
+            </button>
             <button
+              v-if="dev.protocol === 'zk_adms'"
               v-can="'sync_biometric_device'"
               class="btn btn--sm btn--ghost"
               @click="openPushUserModal(dev)"
             >
               <UserPlus :size="14" />
-              ربط موظف
+              إرسال موظف
+            </button>
+            <button
+              v-if="dev.protocol === 'zk_adms'"
+              v-can="'sync_biometric_device'"
+              class="btn btn--sm btn--ghost"
+              :disabled="syncingId === dev.id"
+              @click="syncAllUsers(dev)"
+            >
+              <Users :size="14" />
+              كل الموظفين
+            </button>
+            <button
+              v-can="'update_biometric_device'"
+              class="btn btn--sm btn--ghost"
+              @click="openEditDevice(dev)"
+            >
+              <Pencil :size="14" />
+              تعديل
             </button>
             <button
               v-can="'update_biometric_device'"
@@ -187,12 +261,25 @@
             <FileText v-else :size="16" />
             PDF
           </button>
+          <button
+            v-can="'import_attendance_logs'"
+            class="btn btn--outline"
+            @click="showImportModal = true"
+          >
+            <FileUp :size="16" />
+            استيراد من ملف
+          </button>
           <button v-can="'create_attendance_log'" class="btn btn--primary" @click="openManualLogModal">
             <Plus :size="16" />
             تسجيل بصمة يدوية
           </button>
         </div>
       </div>
+
+      <UnlinkedPins
+        :employees="employeesStore.employees"
+        @linked="reloadLogs"
+      />
 
       <div v-if="store.loading" class="empty-state">
         <div class="spinner spinner--lg" />
@@ -243,7 +330,7 @@
                     {{ log.leaveReason }}
                   </div>
                 </td>
-                <td>
+                <td :title="log.workHours != null ? 'ساعات اليوم: من أول بصمة لآخرها' : ''">
                   {{ log.workHours != null ? `${log.workHours} س` : "—" }}
                 </td>
                 <td>
@@ -311,7 +398,7 @@
             <div class="modal__header">
               <h3>
                 <Fingerprint :size="20" class="modal-icon" />
-                إضافة جهاز بصمة
+                {{ editingDeviceId ? "تعديل جهاز بصمة" : "إضافة جهاز بصمة" }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -321,15 +408,39 @@
                 <X :size="20" />
               </button>
             </div>
-            <form @submit.prevent="handleAddDevice" class="modal-form">
+            <form @submit.prevent="handleSaveDevice" class="modal-form">
+              <div class="form-group">
+                <label>نوع الجهاز *</label>
+                <select
+                  v-model="deviceForm.protocol"
+                  class="form-select"
+                  :disabled="!!editingDeviceId"
+                >
+                  <option
+                    v-for="(p, key) in DEVICE_PROTOCOLS"
+                    :key="key"
+                    :value="key"
+                  >
+                    {{ p.label }}
+                  </option>
+                </select>
+                <small class="form-hint">
+                  {{ DEVICE_PROTOCOLS[deviceForm.protocol ?? "zk_adms"].hint }}.
+                  جهاز لا يتصل بالإنترنت؟ صدّر بصماته Excel واستوردها من السجل.
+                </small>
+              </div>
               <div class="form-group">
                 <label>الرقم التسلسلي (Serial Number) *</label>
                 <input
                   v-model="deviceForm.serialNumber"
                   class="form-input"
                   required
+                  dir="ltr"
                   placeholder="مثال: JHG3255001088"
                 />
+                <small v-if="deviceForm.protocol === 'zk_adms'" class="form-hint">
+                  من قائمة الجهاز: System Info — به يتعرف السيرفر على الجهاز.
+                </small>
               </div>
               <div class="grid-2">
                 <div class="form-group">
@@ -389,6 +500,23 @@
                   وتُقرأ أوقات بصماته.
                 </small>
               </div>
+              <div class="form-group">
+                <label>قفل الجهاز على عنوان IP (اختياري)</label>
+                <input
+                  v-model="deviceForm.allowedIps"
+                  class="form-input"
+                  dir="ltr"
+                  placeholder="41.33.10.25 أو 41.33.10.0/24"
+                />
+                <small class="form-hint">
+                  عنوان إنترنت مكان الجهاز (أو أكثر مفصولة بفواصل): لا يُقبل اتصال
+                  باسم الجهاز من غيره. فارغ = أي عنوان، مع تنبيه حين يتغير.
+                  <template v-if="editingDevice?.ipAddress">
+                    آخر عنوان اتصل منه:
+                    <b dir="ltr">{{ editingDevice.ipAddress }}</b>
+                  </template>
+                </small>
+              </div>
               <div class="modal__footer">
                 <button
                   type="button"
@@ -424,7 +552,7 @@
             <div class="modal__header">
               <h3>
                 <UserPlus :size="20" class="modal-icon" />
-                ربط موظف بالجهاز
+                إرسال موظف للجهاز
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -457,12 +585,13 @@
                     :key="emp.id"
                     :value="emp.id"
                   >
-                    {{ emp.fullName }} ({{ emp.employeeCode }})
+                    {{ emp.fullName }} ({{ emp.attendancePin || emp.employeeCode }})
                   </option>
                 </select>
                 <small class="form-hint">
-                  سيتم استخدام رقم الموظف (PIN) واسمه المسجلين في النظام
-                  تلقائياً.
+                  يُسجَّل على الجهاز باسمه ورقم البصمة في ملفه (أو كوده)، ثم يسجّل
+                  بصمته على الجهاز. مع تفعيل نسخ البصمات تصل بصمته المسجلة على
+                  جهاز آخر تلقائياً.
                 </small>
               </div>
 
@@ -678,6 +807,17 @@
         </div>
       </Transition>
     </Teleport>
+
+    <DeviceSetupModal
+      v-model="showSetupModal"
+      :device="setupDevice"
+      :push-key="setupKey"
+    />
+    <ImportPunchesModal
+      v-model="showImportModal"
+      :devices="store.devices"
+      @imported="onImported"
+    />
   </div>
 </template>
 
@@ -698,6 +838,12 @@ import type {
   BiometricDevice,
   DeviceStatus,
 } from "@/types";
+import DeviceSetupModal from "@/components/attendance/DeviceSetupModal.vue";
+import ImportPunchesModal from "@/components/attendance/ImportPunchesModal.vue";
+import UnlinkedPins from "@/components/attendance/UnlinkedPins.vue";
+import DailySummary from "@/components/attendance/DailySummary.vue";
+import MonthlyReport from "@/components/attendance/MonthlyReport.vue";
+import AttendanceSettingsPanel from "@/components/attendance/AttendanceSettingsPanel.vue";
 
 import {
   Fingerprint,
@@ -714,10 +860,18 @@ import {
   Pencil,
   FileSpreadsheet,
   FileText,
+  FileUp,
   Info,
   Clock,
   Globe,
   Power,
+  PlugZap,
+  ShieldAlert,
+  ShieldCheck,
+  Users,
+  CalendarCheck,
+  CalendarRange,
+  Settings2,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -741,23 +895,40 @@ const companyZoneLabel = computed(
 );
 
 // ─── State ──────────────────────────────────────────────────────────────────
-const activeTab = ref<"devices" | "logs">("devices");
+const activeTab = ref<"devices" | "logs" | "summary" | "monthly" | "settings">(
+  "devices",
+);
 const submitting = ref(false);
 const exporting = ref<"excel" | "pdf" | null>(null);
 
 const branches = useBranchesStore();
 
-// Device Form
+// Device Form (إضافة وتعديل)
 const showDeviceModal = ref(false);
-const deviceForm = reactive<CreateDevicePayload>({
+const editingDeviceId = ref<string | null>(null);
+const emptyDeviceForm = (): CreateDevicePayload => ({
   serialNumber: "",
   alias: "",
   model: "",
   location: "",
   timezone: "",
   branchId: "",
+  protocol: "zk_adms",
+  allowedIps: "",
 });
+const deviceForm = reactive<CreateDevicePayload>(emptyDeviceForm());
+const editingDevice = computed(() =>
+  store.devices.find((d) => d.id === editingDeviceId.value),
+);
 const togglingId = ref<string | null>(null);
+const syncingId = ref<string | null>(null);
+
+// طريقة التوصيل، ومفتاح الجهاز الجديد (يُعرض مرة واحدة)
+const showSetupModal = ref(false);
+const setupDevice = ref<BiometricDevice | null>(null);
+const setupKey = ref<string | undefined>();
+
+const showImportModal = ref(false);
 
 // Push User Form
 const showPushModal = ref(false);
@@ -809,33 +980,86 @@ const targetDevice = computed(() =>
   store.devices.find((d) => d.id === targetDeviceId.value),
 );
 
-// ─── Devices Actions (بدون تغيير) ──────────────────────────────────────────
+// ─── Devices Actions ────────────────────────────────────────────────────────
 const openDeviceModal = () => {
+  editingDeviceId.value = null;
+  Object.assign(deviceForm, emptyDeviceForm());
+  showDeviceModal.value = true;
+};
+
+const openEditDevice = (dev: BiometricDevice) => {
+  editingDeviceId.value = dev.id;
   Object.assign(deviceForm, {
-    serialNumber: "",
-    alias: "",
-    model: "",
-    location: "",
-    timezone: "",
-    branchId: "",
+    serialNumber: dev.serialNumber,
+    alias: dev.alias ?? "",
+    model: dev.model ?? "",
+    location: dev.location ?? "",
+    timezone: dev.timezone ?? "",
+    branchId: dev.branchId ?? "",
+    protocol: dev.protocol,
+    allowedIps: dev.allowedIps ?? "",
   });
   showDeviceModal.value = true;
 };
 
-const handleAddDevice = async () => {
+const openSetup = (dev: BiometricDevice, pushKey?: string) => {
+  setupDevice.value = dev;
+  setupKey.value = pushKey;
+  showSetupModal.value = true;
+};
+
+const handleSaveDevice = async () => {
   submitting.value = true;
   try {
-    await store.createDevice({
+    const payload = {
       ...deviceForm,
       timezone: deviceForm.timezone || undefined,
       branchId: deviceForm.branchId || undefined,
-    });
-    toast.success("تم إضافة الجهاز بنجاح");
-    showDeviceModal.value = false;
+      allowedIps: deviceForm.allowedIps?.trim() || null,
+    };
+    if (editingDeviceId.value) {
+      const { protocol: _fixed, ...changes } = payload;
+      await store.updateDevice(editingDeviceId.value, changes);
+      toast.success("تم حفظ الجهاز");
+      showDeviceModal.value = false;
+    } else {
+      const created = await store.createDevice(payload);
+      toast.success("تم إضافة الجهاز بنجاح");
+      showDeviceModal.value = false;
+      // التعليمات فوراً، ومعها المفتاح الذي لن يظهر ثانية
+      openSetup(created, created.pushKey);
+    }
   } catch (e) {
     toast.error(getErrorMessage(e));
   } finally {
     submitting.value = false;
+  }
+};
+
+/** يسجّل كل الموظفين النشطين على الجهاز (جهاز جديد أو أعيدت تهيئته) */
+const syncAllUsers = async (dev: BiometricDevice) => {
+  const branchOnly =
+    branches.hasMany && !!dev.branchId
+      ? confirm(
+          "إرسال موظفي فرع الجهاز فقط؟ (موافق = فرعه فقط، إلغاء = كل الموظفين)",
+        )
+      : false;
+  if (
+    !branchOnly &&
+    !confirm("سيُسجَّل كل الموظفين النشطين على هذا الجهاز. متابعة؟")
+  ) {
+    return;
+  }
+  syncingId.value = dev.id;
+  try {
+    const { employees } = await store.syncAllUsers(dev.id, branchOnly);
+    toast.success(
+      `سيُرسَل ${employees} موظفاً للجهاز تباعاً خلال دقائق وهو متصل`,
+    );
+  } catch (e) {
+    toast.error(getErrorMessage(e));
+  } finally {
+    syncingId.value = null;
   }
 };
 
@@ -883,7 +1107,7 @@ const handlePushUser = async () => {
       targetDeviceId.value,
       selectedEmployeeId.value,
     );
-    toast.success("تم إرسال أمر ربط الموظف بالجهاز بنجاح");
+    toast.success("سيُسجَّل الموظف على الجهاز عند اتصاله التالي (ثوانٍ)");
     showPushModal.value = false;
   } catch (e) {
     toast.error(getErrorMessage(e, "فشل في إرسال البيانات"));
@@ -895,7 +1119,10 @@ const handlePushUser = async () => {
 // ─── Logs: فلترة وتحميل ──────────────────────────────────────────────────
 const loadLogs = (page = 1) => {
   store.fetchLogs({ ...activeFilters.value, page });
+  store.fetchUnlinkedPins();
 };
+
+const onImported = () => loadLogs();
 
 const applyFilters = () => loadLogs();
 const reloadLogs = () => loadLogs(store.logsPage);
@@ -1003,18 +1230,7 @@ const handleUpdateLog = async () => {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-const punchTypeLabel = (type: PunchType) => {
-  const map: Record<string, string> = {
-    check_in: "حضور",
-    check_out: "انصراف",
-    break_out: "خروج استراحة",
-    break_in: "عودة استراحة",
-    overtime_in: "بداية إضافي",
-    overtime_out: "نهاية إضافي",
-    leave: "إجازة",
-  };
-  return map[type] || type;
-};
+const punchTypeLabel = (type: PunchType) => PUNCH_TYPE_LABELS[type] || type;
 
 const punchBadgeClass = (type: PunchType) => {
   if (type === "check_in") return "badge--active";
@@ -1110,6 +1326,11 @@ onMounted(() => {
     @include flex(row, center, space-between);
   }
 
+  &__tags {
+    @include flex(row, center, flex-end, $space-2);
+    flex-wrap: wrap;
+  }
+
   &__icon {
     width: 48px;
     height: 48px;
@@ -1133,8 +1354,16 @@ onMounted(() => {
 
   &__footer {
     @include flex(row, center, flex-end, $space-2);
+    flex-wrap: wrap;
     margin-top: auto;
   }
+}
+
+.tabs-nav {
+  flex-wrap: wrap;
+}
+.tab-btn {
+  white-space: nowrap;
 }
 
 .inline-icon {

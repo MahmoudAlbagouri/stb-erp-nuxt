@@ -100,6 +100,7 @@ public/sw.js              الـ service worker لشاشة الكاشير
 | `ConfirmDialog` `ToastContainer` | التأكيد والتنبيهات |
 | `StbPhoneInput` `StbNumberInput` `StbDateInput` | حقول الإدخال |
 | `StbUploader` `FileViewerModal` | رفع ملف (`v-model` = `FileRef` أو قائمة؛ يُرسل للخادم `id` فقط) ومعاينته وتحميله برابطه الموقَّع المؤقت |
+| `components/attendance/*` | تبويبات صفحة الحضور: الملخص اليومي، التقرير الشهري، الإعدادات والعطلات، طريقة توصيل الجهاز (ومفتاحه مرة واحدة)، استيراد ملف بصمات، والأرقام غير المربوطة |
 | `FeatureGate` `AccessState` | قفل ما هو خارج الباقة أو الصلاحية |
 | `StockProductPicker` | اختيار أصناف في مستندات المخزون |
 | `SalesInvoicePrint` | طباعة الفاتورة (A4 أو حراري) بعنوان الفرع |

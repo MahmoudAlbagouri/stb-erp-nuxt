@@ -172,6 +172,21 @@
                 </div>
 
                 <div class="form-group">
+                  <label class="form-label">رقم البصمة على الجهاز</label>
+                  <input
+                    v-model="form.employee.attendancePin"
+                    type="text"
+                    class="form-input"
+                    dir="ltr"
+                    maxlength="20"
+                    placeholder="اختياري"
+                  />
+                  <small class="form-hint">
+                    إن كان مسجّلاً على جهاز البصمة من قبل برقم؛ فارغ = يُعرف بكوده.
+                  </small>
+                </div>
+
+                <div class="form-group">
                   <label class="form-label required">الحالة الوظيفية</label>
                   <select
                     v-model="form.employee.status"
@@ -1684,6 +1699,7 @@ const form = reactive({
     branchId: "",
     status: "active" as "active" | "inactive" | "terminated",
     shiftId: "",
+    attendancePin: "",
   },
 
   user: {
@@ -2286,6 +2302,7 @@ const handleClose = () => {
         branchId: "",
         status: "active",
         shiftId: "",
+        attendancePin: "",
       },
       user: {
         username: "",
@@ -2421,6 +2438,7 @@ const handleSubmit = async () => {
       nationalIdCardFileId: form.employee.nationalIdCard?.id,
       phone: form.employee.phone || undefined,
       jobTitle: form.employee.jobTitle || undefined,
+      attendancePin: form.employee.attendancePin.trim() || undefined,
       branchId: form.employee.branchId || undefined,
       status: form.employee.status,
     };
