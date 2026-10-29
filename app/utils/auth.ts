@@ -21,6 +21,30 @@ export const refreshCookieOptions = {
   maxAge: 60 * 60 * 24 * 7,
 } as const;
 
+/**
+ * قيمة الكوكي كما هي في المتصفح الآن. نُسخ useCookie المتعددة تتزامن متأخرة
+ * (BroadcastChannel)، فما يحسم "هل الجلسة قائمة" يُقرأ من هنا لا من نسخة قديمة.
+ */
+export function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const entry = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${name}=`));
+  if (!entry) return null;
+  try {
+    return decodeURIComponent(entry.slice(name.length + 1)) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** يحذف الكوكي من المتصفح فوراً (useCookie يحذفه بعد دورة الرسم التالية) */
+export function expireCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax${secure}`;
+}
+
 export const LOGIN_PATH = "/auth/login";
 export const DISCLAIMER_PATH = "/disclaimer";
 export const DASHBOARD_PATH = "/dashboard";

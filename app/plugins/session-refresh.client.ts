@@ -7,11 +7,11 @@
 //
 // هذا تحسين فقط: رفض السيرفر للجلسة لا يُخرج المستخدم من هنا، بل يقرره أول
 // طلب حقيقي في useApi (وشاشة الكاشير تعمل بلا جلسة أصلاً).
-import { defineNuxtPlugin, useCookie } from "nuxt/app";
+import { defineNuxtPlugin } from "nuxt/app";
 import { watch } from "vue";
 import { useApi } from "../composables/useApi";
 import { useAuthStore } from "../stores/auth";
-import { REFRESH_TOKEN_COOKIE } from "../utils/auth";
+import { REFRESH_TOKEN_COOKIE, readCookie } from "../utils/auth";
 
 /** نجدّد قبل الانتهاء بدقيقة: هامش لبطء الشبكة */
 const REFRESH_AHEAD_MS = 60_000;
@@ -21,7 +21,6 @@ const RETRY_MS = 60_000;
 export default defineNuxtPlugin((nuxtApp) => {
   const auth = useAuthStore();
   const api = useApi();
-  const refreshToken = useCookie<string | null>(REFRESH_TOKEN_COOKIE);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -44,7 +43,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   const check = async (): Promise<void> => {
     clearTimeout(timer);
-    if (!refreshToken.value) return; // لا جلسة نجدّدها
+    // من المتصفح مباشرة: نسخة useCookie قد تحمل توكناً حذفه الخروج للتو، فتجدّد
+    // جلسة خرج منها صاحبها
+    if (!readCookie(REFRESH_TOKEN_COOKIE)) return; // لا جلسة نجدّدها
 
     if (msLeft() > REFRESH_AHEAD_MS) return plan();
     // تبويب آخر ربما جدّد الجلسة للتو: نلتقط توكنه بدل تجديد ثانٍ

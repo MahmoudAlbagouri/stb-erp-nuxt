@@ -1,6 +1,6 @@
 // stores/auth.ts
 import { defineStore, getActivePinia } from "pinia";
-import { useRouter, useCookie } from "nuxt/app";
+import { useRouter, useCookie, useRuntimeConfig } from "nuxt/app";
 import { computed, ref } from "vue";
 import { useApi } from "../composables/useApi";
 import {
@@ -11,6 +11,8 @@ import {
   REFRESH_TOKEN_COOKIE,
   accessCookieOptions,
   decodeJwt,
+  expireCookie,
+  readCookie,
   refreshCookieOptions,
 } from "../utils/auth";
 import { getErrorMessage } from "../utils/errors";
@@ -142,6 +144,25 @@ export const useAuthStore = defineStore("auth", () => {
     decodedToken.value = null;
     accessTokenCookie.value = null;
     refreshTokenCookie.value = null;
+    // فوراً لا بعد دورة الرسم: لا يجد مجدّد الجلسة ولا تحميل الصفحة توكناً
+    expireCookie(ACCESS_TOKEN_COOKIE);
+    expireCookie(REFRESH_TOKEN_COOKIE);
+    expireCookie(SUPPORT_COOKIE);
+  };
+
+  /**
+   * يلغي الجلسة على السيرفر: توكن التجديد لا يُدخل أحداً بعد الخروج، حتى لو
+   * بقي في متصفح أو نُسخ. keepalive يُكمل الطلب والصفحة تنتقل.
+   */
+  const revokeSession = (refreshToken: string | null) => {
+    if (!refreshToken || !import.meta.client) return;
+    fetch(`${useRuntimeConfig().public.apiBase}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${refreshToken}` },
+      keepalive: true,
+    }).catch(() => {
+      // بلا إنترنت: الجلسة تنتهي وحدها بانتهاء عمر توكنها
+    });
   };
 
   // ✅ التوجيه بعد الدخول/التسجيل حسب حالة الإقرار
@@ -263,9 +284,19 @@ export const useAuthStore = defineStore("auth", () => {
    * حين يدخل من جديد. الخروج بإرادته يمسحها: لا تبقى لمن يستخدم الجهاز بعده.
    */
   const logout = (options: { expired?: boolean } = {}) => {
-    if (!options.expired) clearFormDrafts();
+    if (!options.expired) {
+      revokeSession(
+        readCookie(REFRESH_TOKEN_COOKIE) ?? refreshTokenCookie.value ?? null,
+      );
+      clearFormDrafts();
+    }
     resetAllStores();
     clearAuth();
+    if (import.meta.client && !options.expired) {
+      // تحميل كامل: لا يبقى في الذاكرة توكن ولا مؤقّت تجديد ولا بيانات الشركة
+      window.location.replace(LOGIN_PATH);
+      return;
+    }
     router.push(LOGIN_PATH);
   };
 

@@ -7,6 +7,7 @@ import {
   LOGIN_PATH,
   REFRESH_TOKEN_COOKIE,
   accessCookieOptions,
+  readCookie,
   refreshCookieOptions,
 } from "../utils/auth";
 import { saveBlob } from "../utils/download";
@@ -151,7 +152,11 @@ export const useApi = () => {
   };
 
   const requestRefresh = async (): Promise<RefreshOutcome> => {
-    const currentRefreshToken = refreshTokenCookie.value;
+    // في المتصفح من الكوكي نفسه: نسخة هذا الـ composable قد تكون قديمة (خرج
+    // المستخدم للتو) فتعيد جلسة انتهت
+    const currentRefreshToken = import.meta.client
+      ? readCookie(REFRESH_TOKEN_COOKIE)
+      : refreshTokenCookie.value;
     if (!currentRefreshToken) return { status: "rejected" };
 
     let res: Response;
