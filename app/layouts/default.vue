@@ -34,6 +34,8 @@
       </main>
     </div>
     <MobileTabBar />
+    <!-- تفاصيل الإشعار: يفتحها الجرس وصفحة الإشعارات -->
+    <NotificationDetailDrawer />
   </div>
 </template>
 

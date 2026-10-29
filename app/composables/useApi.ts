@@ -338,6 +338,41 @@ export const useApi = () => {
     saveBlob(blob, fileName);
   };
 
+  /**
+   * اتصال بث (Server-Sent Events) بجلسة المستخدم: fetch بدل EventSource لأنه
+   * يحمل ترويسة Authorization ويجدّد التوكن عند 401 كباقي الطلبات. يعيد
+   * الاستجابة مفتوحة؛ قراءتها وإغلاقها (signal) على المستدعي.
+   */
+  const openStream = async (
+    path: string,
+    signal: AbortSignal,
+  ): Promise<Response> => {
+    const res = await send(
+      path,
+      {
+        method: "GET",
+        headers: { ...getHeaders(true), Accept: "text/event-stream" },
+        signal,
+      },
+      true,
+    );
+    if (!res.ok || !res.body) {
+      if (GATEWAY_STATUSES.includes(res.status)) {
+        throw new NetworkError(SERVER_BUSY_MESSAGE);
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return res;
+  };
+
   // refreshSession: تجديد الجلسة قبل أن يُرفض طلب (plugins/session-refresh)
-  return { get, post, patch, del, download, refreshSession: refreshTokens };
+  return {
+    get,
+    post,
+    patch,
+    del,
+    download,
+    openStream,
+    refreshSession: refreshTokens,
+  };
 };

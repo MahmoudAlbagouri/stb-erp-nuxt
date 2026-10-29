@@ -58,6 +58,11 @@ public/sw.js              الـ service worker لشاشة الكاشير
   `reset()` تُستدعى عند تسجيل الخروج. الأصل أن تطلب الصفحة عبر مخزنها (قليل من
   الصفحات، كالرئيسية، يستدعي `useApi` مباشرة لطلب واحد خاص بها).
 - **الأنواع** (`types/`): تُحدَّث مع أي تغيير في استجابة الباك إند.
+- **البث اللحظي** (`useApi().openStream`): اتصال Server-Sent Events بتوكن الجلسة
+  (fetch لا EventSource، فيجدّد التوكن كباقي الطلبات). مخزن الإشعارات يفتحه من
+  الجرس ويعيد الاتصال بانتظار متزايد، ويسأل العدّاد كل دقيقة ما دام منقطعاً.
+  أيقونات وأسماء أنواع الإشعارات تأتي من الباك إند (`GET /notifications/types`)
+  وخريطة أيقوناتها في `utils/notifications.ts`.
 
 ## الوصول: ماذا يرى المستخدم
 
@@ -102,6 +107,8 @@ public/sw.js              الـ service worker لشاشة الكاشير
 | `DocPager` | ترقيم القوائم |
 | `SupportBanner` `OwnerHome` | وضع الدعم وصفحة مالك النظام |
 | `ConnectionBanner` | شريط انقطاع الاتصال في لوحة التحكم (`useConnection`) |
+| `NotificationBell` `NotificationDetailDrawer` | جرس الإشعارات (عدّاد وبث لحظي وصوت) ودرج تفاصيل الإشعار المركّب في التخطيط — يفتحه `useNotificationsStore().openItem` |
+| `NotificationComposeModal` `NotificationPreferencesModal` | رسالة الإدارة للموظفين (موظفون/فروع/أقسام/الجميع) وكتم أنواع الإشعارات |
 | `FormDraftNotice` | «لديك نسخة لم تُحفظ» في النماذج الطويلة (`useFormDraft`) |
 | `AccountSelect` `JournalEntryModal` `AccountingInactive` | اختيار حساب من الشجرة، عرض قيد وعكسه، ودعوة تفعيل المحاسبة |
 | `ReportExport` | زرا تصدير Excel / PDF لمسار تصدير في الباك إند بفلاتر التقرير المعروض (يظهران لباقة فيها `reports_export`) |

@@ -1,58 +1,78 @@
-<!-- components/NotificationBell.vue -->
+<!--
+  جرس الإشعارات (الشريط العلوي): العدّاد، آخر الإشعارات، والبث اللحظي —
+  الإشعار الجديد يظهر فوراً مع تنبيه منبثق وصوت (إن فُعّل). الضغط يفتح درج
+  التفاصيل (NotificationDetailDrawer).
+-->
 <template>
-  <div class="notification-bell-wrapper" v-click-outside="closePopover">
+  <!-- بلا صلاحية عرض الإشعارات: لا جرس (لا شيء يصله) -->
+  <div
+    v-if="allowed"
+    class="notification-bell-wrapper"
+    v-click-outside="closePopover"
+  >
     <button
       class="topbar-icon-btn"
+      :class="{ 'is-ringing': ringing }"
+      :aria-label="store.unreadCount ? `الإشعارات: ${store.unreadCount} غير مقروء` : 'الإشعارات'"
       @click="togglePopover"
-      aria-label="الإشعارات"
     >
       <Bell :size="20" />
-      <span v-if="store.hasUnread" class="notification-badge"></span>
+      <span v-if="store.hasUnread" class="notification-badge">
+        {{ store.unreadCount > 99 ? "99+" : store.unreadCount }}
+      </span>
     </button>
 
     <Transition name="fade-scale">
       <div v-if="isOpen" class="notification-popover">
         <div class="popover-header">
-          <h4>الإشعارات</h4>
+          <h4>
+            الإشعارات
+            <span
+              class="live-dot"
+              :class="{ 'is-live': store.connected }"
+              :title="store.connected ? 'متصل — تصل الإشعارات فوراً' : 'يعيد الاتصال...'"
+            />
+          </h4>
           <button
-            v-if="store.unreadCount > 0"
+            v-if="store.hasUnread"
             class="btn btn--ghost btn--sm"
-            @click="handleMarkAllRead"
             :disabled="actionLoading"
+            @click="handleMarkAllRead"
           >
-            تحديد الكل كمقروء
+            <CheckCheck :size="14" /> قراءة الكل
           </button>
         </div>
 
-        <div
-          class="popover-body"
-          v-if="!store.loading && store.myNotifications.length"
-        >
-          <div
-            v-for="notif in limitedNotifications"
+        <div v-if="loading && !store.recent.length" class="popover-loading">
+          <div class="spinner spinner--sm" />
+        </div>
+        <div v-else-if="store.recent.length" class="popover-body">
+          <button
+            v-for="notif in store.recent"
             :key="notif.id"
             class="notif-item"
-            :class="{ 'is-unread': !notif.isRead }"
-            @click="handleNotifClick(notif)"
+            :class="{ 'is-unread': !notif.readAt }"
+            @click="open(notif)"
           >
-            <div class="notif-icon" :class="`notif-icon--${notif.type}`">
-              <component :is="getIcon(notif.category)" :size="16" />
+            <div class="notif-icon" :class="`sev-${notif.severity}`">
+              <component :is="iconOf(notif.type)" :size="16" />
             </div>
             <div class="notif-content">
               <div class="notif-title">{{ notif.title }}</div>
-              <div class="notif-message">{{ notif.message }}</div>
-              <div class="notif-time">{{ formatTimeAgo(notif.createdAt) }}</div>
+              <div class="notif-message">{{ notif.body }}</div>
+              <div class="notif-time">
+                {{ timeAgo(notif.createdAt) }}
+                <span v-if="notif.requiresAck && !notif.acknowledgedAt" class="notif-ack">
+                  · يتطلب تأكيد الاطلاع
+                </span>
+              </div>
             </div>
-            <div v-if="!notif.isRead" class="notif-dot"></div>
-          </div>
-        </div>
-
-        <div v-else-if="store.loading" class="popover-loading">
-          <div class="spinner spinner--sm" />
+            <div v-if="!notif.readAt" class="notif-dot"></div>
+          </button>
         </div>
         <div v-else class="popover-empty">
           <BellOff :size="24" class="text-muted" />
-          <p>لا توجد إشعارات جديدة</p>
+          <p>لا توجد إشعارات</p>
         </div>
 
         <div class="popover-sound">
@@ -79,22 +99,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
-import { useNotificationsStore } from "@/stores/notifications";
-import { useToast } from "@/composables/useToast";
-import { installSoundUnlock, playSound } from "@/utils/sounds";
-import {
-  Bell,
-  BellOff,
-  FileText,
-  CreditCard,
-  UserCheck,
-  Info,
-  AlertTriangle,
-} from "lucide-vue-next";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { Bell, BellOff, CheckCheck } from "lucide-vue-next";
 import type { Directive } from "vue";
-import type { Notification, NotificationCategory } from "@/types";
+import { useNotificationsStore } from "@/stores/notifications";
+import { useAuthStore } from "@/stores/auth";
+import { useToast } from "@/composables/useToast";
+import { useAccess } from "@/composables/useAccess";
+import { installSoundUnlock, playSound } from "@/utils/sounds";
+import { notificationIcon, timeAgo } from "@/utils/notifications";
+import type { NotificationItem } from "@/types/notifications";
+import type { ToastType } from "@/types";
 
 type ClickOutsideEl = HTMLElement & {
   clickOutsideEvent?: (event: Event) => void;
@@ -117,29 +132,59 @@ const vClickOutside: Directive<
   },
 };
 
+/** البث منقطع: العدّاد يُسأل كل دقيقة حتى يعود */
+const FALLBACK_POLL_MS = 60_000;
+
+const TOAST_TYPE: Record<NotificationItem["severity"], ToastType> = {
+  info: "info",
+  success: "success",
+  warning: "warning",
+  danger: "error",
+};
+
 const store = useNotificationsStore();
+const auth = useAuthStore();
 const toast = useToast();
-const router = useRouter();
+const { can, P } = useAccess();
+
+const allowed = computed(() => can(P.NOTIFICATION_VIEW));
 const isOpen = ref(false);
+const loading = ref(false);
 const actionLoading = ref(false);
+const ringing = ref(false);
 
-const limitedNotifications = computed(() => store.myNotifications.slice(0, 5));
+const iconOf = (type: string) => notificationIcon(store.typeOf(type)?.icon);
 
-const togglePopover = async () => {
+const refresh = async () => {
+  loading.value = true;
+  try {
+    await store.fetchRecent();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر تحميل الإشعارات"));
+  } finally {
+    loading.value = false;
+  }
+};
+
+const togglePopover = () => {
   isOpen.value = !isOpen.value;
-  if (isOpen.value && store.myNotifications.length === 0)
-    await store.fetchMyNotifications();
+  // كل فتح يجلب الأحدث (البث يحدّثها بعدها وهي مفتوحة)
+  if (isOpen.value) void refresh();
 };
 
 const closePopover = () => {
   isOpen.value = false;
 };
 
+const open = (notif: NotificationItem) => {
+  store.openItem(notif);
+  closePopover();
+};
+
 const handleMarkAllRead = async () => {
   actionLoading.value = true;
   try {
-    await store.markAllAsRead();
-    toast.success("تم تحديد جميع الإشعارات كمقروءة");
+    await store.markAllRead();
   } catch (e) {
     toast.error(getErrorMessage(e));
   } finally {
@@ -147,97 +192,75 @@ const handleMarkAllRead = async () => {
   }
 };
 
-// ✅ تحسين منطق التوجيه للتعامل مع العقود والموظفين
-const handleNotifClick = async (notif: Notification) => {
-  if (!notif.isRead) await store.markAsRead(notif.id);
-
-  let targetUrl = "";
-
-  if (notif.actionUrl) {
-    targetUrl = notif.actionUrl.startsWith("/dashboard")
-      ? notif.actionUrl
-      : `/dashboard${notif.actionUrl.startsWith("/") ? "" : "/"}${notif.actionUrl}`;
-  } else if (notif.referenceType && notif.referenceId) {
-    switch (notif.referenceType) {
-      case "contract":
-        targetUrl = `/dashboard/contracts/${notif.referenceId}`;
-        break;
-      case "employee":
-        targetUrl = `/dashboard/employees/${notif.referenceId}`;
-        break;
-      case "leave":
-        targetUrl = `/dashboard/leaves/${notif.referenceId}`;
-        break;
-      default:
-        targetUrl = "/dashboard/notifications";
-    }
-  } else {
-    targetUrl = "/dashboard/notifications";
-  }
-
-  if (targetUrl) {
-    router.push(targetUrl);
-    closePopover();
-  }
+// إشعار جديد عبر البث: صوت + تنبيه منبثق + هزة الجرس
+let stopListening: (() => void) | null = null;
+const onNew = (item: NotificationItem) => {
+  playSound("notification", "dashboard");
+  if (!isOpen.value) toast[TOAST_TYPE[item.severity]](item.title);
+  ringing.value = true;
+  setTimeout(() => (ringing.value = false), 1200);
 };
 
-const getIcon = (category: NotificationCategory) => {
-  switch (category) {
-    case "contract_expiry":
-      return FileText;
-    case "id_expiry":
-      return CreditCard;
-    case "probation_end":
-      return UserCheck;
-    case "system":
-      return AlertTriangle;
-    default:
-      return Info;
-  }
-};
-
-const formatTimeAgo = (dateStr: string) => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "الآن";
-  if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `منذ ${diffDays} يوم`;
-};
-
-// صوت الإشعار الجديد (مقفل افتراضياً — يفعّله المستخدم من القائمة): عند زيادة
-// غير المقروء بعد أول جلب، لا لما كان موجوداً عند فتح الصفحة
+// والبث منقطع: الصوت حين يزيد العدّاد في الفحص الدوري (لا لما كان عند الفتح)
 let countKnown = false;
 watch(
   () => store.unreadCount,
   (count, before) => {
-    if (countKnown && count > before) playSound("notification", "dashboard");
+    if (!store.connected && countKnown && count > before) {
+      playSound("notification", "dashboard");
+    }
   },
 );
 
 let poll: ReturnType<typeof setInterval> | null = null;
 
-onMounted(async () => {
+const start = () => {
+  if (!allowed.value) return;
+  void store.fetchCatalog().catch(() => undefined);
+  void store.fetchUnread().then(() => (countKnown = true));
+  store.connect();
+  stopListening ??= store.onNew(onNew);
+  poll ??= setInterval(() => {
+    if (!store.connected) void store.fetchUnread();
+  }, FALLBACK_POLL_MS);
+};
+
+const stop = () => {
+  store.disconnect();
+  stopListening?.();
+  stopListening = null;
+  if (poll) clearInterval(poll);
+  poll = null;
+};
+
+onMounted(() => {
   installSoundUnlock();
-  await store.fetchUnreadCount();
-  countKnown = true;
-  poll = setInterval(() => {
-    if (!isOpen.value) store.fetchUnreadCount();
-  }, 60000);
+  start();
 });
 
-onBeforeUnmount(() => {
-  if (poll) clearInterval(poll);
-});
+// مستخدم آخر (دخول/خروج/وضع الدعم): بث جديد بجلسته
+watch(
+  () => auth.userId,
+  (id, previous) => {
+    if (id === previous) return;
+    stop();
+    if (id) start();
+  },
+);
+
+onBeforeUnmount(stop);
 </script>
 
 <style lang="scss" scoped>
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
+
+$severities: (
+  info: $stb-info,
+  success: $stb-success,
+  warning: $stb-warning,
+  danger: $stb-danger,
+);
 
 .notification-bell-wrapper {
   position: relative;
@@ -258,30 +281,39 @@ onBeforeUnmount(() => {
     background: $stb-surface-3;
     color: $stb-text-primary;
   }
+  &.is-ringing {
+    animation: ring 0.6s ease 2;
+  }
+}
+
+@keyframes ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-14deg);
+  }
+  75% {
+    transform: rotate(14deg);
+  }
 }
 
 .notification-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
+  top: 2px;
+  right: 0;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  @include flex(row, center, center);
   background: $stb-danger;
-  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: $radius-full;
   border: 2px solid $stb-surface;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba($stb-danger, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba($stb-danger, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba($stb-danger, 0);
-  }
 }
 
 .notification-popover {
@@ -289,8 +321,9 @@ onBeforeUnmount(() => {
   top: calc(100% + 10px);
   left: 0;
   right: auto;
-  width: 320px;
-  max-height: 400px;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  max-height: 480px;
   background: $stb-surface-2;
   border: 1px solid $stb-border;
   border-radius: $radius-lg;
@@ -308,9 +341,21 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid $stb-border;
   background: rgba($stb-surface, 0.5);
   h4 {
+    @include flex(row, center, flex-start, $space-2);
     font-size: $font-size-sm;
     font-weight: 700;
     margin: 0;
+  }
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: $stb-text-muted;
+  &.is-live {
+    background: $stb-success;
+    box-shadow: 0 0 0 3px rgba($stb-success, 0.2);
   }
 }
 
@@ -322,15 +367,22 @@ onBeforeUnmount(() => {
 
 .notif-item {
   @include flex(row, flex-start, flex-start, $space-3);
+  width: 100%;
   padding: $space-3 $space-4;
   cursor: pointer;
+  background: none;
+  border: none;
+  text-align: start;
+  font: inherit;
+  color: inherit;
   transition: background $transition-fast;
   position: relative;
-  &:hover {
-    background: rgba($stb-primary, 0.05);
+  &:hover,
+  &:focus-visible {
+    background: rgba($stb-primary, 0.06);
   }
   &.is-unread {
-    background: rgba($stb-accent, 0.03);
+    background: rgba($stb-accent, 0.04);
   }
   // فاصل بين العناصر (لا ‎:last-child: آخر أبناء القائمة شريط التمرير)
   & + & {
@@ -344,21 +396,12 @@ onBeforeUnmount(() => {
   border-radius: $radius-full;
   @include flex(row, center, center);
   flex-shrink: 0;
-  &--info {
-    background: rgba($stb-info, 0.1);
-    color: $stb-info;
-  }
-  &--warning {
-    background: rgba($stb-warning, 0.1);
-    color: $stb-warning;
-  }
-  &--error {
-    background: rgba($stb-danger, 0.1);
-    color: $stb-danger;
-  }
-  &--success {
-    background: rgba($stb-success, 0.1);
-    color: $stb-success;
+}
+
+@each $name, $color in $severities {
+  .sev-#{$name} {
+    background: rgba($color, 0.12);
+    color: $color;
   }
 }
 
@@ -386,9 +429,12 @@ onBeforeUnmount(() => {
   font-size: 10px;
   color: $stb-text-muted;
 }
+.notif-ack {
+  color: $stb-warning;
+}
 .notif-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   background: $stb-accent;
   border-radius: 50%;
   margin-top: 6px;
@@ -421,5 +467,11 @@ onBeforeUnmount(() => {
 .fade-scale-leave-to {
   opacity: 0;
   transform: scale(0.95) translateY(-10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-icon-btn.is-ringing {
+    animation: none;
+  }
 }
 </style>

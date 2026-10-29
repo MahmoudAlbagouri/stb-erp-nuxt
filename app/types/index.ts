@@ -695,46 +695,4 @@ export interface ConfirmSettlementPayload {
   notes?: string;
 }
 
-export enum NotificationCategory {
-  CONTRACT_EXPIRY = "contract_expiry",
-  ID_EXPIRY = "id_expiry",
-  PROBATION_END = "probation_end",
-  CUSTOM = "custom",
-  SYSTEM = "system",
-  LEAVE_APPROVED = "leave_approved",
-  LEAVE_REJECTED = "leave_rejected",
-}
-
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "info" | "warning" | "error" | "success";
-  category: NotificationCategory;
-  referenceId?: string;
-  referenceType?: string;
-  isRead: boolean;
-  actionUrl?: string;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-  recipient?: {
-    id: string;
-    fullName?: string;
-    username?: string;
-  };
-}
-
-export interface NotificationStats {
-  total: number;
-  unread: number;
-  recentExpiryUnread: number;
-  byCategory: { category: string; count: number }[];
-}
-
-export interface PaginatedNotifications {
-  items: Notification[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// الإشعارات: types/notifications.ts
