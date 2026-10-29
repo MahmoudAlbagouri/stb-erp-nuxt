@@ -3,17 +3,14 @@
 
 import { ref, computed } from "vue";
 import { useApi } from "./useApi";
+import type { FileRef } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type UploadStatus = "idle" | "uploading" | "success" | "error";
 
-export interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  url: string; // URL returned from server
+/** ملف رُفع للخادم (FileRef) + معاينة محلية للصور */
+export interface UploadedFile extends FileRef {
   previewUrl?: string; // Local object URL for images
 }
 
@@ -36,13 +33,6 @@ export interface UploadOptions {
   onSuccess?: (files: UploadedFile[]) => void;
   /** Called when upload fails */
   onError?: (message: string) => void;
-}
-
-interface UploadResponseFile {
-  url: string;
-  filename: string;
-  mimetype: string;
-  size: number;
 }
 
 export interface UploadState {
@@ -169,18 +159,12 @@ export const useUpload = (options: UploadOptions) => {
           });
         }
 
-        // شكل استجابة الرفع: { data: { data: [{ url, filename, mimetype, size }] } }
-        const res = await api.post<{ data?: UploadResponseFile[] }>(
-          opts.endpoint,
-          formData,
-        );
-        const fileInfo = res.data?.data?.[0];
+        // الخادم يعيد الملفات المحفوظة: [{ id, name, mimeType, size, url }]
+        const res = await api.post<FileRef[]>(opts.endpoint, formData);
+        const saved = res.data?.[0];
+        if (!saved) throw new Error("لم يُرجع الخادم بيانات الملف");
         const uploaded: UploadedFile = {
-          id: crypto.randomUUID(),
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: fileInfo?.url ?? "",
+          ...saved,
           previewUrl: file.type.startsWith("image/")
             ? URL.createObjectURL(file)
             : undefined,

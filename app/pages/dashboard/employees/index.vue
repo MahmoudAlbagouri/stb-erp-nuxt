@@ -340,11 +340,11 @@
             >
             <!-- زر العقد: يعرض مرفقاته مثل الهوية -->
             <button
-              v-if="emp.contract?.attachmentPaths?.length"
+              v-if="emp.contract?.attachments?.length"
               class="mini-badge mini-badge--contract view-contract-btn"
               @click="
                 openFileViewer(
-                  emp.contract.attachmentPaths,
+                  emp.contract.attachments,
                   `عقد الموظف: ${emp.fullName}`,
                 )
               "
@@ -361,9 +361,9 @@
 
             <!-- زر الهوية -->
             <button
-              v-if="emp.nationalIdCardPath"
+              v-if="emp.nationalIdCard"
               class="mini-badge mini-badge--doc view-id-btn"
-              @click="openFileViewer(emp.nationalIdCardPath, 'الهوية الشخصية')"
+              @click="openFileViewer(emp.nationalIdCard, 'الهوية الشخصية')"
               title="عرض الهوية"
             >
               <Eye :size="11" /> هوية
@@ -373,11 +373,11 @@
             <template v-if="emp.educations && emp.educations.length > 0">
               <template v-for="(edu, idx) in emp.educations" :key="idx">
                 <button
-                  v-if="edu.attachmentPath"
+                  v-if="edu.attachment"
                   class="mini-badge mini-badge--edu view-edu-btn"
                   @click="
                     openFileViewer(
-                      edu.attachmentPath,
+                      edu.attachment,
                       `مؤهل: ${edu.degree || 'شهادة'}`,
                     )
                   "
@@ -577,8 +577,8 @@
                 <div class="form-group full-width">
                   <label>صورة/ملف الهوية</label
                   ><StbUploader
-                    v-model="editForm.nationalIdCardPath"
-                    endpoint="/media/upload/employee"
+                    v-model="editForm.nationalIdCard"
+                    endpoint="/files/employee"
                     field-name="files"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
                     :max-size="5 * 1024 * 1024"
@@ -673,11 +673,8 @@
                             <label class="form-label">مرفق الشهادة</label>
                             <div class="uploader-with-viewer">
                               <StbUploader
-                                :model-value="edu.attachmentPath"
-                                @update:model-value="
-                                  (val) => (edu.attachmentPath = val || '')
-                                "
-                                endpoint="/media/upload/employee"
+                                v-model="edu.attachment"
+                                endpoint="/files/employee"
                                 field-name="files"
                                 accept=".pdf,.doc,.docx,image/*"
                                 :max-size="5 * 1024 * 1024"
@@ -686,12 +683,12 @@
                                 @error="toast.error"
                               />
                               <button
-                                v-if="edu.attachmentPath"
+                                v-if="edu.attachment"
                                 type="button"
                                 class="btn btn--outline btn--sm view-file-btn"
                                 @click="
                                   openFileViewer(
-                                    edu.attachmentPath,
+                                    edu.attachment,
                                     `مرفق: ${edu.degree || 'شهادة'}`,
                                   )
                                 "
@@ -769,6 +766,7 @@ import type {
   Employee,
   User,
   Education,
+  FileRef,
   OnboardingResult,
   UpdateEmployeePayload,
 } from "@/types";
@@ -952,14 +950,14 @@ const handleExportFiltered = async (type: "excel" | "pdf") => {
 
 // ─── Universal File Viewer Logic ──────────────────────────────────────────
 const showFileViewer = ref(false);
-const viewerFiles = ref<string[]>([]);
+const viewerFiles = ref<FileRef[]>([]);
 const viewerTitle = ref<string>("");
 
 const openFileViewer = (
-  urls: string | string[],
+  files: FileRef | FileRef[] | null | undefined,
   title: string = "عرض الملف",
 ) => {
-  viewerFiles.value = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
+  viewerFiles.value = Array.isArray(files) ? files : files ? [files] : [];
   viewerTitle.value = title;
   showFileViewer.value = true;
 };
@@ -974,7 +972,7 @@ interface EditFormType {
   nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
   iqamaExpiryDate: string;
   nationalId: string;
-  nationalIdCardPath: string;
+  nationalIdCard: FileRef | null;
   phone: string;
   jobTitle: string;
   departmentId: string;
@@ -988,7 +986,7 @@ const editForm = reactive<EditFormType>({
   nationalityType: "saudi",
   iqamaExpiryDate: "",
   nationalId: "",
-  nationalIdCardPath: "",
+  nationalIdCard: null,
   phone: "",
   jobTitle: "",
   departmentId: "",
@@ -1020,7 +1018,7 @@ const addEducationRow = () =>
     certificateNumber: "",
     issuingAuthority: "",
     expiryDate: "",
-    attachmentPath: "",
+    attachment: null,
   });
 const removeEducationRow = (index: number) =>
   editForm.educations.splice(index, 1);
@@ -1035,7 +1033,7 @@ const openEdit = async (emp: Employee) => {
       ? new Date(emp.iqamaExpiryDate).toISOString().split("T")[0]
       : "",
     nationalId: emp.nationalId ?? "",
-    nationalIdCardPath: emp.nationalIdCardPath ?? "",
+    nationalIdCard: emp.nationalIdCard ?? null,
     phone: emp.phone ?? "",
     jobTitle: emp.jobTitle ?? "",
     departmentId: emp.department?.id ?? "",
@@ -1060,7 +1058,7 @@ const handleUpdate = async () => {
         certificateNumber: edu.certificateNumber || undefined,
         issuingAuthority: edu.issuingAuthority || undefined,
         expiryDate: edu.expiryDate || undefined,
-        attachmentPath: edu.attachmentPath || undefined,
+        attachmentFileId: edu.attachment?.id ?? null,
       };
       if (edu.id) cleanEdu.id = edu.id;
       return cleanEdu;
@@ -1069,7 +1067,8 @@ const handleUpdate = async () => {
       fullName: editForm.fullName,
       nationalityType: editForm.nationalityType,
       nationalId: editForm.nationalId || undefined,
-      nationalIdCardPath: editForm.nationalIdCardPath || undefined,
+      // null = أزال صورة الهوية
+      nationalIdCardFileId: editForm.nationalIdCard?.id ?? null,
       phone: editForm.phone || undefined,
       jobTitle: editForm.jobTitle || undefined,
       departmentId: editForm.departmentId || undefined,

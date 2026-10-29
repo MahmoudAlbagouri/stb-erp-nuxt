@@ -174,14 +174,9 @@
               <tr v-for="item in filteredItems" :key="item.id">
                 <td>
                   <div class="emp-cell">
+                    <!-- الحرف الأول لا صورة الهوية: الهوية مستند خاص -->
                     <div class="avatar-wrapper">
-                      <img
-                        v-if="item.employee.nationalIdCardPath"
-                        :src="item.employee.nationalIdCardPath"
-                        alt="Avatar"
-                        class="avatar-img"
-                      />
-                      <div v-else class="avatar-placeholder">
+                      <div class="avatar-placeholder">
                         {{ item.employee.fullName.charAt(0) }}
                       </div>
                     </div>
@@ -541,11 +536,6 @@ const getMonthName = (m: number) =>
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-}
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 .avatar-placeholder {
   width: 100%;

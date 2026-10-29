@@ -1,4 +1,5 @@
 // types/catalog.ts — أنواع موديول الأصناف (مطابقة لكيانات الباك إند)
+import type { FileRef } from "./index";
 
 export interface Paginated<T> {
   data: T[];
@@ -79,7 +80,8 @@ export interface Product {
   /** سعر مفتوح: يُكتب على شاشة الكاشير عند البيع */
   openPrice?: boolean;
   description?: string | null;
-  imagePath?: string | null;
+  imageFileId?: string | null;
+  image?: FileRef | null;
   isActive: boolean;
   barcodes?: ProductBarcode[];
   units?: ProductUnit[];

@@ -12,7 +12,7 @@
         'stb-uploader__dropzone--error': hasError,
         'stb-uploader__dropzone--success': isSuccess && !showPreview,
         'stb-uploader__dropzone--has-preview':
-          showPreview && (hasFiles || !!modelValue),
+          showPreview && (hasFiles || hasModel),
       }"
       @dragenter.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
@@ -53,11 +53,11 @@
 
       <!-- ② Image Preview — قيمة موجودة من الـ v-model (وضع التعديل) -->
       <template
-        v-else-if="showPreview && modelValue && !hasFiles && !isUploading"
+        v-else-if="showPreview && hasModel && !hasFiles && !isUploading"
       >
         <div class="stb-uploader__preview-wrap" @click.stop>
           <img
-            :src="modelValue"
+            :src="modelFiles[0]?.url"
             alt="الملف الحالي"
             class="stb-uploader__preview-img"
           />
@@ -98,7 +98,7 @@
       </template>
 
       <!-- ④ ملف غير صورة موجود في v-model (وضع التعديل، بدون showPreview) -->
-      <template v-else-if="!showPreview && modelValue && !hasFiles">
+      <template v-else-if="!showPreview && hasModel && !hasFiles">
         <div class="stb-uploader__idle" @click="triggerFileInput">
           <div class="stb-uploader__icon-wrap stb-uploader__icon-wrap--success">
             <svg
@@ -223,7 +223,7 @@
           class="stb-uploader__file-remove"
           type="button"
           title="إزالة"
-          @click="uploader.removeFile(file.id)"
+          @click="removeFile(file.id)"
         >
           <svg
             width="14"
@@ -264,20 +264,25 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<!--
+  قيمة الحقل (v-model): ملف FileRef، أو قائمة ملفات مع multiple. النموذج يرسل
+  معرّفاتها للخادم (nationalIdCardFileId، attachmentFileIds…).
+-->
+<script setup lang="ts" generic="T extends FileRef | FileRef[] | null | undefined">
 import { ref, computed } from "vue";
 import { useUpload } from "../../composables/useUpload";
 import type { UploadedFile } from "../../composables/useUpload";
+import type { FileRef } from "@/types";
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
 const props = withDefaults(
   defineProps<{
-    /** v-model: يُخزّن الـ URL المُعادة من السيرفر */
-    modelValue?: string;
+    /** v-model: الملف المرفوع (FileRef)، أو قائمة الملفات مع multiple */
+    modelValue?: T;
     /**
-     * API endpoint path — يجب أن يكون مساراً موجوداً في الـ backend
-     * مثال: "/employees/upload-id" أو "/files/upload"
+     * مسار الرفع في الخادم: "/files/<التصنيف>"
+     * مثال: "/files/employee" أو "/files/contract"
      */
     endpoint: string;
     /** FormData field name (default: "file") */
@@ -302,7 +307,6 @@ const props = withDefaults(
     extraFields?: Record<string, string>;
   }>(),
   {
-    modelValue: "",
     fieldName: "file",
     multiple: false,
     showPreview: false,
@@ -315,7 +319,7 @@ const props = withDefaults(
 // ─── Emits ─────────────────────────────────────────────────────────────────────
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
+  "update:modelValue": [value: T];
   success: [files: UploadedFile[]];
   error: [message: string];
   remove: [id: string];
@@ -338,10 +342,8 @@ const uploader = useUpload({
   maxFiles: props.maxFiles,
   extraFields: props.extraFields,
   onSuccess(files) {
-    const url = props.multiple
-      ? files.map((f) => f.url).join(",")
-      : (files[0]?.url ?? "");
-    emit("update:modelValue", url);
+    // مع multiple: كل ما رُفع في الحقل (لا الدفعة الأخيرة وحدها)
+    emitFiles(props.multiple ? uploader.uploadedFiles.value : files.slice(0, 1));
     emit("success", files);
   },
   onError(msg) {
@@ -359,6 +361,26 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 // ─── Computed ──────────────────────────────────────────────────────────────────
 
 const acceptAttr = computed(() => acceptArray.value.join(",") || undefined);
+
+const modelFiles = computed<FileRef[]>(() => {
+  const value = props.modelValue;
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+});
+const hasModel = computed(() => modelFiles.value.length > 0);
+
+const toRef = (file: UploadedFile): FileRef => ({
+  id: file.id,
+  name: file.name,
+  mimeType: file.mimeType,
+  size: file.size,
+  url: file.url,
+});
+
+const emitFiles = (files: UploadedFile[]) => {
+  const refs = files.map(toRef);
+  emit("update:modelValue", (props.multiple ? refs : (refs[0] ?? null)) as T);
+};
 
 // ─── Methods ───────────────────────────────────────────────────────────────────
 
@@ -380,25 +402,28 @@ const handleDrop = async (event: DragEvent) => {
   await uploader.uploadFromDrop(event);
 };
 
+const removeFile = (id: string) => {
+  uploader.removeFile(id);
+  emitFiles(uploader.uploadedFiles.value);
+  emit("remove", id);
+};
+
 const removeFirst = () => {
   const file = uploader.uploadedFiles.value[0];
-  if (file) {
-    uploader.removeFile(file.id);
-    emit("update:modelValue", "");
-    emit("remove", file.id);
-  }
+  if (file) removeFile(file.id);
 };
 
 const clearModel = () => {
-  emit("update:modelValue", "");
+  emit("update:modelValue", (props.multiple ? [] : null) as T);
 };
 
 const resetAll = () => {
   uploader.reset();
-  emit("update:modelValue", "");
+  emit("update:modelValue", (props.multiple ? [] : null) as T);
 };
 
-const formatSize = (bytes: number): string => {
+const formatSize = (bytes: number | null): string => {
+  if (bytes === null) return "";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;

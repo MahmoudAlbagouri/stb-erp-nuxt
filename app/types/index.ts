@@ -2,6 +2,18 @@
 // STB ERP - Type Definitions (Updated for Payment Method & IBAN)
 // ============================================
 
+/**
+ * ملف مرفوع كما يعيده الخادم (هوية، مرفق عقد، شهادة). الرابط موقَّع ومؤقت
+ * (ساعة)، فلا يُحفظ: يُرسل للخادم المعرّف id فقط.
+ */
+export interface FileRef {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number | null;
+  url: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -70,7 +82,9 @@ export interface Education {
   certificateNumber?: string; // رقم الشهادة
   issuingAuthority?: string; // ✅ جهة الإصدار / المصدر (جديد)
   expiryDate?: string | null; // تاريخ الانتهاء
-  attachmentPath?: string; // مسار المرفق
+  /** معرّف ملف الشهادة (يُرسل)، والملف نفسه (يُستقبل) */
+  attachmentFileId?: string | null;
+  attachment?: FileRef | null;
 }
 
 // ✅ بيانات من قام بالصرف (مشتركة بين المسير / التسويات / المكافآت / السلف)
@@ -257,7 +271,8 @@ export interface Employee {
   iqamaExpiryDate?: string | null;
 
   nationalId?: string | null;
-  nationalIdCardPath?: string | null;
+  nationalIdCardFileId?: string | null;
+  nationalIdCard?: FileRef | null;
   phone: string | null;
   jobTitle?: string | null;
   // ✅ القسم علاقة (كائن) وليس نصاً حراً
@@ -363,7 +378,7 @@ export interface CreateEmployeePayload {
   nationalityType: "saudi" | "non_saudi" | "outside_sponsorship";
   iqamaExpiryDate?: string | null;
   nationalId?: string;
-  nationalIdCardPath?: string;
+  nationalIdCardFileId?: string | null;
   phone?: string;
   jobTitle?: string;
   departmentId?: string;
@@ -382,7 +397,7 @@ export interface UpdateEmployeePayload {
   nationalityType?: "saudi" | "non_saudi" | "outside_sponsorship";
   iqamaExpiryDate?: string | null;
   nationalId?: string;
-  nationalIdCardPath?: string;
+  nationalIdCardFileId?: string | null;
   phone?: string;
   jobTitle?: string;
   departmentId?: string | null;
@@ -458,7 +473,7 @@ export interface Contract {
   medicalInsurance?: string | null;
   nationality?: string | null;
   notes?: string | null;
-  attachmentPaths?: string[] | null;
+  attachments?: FileRef[];
   tenantId: string;
   createdAt: string;
   updatedAt: string;
@@ -475,7 +490,7 @@ export interface CreateContractPayload {
   ticketType?: TicketType;
   probationPeriod?: ProbationPeriod;
   notes?: string;
-  attachmentPaths?: string[];
+  attachmentFileIds?: string[];
 }
 
 export interface UpdateContractPayload {
@@ -487,7 +502,7 @@ export interface UpdateContractPayload {
   ticketType?: TicketType;
   probationPeriod?: ProbationPeriod;
   notes?: string;
-  attachmentPaths?: string[];
+  attachmentFileIds?: string[];
 }
 
 // --- Advances & Loans Payloads ---

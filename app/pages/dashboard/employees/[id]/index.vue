@@ -64,17 +64,16 @@
               >
             </span>
           </div>
-          <!-- ✅ تعديل رابط الهوية للتحميل المباشر -->
-          <div class="info-item full-width" v-if="employee.nationalIdCardPath">
+          <div class="info-item full-width" v-if="employee.nationalIdCard">
             <label>صورة الهوية</label>
             <a
               href="#"
               @click.prevent="
-                downloadFile(employee.nationalIdCardPath, 'identity_card')
+                openFileViewer(employee.nationalIdCard, 'الهوية الشخصية')
               "
               class="file-link"
             >
-              <Download :size="14" /> تحميل صورة الهوية
+              <Eye :size="14" /> عرض صورة الهوية
             </a>
           </div>
         </div>
@@ -227,23 +226,22 @@
             ><span>{{ employee.contract.probationPeriod }}</span>
           </div>
 
-          <!-- ✅ تعديل مرفقات العقد للتحميل المباشر -->
           <div
             class="info-item full-width"
-            v-if="employee.contract.attachmentPaths?.length"
+            v-if="employee.contract.attachments?.length"
           >
             <label>مرفقات العقد</label>
             <div class="attachments-list">
               <a
-                v-for="(path, i) in employee.contract.attachmentPaths"
-                :key="i"
                 href="#"
                 @click.prevent="
-                  downloadFile(path, `contract_attachment_${Number(i) + 1}`)
+                  openFileViewer(employee.contract.attachments, 'مرفقات العقد')
                 "
                 class="file-link"
               >
-                <Paperclip :size="14" /> تحميل مرفق {{ Number(i) + 1 }}
+                <Paperclip :size="14" /> عرض المرفقات ({{
+                  employee.contract.attachments.length
+                }})
               </a>
             </div>
           </div>
@@ -278,20 +276,16 @@
                 <td dir="ltr">{{ edu.certificateNumber || "—" }}</td>
                 <td>{{ formatDate(edu.expiryDate) }}</td>
                 <td>
-                  <!-- ✅ تعديل مرفق المؤهل للتحميل المباشر -->
                   <a
-                    v-if="edu.attachmentPath"
+                    v-if="edu.attachment"
                     href="#"
                     @click.prevent="
-                      downloadFile(
-                        edu.attachmentPath,
-                        `certificate_${edu.degree}`,
-                      )
+                      openFileViewer(edu.attachment, `شهادة: ${edu.degree}`)
                     "
                     class="icon-link"
-                    title="تحميل الشهادة"
+                    title="عرض الشهادة"
                   >
-                    <Download :size="16" />
+                    <Eye :size="16" />
                   </a>
                   <span v-else class="text-muted">—</span>
                 </td>
@@ -571,6 +565,13 @@
         </div>
       </div>
     </div>
+
+    <!-- معاينة الهوية ومرفقات العقد والشهادات -->
+    <FileViewerModal
+      v-model="showFileViewer"
+      :title="viewerTitle"
+      :files="viewerFiles"
+    />
   </div>
 
   <!-- حالة التحميل -->
@@ -586,8 +587,8 @@ import { useRoute, navigateTo } from "#app";
 import { useEmployeesStore } from "@/stores/employees";
 import { useLeavesStore } from "@/stores/leaves";
 import { useToast } from "@/composables/useToast";
-import { useApi } from "@/composables/useApi"; // ✅ استيراد useApi
-import type { Employee, EmployeeLeaveSummary } from "@/types";
+import type { Employee, EmployeeLeaveSummary, FileRef } from "@/types";
+import FileViewerModal from "@/components/global/FileViewerModal.vue";
 import {
   User,
   Briefcase,
@@ -615,7 +616,6 @@ const route = useRoute();
 const store = useEmployeesStore();
 const leavesStore = useLeavesStore();
 const toast = useToast();
-const api = useApi(); // ✅ تهيئة API
 const employee = ref<Employee | null>(null);
 const loading = ref(true);
 
@@ -638,63 +638,14 @@ const downloadProfile = async (type: "excel" | "pdf") => {
   }
 };
 
-// ✅ دالة التحميل المباشر للملفات (محدثة للتعامل مع الروابط الخارجية والداخلية)
-const downloadFile = async (url: string, defaultName: string) => {
-  if (!url) return;
-
-  try {
-    let blob: Blob;
-
-    // التحقق مما إذا كان الرابط خارجياً (يبدأ بـ http)
-    const isExternal = url.startsWith("http://") || url.startsWith("https://");
-
-    if (isExternal) {
-      // للروابط الخارجية: نستخدم fetch مباشر لتجنب دمج الـ Base URL الخاطئ
-      const response = await fetch(url);
-      if (!response.ok)
-        throw new Error(`Failed to fetch: ${response.statusText}`);
-      blob = await response.blob();
-    } else {
-      // للروابط الداخلية (النسبية): نستخدم api.get كما هو معتاد
-      blob = await api.get(url, true, "blob");
-    }
-
-    if (!blob || blob.size === 0) throw new Error("الملف فارغ أو تالف");
-
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-
-    // محاولة استخراج اسم الملف الأصلي من الرابط
-    const urlParts = url.split("/");
-    const originalName = urlParts[urlParts.length - 1] || "";
-    // تنظيف الاسم من أي query parameters
-    const cleanName = originalName.split("?")[0];
-
-    const fileName =
-      cleanName && cleanName.includes(".")
-        ? decodeURIComponent(cleanName)
-        : `${defaultName}.pdf`;
-
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-
-    // تنظيف
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-
-    toast.success("تم بدء تحميل الملف");
-  } catch (error) {
-    console.error("Download failed:", error);
-    // إذا فشل التحميل المباشر للرابط الخارجي، نحاول فتحه في تبويب جديد كبديل
-    if (url.startsWith("http")) {
-      window.open(url, "_blank");
-      toast.warning("تم فتح الملف في تبويب جديد بدلاً من التحميل المباشر");
-    } else {
-      toast.error(getErrorMessage(error, "فشل في تحميل الملف"));
-    }
-  }
+// معاينة الملفات: روابطها موقَّعة من الخادم وتصلح ساعة
+const showFileViewer = ref(false);
+const viewerFiles = ref<FileRef[]>([]);
+const viewerTitle = ref("");
+const openFileViewer = (files: FileRef | FileRef[], title: string) => {
+  viewerFiles.value = Array.isArray(files) ? files : [files];
+  viewerTitle.value = title;
+  showFileViewer.value = true;
 };
 
 // إغلاق القائمة عند النقر خارجها

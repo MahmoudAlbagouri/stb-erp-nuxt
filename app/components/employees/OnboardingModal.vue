@@ -132,16 +132,13 @@
                 <div class="form-group form-group--full">
                   <label class="form-label">صورة/ملف الهوية</label>
                   <StbUploader
-                    :model-value="nationalIdModelValue"
-                    @update:model-value="
-                      (val) => (tempNationalIdFile = val || '')
-                    "
-                    endpoint="/media/upload/employee"
+                    v-model="form.employee.nationalIdCard"
+                    endpoint="/files/employee"
                     field-name="files"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
                     :max-size="5 * 1024 * 1024"
                     idle-title="ارفع صورة الهوية أو ملف PDF"
-                    hint="JPG / PNG / PDF — بحد أقصى 5 MB"
+                    hint="JPG / PNG / WebP / PDF — بحد أقصى 5 MB"
                     @error="toast.error"
                   />
                 </div>
@@ -535,16 +532,13 @@
                         <div class="form-group form-group--full">
                           <label class="form-label">مرفق الشهادة</label>
                           <StbUploader
-                            :model-value="edu.attachmentPath"
-                            @update:model-value="
-                              (val) => (edu.attachmentPath = val || '')
-                            "
-                            endpoint="/media/upload/employee"
+                            v-model="edu.attachment"
+                            endpoint="/files/employee"
                             field-name="files"
-                            accept=".pdf,.doc,.docx,image/*"
+                            accept="image/jpeg,image/png,image/webp,application/pdf"
                             :max-size="5 * 1024 * 1024"
                             idle-title="ارفع صورة أو ملف PDF"
-                            hint="PDF / Images — بحد أقصى 5 MB"
+                            hint="JPG / PNG / WebP / PDF — بحد أقصى 5 MB"
                             @error="toast.error"
                           />
                         </div>
@@ -1074,14 +1068,13 @@
                   <div class="form-group form-group--full">
                     <label class="form-label">مرفق العقد</label>
                     <StbUploader
-                      :model-value="contractFilesModelValue"
-                      @update:model-value="handleContractFilesUpdate"
-                      endpoint="/media/upload/contract"
+                      v-model="form.contract.attachments"
+                      endpoint="/files/contract"
                       field-name="files"
-                      accept=".pdf,.doc,.docx,image/*"
-                      :max-size="10 * 1024 * 1024"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      :max-size="5 * 1024 * 1024"
                       idle-title="ارفع صورة أو ملف PDF للعقد"
-                      hint="PDF / Word / Images — بحد أقصى 10 MB"
+                      hint="JPG / PNG / WebP / PDF — بحد أقصى 5 MB للملف"
                       multiple
                       @error="toast.error"
                     />
@@ -1588,7 +1581,12 @@ import { useShiftsStore } from "@/stores/shifts";
 import { useDepartmentsStore } from "@/stores/departments";
 import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
-import type { Education, NationalityType, OnboardingResult } from "@/types";
+import type {
+  Education,
+  FileRef,
+  NationalityType,
+  OnboardingResult,
+} from "@/types";
 import { normalizeIban, isValidIban, formatIban } from "@/utils/payment";
 
 const props = defineProps<{ modelValue: boolean }>();
@@ -1679,7 +1677,7 @@ const form = reactive({
     nationalityType: "" as "saudi" | "non_saudi" | "outside_sponsorship" | "",
     iqamaExpiryDate: "",
     nationalId: "",
-    nationalIdCardPath: "",
+    nationalIdCard: null as FileRef | null,
     phone: "",
     jobTitle: "",
     departmentId: "",
@@ -1719,7 +1717,7 @@ const form = reactive({
     medicalInsurance: "بدون" as string,
     nationality: "" as string,
     notes: "",
-    attachmentPaths: [] as string[],
+    attachments: [] as FileRef[],
   },
 
   salary: {
@@ -1740,28 +1738,6 @@ const errors = reactive<Record<string, string>>({});
 const submitting = ref(false);
 const showPassword = ref(false);
 const permSearch = ref("");
-const tempNationalIdFile = ref<string>("");
-const tempContractFiles = ref<string[]>([]);
-
-const nationalIdModelValue = computed(
-  () => tempNationalIdFile.value || undefined,
-);
-const contractFilesModelValue = computed(() =>
-  tempContractFiles.value.length > 0
-    ? tempContractFiles.value.join(",")
-    : undefined,
-);
-
-const handleContractFilesUpdate = (val: string) => {
-  tempContractFiles.value = val ? val.split(",").filter(Boolean) : [];
-};
-
-watch(tempNationalIdFile, (val) => {
-  form.employee.nationalIdCardPath = val;
-});
-watch(tempContractFiles, (val) => {
-  form.contract.attachmentPaths = val;
-});
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 const totalSalary = computed(
@@ -2274,7 +2250,7 @@ const addEducationRow = () => {
     certificateNumber: "",
     issuingAuthority: "",
     expiryDate: "",
-    attachmentPath: "",
+    attachment: null,
   });
 };
 
@@ -2291,8 +2267,6 @@ const handleClose = () => {
     clearErrors();
     showEducationForm.value = false;
     showEducationErrors.value = false;
-    tempNationalIdFile.value = "";
-    tempContractFiles.value = [];
     Object.assign(form, {
       withUser: false,
       withContract: false,
@@ -2305,7 +2279,7 @@ const handleClose = () => {
         nationalityType: "" as NationalityType | "",
         iqamaExpiryDate: "",
         nationalId: "",
-        nationalIdCardPath: "",
+        nationalIdCard: null,
         phone: "",
         jobTitle: "",
         departmentId: "",
@@ -2334,7 +2308,7 @@ const handleClose = () => {
         medicalInsurance: "بدون",
         nationality: "",
         notes: "",
-        attachmentPaths: [],
+        attachments: [],
       },
       salary: {
         basicSalary: 0,
@@ -2444,7 +2418,7 @@ const handleSubmit = async () => {
       fullName: form.employee.fullName,
       nationalityType: form.employee.nationalityType,
       nationalId: form.employee.nationalId || undefined,
-      nationalIdCardPath: form.employee.nationalIdCardPath || undefined,
+      nationalIdCardFileId: form.employee.nationalIdCard?.id,
       phone: form.employee.phone || undefined,
       jobTitle: form.employee.jobTitle || undefined,
       branchId: form.employee.branchId || undefined,
@@ -2466,7 +2440,7 @@ const handleSubmit = async () => {
           certificateNumber: edu.certificateNumber || undefined,
           issuingAuthority: edu.issuingAuthority || undefined,
           expiryDate: edu.expiryDate || undefined,
-          attachmentPath: edu.attachmentPath || undefined,
+          attachmentFileId: edu.attachment?.id,
         }));
     }
 
@@ -2522,7 +2496,7 @@ const handleSubmit = async () => {
         medicalInsurance: form.contract.medicalInsurance,
         nationality: form.contract.nationality || undefined,
         notes: form.contract.notes || undefined,
-        attachmentPaths: form.contract.attachmentPaths,
+        attachmentFileIds: form.contract.attachments.map((file) => file.id),
       };
     }
 

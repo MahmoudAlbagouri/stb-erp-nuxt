@@ -145,10 +145,7 @@
               </td>
               <td>
                 <div
-                  v-if="
-                    contract.attachmentPaths &&
-                    contract.attachmentPaths.length > 0
-                  "
+                  v-if="contract.attachments?.length"
                   class="attachments-cell"
                 >
                   <button
@@ -157,7 +154,7 @@
                     title="عرض المرفقات"
                   >
                     <Paperclip :size="14" /><span>{{
-                      contract.attachmentPaths.length
+                      contract.attachments.length
                     }}</span>
                   </button>
                 </div>
@@ -375,14 +372,13 @@
                 <div class="form-group full-width">
                   <label>مرفقات العقد</label>
                   <StbUploader
-                    :model-value="uploaderModelValue"
-                    @update:model-value="handleUploaderUpdate"
-                    endpoint="/media/upload/contract"
+                    v-model="tempAttachments"
+                    endpoint="/files/contract"
                     field-name="files"
-                    accept=".pdf,.doc,.docx,image/*"
-                    :max-size="10 * 1024 * 1024"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    :max-size="5 * 1024 * 1024"
                     idle-title="ارفع صور أو ملفات PDF للعقد"
-                    hint="PDF / Word / Images — بحد أقصى 10 MB"
+                    hint="PDF / JPG / PNG / WebP — بحد أقصى 5 MB للملف"
                     multiple
                     @error="toast.error"
                   />
@@ -446,7 +442,7 @@ import { ref, reactive, onMounted, computed } from "vue";
 import { useContractsStore } from "@/stores/contracts";
 import { useEmployeesStore } from "@/stores/employees";
 import { useToast } from "../../composables/useToast";
-import type { Contract, CreateContractPayload } from "@/types";
+import type { Contract, CreateContractPayload, FileRef } from "@/types";
 import {
   Plus,
   FileSignature,
@@ -480,7 +476,6 @@ const NATIONALITIES = [
 ];
 
 type ContractWithExtras = Contract & {
-  attachmentPaths?: string[];
   contractDurationYears?: number;
   contractDurationMonths?: number; // ✅ إضافة الحقل الجديد
   ticketType?: string;
@@ -503,9 +498,10 @@ const showConfirm = ref(false);
 const deleting = ref(false);
 const deleteTarget = ref<Contract | null>(null);
 const showAttachmentsModal = ref(false);
-const currentContractAttachments = ref<string[]>([]);
+const currentContractAttachments = ref<FileRef[]>([]);
 const attachmentsTitle = ref("مرفقات العقد");
-const tempAttachments = ref<string[]>([]);
+/** ملفات العقد المرفوعة في النموذج (تُرسل معرّفاتها) */
+const tempAttachments = ref<FileRef[]>([]);
 const selectedEmployeeNationality = ref<string>("");
 
 // ✅ حالة التصدير
@@ -513,7 +509,6 @@ const exporting = ref<"excel" | "pdf" | null>(null);
 const activeExportMenu = ref<string | null>(null);
 
 interface ExtendedCreatePayload extends CreateContractPayload {
-  attachmentPaths?: string[];
   contractDurationYears?: number;
   contractDurationMonths?: number; // ✅ إضافة الحقل الجديد
   medicalInsurance?: string;
@@ -532,22 +527,8 @@ const EMPTY_FORM: ExtendedCreatePayload = {
   medicalInsurance: "بدون",
   nationality: "",
   notes: "",
-  attachmentPaths: [],
 };
 const form = reactive<ExtendedCreatePayload>({ ...EMPTY_FORM });
-
-const uploaderModelValue = computed(() =>
-  tempAttachments.value.length > 0
-    ? tempAttachments.value.join(",")
-    : undefined,
-);
-const handleUploaderUpdate = (val: string) => {
-  if (!val) {
-    tempAttachments.value = [];
-  } else {
-    tempAttachments.value = val.split(",").filter(Boolean);
-  }
-};
 
 const onEmployeeChange = () => {
   const emp = employeesStore.employees.find((e) => e.id === form.employeeId);
@@ -572,8 +553,10 @@ const openCreateModal = () => {
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    form.attachmentPaths = tempAttachments.value;
-    const payload = { ...form };
+    const payload = {
+      ...form,
+      attachmentFileIds: tempAttachments.value.map((file) => file.id),
+    };
     if (payload.nationality === "") delete payload.nationality;
     await store.create(payload);
     toast.success("تم إضافة العقد بنجاح");
@@ -604,8 +587,8 @@ const doDelete = async () => {
 };
 
 const openAttachmentsViewer = (contract: Contract) => {
-  if (contract.attachmentPaths?.length) {
-    currentContractAttachments.value = contract.attachmentPaths;
+  if (contract.attachments?.length) {
+    currentContractAttachments.value = contract.attachments;
     attachmentsTitle.value = `مرفقات عقد: ${contract.employee?.fullName ?? "الموظف"}`;
     showAttachmentsModal.value = true;
   }

@@ -1,6 +1,7 @@
 <!--
   معاينة ملفات مرفوعة (هوية، مرفقات عقد، مؤهل): الصورة تُعرض، والـ PDF وغيره
   يُفتح في تبويب أو يُحمَّل. عند تعدد الملفات يظهر شريط للتنقل بينها.
+  الروابط موقَّعة من الخادم ومؤقتة (ساعة): بعدها يكفي تحديث الصفحة.
 -->
 <template>
   <Teleport to="body">
@@ -21,8 +22,8 @@
             <template v-if="current">
               <img
                 v-if="isImageFile(current)"
-                :key="current"
-                :src="current"
+                :key="current.id"
+                :src="current.url"
                 alt="معاينة الملف"
                 class="file-viewer__image"
                 :class="{ 'file-viewer__image--compact': files.length > 1 }"
@@ -38,15 +39,18 @@
                   }}
                 </p>
               </div>
-              <span class="file-viewer__name" dir="ltr">{{ fileNameOf(current) }}</span>
+              <!-- اتجاه الاسم من أول حرف فيه، والامتداد معزول: وإلا انقلب
+                   "صفحة 2.jfif" إلى "jfif.2 صفحة" -->
+              <span class="file-viewer__name" dir="auto"
+                >{{ nameParts.base }}<bdi dir="ltr">{{ nameParts.ext }}</bdi></span
+              >
               <div class="file-viewer__actions">
-                <a :href="current" target="_blank" rel="noopener" class="btn btn--primary">
+                <a :href="current.url" target="_blank" rel="noopener" class="btn btn--primary">
                   <ExternalLink :size="16" /> فتح في تبويب جديد
                 </a>
-                <button class="btn btn--outline" :disabled="downloading" @click="download">
-                  <span v-if="downloading" class="spinner spinner--sm" />
-                  <Download v-else :size="16" /> تحميل الملف
-                </button>
+                <a :href="downloadUrl(current)" class="btn btn--outline">
+                  <Download :size="16" /> تحميل الملف
+                </a>
               </div>
             </template>
             <p v-else class="file-viewer__empty">لا يوجد ملف للعرض</p>
@@ -54,15 +58,15 @@
 
           <div v-if="files.length > 1" class="file-viewer__strip">
             <button
-              v-for="(url, i) in files"
-              :key="url"
+              v-for="(file, i) in files"
+              :key="file.id"
               type="button"
               class="file-viewer__thumb"
               :class="{ active: i === index }"
-              :title="fileNameOf(url)"
+              :title="file.name"
               @click="index = i"
             >
-              <img v-if="isImageFile(url)" :src="url" alt="" />
+              <img v-if="isImageFile(file)" :src="file.url" alt="" />
               <FileText v-else :size="20" />
               <span>مرفق {{ i + 1 }}</span>
             </button>
@@ -83,21 +87,23 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { Download, ExternalLink, File, FileText, X } from "lucide-vue-next";
-import { useToast } from "@/composables/useToast";
-import { saveBlob } from "@/utils/download";
-import { fileNameOf, isImageFile, isPdfFile } from "@/utils/files";
+import type { FileRef } from "@/types";
+import { downloadUrl, isImageFile, isPdfFile } from "@/utils/files";
 
 const props = defineProps<{
   modelValue: boolean;
-  files: string[];
+  files: FileRef[];
   title?: string;
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: boolean] }>();
 
-const toast = useToast();
 const index = ref(0);
-const downloading = ref(false);
-const current = computed(() => props.files[index.value] ?? "");
+const current = computed<FileRef | null>(() => props.files[index.value] ?? null);
+const nameParts = computed(() => {
+  const name = current.value?.name ?? "";
+  const ext = /\.[^.\s]{1,8}$/.exec(name)?.[0] ?? "";
+  return { base: name.slice(0, name.length - ext.length), ext };
+});
 
 const close = () => emit("update:modelValue", false);
 const onKeydown = (e: KeyboardEvent) => {
@@ -116,22 +122,6 @@ watch(
   },
 );
 onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
-
-const download = async () => {
-  const url = current.value;
-  downloading.value = true;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(res.statusText);
-    saveBlob(await res.blob(), fileNameOf(url));
-  } catch {
-    // الخادم لم يسمح بالجلب المباشر: نفتح الملف ليحفظه المستخدم من المتصفح
-    window.open(url, "_blank", "noopener");
-    toast.warning("تعذّر التحميل المباشر، فُتح الملف في تبويب جديد");
-  } finally {
-    downloading.value = false;
-  }
-};
 </script>
 
 <style lang="scss" scoped>
