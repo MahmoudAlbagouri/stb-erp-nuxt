@@ -8,6 +8,7 @@ import type {
   BiometricDevice,
   CreateDevicePayload,
   DailySummaryRow,
+  DeviceCommandView,
   DeviceSetup,
   DeviceStatus,
   ImportMapping,
@@ -66,15 +67,16 @@ export const useAttendanceStore = defineStore("attendance", () => {
 
   // --- Devices Management ---
 
-  const fetchDevices = async () => {
-    loading.value = true;
+  /** silent: تحديث في الخلفية بلا مؤشر تحميل (عدد الأوامر المنتظرة مثلاً) */
+  const fetchDevices = async ({ silent = false } = {}) => {
+    if (!silent) loading.value = true;
     try {
       const res = await api.get<BiometricDevice[]>("/attendance/devices");
       devices.value = res.data;
     } catch (error) {
       console.error("Failed to fetch devices:", error);
     } finally {
-      loading.value = false;
+      if (!silent) loading.value = false;
     }
   };
 
@@ -121,6 +123,14 @@ export const useAttendanceStore = defineStore("attendance", () => {
 
   const fetchDeviceSetup = async (deviceId: string) =>
     (await api.get<DeviceSetup>(`/attendance/devices/${deviceId}/setup`)).data;
+
+  /** آخر أوامر جهاز ZKTeco وحالاتها، الأحدث أولاً */
+  const fetchDeviceCommands = async (deviceId: string) =>
+    (
+      await api.get<DeviceCommandView[]>(
+        `/attendance/devices/${deviceId}/commands`,
+      )
+    ).data;
 
   /** مفتاح جديد؛ القديم يتوقف فوراً */
   const regenerateKey = async (deviceId: string) =>
@@ -290,6 +300,7 @@ export const useAttendanceStore = defineStore("attendance", () => {
     pushUserToDevice,
     syncAllUsers,
     fetchDeviceSetup,
+    fetchDeviceCommands,
     regenerateKey,
     fetchLogs,
     createManualLog,

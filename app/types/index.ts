@@ -575,6 +575,10 @@ export interface BiometricDevice {
   allowedIps?: string | null;
   /** إصدار بروتوكول Push كما أعلنه جهاز ZKTeco */
   pushVersion?: string | null;
+  /** آخر تعريف من جهاز ZKTeco؛ فارغ = لم يعرّف نفسه منذ أُضيف */
+  handshakeAt?: string | null;
+  /** أوامر تنتظر الجهاز (في قائمة الأجهزة) */
+  pendingCommands?: number;
   /** مفتاح الإرسال (Hikvision / API): يصل مرة واحدة عند الإنشاء أو التجديد */
   pushKey?: string;
   /** منطقة ساعة الجهاز (IANA)؛ فارغة = منطقة الشركة */
@@ -609,7 +613,35 @@ export interface AttendanceLog {
   leaveReason?: string;
   workHours?: number | null;
   overtimeHours?: number | null;
+  /** دورها في يومها، وبه تُعرض؛ فارغ للإجازة ولرقم غير مربوط */
+  dayRole?: PunchRole | null;
   createdAt: string;
+}
+
+/** أول بصمة في اليوم حضور، وآخرها انصراف، وما بينهما خلال اليوم */
+export type PunchRole = "check_in" | "check_out" | "during_day";
+
+/** حالة أمر جهاز ZKTeco */
+export type DeviceCommandStatus =
+  | "queued"
+  | "sent"
+  | "done"
+  | "failed"
+  | "no_reply"
+  | "cancelled";
+
+export interface DeviceCommandView {
+  id: string;
+  seq: number;
+  kind: "user" | "template" | "check" | "other";
+  pin: string | null;
+  name: string | null;
+  status: DeviceCommandStatus;
+  returnCode: number | null;
+  attempts: number;
+  createdAt: string;
+  sentAt: string | null;
+  executedAt: string | null;
 }
 
 export interface CreateDevicePayload {

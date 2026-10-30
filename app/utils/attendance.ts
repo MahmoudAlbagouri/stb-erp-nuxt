@@ -3,6 +3,7 @@
 import type {
   AttendanceStatus,
   DeviceProtocol,
+  PunchRole,
   PunchType,
 } from "@/types";
 
@@ -51,6 +52,17 @@ export const PUNCH_TYPE_LABELS: Record<PunchType, string> = {
   overtime_out: "نهاية إضافي",
   leave: "إجازة",
 };
+
+/**
+ * البصمة تُعرض بدورها في يومها لا بنوعها من الجهاز (أغلب الأجهزة ترسل كل
+ * بصماتها "حضوراً") — وهو نفسه ما يُحسب به اليوم.
+ */
+export const PUNCH_ROLES: Record<PunchRole, { label: string; badge: string }> =
+  {
+    check_in: { label: "حضور", badge: "badge--active" },
+    check_out: { label: "انصراف", badge: "badge--terminated" },
+    during_day: { label: "خلال اليوم", badge: "badge--system" },
+  };
 
 export const DEVICE_PROTOCOLS: Record<
   DeviceProtocol,

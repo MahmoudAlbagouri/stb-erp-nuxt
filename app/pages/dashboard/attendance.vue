@@ -121,6 +121,20 @@
               آخر اتصال:
               {{ dev.lastSeenAt ? formatDateTime(dev.lastSeenAt) : "لم يتصل بعد" }}
             </p>
+            <p v-if="dev.protocol === 'zk_adms'" class="device-meta">
+              <Cpu :size="12" class="inline-icon" />
+              <template v-if="dev.handshakeAt">
+                البروتوكول:
+                <span dir="ltr">Push {{ dev.pushVersion || "1.x" }}</span>
+              </template>
+              <span
+                v-else
+                class="text-warning"
+                title="يُطلب منه تلقائياً عند أول أمر؛ أو أعد تشغيل الجهاز"
+              >
+                لم يعرّف نفسه بعد منذ أُضيف
+              </span>
+            </p>
             <p v-if="dev.timezone" class="device-meta">
               <Globe :size="12" class="inline-icon" />
               توقيت الجهاز: <span dir="ltr">{{ dev.timezone }}</span>
@@ -166,6 +180,21 @@
               كل الموظفين
             </button>
             <button
+              v-if="dev.protocol === 'zk_adms'"
+              v-can="'view_biometric_devices'"
+              class="btn btn--sm btn--ghost"
+              @click="openCommands(dev)"
+            >
+              <ListChecks :size="14" />
+              الأوامر
+              <span
+                v-if="dev.pendingCommands"
+                class="count-pill"
+                :title="`${dev.pendingCommands} أمر بانتظار الجهاز`"
+                >{{ dev.pendingCommands }}</span
+              >
+            </button>
+            <button
               v-can="'update_biometric_device'"
               class="btn btn--sm btn--ghost"
               @click="openEditDevice(dev)"
@@ -209,12 +238,12 @@
             <StbDateInput v-model="filters.to" type="date" class="form-input" />
           </div>
           <div class="form-group">
-            <label>نوع البصمة</label>
+            <!-- الحضور والانصراف دور البصمة في يومها (أولها وآخرها)، لا نوعها
+                 من الجهاز: فلا يُفلتر بهما -->
+            <label>النوع</label>
             <select v-model="filters.punchType" class="form-select">
-              <option value="">الكل</option>
-              <option value="check_in">حضور</option>
-              <option value="check_out">انصراف</option>
-              <option value="leave">إجازة</option>
+              <option value="">كل السجلات</option>
+              <option value="leave">الإجازات فقط</option>
             </select>
           </div>
           <div class="form-group">
@@ -320,7 +349,15 @@
                 </td>
                 <td>{{ formatDateTime(log.punchTime) }}</td>
                 <td>
-                  <span :class="`badge ${punchBadgeClass(log.punchType)}`">
+                  <!-- دورها في يومها: أولها حضور وآخرها انصراف، أياً كان
+                       نوعها من الجهاز -->
+                  <span
+                    v-if="log.dayRole"
+                    :class="['badge', PUNCH_ROLES[log.dayRole].badge]"
+                  >
+                    {{ PUNCH_ROLES[log.dayRole].label }}
+                  </span>
+                  <span v-else :class="`badge ${punchBadgeClass(log.punchType)}`">
                     {{ punchTypeLabel(log.punchType) }}
                   </span>
                   <div
@@ -813,6 +850,7 @@
       :device="setupDevice"
       :push-key="setupKey"
     />
+    <DeviceCommandsModal v-model="showCommandsModal" :device="commandsDevice" />
     <ImportPunchesModal
       v-model="showImportModal"
       :devices="store.devices"
@@ -822,7 +860,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import {
   ATTENDANCE_PAGE_SIZE,
   useAttendanceStore,
@@ -839,6 +877,7 @@ import type {
   DeviceStatus,
 } from "@/types";
 import DeviceSetupModal from "@/components/attendance/DeviceSetupModal.vue";
+import DeviceCommandsModal from "@/components/attendance/DeviceCommandsModal.vue";
 import ImportPunchesModal from "@/components/attendance/ImportPunchesModal.vue";
 import UnlinkedPins from "@/components/attendance/UnlinkedPins.vue";
 import DailySummary from "@/components/attendance/DailySummary.vue";
@@ -872,6 +911,8 @@ import {
   CalendarCheck,
   CalendarRange,
   Settings2,
+  Cpu,
+  ListChecks,
 } from "lucide-vue-next";
 
 definePageMeta({ middleware: "auth" });
@@ -929,6 +970,17 @@ const setupDevice = ref<BiometricDevice | null>(null);
 const setupKey = ref<string | undefined>();
 
 const showImportModal = ref(false);
+
+// أوامر جهاز ZKTeco وحالاتها؛ عند الإغلاق يتحدّث عدد المنتظر منها على البطاقة
+const showCommandsModal = ref(false);
+const commandsDevice = ref<BiometricDevice | null>(null);
+const openCommands = (dev: BiometricDevice) => {
+  commandsDevice.value = dev;
+  showCommandsModal.value = true;
+};
+watch(showCommandsModal, (open) => {
+  if (!open) store.fetchDevices({ silent: true });
+});
 
 // Push User Form
 const showPushModal = ref(false);
@@ -1054,8 +1106,9 @@ const syncAllUsers = async (dev: BiometricDevice) => {
   try {
     const { employees } = await store.syncAllUsers(dev.id, branchOnly);
     toast.success(
-      `سيُرسَل ${employees} موظفاً للجهاز تباعاً خلال دقائق وهو متصل`,
+      `سيُرسَل ${employees} موظفاً للجهاز تباعاً خلال دقائق وهو متصل — تابعهم من «الأوامر»`,
     );
+    store.fetchDevices({ silent: true });
   } catch (e) {
     toast.error(getErrorMessage(e));
   } finally {
@@ -1107,8 +1160,13 @@ const handlePushUser = async () => {
       targetDeviceId.value,
       selectedEmployeeId.value,
     );
-    toast.success("سيُسجَّل الموظف على الجهاز عند اتصاله التالي (ثوانٍ)");
+    toast.success(
+      targetDevice.value?.handshakeAt
+        ? "سيُسجَّل الموظف على الجهاز خلال ثوانٍ — تابع حالته من «الأوامر»"
+        : "سيُطلب من الجهاز تعريف نفسه أولاً ثم يُسجَّل الموظف — تابع حالته من «الأوامر»",
+    );
     showPushModal.value = false;
+    store.fetchDevices({ silent: true });
   } catch (e) {
     toast.error(getErrorMessage(e, "فشل في إرسال البيانات"));
   } finally {
@@ -1382,6 +1440,19 @@ onMounted(() => {
   gap: $space-1;
   font-size: $font-size-xs;
   color: $stb-text-secondary;
+}
+
+// عدد الأوامر بانتظار الجهاز على زر "الأوامر"
+.count-pill {
+  min-width: 18px;
+  padding: 0 $space-1;
+  border-radius: 999px;
+  background: $stb-warning;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
 }
 
 // ══ Filters ══════════════════════════════════════════════════════════════
