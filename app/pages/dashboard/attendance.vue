@@ -387,6 +387,12 @@
                       >يدوي</span
                     >
                     <span
+                      v-else-if="log.verifyMode === 'mobile'"
+                      class="mini-tag"
+                      :title="`على بعد ${log.distanceMeters ?? '-'} متر من الفرع`"
+                      >من الجوال</span
+                    >
+                    <span
                       v-if="log.isEdited"
                       class="mini-tag mini-tag--edited"
                       :title="`عدّلها: ${log.editedByName || '-'}`"

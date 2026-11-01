@@ -84,6 +84,11 @@ export const useEmployeesStore = defineStore("employees", () => {
     return res.data;
   };
 
+  /** فك ربط الجوال: البصمة التالية تربط جواله الجديد */
+  const unbindMobileDevice = async (id: string) => {
+    await api.del(`/attendance/mobile-devices/${id}`);
+  };
+
   const remove = async (id: string) => {
     await api.del(`/employees/${id}`);
     employees.value = employees.value.filter((e: Employee) => e.id !== id);
@@ -134,6 +139,7 @@ export const useEmployeesStore = defineStore("employees", () => {
     create,
     update,
     remove,
+    unbindMobileDevice,
     exportData,
     exportSingle,
     exportFiltered,

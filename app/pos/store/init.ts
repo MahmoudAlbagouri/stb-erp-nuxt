@@ -6,6 +6,7 @@ import type {
   CashMove,
   HeldCart,
   LocalKitchenTicket,
+  LocalQuote,
   LocalShift,
   OrderContext,
   PosCashier,
@@ -112,13 +113,16 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
         posDb.getMeta<StoredCart>("cart"),
         posDb.getMeta<PosDeliveryOptions | null>("deliveryOptions"),
       ]);
-    const [stockComplete, dining, savedOrder, tables, tickets] = await Promise.all([
-      posDb.getMeta<boolean>("stockComplete"),
-      posDb.getMeta<PosRestaurantOptions | null>("restaurant"),
-      posDb.getMeta<OrderContext>("order"),
-      posDb.getMeta<TableOrder[]>("tableOrders"),
-      posDb.getMeta<LocalKitchenTicket[]>("kitchenTickets"),
-    ]);
+    const [stockComplete, dining, savedOrder, tables, tickets, savedQuotes, quoteSeq] =
+      await Promise.all([
+        posDb.getMeta<boolean>("stockComplete"),
+        posDb.getMeta<PosRestaurantOptions | null>("restaurant"),
+        posDb.getMeta<OrderContext>("order"),
+        posDb.getMeta<TableOrder[]>("tableOrders"),
+        posDb.getMeta<LocalKitchenTicket[]>("kitchenTickets"),
+        posDb.getMeta<LocalQuote[]>("quotes"),
+        posDb.getMeta<number>("quoteCounter"),
+      ]);
     state.stockLevels.value = levels ?? {};
     // نسخة كاملة من الأرصدة استُلمت من قبل؟ بدونها لا تُعرض ولا يُمنع بها بيع
     state.stockKnown.value = stockComplete === true;
@@ -129,6 +133,8 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
     state.restaurant.value = dining ?? null;
     state.tableOrders.value = tables ?? [];
     state.kitchenTickets.value = tickets ?? [];
+    state.quotes.value = savedQuotes ?? [];
+    state.quoteCounter.value = quoteSeq ?? 0;
     // الطلب الجاري (طاولة مفتوحة على الشاشة) يعود مع سلته
     state.order.value = savedOrder && sh ? savedOrder : newOrderContext();
     state.held.value = parked ?? [];

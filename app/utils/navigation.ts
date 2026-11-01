@@ -306,6 +306,14 @@ export const NAV_SECTIONS: NavSection[] = [
         tenantOnly: true,
       },
       {
+        to: "/dashboard/sales/quotes",
+        label: "عروض أسعار العملاء",
+        icon: FileText,
+        permissions: [P.SALES_VIEW],
+        feature: F.SALES_MODULE,
+        tenantOnly: true,
+      },
+      {
         to: "/dashboard/sales/returns",
         label: "مرتجعات البيع",
         icon: RotateCcw,

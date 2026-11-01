@@ -15,6 +15,7 @@ import type {
   LocalReturn,
   LocalSale,
   LocalKitchenTicket,
+  LocalQuote,
   LocalShift,
   OrderContext,
   OrderType,
@@ -31,6 +32,7 @@ import type {
   PosPromotion,
   PosRestaurantOptions,
   PosTenantProfile,
+  QuoteRef,
   TableOrder,
 } from "@/pos/types";
 import type { SalesSettings } from "@/types/sales";
@@ -58,6 +60,7 @@ export const DEFAULT_POS_FEATURES: PosFeatures = {
   priceChange: true,
   units: true,
   holdSales: true,
+  quotes: true,
   cardPayments: true,
   quickPay: false,
   autoPrint: true,
@@ -88,6 +91,7 @@ export const DEFAULT_POS_OPTIONS: PosOptions = {
     manualDrawer: false,
     priceChange: false,
   },
+  quoteValidityDays: 7,
 };
 /** تأخير حفظ السلة على الجهاز بعد آخر تعديل */
 export const CART_SAVE_DELAY_MS = 300;
@@ -112,6 +116,11 @@ export const newOrderContext = (
 
 /** كم بون مطبخ يُحفظ على الشاشة لإعادة طباعته */
 export const KEEP_KITCHEN_TICKETS = 40;
+
+export const QUOTE_IN_PROGRESS = "أكمل عرض السعر أو اخرج من وضعه أولاً";
+
+/** كم عرض سعر يُحفظ على الشاشة: الأقدم يبقى في السيرفر ويُجلب برقمه */
+export const KEEP_QUOTES = 200;
 
 /** الكميات بأربع خانات كما في السيرفر: يزيل ضجيج الفاصلة العائمة */
 export const roundQuantity = (value: number): number =>
@@ -180,6 +189,11 @@ export const createPosState = () => {
     };
   });
 
+  /** عروض الأسعار على هذه الشاشة (الأحدث أولاً) */
+  const quotes = ref<LocalQuote[]>([]);
+  /** عدّاد مستقل: عرض السعر لا يترك فجوة في أرقام الفواتير */
+  const quoteCounter = ref(0);
+
   /** فواتير معلّقة على هذه الشاشة */
   const held = ref<HeldCart[]>([]);
   /** إيداعات وسحوبات الدرج في الوردية الحالية */
@@ -222,6 +236,10 @@ export const createPosState = () => {
   const invoiceDiscount = ref<InvoiceDiscount | null>(null);
   /** السطر المحدد: عليه تعمل اختصارات لوحة المفاتيح */
   const selectedKey = ref<number | null>(null);
+  /** السلة تُبنى عرض سعر: بلا فحص مخزون ولا دفع */
+  const quoteMode = ref(false);
+  /** السلة جاءت من عرض سعر: فاتورتها تحوّله */
+  const quoteRef = ref<QuoteRef | null>(null);
 
   // ─── الطابور ────────────────────────────────────────────────────────────────
   const pendingCount = computed(
@@ -270,6 +288,8 @@ export const createPosState = () => {
     tableOrders,
     kitchenTickets,
     kitchenOrders,
+    quotes,
+    quoteCounter,
     held,
     cashMoves,
     online,
@@ -287,6 +307,8 @@ export const createPosState = () => {
     customerId,
     invoiceDiscount,
     selectedKey,
+    quoteMode,
+    quoteRef,
     pendingCount,
     failedEntries,
     reloadOutbox,

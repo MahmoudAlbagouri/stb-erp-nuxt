@@ -10,6 +10,7 @@
 //   connection  الربط، ساعة الشاشة وحد العمل بلا اتصال، الرفع والسحب
 //   shift       الوردية، كاشيرها، الدرج، موافقة المشرف، سجل التدقيق
 //   cart        السلة والتسعير والرصيد، التعليق، عميل من الشاشة
+//   quotes      عرض السعر: إصداره بلا مخزون، وتحويله لفاتورة
 //   checkout    إتمام البيع والمرتجع
 //   restaurant  الطاولات والإرسال للمطبخ وحالة الطلبات فيه
 //   init        تحميل الحالة المحفوظة على الجهاز
@@ -22,6 +23,7 @@ import { createCart } from "@/pos/store/cart";
 import { createCheckout } from "@/pos/store/checkout";
 import { createConnection } from "@/pos/store/connection";
 import { createInit } from "@/pos/store/init";
+import { createQuotes } from "@/pos/store/quotes";
 import { createRestaurant } from "@/pos/store/restaurant";
 import { createShift } from "@/pos/store/shift";
 import { createPosState } from "@/pos/store/state";
@@ -31,11 +33,13 @@ export const usePosStore = defineStore("pos", () => {
   const connection = createConnection(state, usePosApi());
   const shiftModule = createShift(state, connection);
   const cartModule = createCart(state, connection, shiftModule);
+  const quotesModule = createQuotes(state, connection, shiftModule, cartModule);
   const checkoutModule = createCheckout(
     state,
     connection,
     shiftModule,
     cartModule,
+    quotesModule,
   );
   const restaurant = createRestaurant(state, connection, cartModule);
   const { init } = createInit(state, cartModule);
@@ -77,7 +81,7 @@ export const usePosStore = defineStore("pos", () => {
         return;
       }
       for (const line of state.cart.value) {
-        if (!isRepriced(line) && !line.product.openPrice) {
+        if (!isRepriced(line) && !line.product.openPrice && !line.quoted) {
           line.unitPrice = unitPriceOf(line.product, line.unitId);
         }
       }
@@ -93,6 +97,8 @@ export const usePosStore = defineStore("pos", () => {
     state.cart.value = [];
     state.customerId.value = "";
     state.invoiceDiscount.value = null;
+    state.quoteMode.value = false;
+    state.quoteRef.value = null;
   };
 
   return {
@@ -131,6 +137,9 @@ export const usePosStore = defineStore("pos", () => {
     customerId: state.customerId,
     invoiceDiscount: state.invoiceDiscount,
     selectedKey: state.selectedKey,
+    quoteMode: state.quoteMode,
+    quoteRef: state.quoteRef,
+    quotes: state.quotes,
     held: state.held,
     cashMoves: state.cashMoves,
     promotions: state.promotions,
@@ -190,6 +199,15 @@ export const usePosStore = defineStore("pos", () => {
     customerBalance: cartModule.customerBalance,
     stockOf: cartModule.stockOf,
     stockEnforced: cartModule.stockEnforced,
+    isShort: cartModule.isShort,
+
+    // عرض السعر
+    enterQuoteMode: quotesModule.enterQuoteMode,
+    exitQuoteMode: quotesModule.exitQuoteMode,
+    saveQuote: quotesModule.saveQuote,
+    lookupQuote: quotesModule.lookupQuote,
+    quoteExpired: quotesModule.quoteExpired,
+    convertQuote: quotesModule.convertQuote,
 
     // البيع والمرتجع
     checkout,

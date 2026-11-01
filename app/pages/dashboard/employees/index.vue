@@ -549,6 +549,31 @@
                     برقم آخر — وتُنسب له بصماته السابقة بهذا الرقم.
                   </small>
                 </div>
+                <div
+                  v-if="hasFeature('mobile_attendance')"
+                  class="form-group"
+                >
+                  <label>البصمة من الجوال</label>
+                  <label class="checkbox-label">
+                    <input v-model="editForm.mobilePunchEnabled" type="checkbox" />
+                    <span>يبصم من تطبيق الجوال داخل نطاق فرعه</span>
+                  </label>
+                  <small
+                    v-if="editingEmployee?.mobileDeviceName"
+                    class="form-hint"
+                  >
+                    مربوط بجوال: {{ editingEmployee.mobileDeviceName }}
+                    <button
+                      v-can="'manage_attendance_settings'"
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      :disabled="unbinding"
+                      @click="unbindDevice"
+                    >
+                      فك الربط
+                    </button>
+                  </small>
+                </div>
                 <div class="form-group">
                   <label>الحالة الوظيفية</label>
                   <select v-model="editForm.status" class="form-select">
@@ -776,6 +801,7 @@ import { useUsersStore } from "@/stores/users";
 import { useDepartmentsStore } from "@/stores/departments";
 import { useBranchesStore } from "@/stores/branches";
 import { useShiftsStore } from "@/stores/shifts";
+import { useAccess } from "../../../composables/useAccess";
 import { useToast } from "@/composables/useToast";
 import type {
   Employee,
@@ -993,6 +1019,7 @@ interface EditFormType {
   departmentId: string;
   branchId: string;
   attendancePin: string;
+  mobilePunchEnabled: boolean;
   status: "active" | "inactive" | "terminated";
   userId: string | null;
   educations: Education[];
@@ -1008,6 +1035,7 @@ const editForm = reactive<EditFormType>({
   departmentId: "",
   branchId: "",
   attendancePin: "",
+  mobilePunchEnabled: false,
   status: "active",
   userId: null,
   educations: [],
@@ -1056,6 +1084,7 @@ const openEdit = async (emp: Employee) => {
     departmentId: emp.department?.id ?? "",
     branchId: emp.branchId ?? "",
     attendancePin: emp.attendancePin ?? "",
+    mobilePunchEnabled: emp.mobilePunchEnabled ?? false,
     status: emp.status,
     userId: emp.user?.id ?? null,
     educations: emp.educations
@@ -1093,6 +1122,7 @@ const handleUpdate = async () => {
       branchId: editForm.branchId || undefined,
       // null = يعود الجهاز يعرفه بكوده
       attendancePin: editForm.attendancePin.trim() || null,
+      mobilePunchEnabled: editForm.mobilePunchEnabled,
       status: editForm.status,
       userId: editForm.userId || undefined,
       educations: cleanEducations,
@@ -1109,6 +1139,24 @@ const handleUpdate = async () => {
     toast.error(getErrorMessage(e, "حدث خطأ أثناء التحديث"));
   } finally {
     updating.value = false;
+  }
+};
+
+const { hasFeature } = useAccess();
+const unbinding = ref(false);
+/** تغيّر جوال الموظف: تُربط بصمته التالية بالجديد */
+const unbindDevice = async () => {
+  const employee = editingEmployee.value;
+  if (!employee) return;
+  unbinding.value = true;
+  try {
+    await store.unbindMobileDevice(employee.id);
+    employee.mobileDeviceName = null;
+    toast.success("تم فك ربط الجوال");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر فك ربط الجوال"));
+  } finally {
+    unbinding.value = false;
   }
 };
 

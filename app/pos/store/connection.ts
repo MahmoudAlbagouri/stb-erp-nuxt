@@ -223,6 +223,7 @@ export const createConnection = (
       lastSync,
       products,
       categories,
+      quoteCounter,
       hasQueued,
     } = state;
 
@@ -246,6 +247,10 @@ export const createConnection = (
       : serverBalances.value;
     // العدّاد لا ينقص أبداً: الأعلى بين الجهاز والسيرفر (جهاز أُعيدت تهيئته)
     const nextCounter = Math.max(counter.value, data.device.lastCounter);
+    const nextQuoteCounter = Math.max(
+      quoteCounter.value,
+      data.device.lastQuoteCounter ?? 0,
+    );
 
     // وردية مفتوحة في السيرفر وليست على الجهاز (مُسحت بياناته): نستعيدها
     let nextShift = shift.value;
@@ -280,6 +285,7 @@ export const createConnection = (
       settings: data.settings,
       lastSync: data.serverTime,
       counter: nextCounter,
+      quoteCounter: nextQuoteCounter,
       shift: nextShift,
       tenant: nextTenant,
       cashiers: data.cashiers,
@@ -308,6 +314,7 @@ export const createConnection = (
     settings.value = data.settings;
     lastSync.value = data.serverTime;
     counter.value = nextCounter;
+    quoteCounter.value = nextQuoteCounter;
     shift.value = nextShift;
 
     [products.value, customers.value, categories.value] = await Promise.all([
@@ -482,6 +489,10 @@ export const createConnection = (
     suspended.value = "";
     bindError.value = "";
     state.counter.value = 0;
+    state.quoteCounter.value = 0;
+    state.quotes.value = [];
+    state.quoteMode.value = false;
+    state.quoteRef.value = null;
     state.shift.value = null;
     state.sales.value = [];
     state.cart.value = [];
@@ -531,6 +542,10 @@ export const createConnection = (
     state.cashierName.value = "";
     state.returnsAllowed.value = false;
     state.counter.value = 0;
+    state.quoteCounter.value = 0;
+    state.quotes.value = [];
+    state.quoteMode.value = false;
+    state.quoteRef.value = null;
     state.lastSync.value = null;
     state.shift.value = null;
     state.products.value = [];

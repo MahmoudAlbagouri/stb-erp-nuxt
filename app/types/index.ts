@@ -267,6 +267,11 @@ export interface Employee {
   employeeCode: string;
   /** رقمه على جهاز البصمة إن اختلف عن كوده (فارغ = كوده) */
   attendancePin?: string | null;
+  /** يبصم من تطبيق الجوال داخل نطاق فرعه */
+  mobilePunchEnabled?: boolean;
+  /** الجوال المربوط به؛ يُربط بأول بصمة */
+  mobileDeviceName?: string | null;
+  mobileDeviceBoundAt?: string | null;
 
   // حقول الجنسية والجواز/الإقامة
   nationalityType: NationalityType;
@@ -409,6 +414,7 @@ export interface UpdateEmployeePayload {
   shiftId?: string | null;
   /** رقمه على جهاز البصمة؛ null = يعرفه الجهاز بكوده */
   attendancePin?: string | null;
+  mobilePunchEnabled?: boolean;
   status?: "active" | "inactive" | "terminated";
   userId?: string | null;
 
@@ -603,6 +609,8 @@ export interface AttendanceLog {
   punchTime: string;
   punchType: PunchType;
   verifyMode: string;
+  /** بصمة الجوال: بعدها عن الفرع بالمتر */
+  distanceMeters?: number | null;
   deviceSn?: string;
   isManualEntry: boolean;
   isEdited: boolean;

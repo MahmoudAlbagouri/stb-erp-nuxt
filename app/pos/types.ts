@@ -1,5 +1,9 @@
 // pos/types.ts — أنواع شاشة الكاشير (النسخة المحلية على الجهاز + طابور الرفع)
-import type { SalesPaymentMethod, SalesSettings } from "@/types/sales";
+import type {
+  QuoteDocument,
+  SalesPaymentMethod,
+  SalesSettings,
+} from "@/types/sales";
 
 // ─── ما ينزّله الجهاز من السيرفر ─────────────────────────────────────────────
 export interface PosProduct {
@@ -63,6 +67,8 @@ export interface PosDevice {
     branch?: { id: string; name: string } | null;
   } | null;
   lastCounter: number;
+  /** آخر عدّاد عرض سعر وصل السيرفر (غائب من سيرفر أقدم) */
+  lastQuoteCounter?: number;
   lastSeenAt?: string | null;
   isActive: boolean;
   hasOpenShift?: boolean;
@@ -304,6 +310,7 @@ export const POS_FEATURE_KEYS = [
   "priceChange",
   "units",
   "holdSales",
+  "quotes",
   "cardPayments",
   "quickPay",
   "autoPrint",
@@ -336,12 +343,15 @@ export interface PosOptions {
   /** المميزات الظاهرة (غائبة من سيرفر أقدم = كلها مفعّلة) */
   features?: Partial<PosFeatures>;
   template?: string;
+  /** مدة صلاحية عرض السعر الافتراضية بالأيام (غائبة من سيرفر أقدم = 7) */
+  quoteValidityDays?: number;
 }
 
 /** صفحة "إعدادات شاشة الكاشير" في لوحة التحكم */
 export interface PosScreenSettings {
   template: string;
   features: PosFeatures;
+  quoteValidityDays: number;
   /** ما تسمح به الباقة (false = "ليست في باقتك") */
   available: Partial<Record<PosFeatureKey, boolean>>;
   groups: {
@@ -463,6 +473,17 @@ export interface CartLine {
   pricePending?: boolean;
   /** ملاحظة للمطبخ ("بدون بصل") — لا تظهر في الفاتورة */
   note?: string;
+  /** سطر من عرض سعر ساري: سعره وخصمه مثبّتان كما طُبعا (انظر quotedTerms) */
+  quoted?: QuotedTerms | null;
+}
+
+/** ما وُعد به العميل على سطر في عرض السعر */
+export interface QuotedTerms {
+  number: string;
+  /** الكمية المعروضة: ما زاد عليها يخرج عن العرض */
+  quantity: number;
+  /** الخصم كله على السطر (عروض + كاشير + نصيبه من خصم الفاتورة) */
+  discount: number;
 }
 
 /** أسباب تغيير السعر الجاهزة (التخفيض يحتاج سبباً) */
@@ -487,6 +508,7 @@ export interface StoredCartLine {
   priceApprovedBy?: string | null;
   pricePending?: boolean;
   note?: string;
+  quoted?: QuotedTerms | null;
 }
 
 /** سلة محفوظة: الجارية (تبقى بعد إغلاق المتصفح) أو معلّقة */
@@ -494,6 +516,19 @@ export interface StoredCart {
   lines: StoredCartLine[];
   customerId: string;
   invoiceDiscount: InvoiceDiscount | null;
+  /** السلة تُبنى عرض سعر */
+  quoteMode?: boolean;
+  /** السلة جاءت من عرض سعر */
+  quoteRef?: QuoteRef | null;
+}
+
+/** عرض السعر الذي تتحول السلة منه لفاتورة */
+export interface QuoteRef {
+  uuid: string;
+  number: string;
+  validUntil: string;
+  /** من وافق عليه: يُرفع مع الفاتورة فلا يُبلَّغ عن سعرها كمخالفة */
+  approvedBy: string | null;
 }
 
 /** فاتورة معلّقة: عميل ذهب ليحضر شيئاً، والكاشير يكمل مع غيره */
@@ -628,6 +663,21 @@ export interface LocalSale {
   tableName?: string | null;
 }
 
+// ─── عرض السعر ───────────────────────────────────────────────────────────────
+/** عرض سعر على الجهاز، أو كما يعيده السيرفر برقمه */
+export interface LocalQuote extends QuoteDocument {
+  uuid: string;
+  customerId?: string | null;
+  pricesIncludeTax: boolean;
+  lines: (Omit<SaleLine, "unitId" | "listPrice" | "priceReason"> & {
+    unitId?: string | null;
+    listPrice?: number | null;
+    priceReason?: string | null;
+  })[];
+  approvedBy?: string | null;
+  convertedInvoiceNumber?: string | null;
+}
+
 // ─── المرتجع ─────────────────────────────────────────────────────────────────
 export interface ReturnableLine {
   /** ترتيب السطر في الفاتورة: به يشير المرتجع إليه */
@@ -677,6 +727,7 @@ export type OutboxType =
   | "shift.open"
   | "customer.create"
   | "sale"
+  | "quote.create"
   | "return"
   | "cash.move"
   | "audit"

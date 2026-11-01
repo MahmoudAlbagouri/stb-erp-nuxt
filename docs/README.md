@@ -183,7 +183,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/products` · `/products/settings` | catalog | `catalog` |
 | `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` · `/stocktake/[id]` (شاشة العدّ، بلا إنترنت) | inventory | `inventory` |
 | `/dashboard/purchasing` · `/returns` · `/payments` · `/suppliers` | purchasing | `purchasing` |
-| `/dashboard/sales` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
+| `/dashboard/sales` · `/quotes` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
 | `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/settings` (مميزات الشاشة) · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
 | `/dashboard/delivery` · `/agents` · `/settlements` · `/driver` (شاشة الطيار على جواله، برابطه بلا تسجيل دخول) | delivery | `delivery` |
 | `/dashboard/accounting` · `/chart` · `/journals` · `/expenses` · `/ledger` · `/trial-balance` · `/statements` · `/vat-return` | accounting | `accounting` |

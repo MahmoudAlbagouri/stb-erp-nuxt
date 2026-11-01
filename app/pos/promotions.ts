@@ -9,7 +9,7 @@ import {
   taxRateOf,
   toSalePrice,
 } from "./calc";
-import type { CartLine, InvoiceDiscount, PosPromotion } from "./types";
+import type { CartLine, InvoiceDiscount, PosPromotion, QuotedTerms } from "./types";
 import { currencyDecimals } from "../utils/format";
 
 export interface PricedLine {
@@ -69,6 +69,15 @@ interface PricingContext {
 /** سطر غيّر الكاشير سعره عن سعر القائمة */
 export const isRepriced = (line: CartLine): boolean =>
   line.listPrice !== null && line.listPrice !== undefined;
+
+/**
+ * شروط عرض السعر السارية على السطر. كمية أكبر مما عُرض تخرج عن العرض وتخضع
+ * لقواعد البيع العادية: الوعد كان بتلك الكمية وحدها.
+ */
+export const quotedTerms = (line: CartLine): QuotedTerms | null => {
+  const terms = line.quoted;
+  return terms && (Number(line.quantity) || 0) <= terms.quantity + 1e-9 ? terms : null;
+};
 
 const isLive = (promo: PosPromotion, now: number) =>
   (!promo.startsAt || Date.parse(promo.startsAt) <= now) &&
@@ -136,23 +145,34 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
     const quantity = Number(line.quantity) || 0;
     // سعر كتبه الكاشير (معدّل أو مفتوح) هو السعر: لا عرض فوقه، فلا تخفيض مرتين
     const typed = isRepriced(line) || !!line.product.openPrice;
-    const promo = typed ? null : bestPromotion(line, context);
+    const quoted = quotedTerms(line);
+    const promo = typed || quoted ? null : bestPromotion(line, context);
     const unitPrice = promo ? promo.unitPrice : line.unitPrice;
-    const priceReduction = isRepriced(line)
-      ? roundAmount(Math.max(line.listPrice! - line.unitPrice, 0) * quantity)
-      : 0;
+    // عرض السعر وُوفق عليه عند إصداره: لا يُحسب من حد الكاشير عند البيع
+    const priceReduction =
+      isRepriced(line) && !quoted
+        ? roundAmount(Math.max(line.listPrice! - line.unitPrice, 0) * quantity)
+        : 0;
     const gross = roundAmount(quantity * unitPrice);
-    const promoDiscount = promo ? Math.min(promo.discount, gross) : 0;
-    const manualDiscount = Math.min(
-      Math.max(Number(line.discount) || 0, 0),
-      Math.max(gross - promoDiscount, 0),
-    );
+    // بكمية أقل مما عُرض يأخذ نصيبها من الخصم
+    const quotedDiscount = quoted
+      ? roundAmount((quoted.discount * quantity) / quoted.quantity)
+      : 0;
+    const promoDiscount = promo
+      ? Math.min(promo.discount, gross)
+      : Math.min(quotedDiscount, gross);
+    const manualDiscount = quoted
+      ? 0
+      : Math.min(
+          Math.max(Number(line.discount) || 0, 0),
+          Math.max(gross - promoDiscount, 0),
+        );
     return {
       line,
       unitPrice,
       gross,
       promoDiscount,
-      promoName: promo?.promo.name ?? null,
+      promoName: quoted ? `عرض سعر ${quoted.number}` : (promo?.promo.name ?? null),
       manualDiscount,
       priceReduction,
       /** ما يبقى من قيمة السطر ليُخصم منه */
@@ -161,7 +181,9 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
   });
 
   // ─── خصم الفاتورة: على ما يقبل الخصم فقط ───
-  const eligible = drafts.filter((d) => d.line.product.allowDiscount && d.open > 0);
+  const eligible = drafts.filter(
+    (d) => d.line.product.allowDiscount && d.open > 0 && !quotedTerms(d.line),
+  );
   const base = sumAmounts(eligible.map((d) => d.open));
   const wanted = context.invoiceDiscount
     ? context.invoiceDiscount.type === "percent"
@@ -214,7 +236,7 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
   // أساس النسبة: ما كان يمكن الخصم منه (بعد العروض، وبسعر القائمة لما خُفّض)
   const discountable = sumAmounts(
     lines
-      .filter((l) => l.line.product.allowDiscount)
+      .filter((l) => l.line.product.allowDiscount && !quotedTerms(l.line))
       .map((l) => l.gross - l.promoDiscount + l.priceReduction),
   );
   // تخفيض صنف لا يقبل الخصم لا يدخل النسبة: يحتاج مشرفاً على أي حال (pricingIssue)
@@ -261,6 +283,8 @@ export const pricingIssue = (priced: PricedLine): PricingIssue | null => {
   if (line.pricePending) {
     return { message: `اكتب سعر "${product.name}"`, blocking: true };
   }
+  // شروط عرض سعر ساري: فُحصت وأُجيزت عند إصداره
+  if (quotedTerms(line)) return null;
   if (priced.priceReduction > 0 && !product.allowDiscount) {
     return {
       message: `تخفيض سعر "${product.name}" وهو لا يُسمح بالخصم عليه`,

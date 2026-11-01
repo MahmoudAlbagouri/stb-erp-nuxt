@@ -18,7 +18,7 @@
           v-can="'manage_pos_settings'"
           class="btn btn--primary"
           :class="{ 'btn--loading': saving }"
-          :disabled="saving || !dirty || !settings"
+          :disabled="saving || !dirty || !settings || !validDays"
           @click="save"
         >
           <Save :size="16" /> حفظ
@@ -89,6 +89,26 @@
         </div>
       </div>
 
+      <!-- ══ عرض السعر ══ -->
+      <div v-if="form.quotes" class="card section">
+        <div class="section__head">
+          <h3>عرض السعر</h3>
+          <p>المدة التي يظهر بها العرض للكاشير، ويقدر يغيّرها لكل عرض.</p>
+        </div>
+        <div class="form-group quote-days">
+          <label>مدة الصلاحية الافتراضية (بالأيام)</label>
+          <StbNumberInput
+            v-model.number="quoteValidityDays"
+            class="form-input"
+            min="1"
+            max="365"
+            step="1"
+            :disabled="!editable"
+          />
+          <p v-if="!validDays" class="form-error">من يوم إلى 365 يوماً</p>
+        </div>
+      </div>
+
       <p class="doc-hint">
         تصل التغييرات لشاشات الكاشير مع مزامنتها التالية (خلال دقائق)، أو فوراً بالضغط
         على حالة الاتصال أعلى الشاشة. البيع الآجل المقفل يرفضه السيرفر أيضاً، إلا ما
@@ -139,16 +159,24 @@ const editable = computed(() => can(PERMS.POS_SETTINGS_MANAGE));
 const settings = ref<PosScreenSettings | null>(null);
 const saving = ref(false);
 const form = reactive({} as PosFeatures);
+const quoteValidityDays = ref<number | "">(7);
 
 const fill = (data: PosScreenSettings) => {
   settings.value = data;
   Object.assign(form, data.features);
+  quoteValidityDays.value = data.quoteValidityDays;
 };
+
+const validDays = computed(() => {
+  const days = Number(quoteValidityDays.value);
+  return Number.isInteger(days) && days >= 1 && days <= 365;
+});
 
 const dirty = computed(
   () =>
     !!settings.value &&
-    POS_FEATURE_KEYS.some((key) => form[key] !== settings.value!.features[key]),
+    (POS_FEATURE_KEYS.some((key) => form[key] !== settings.value!.features[key]) ||
+      Number(quoteValidityDays.value) !== settings.value.quoteValidityDays),
 );
 
 /** القالب الذي تطابقه المميزات المعروضة الآن (قبل الحفظ أيضاً) */
@@ -195,7 +223,12 @@ const save = async () => {
     const features = Object.fromEntries(
       POS_FEATURE_KEYS.map((key) => [key, form[key]]),
     ) as PosFeatures;
-    fill(await store.updateScreenSettings({ features }));
+    fill(
+      await store.updateScreenSettings({
+        features,
+        quoteValidityDays: Number(quoteValidityDays.value),
+      }),
+    );
     toast.success("حُفظت إعدادات الشاشة — تصل الأجهزة مع مزامنتها التالية");
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر حفظ الإعدادات"));
@@ -234,6 +267,10 @@ onMounted(async () => {
       color: $stb-text-secondary;
     }
   }
+}
+
+.quote-days {
+  max-width: 280px;
 }
 
 .templates {

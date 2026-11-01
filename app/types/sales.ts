@@ -205,9 +205,53 @@ export interface PrintableDelivery {
   note?: string | null;
 }
 
+export type SalesQuoteStatus = "open" | "converted" | "cancelled";
+/** ما تُفلتر به القوائم: الحالات + "منتهي" (قائم تجاوز صلاحيته) */
+export type SalesQuoteFilter = SalesQuoteStatus | "expired";
+
+/** ما يُطبع من عرض السعر (على شاشة الكاشير وفي لوحة التحكم) */
+export interface QuoteDocument {
+  number: string;
+  status: SalesQuoteStatus;
+  issuedAt: string;
+  /** آخر يوم صلاحية بتوقيت الشركة */
+  validUntil: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerTaxNumber?: string | null;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+  note?: string | null;
+  warehouse?: { branch?: PrintBranch | null } | null;
+  lines: {
+    productName: string;
+    unitName: string;
+    quantity: number;
+    unitPrice: number;
+    discount: number;
+    total: number;
+  }[];
+}
+
+/** عرض سعر كما تعرضه لوحة التحكم */
+export interface SalesQuote extends QuoteDocument {
+  id: string;
+  cashierName?: string | null;
+  approvedBy?: string | null;
+  discountTotal: number;
+  convertedInvoiceNumber?: string | null;
+  convertedAt?: string | null;
+  /** قائم تجاوز صلاحيته */
+  expired?: boolean;
+  warehouse?: { name: string; branch?: PrintBranch | null } | null;
+}
+
 export interface PrintableInvoice {
   /** إيصال تجريبي لاختبار الطابعة (لا فاتورة حقيقية): يُطبع عليه ذلك صراحة */
   test?: boolean;
+  /** عرض سعر: ليس فاتورة — بلا QR ولا مدفوع ولا رصيد عميل */
+  quote?: { validUntil: string; note?: string | null } | null;
   /** مخزن الفاتورة وفرعه (فاتورة لوحة التحكم)؛ الكاشير يمرّر فرعه مباشرة */
   warehouse?: { branch?: PrintBranch | null } | null;
   number: string | null;

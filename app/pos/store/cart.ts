@@ -17,6 +17,7 @@ import type { PosShiftModule } from "./shift";
 import {
   CART_SAVE_DELAY_MS,
   newOrderContext,
+  QUOTE_IN_PROGRESS,
   roundQuantity,
   WEIGHT_DECIMALS,
   type PosState,
@@ -45,6 +46,8 @@ export const createCart = (
     customerId,
     invoiceDiscount,
     selectedKey,
+    quoteMode,
+    quoteRef,
     reloadOutbox,
   } = state;
   const { sync } = connection;
@@ -108,6 +111,12 @@ export const createCart = (
       .filter((line) => line.product.id === productId)
       .reduce((sum, line) => sum + (Number(line.quantity) || 0) * line.factor, 0);
 
+  /** ما في السلة أكثر من المتاح؟ عرض السعر لا يخضع للمخزون، لكن الكاشير يعرف */
+  const isShort = (product: PosProduct): boolean => {
+    const available = stockOf(product);
+    return available !== null && inCart(product.id) > available + 1e-9;
+  };
+
   /** ما على العميل = آخر ما عرفه السيرفر + ما بيع له آجلاً هنا ولم يُرفع */
   const customerBalance = (id: string): number =>
     sumAmounts([
@@ -150,7 +159,7 @@ export const createCart = (
       .filter((issue): issue is NonNullable<typeof issue> => !!issue);
     const blocked = issues.filter((issue) => issue.blocking).map((i) => i.message);
 
-    if (stockEnforced.value) {
+    if (stockEnforced.value && !quoteMode.value) {
       for (const product of new Set(cart.value.map((line) => line.product))) {
         const available = stockOf(product);
         if (available !== null && inCart(product.id) > available + 1e-9) {
@@ -182,18 +191,21 @@ export const createCart = (
       discount: Number(line.discount) || 0,
       ...(line.note?.trim() ? { note: line.note.trim() } : {}),
       // السعر المكتوب يبقى مع السلة؛ سعر القائمة يُقرأ من الصنف عند الاسترجاع
-      ...(line.product.openPrice || isRepriced(line)
+      ...(line.product.openPrice || isRepriced(line) || line.quoted
         ? {
             unitPrice: line.unitPrice,
             listPrice: line.listPrice ?? null,
             priceReason: line.priceReason ?? null,
             priceApprovedBy: line.priceApprovedBy ?? null,
             pricePending: !!line.pricePending,
+            quoted: line.quoted ?? null,
           }
         : {}),
     })),
     customerId: customerId.value,
     invoiceDiscount: invoiceDiscount.value,
+    quoteMode: quoteMode.value,
+    quoteRef: quoteRef.value,
   });
 
   const buildLine = (
@@ -232,6 +244,7 @@ export const createCart = (
         restored.priceReason = line.priceReason ?? null;
         restored.priceApprovedBy = line.priceApprovedBy ?? null;
         restored.pricePending = !!product.openPrice && !!line.pricePending;
+        restored.quoted = line.quoted ?? null;
       }
       return [restored];
     });
@@ -239,13 +252,15 @@ export const createCart = (
       ? stored.customerId
       : "";
     invoiceDiscount.value = stored.invoiceDiscount ?? null;
+    quoteMode.value = !!stored.quoteMode;
+    quoteRef.value = stored.quoteRef ?? null;
     selectedKey.value = cart.value.at(-1)?.key ?? null;
   };
 
   // السلة تُحفظ على الجهاز مع كل تعديل: تبقى بعد إغلاق المتصفح أو انقطاع الكهرباء
   let cartSaveTimer: ReturnType<typeof setTimeout> | null = null;
   watch(
-    [cart, customerId, invoiceDiscount],
+    [cart, customerId, invoiceDiscount, quoteMode, quoteRef],
     () => {
       if (!ready.value) return;
       if (cartSaveTimer) clearTimeout(cartSaveTimer);
@@ -273,7 +288,7 @@ export const createCart = (
       : null;
 
     const available = stockOf(product);
-    if (stockEnforced.value && available !== null) {
+    if (stockEnforced.value && !quoteMode.value && available !== null) {
       const wanted = inCart(product.id) + quantity * (unit ? unit.factor : 1);
       if (wanted > available + 1e-9) {
         throw new Error(
@@ -285,14 +300,16 @@ export const createCart = (
     }
 
     // السعر المفتوح: كل إضافة سطر بسعره (الخدمة نفسها قد تُباع بسعرين). وسطر
-    // له ملاحظة للمطبخ ("بدون بصل") لا تُضاف عليه قطعة عادية
+    // له ملاحظة للمطبخ ("بدون بصل") لا تُضاف عليه قطعة عادية، ولا على سطر عرض
+    // سعر (ما زاد على المعروض يُباع بسعره)
     const existing = product.openPrice
       ? undefined
       : cart.value.find(
           (line) =>
             line.product.id === product.id &&
             line.unitId === (unit?.unitId ?? null) &&
-            !line.note?.trim(),
+            !line.note?.trim() &&
+            !line.quoted,
         );
     if (existing) {
       existing.quantity = roundQuantity((Number(existing.quantity) || 0) + quantity);
@@ -369,6 +386,8 @@ export const createCart = (
     if (!line) return;
     const value = roundAmount(price);
     if (!(value > 0)) throw new Error("أدخل سعراً أكبر من صفر");
+    // سعر جديد يخرج السطر عن عرض السعر: قواعد البيع العادية
+    line.quoted = null;
 
     if (line.product.openPrice) {
       line.unitPrice = value;
@@ -399,6 +418,7 @@ export const createCart = (
     line.priceReason = null;
     line.priceApprovedBy = null;
     line.pricePending = !!line.product.openPrice;
+    line.quoted = null;
   };
 
   const lineLabel = (line: CartLine) =>
@@ -446,6 +466,8 @@ export const createCart = (
     customerId.value = "";
     invoiceDiscount.value = null;
     selectedKey.value = null;
+    quoteMode.value = false;
+    quoteRef.value = null;
   };
 
   /** الكاشير يفرغ السلة: يُسجَّل في سجل التدقيق */
@@ -466,6 +488,7 @@ export const createCart = (
     if (state.order.value.type === "dine_in") {
       throw new Error("طلب الطاولة محفوظ عليها — اختر طاولة أخرى أو سفري");
     }
+    if (quoteMode.value) throw new Error(QUOTE_IN_PROGRESS);
     const entry: HeldCart = {
       ...serializeCart(),
       id: newUuid(),
@@ -490,6 +513,7 @@ export const createCart = (
   const resumeHeld = async (id: string) => {
     const entry = held.value.find((h) => h.id === id);
     if (!entry) return;
+    if (quoteMode.value) throw new Error(QUOTE_IN_PROGRESS);
     if (cart.value.length) await holdCart();
     held.value = held.value.filter((h) => h.id !== id);
     await saveHeld();
@@ -556,11 +580,13 @@ export const createCart = (
     customerBalance,
     stockOf,
     stockEnforced,
+    isShort,
     priced,
     cartTotals,
     discountLimit,
     cartIssues,
     serializeCart,
+    buildLine,
     restoreCart,
     resetCart,
     setDeliveryFee,

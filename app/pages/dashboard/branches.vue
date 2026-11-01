@@ -156,6 +156,46 @@
                 العنوان والهاتف يُطبعان على فواتير الفرع وإيصالات كاشيره.
               </small>
 
+              <template v-if="hasFeature('mobile_attendance')">
+                <div class="doc-grid">
+                  <div class="form-group">
+                    <label>خط العرض</label>
+                    <input
+                      v-model="form.latitude"
+                      class="form-input"
+                      dir="ltr"
+                      inputmode="decimal"
+                      placeholder="24.713600"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>خط الطول</label>
+                    <input
+                      v-model="form.longitude"
+                      class="form-input"
+                      dir="ltr"
+                      inputmode="decimal"
+                      placeholder="46.675300"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>نطاق بصمة الجوال (متر)</label>
+                    <input
+                      v-model.number="form.punchRadiusMeters"
+                      class="form-input"
+                      dir="ltr"
+                      type="number"
+                      min="30"
+                      max="5000"
+                    />
+                  </div>
+                </div>
+                <small class="doc-hint">
+                  بصمة الموظف من تطبيق الجوال تُقبل داخل هذا النطاق فقط. انسخ
+                  الإحداثيات من خرائط Google (اضغط مطولاً على موقع الفرع).
+                </small>
+              </template>
+
               <label v-if="!editing?.isMain" class="checkbox-label">
                 <input v-model="form.isActive" type="checkbox" />
                 <span>نشط</span>
@@ -200,6 +240,7 @@
 import { onMounted, reactive, ref } from "vue";
 import { MapPin, Pencil, Plus, Trash2, X } from "lucide-vue-next";
 import { useBranchesStore } from "@/stores/branches";
+import { useAccess } from "../../composables/useAccess";
 import { useToast } from "@/composables/useToast";
 import type { Branch } from "@/types/branches";
 
@@ -207,6 +248,7 @@ definePageMeta({ middleware: "auth" });
 
 const store = useBranchesStore();
 const toast = useToast();
+const { hasFeature } = useAccess();
 
 const showModal = ref(false);
 const submitting = ref(false);
@@ -217,6 +259,9 @@ const emptyForm = () => ({
   code: "",
   phone: "",
   address: "",
+  latitude: "" as string | number,
+  longitude: "" as string | number,
+  punchRadiusMeters: 150,
   isActive: true,
 });
 const form = reactive(emptyForm());
@@ -233,6 +278,9 @@ const openEdit = (branch: Branch) => {
     code: branch.code ?? "",
     phone: branch.phone ?? "",
     address: branch.address ?? "",
+    latitude: branch.latitude ?? "",
+    longitude: branch.longitude ?? "",
+    punchRadiusMeters: branch.punchRadiusMeters,
     isActive: branch.isActive,
   });
   editing.value = branch;
@@ -243,6 +291,10 @@ const closeModal = () => {
   if (!submitting.value) showModal.value = false;
 };
 
+/** حقل فارغ = بلا موقع */
+const coordinate = (value: string | number): number | null =>
+  value === "" ? null : Number(value);
+
 const handleSubmit = async () => {
   submitting.value = true;
   try {
@@ -251,6 +303,9 @@ const handleSubmit = async () => {
       code: form.code || undefined,
       phone: form.phone || undefined,
       address: form.address || undefined,
+      latitude: coordinate(form.latitude),
+      longitude: coordinate(form.longitude),
+      punchRadiusMeters: form.punchRadiusMeters,
       isActive: form.isActive,
     };
     if (editing.value) {

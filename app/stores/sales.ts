@@ -15,6 +15,8 @@ import type {
   SalesInvoice,
   SalesInvoiceFilters,
   SalesInvoicePayload,
+  SalesQuote,
+  SalesQuoteFilter,
   SalesReturn,
   SalesReturnPayload,
   SalesReturnStatus,
@@ -121,6 +123,19 @@ export const useSalesStore = defineStore("sales", () => {
   const cancelInvoice = async (id: string) =>
     (await api.post<SalesInvoice>(`${BASE}/invoices/${id}/cancel`, {})).data;
 
+  // ─── عروض الأسعار ───────────────────────────────────────────────────────────
+  const fetchQuotes = async (
+    filters: { status?: SalesQuoteFilter | ""; search?: string; page?: number } = {},
+  ) =>
+    (await api.get<Paginated<SalesQuote>>(`${BASE}/quotes${toQueryString(filters)}`))
+      .data;
+
+  const getQuote = async (id: string) =>
+    (await api.get<SalesQuote>(`${BASE}/quotes/${id}`)).data;
+
+  const cancelQuote = async (id: string) =>
+    (await api.post<SalesQuote>(`${BASE}/quotes/${id}/cancel`, {})).data;
+
   // ─── المرتجعات ──────────────────────────────────────────────────────────────
   const fetchReturns = async (
     filters: {
@@ -197,6 +212,9 @@ export const useSalesStore = defineStore("sales", () => {
     updateInvoice,
     issueInvoice,
     cancelInvoice,
+    fetchQuotes,
+    getQuote,
+    cancelQuote,
     fetchReturns,
     getReturn,
     createReturn,

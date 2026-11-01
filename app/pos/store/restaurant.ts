@@ -24,6 +24,7 @@ import {
   CART_SAVE_DELAY_MS,
   KEEP_KITCHEN_TICKETS,
   newOrderContext,
+  QUOTE_IN_PROGRESS,
   roundQuantity,
   type PosState,
 } from "./state";
@@ -272,6 +273,7 @@ export const createRestaurant = (
   /** يفتح طاولة: طلبها المفتوح، أو طلباً جديداً عليها */
   const openTable = async (table: DiningTableInfo): Promise<LocalKitchenTicket | null> => {
     if (order.value.type === "dine_in" && order.value.tableId === table.id) return null;
+    if (state.quoteMode.value) throw new Error(QUOTE_IN_PROGRESS);
     const ticket = await parkCurrent();
     const saved = tableOrders.value.find((t) => t.order.tableId === table.id);
     if (saved) {

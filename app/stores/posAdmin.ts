@@ -66,6 +66,7 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
   const updateScreenSettings = async (payload: {
     template?: string;
     features?: Partial<PosFeatures>;
+    quoteValidityDays?: number;
   }) =>
     (await api.patch<PosScreenSettings>(`${BASE}/screen-settings`, payload)).data;
 

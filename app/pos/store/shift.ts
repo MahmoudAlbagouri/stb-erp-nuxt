@@ -179,6 +179,8 @@ export const createShift = (state: PosState, connection: PosConnection) => {
     state.cart.value = [];
     state.customerId.value = "";
     state.invoiceDiscount.value = null;
+    state.quoteMode.value = false;
+    state.quoteRef.value = null;
     await reloadOutbox();
     void sync();
   };

@@ -10,7 +10,6 @@ import {
   returnShare,
   roundAmount,
   sumAmounts,
-  taxRateOf,
 } from "@/pos/calc";
 import { posDb } from "@/pos/db";
 import { isRepriced } from "@/pos/promotions";
@@ -19,20 +18,21 @@ import type {
   LocalSale,
   ReturnableInvoice,
   SaleDelivery,
-  SaleLine,
   SalePayment,
 } from "@/pos/types";
 import type { SalesPaymentMethod } from "@/types/sales";
 import type { PosCart } from "./cart";
 import type { PosConnection } from "./connection";
+import { saleLinesOf, uploadLines, type PosQuotes } from "./quotes";
 import type { PosShiftModule } from "./shift";
-import { COUNTER_DIGITS, roundQuantity, type PosState } from "./state";
+import { COUNTER_DIGITS, QUOTE_IN_PROGRESS, type PosState } from "./state";
 
 export const createCheckout = (
   state: PosState,
   connection: PosConnection,
   shiftModule: PosShiftModule,
   cartModule: PosCart,
+  quotesModule: PosQuotes,
 ) => {
   const {
     device,
@@ -50,6 +50,7 @@ export const createCheckout = (
   } = state;
   const { sync, deviceApi, markContact } = connection;
   const { logAudit, shiftCashier, cashierRevoked, canReturn } = shiftModule;
+  const { markConverted } = quotesModule;
   const { priced, cartIssues, customerBalance, discountLimit, resetCart } =
     cartModule;
 
@@ -74,6 +75,7 @@ export const createCheckout = (
       throw new Error("تم إيقاف كاشير هذه الوردية — قفّل الوردية ليفتح غيره");
     }
     if (cart.value.length === 0) throw new Error("السلة فارغة");
+    if (state.quoteMode.value) throw new Error(QUOTE_IN_PROGRESS);
 
     const current = priced.value;
     const issues = cartIssues.value;
@@ -116,30 +118,9 @@ export const createCheckout = (
       ? (approvedBy ?? shiftCashier.value?.name ?? null)
       : null;
 
-    const lines: SaleLine[] = current.lines.map((p) => ({
-      productId: p.line.product.id,
-      productName: p.line.product.name,
-      unitId: p.line.unitId ?? undefined,
-      unitName: p.line.unitName,
-      quantity: Number(p.line.quantity),
-      unitPrice: p.unitPrice,
-      discount: p.discount,
-      // صفر لمنشأة غير مسجّلة في الضريبة
-      taxRate: taxRateOf(p.line.product),
-      subtotal: p.subtotal,
-      taxAmount: p.taxAmount,
-      total: p.total,
-      baseQuantity: roundQuantity(Number(p.line.quantity) * p.line.factor),
-      promoName: p.promoName,
-      // سعر غيّره الكاشير لهذه الفاتورة: السيرفر يحفظ الأصلي وسببه
-      ...(isRepriced(p.line)
-        ? {
-            listPrice: p.line.listPrice!,
-            priceReason: p.line.priceReason ?? undefined,
-          }
-        : {}),
-    }));
+    const lines = saleLinesOf(current);
     const taxTotal = current.taxTotal;
+    const fromQuote = state.quoteRef.value;
 
     const nextCounter = counter.value + 1;
     const issuedAt = new Date().toISOString();
@@ -200,19 +181,11 @@ export const createCheckout = (
           shiftId: sale.shiftId,
           customerId: sale.customerId ?? undefined,
           pricesIncludeTax: sale.pricesIncludeTax,
-          // ما يخص الشاشة وحدها (الاسم، الرصيد، العرض) لا يُرفع
-          lines: lines.map(
-            ({
-              productName: _name,
-              unitName: _unit,
-              baseQuantity: _base,
-              promoName: _promo,
-              ...line
-            }) => line,
-          ),
+          lines: uploadLines(lines),
           payments,
           // السيرفر يُبلّغ عن سعر تحت الحد ما لم يصله اسم من وافق عليه
-          approvedBy: approver ?? undefined,
+          approvedBy: approver ?? fromQuote?.approvedBy ?? undefined,
+          quoteUuid: fromQuote?.uuid,
           // أسماء الجهة والمنطقة للإيصال وحده
           ...(delivery
             ? {
@@ -237,6 +210,7 @@ export const createCheckout = (
     sales.value.push(sale);
     resetCart();
     await reloadOutbox();
+    if (fromQuote) await markConverted(fromQuote.uuid, sale.number);
 
     if (current.manualDiscount > 0) {
       await logAudit("discount", {

@@ -179,6 +179,7 @@ export const FEATURES = {
   ACCOUNTING_MODULE: "accounting_module",
   REPORTS_EXPORT: "reports_export",
   BIOMETRIC_INTEGRATION: "biometric_integration",
+  MOBILE_ATTENDANCE: "mobile_attendance",
   MULTI_BRANCH: "multi_branch",
   API_ACCESS: "api_access",
 } as const;
@@ -209,6 +210,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   accounting_module: "المحاسبة",
   reports_export: "تصدير التقارير (Excel / PDF)",
   biometric_integration: "ربط أجهزة البصمة (ZKTeco)",
+  mobile_attendance: "البصمة من الجوال (تطبيق الموظف)",
   multi_branch: "دعم الفروع المتعددة",
   api_access: "الوصول عبر API خارجي",
 };

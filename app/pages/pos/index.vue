@@ -93,6 +93,14 @@
           <span class="pos-status__count">{{ formatNumber(pos.held.length) }}</span>
         </button>
         <button
+          v-if="pos.shift && pos.features.quotes"
+          class="btn btn--sm btn--ghost"
+          title="عروض الأسعار: طباعة أو تحويل لفاتورة"
+          @click="showQuotes = true"
+        >
+          <FileText :size="15" /> <span class="pos-hide-sm">عروض الأسعار</span>
+        </button>
+        <button
           v-if="pos.shift && pos.features.cashMoves"
           class="btn btn--sm btn--ghost"
           title="إيداع أو سحب نقدي من الدرج (F9)"
@@ -490,8 +498,24 @@
 
       <!-- السلة -->
       <section class="pos-cart card">
+        <div v-if="pos.quoteMode || pos.quoteRef" class="pos-cart__quote">
+          <FileText :size="16" />
+          <div class="doc-cell">
+            <span class="doc-cell__main">{{ quoteBanner.title }}</span>
+            <span class="doc-cell__sub">{{ quoteBanner.hint }}</span>
+          </div>
+          <button
+            v-if="pos.quoteMode"
+            type="button"
+            class="btn btn--sm btn--ghost"
+            title="الرجوع للبيع: السلة تبقى، والمخزون يُفحص عند الدفع"
+            @click="pos.exitQuoteMode()"
+          >
+            خروج
+          </button>
+        </div>
         <button
-          v-if="pos.features.tables"
+          v-if="pos.features.tables && !pos.quoteMode"
           type="button"
           class="pos-cart__order"
           :class="{ 'is-table': pos.order.type === 'dine_in' }"
@@ -545,11 +569,18 @@
                   {{ promoName }}
                 </span>
                 <span
-                  v-if="isRepriced(line)"
+                  v-if="isRepriced(line) && !quotedTerms(line)"
                   class="badge doc-status--progress pos-line__promo"
                   :title="line.priceReason || ''"
                 >
                   سعر معدّل
+                </span>
+                <!-- للكاشير فقط: لا يُطبع على العرض -->
+                <span
+                  v-if="pos.quoteMode && pos.isShort(line.product)"
+                  class="badge doc-status--cancelled pos-line__promo"
+                >
+                  غير متوفر حالياً
                 </span>
                 <span v-if="line.note" class="pos-line__note">{{ line.note }}</span>
               </span>
@@ -652,7 +683,7 @@
               </strong>
             </div>
             <div
-              v-if="line.product.allowDiscount && pos.features.lineDiscount"
+              v-if="line.product.allowDiscount && pos.features.lineDiscount && !quotedTerms(line)"
               class="pos-line__discount"
             >
               <label>خصم</label>
@@ -716,7 +747,7 @@
             <Trash2 :size="16" />
           </button>
           <button
-            v-if="pos.order.type !== 'dine_in' && pos.features.holdSales"
+            v-if="pos.order.type !== 'dine_in' && pos.features.holdSales && !pos.quoteMode"
             class="btn btn--ghost btn--icon"
             title="تعليق الفاتورة (F6)"
             :disabled="!pos.cart.length"
@@ -735,7 +766,7 @@
             <Percent :size="16" />
           </button>
           <button
-            v-if="pos.features.kitchen"
+            v-if="pos.features.kitchen && !pos.quoteMode"
             class="btn btn--ghost pos-kitchen"
             title="إرسال الجديد للمطبخ (والإلغاءات)"
             :disabled="!pos.pendingKitchen.length || sendingKitchen"
@@ -748,7 +779,16 @@
             </span>
           </button>
           <button
-            v-if="pos.features.delivery"
+            v-if="canStartQuote"
+            class="btn btn--ghost pos-quote"
+            title="عرض سعر للعميل: لا يخضع للمخزون ولا يُسجَّل بيعاً"
+            @click="startQuote"
+          >
+            <FileText :size="16" />
+            <span>عرض سعر</span>
+          </button>
+          <button
+            v-if="pos.features.delivery && !pos.quoteMode"
             class="btn btn--ghost pos-delivery"
             title="بيع توصيل — طيار أو شركة شحن (F10)"
             :disabled="!pos.cart.length"
@@ -768,6 +808,17 @@
             <span>دفع آخر</span>
           </button>
           <button
+            v-if="pos.quoteMode"
+            class="btn btn--primary pos-pay"
+            :disabled="!pos.cart.length"
+            title="حفظ وطباعة عرض السعر (F4)"
+            @click="openQuote"
+          >
+            <span>حفظ العرض</span>
+            <strong>{{ formatCurrency(pos.cartTotals.total) }}</strong>
+          </button>
+          <button
+            v-else
             class="btn btn--primary pos-pay"
             :class="{ 'btn--loading': paying && quickMode }"
             :disabled="!pos.cart.length || paying"
@@ -1202,6 +1253,16 @@
     <PosReturnModal v-model="showReturn" @done="onReturned" />
     <PosScreenSettings v-model="showSettings" @test-print="printTestReceipt" />
     <PosHeldModal v-model="showHeld" @resume="resumeHeld" @remove="removeHeld" />
+    <PosQuoteModal
+      v-model="showQuote"
+      :customer="selectedCustomer"
+      :total="pos.cartTotals.total"
+      :default-days="pos.posOptions.quoteValidityDays ?? 7"
+      :short-count="shortCount"
+      :busy="savingQuote"
+      @submit="submitQuote"
+    />
+    <PosQuotesModal v-model="showQuotes" @print="printQuote" @convert="convertQuote" />
     <PosCashMoveModal v-model="showCashMove" @submit="submitCashMove" />
     <PosCustomerModal v-model="showCustomer" />
     <PosDeliveryModal
@@ -1267,6 +1328,7 @@ import {
   ChevronLeft,
   CircleCheck,
   CreditCard,
+  FileText,
   Inbox,
   Keyboard,
   CloudOff,
@@ -1304,7 +1366,7 @@ import type { AccessState as AccessStatus } from "@/composables/useAccess";
 import { useToast } from "@/composables/useToast";
 import type { ShiftReportData } from "@/components/global/PosShiftReport.vue";
 import { lineAmounts, sumAmounts, unitPriceOf } from "@/pos/calc";
-import { isRepriced } from "@/pos/promotions";
+import { isRepriced, quotedTerms } from "@/pos/promotions";
 import { createDisplayPublisher, type DisplayState } from "@/pos/display";
 import { verifyCashierPin } from "@/pos/cashiers";
 import type {
@@ -1312,6 +1374,7 @@ import type {
   CashMove,
   DiningTableInfo,
   LocalKitchenTicket,
+  LocalQuote,
   LocalReturn,
   LocalSale,
   OutboxType,
@@ -1322,10 +1385,11 @@ import type {
   SalePayment,
 } from "@/pos/types";
 import type { DeliveryPayment } from "@/components/global/PosDeliveryModal.vue";
+import type { QuoteDetails } from "@/pos/store/quotes";
 import { useAccessStore } from "@/stores/access";
 import { useAuthStore } from "@/stores/auth";
 import { usePosStore } from "@/stores/pos";
-import type { PrintableInvoice } from "@/types/sales";
+import type { PrintableInvoice, QuoteDocument } from "@/types/sales";
 import { FEATURES, PERMS } from "@/utils/access";
 import { installSoundUnlock, playSound, type SoundName } from "@/utils/sounds";
 
@@ -1363,6 +1427,7 @@ const OUTBOX_LABELS: Record<OutboxType, string> = {
   "shift.open": "فتح وردية",
   "customer.create": "عميل جديد",
   sale: "فاتورة",
+  "quote.create": "عرض سعر",
   return: "مرتجع",
   "cash.move": "حركة نقدية",
   audit: "سجل تدقيق",
@@ -1737,7 +1802,7 @@ const showCustomer = ref(false);
 const showShortcuts = ref(false);
 
 const hold = async () => {
-  if (!pos.cart.length || !pos.features.holdSales) return;
+  if (!pos.cart.length || !pos.features.holdSales || pos.quoteMode) return;
   try {
     await pos.holdCart();
     toast.success("عُلّقت الفاتورة — تجدها في «معلّقة»");
@@ -1748,9 +1813,14 @@ const hold = async () => {
 };
 
 const resumeHeld = async (id: string) => {
-  const ticket = await pos.resumeHeld(id);
-  showHeld.value = false;
-  if (ticket) await printKitchen(ticket);
+  try {
+    const ticket = await pos.resumeHeld(id);
+    showHeld.value = false;
+    if (ticket) await printKitchen(ticket);
+  } catch (e) {
+    sound("error");
+    toast.warning(getErrorMessage(e, "تعذر استرجاع الفاتورة"));
+  }
 };
 
 const removeHeld = async (id: string) => {
@@ -1888,13 +1958,18 @@ const payState = computed(() => {
   };
 });
 
-/** ما يتجاوز صلاحية الكاشير في هذه الفاتورة: يُطلب له رقم مشرف عند الإتمام */
-const payOverrides = computed(() => [
+/** ما يتجاوز صلاحية الكاشير في أسعار السلة وخصوماتها */
+const priceOverrides = computed(() => [
   ...pos.cartIssues.belowMin,
   ...pos.cartIssues.reducedNoDiscount,
   ...(pos.cartIssues.discountOverLimit
     ? [`الخصم ${pos.priced.manualPercent.toFixed(1)}% يتجاوز حدّك (${pos.discountLimit}%)`]
     : []),
+]);
+
+/** ما يتجاوز صلاحية الكاشير في هذه الفاتورة: يُطلب له رقم مشرف عند الإتمام */
+const payOverrides = computed(() => [
+  ...priceOverrides.value,
   ...(payState.value.creditOverLimit
     ? [`تجاوز حد ائتمان "${selectedCustomer.value?.name}"`]
     : []),
@@ -1929,13 +2004,16 @@ const cartReady = (): boolean => {
 };
 
 /** الدفع السريع: عميل نقدي وزر الدفع يتم البيع بلا شاشة دفع */
-const quickMode = computed(() => pos.features.quickPay && !selectedCustomer.value);
+const quickMode = computed(
+  () => pos.features.quickPay && !selectedCustomer.value && !pos.quoteMode,
+);
 
 /**
  * زر الدفع (وF4): في الدفع السريع يتم البيع نقداً بالمبلغ بالضبط؛ `full`
  * تفتح شاشة الدفع دائماً (شبكة، أو مبلغ مستلَم لحساب الباقي)
  */
 const openPay = async (full = false) => {
+  if (pos.quoteMode) return openQuote();
   if (!cartReady()) return;
   if (!full && quickMode.value) {
     if (paying.value) return;
@@ -2014,7 +2092,7 @@ const itemsTotal = computed(() => {
 });
 
 const openDelivery = () => {
-  if (!pos.cart.length || !cartReady()) return;
+  if (pos.quoteMode || !pos.cart.length || !cartReady()) return;
   pay.credit = false;
   showDelivery.value = true;
 };
@@ -2081,6 +2159,118 @@ const submitDelivery = async ({
       }
     }
     paying.value = false;
+  }
+};
+
+// ─── عرض السعر ────────────────────────────────────────────────────────────────
+const showQuote = ref(false);
+const showQuotes = ref(false);
+const savingQuote = ref(false);
+
+const canStartQuote = computed(
+  () =>
+    pos.features.quotes &&
+    !pos.quoteMode &&
+    !pos.quoteRef &&
+    pos.order.type !== "dine_in" &&
+    !pos.order.rounds,
+);
+
+/** شريط أعلى السلة: وضع العرض، أو عرض يتحول لفاتورة */
+const quoteBanner = computed(() => {
+  const source = pos.quoteRef;
+  if (!source) {
+    return { title: "عرض سعر", hint: "لا يخضع للمخزون ولا يُسجَّل بيعاً" };
+  }
+  return {
+    title: `من عرض السعر ${source.number}`,
+    hint: pos.quoteExpired({ validUntil: source.validUntil, status: "open" })
+      ? "انتهت صلاحيته — بالأسعار الحالية"
+      : `السعر مثبّت حتى ${formatDate(source.validUntil)}`,
+  };
+});
+
+/** أصناف السلة أكثر من المتاح: يعرفها الكاشير ولا تُطبع للعميل */
+const shortCount = computed(
+  () => pos.cart.filter((line) => pos.isShort(line.product)).length,
+);
+
+const startQuote = () => {
+  try {
+    pos.enterQuoteMode();
+    searchEl.value?.focus();
+  } catch (e) {
+    sound("error");
+    toast.warning(getErrorMessage(e, "تعذر بدء عرض السعر"));
+  }
+};
+
+const openQuote = () => {
+  if (cartReady()) showQuote.value = true;
+};
+
+const printQuote = async (quote: QuoteDocument, size: "a4" | "thermal") => {
+  try {
+    printTarget.value = quoteToPrintable(quote);
+    await nextTick();
+    await printer.value?.print(size);
+  } catch (e) {
+    sound("error");
+    toast.error(getErrorMessage(e, "تعذرت الطباعة"));
+  }
+};
+
+const submitQuote = async ({
+  details,
+  size,
+}: {
+  details: QuoteDetails;
+  size: "a4" | "thermal";
+}) => {
+  savingQuote.value = true;
+  try {
+    // ما يتجاوز صلاحية الكاشير يحتاج مشرفاً هنا أيضاً: الورقة تحمل اسم الشركة
+    let approvedBy: string | null = null;
+    if (priceOverrides.value.length) {
+      if (!pos.cashiers.length) {
+        sound("error");
+        toast.error(priceOverrides.value[0]!);
+        return;
+      }
+      const granted = await authorize("always", priceOverrides.value.join(" · "));
+      if (!granted.ok) return;
+      approvedBy = granted.approvedBy;
+    }
+
+    const quote = await pos.saveQuote(details, approvedBy);
+    sound("success");
+    showQuote.value = false;
+    toast.success(`حُفظ عرض السعر ${quote.number} — ${formatCurrency(quote.total)}`);
+    await printQuote(quote, size);
+    await nextTick();
+    searchEl.value?.focus();
+  } catch (e) {
+    sound("error");
+    toast.error(getErrorMessage(e, "تعذر حفظ عرض السعر"));
+  } finally {
+    savingQuote.value = false;
+  }
+};
+
+/** عميل عاد بعرضه: أصنافه تنزل في السلة، والمخزون يُفحص عند الدفع كأي بيع */
+const convertQuote = async (quote: LocalQuote) => {
+  try {
+    // حالته من السيرفر إن أمكن: قد يكون أُلغي أو حُوّل من شاشة أخرى
+    const notices = pos.convertQuote(await pos.lookupQuote(quote.number));
+    showQuotes.value = false;
+    notices.forEach((notice) => toast.warning(notice));
+    if (notices.length) sound("error");
+    else sound("scan");
+    await nextTick();
+    searchEl.value?.focus();
+  } catch (e) {
+    sound("error");
+    toast.warning(getErrorMessage(e, "تعذر تحويل العرض"));
   }
 };
 
@@ -2543,6 +2733,8 @@ const modalOpen = computed(
     showReturn.value ||
     showSettings.value ||
     showHeld.value ||
+    showQuote.value ||
+    showQuotes.value ||
     showCashMove.value ||
     showCustomer.value ||
     showDelivery.value ||
@@ -2567,6 +2759,8 @@ const closeTopModal = () => {
       showReturn,
       showSettings,
       showHeld,
+      showQuote,
+      showQuotes,
       showCashMove,
       showCustomer,
       showDelivery,
@@ -3053,6 +3247,7 @@ onBeforeUnmount(() => {
 }
 
 .pos-kitchen,
+.pos-quote,
 .pos-delivery,
 .pos-pay-other {
   flex: 1 1 auto;
@@ -3296,6 +3491,23 @@ onBeforeUnmount(() => {
   border-radius: $radius-full;
   cursor: pointer;
   direction: ltr;
+}
+
+// وضع عرض السعر، أو سلة جاءت من عرض: لا يختلط بالبيع العادي
+.pos-cart__quote {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2 $space-3;
+  color: $stb-text-primary;
+  background: rgba($stb-accent, 0.1);
+  border: 1px solid $stb-accent;
+  border-radius: $radius-md;
+
+  .doc-cell {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 // نوع الطلب أعلى السلة: سفري أو الطاولة (يفتح الطاولات)

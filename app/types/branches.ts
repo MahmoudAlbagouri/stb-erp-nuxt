@@ -13,6 +13,11 @@ export interface Branch extends BranchOption {
   /** يُطبع على فواتير الفرع */
   address?: string | null;
   phone?: string | null;
+  /** موقع الفرع: بدونه لا تُقبل بصمة الجوال من موظفيه */
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  /** نطاق بصمة الجوال حول الفرع، بالمتر */
+  punchRadiusMeters: number;
   warehousesCount: number;
   employeesCount: number;
   devicesCount: number;
@@ -25,5 +30,8 @@ export interface BranchPayload {
   code?: string;
   address?: string;
   phone?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  punchRadiusMeters?: number;
   isActive?: boolean;
 }

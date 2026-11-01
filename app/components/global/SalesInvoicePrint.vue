@@ -27,11 +27,12 @@
         <p v-if="invoice.test" class="invoice-print__test">
           إيصال تجريبي لاختبار الطابعة — ليس فاتورة
         </p>
+        <p v-if="invoice.quote" class="invoice-print__test">ليس فاتورة ولا إثبات بيع</p>
       </header>
 
       <section class="invoice-print__meta">
         <div v-if="invoice.number || !invoice.delivery?.orderNumber">
-          <span>رقم الفاتورة</span>
+          <span>{{ invoice.quote ? "رقم العرض" : "رقم الفاتورة" }}</span>
           <strong dir="ltr">{{ invoice.number }}</strong>
         </div>
         <div v-if="invoice.delivery?.orderNumber">
@@ -43,6 +44,10 @@
           <strong dir="ltr">
             {{ formatDateTime(invoice.issuedAt || invoice.invoiceDate) }}
           </strong>
+        </div>
+        <div v-if="invoice.quote">
+          <span>صالح حتى</span>
+          <strong dir="ltr">{{ formatDate(invoice.quote.validUntil) }}</strong>
         </div>
         <div v-if="invoice.tableName">
           <span>الطاولة</span>
@@ -165,7 +170,7 @@
             <span dir="ltr">{{ formatMoney(Math.abs(account.balance)) }}</span>
           </div>
         </template>
-        <template v-else>
+        <template v-else-if="!invoice.quote">
           <div v-if="!invoice.delivery && invoice.paidAmount > 0">
             <span>المدفوع</span>
             <span dir="ltr">{{ formatMoney(invoice.paidAmount) }}</span>
@@ -184,6 +189,7 @@
 
       <footer class="invoice-print__footer">
         <img v-if="qrImage" :src="qrImage" alt="رمز QR للفاتورة" />
+        <p v-if="invoice.quote?.note">{{ invoice.quote.note }}</p>
         <p v-if="settings?.invoiceFooter">{{ settings.invoiceFooter }}</p>
       </footer>
     </div>
@@ -235,7 +241,7 @@ const customerBalance = computed(() => Number(props.invoice?.customer?.balance) 
  */
 const account = computed(() => {
   const previous = props.invoice?.customer?.previousBalance;
-  if (previous == null) return null;
+  if (previous == null || props.invoice?.quote) return null;
   const total = Number(props.invoice?.total) || 0;
   const credit = Number(props.invoice?.remaining) || 0;
   if (previous === 0 && credit <= 0) return null;
@@ -258,8 +264,10 @@ const taxInvoice = computed(
     !!props.invoice?.qrCode,
 );
 const title = computed(() =>
-  // مسودة أوردر توصيل (لم يخرج بعد): ليست فاتورة
-  props.invoice && !props.invoice.number && props.invoice.delivery
+  props.invoice?.quote
+    ? "عرض سعر"
+    : // مسودة أوردر توصيل (لم يخرج بعد): ليست فاتورة
+      props.invoice && !props.invoice.number && props.invoice.delivery
     ? "أمر توصيل — ليس فاتورة"
     : taxInvoice.value && props.invoice
     ? SALES_INVOICE_TYPE_LABELS[props.invoice.invoiceType]
