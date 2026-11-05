@@ -9,6 +9,16 @@ import { useRuntimeConfig, useState } from "nuxt/app";
 /** طلب لم يصل للسيرفر أصلاً (النت مقطوع، أو السيرفر يُعاد تشغيله) */
 export class NetworkError extends Error {}
 
+/** السيرفر ردّ برفض (رسالته جاهزة للعرض) — بحالته، ليعرف الطابور هل يعيد */
+export class HttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 export const OFFLINE_MESSAGE =
   "انقطع الاتصال بالسيرفر — تحقّق من الإنترنت ثم أعد المحاولة";
 export const SERVER_BUSY_MESSAGE =

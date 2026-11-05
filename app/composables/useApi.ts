@@ -17,7 +17,11 @@ import {
   supportCookieOptions,
   type SupportTarget,
 } from "../utils/support";
+import { isCachedRead, isQueuedWrite } from "../offline/office-rules";
+import { useToast } from "./useToast";
+import { useOfficeStore } from "../stores/office";
 import {
+  HttpError,
   NetworkError,
   OFFLINE_MESSAGE,
   SERVER_BUSY_MESSAGE,
@@ -136,7 +140,10 @@ export const useApi = () => {
       if (GATEWAY_STATUSES.includes(response.status)) {
         throw new NetworkError(SERVER_BUSY_MESSAGE);
       }
-      throw new Error(extractMessage(data, `HTTP ${response.status}`));
+      throw new HttpError(
+        extractMessage(data, `HTTP ${response.status}`),
+        response.status,
+      );
     }
 
     if (isRecord(data) && "success" in data) {
@@ -307,31 +314,120 @@ export const useApi = () => {
   ): Promise<ApiResponse<T> | Blob> {
     return responseType === "blob"
       ? requestBlob(path, auth)
-      : requestJson<T>(path, { method: "GET", headers: getHeaders(auth) }, auth);
+      : readJson<T>(path, auth);
   }
 
-  const post = <T>(path: string, body?: unknown, auth = true) => {
-    const isFormData = body instanceof FormData;
-    return requestJson<T>(
-      path,
-      {
-        method: "POST",
-        headers: getHeaders(auth, isFormData),
-        body: isFormData ? body : jsonBody(body),
-      },
-      auth,
-    );
+  /**
+   * قراءة المكتب (المبيعات، المشتريات، المخزون، الأصناف): تُحفظ على الجهاز،
+   * وبلا اتصال تُعاد آخر نسخة — وفوقها ما في طابور الحفظ (stores/office).
+   */
+  const readJson = async <T>(path: string, auth: boolean) => {
+    const office =
+      import.meta.client && auth && isCachedRead(path) ? useOfficeStore() : null;
+    if (!office) {
+      return requestJson<T>(path, { method: "GET", headers: getHeaders(auth) }, auth);
+    }
+    try {
+      const res = await requestJson<T>(
+        office.resolve(path),
+        { method: "GET", headers: getHeaders(auth) },
+        auth,
+      );
+      void office.remember(path, res.data);
+      return { ...res, data: office.view(path, res.data) as T };
+    } catch (error) {
+      if (!(error instanceof NetworkError)) throw error;
+      const hit = await office.recall(path);
+      if (!hit) throw error;
+      return {
+        success: true,
+        message: "offline",
+        statusCode: 200,
+        data: office.view(path, hit.body) as T,
+      } satisfies ApiResponse<T>;
+    }
   };
 
+  /**
+   * حفظ في المكتب: يُرسل بمفتاح عملية (لا يتكرر لو أُعيد)، وبلا اتصال أو خلف
+   * عملية تنتظر يُحفظ في الطابور ويعود للصفحة بنسخة "بانتظار الرفع".
+   */
+  const writeJson = async <T>(
+    method: "POST" | "PATCH" | "DELETE",
+    path: string,
+    body: unknown,
+    auth: boolean,
+  ): Promise<ApiResponse<T>> => {
+    const office =
+      import.meta.client && auth && isQueuedWrite(path) && !(body instanceof FormData)
+        ? useOfficeStore()
+        : null;
+    const plain = (headers: Record<string, string> = {}) =>
+      requestJson<T>(
+        path,
+        {
+          method,
+          headers: { ...getHeaders(auth, body instanceof FormData), ...headers },
+          body:
+            method === "DELETE"
+              ? undefined
+              : body instanceof FormData
+                ? body
+                : jsonBody(body),
+        },
+        auth,
+      );
+    if (!office) return plain();
+
+    const op = office.prepare(method, path, body);
+    if (!office.hasWaiting()) {
+      try {
+        return await requestJson<T>(
+          office.resolve(path),
+          {
+            method,
+            headers: { ...getHeaders(auth), "Idempotency-Key": op.id },
+            body: method === "DELETE" ? undefined : jsonBody(office.resolve(body)),
+          },
+          auth,
+        );
+      } catch (error) {
+        if (!(error instanceof NetworkError)) throw error;
+      }
+    }
+    const data = (await office.enqueue(op)) as T;
+    // الصفحة تقول "تم الحفظ"؛ هذا يوضح أنه على الجهاز حتى يعود الاتصال
+    useToast().info("حُفظ على هذا الجهاز — يُرفع للسيرفر حين يعود الاتصال");
+    return { success: true, message: "queued", statusCode: 202, data };
+  };
+
+  /** للطابور: يرسل عملية محفوظة كما هي بمفتاحها ويعيد ما في data */
+  const sendQueued = async (request: {
+    method: "POST" | "PATCH" | "DELETE";
+    path: string;
+    body: unknown;
+    key: string;
+  }) =>
+    (
+      await requestJson<unknown>(
+        request.path,
+        {
+          method: request.method,
+          headers: { ...getHeaders(true), "Idempotency-Key": request.key },
+          body: request.method === "DELETE" ? undefined : jsonBody(request.body),
+        },
+        true,
+      )
+    ).data;
+
+  const post = <T>(path: string, body?: unknown, auth = true) =>
+    writeJson<T>("POST", path, body, auth);
+
   const patch = <T>(path: string, body?: unknown, auth = true) =>
-    requestJson<T>(
-      path,
-      { method: "PATCH", headers: getHeaders(auth), body: jsonBody(body) },
-      auth,
-    );
+    writeJson<T>("PATCH", path, body, auth);
 
   const del = <T>(path: string, auth = true) =>
-    requestJson<T>(path, { method: "DELETE", headers: getHeaders(auth) }, auth);
+    writeJson<T>("DELETE", path, undefined, auth);
 
   /**
    * ✅ المسار الموحّد لتنزيل الملفات (تقارير Excel/PDF): جلب + تحقق + حفظ.
@@ -378,6 +474,7 @@ export const useApi = () => {
     del,
     download,
     openStream,
+    sendQueued,
     refreshSession: refreshTokens,
   };
 };

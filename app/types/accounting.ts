@@ -1,4 +1,5 @@
 // types/accounting.ts — المحاسبة (مرآة src/modules/accounting في الباك إند)
+import type { FileRef } from "./index";
 
 export type AccountType = "asset" | "liability" | "equity" | "revenue" | "expense";
 
@@ -311,6 +312,9 @@ export interface ExpenseVoucher {
   cancelDate: string | null;
   cancelReason: string | null;
   cancelJournalEntryId: string | null;
+  /** صورة الإيصال (تفاصيل السند فقط تحمل رابطها) */
+  receiptFileId: string | null;
+  receipt?: FileRef | null;
   createdAt: string;
 }
 
@@ -348,6 +352,7 @@ export interface ExpenseVoucherPayload {
   payeeTaxNumber?: string | null;
   reference?: string | null;
   description: string;
+  receiptFileId?: string | null;
   lines: ExpenseLinePayload[];
 }
 

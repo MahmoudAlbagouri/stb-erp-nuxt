@@ -117,6 +117,12 @@ export const usePayrollStore = defineStore("payroll", () => {
     return updated;
   };
 
+  /** حذف مسودة لم تُصرف، ليُعاد إعداد شهرها */
+  const removeDraft = async (id: string) => {
+    await api.del(`/payroll/${id}`);
+    payrolls.value = payrolls.value.filter((p) => p.id !== id);
+  };
+
   const exportData = async (
     type: "excel" | "pdf",
     month: number,
@@ -155,6 +161,7 @@ export const usePayrollStore = defineStore("payroll", () => {
     fetchAll,
     generate,
     disburse, // ✅ تصدير الدالة الجديدة
+    removeDraft,
     exportData,
     fetchById,
     reset,

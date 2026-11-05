@@ -14,7 +14,8 @@
       <span class="connection-banner__text">
         <strong>لا يوجد اتصال بالسيرفر</strong>
         <span v-if="since" class="connection-banner__since">منذ {{ since }}</span>
-        — ما تراه آخر ما حُمِّل، وما تكتبه يبقى في مكانه. الحفظ ينتظر عودة الاتصال.
+        — ما تراه آخر نسخة محفوظة. في المبيعات والمشتريات والمخزون يُحفظ ما
+        تكتبه على هذا الجهاز ويُرفع حين يعود الاتصال، وفي غيرها ينتظر الحفظ عودته.
       </span>
       <button
         class="btn btn--sm connection-banner__retry"
@@ -33,6 +34,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RefreshCw, WifiOff } from "lucide-vue-next";
 import { PROBE_INTERVAL_MS, useConnection } from "@/composables/useConnection";
 import { useToast } from "@/composables/useToast";
+import { useOfficeStore } from "@/stores/office";
 
 const connection = useConnection();
 const toast = useToast();
@@ -69,6 +71,8 @@ watch(
       }, PROBE_INTERVAL_MS);
     } else if (wasOffline) {
       toast.success("عاد الاتصال بالسيرفر");
+      // ما حُفظ في المكتب أثناء الانقطاع يُرفع الآن
+      void useOfficeStore().sync();
     }
   },
   // انقطع قبل أن يُرسم الشريط (أول طلب في الصفحة): يبدأ الفحص فوراً

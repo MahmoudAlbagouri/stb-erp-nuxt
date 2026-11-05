@@ -44,6 +44,16 @@ export default defineNuxtConfig({
     "/driver": { ssr: false },
     // شاشة العدّ: جرد بالباركود داخل المخزن، يعمل بلا إنترنت (IndexedDB)
     "/stocktake/**": { ssr: false },
+    // المكتب أونلاين وأوفلاين (stores/office): هيكل واحد يخزّنه الـ service
+    // worker لكل صفحاته، وبياناته من آخر نسخة محفوظة وطابور الحفظ
+    "/dashboard/sales": { ssr: false },
+    "/dashboard/sales/**": { ssr: false },
+    "/dashboard/purchasing": { ssr: false },
+    "/dashboard/purchasing/**": { ssr: false },
+    "/dashboard/inventory": { ssr: false },
+    "/dashboard/inventory/**": { ssr: false },
+    "/dashboard/products": { ssr: false },
+    "/dashboard/products/**": { ssr: false },
   },
 
   // بقية الإعدادات (head, runtimeConfig) صحيحة ولا تحتاج تعديل

@@ -75,6 +75,7 @@
                   <td><span class="doc-num">{{ v.date }}</span></td>
                   <td>
                     {{ v.payee }}
+                    <Paperclip v-if="v.receiptFileId" :size="12" aria-label="مع إيصال" />
                     <span v-if="v.reference" class="doc-cell__sub">{{ v.reference }}</span>
                   </td>
                   <td>{{ v.description }}</td>
@@ -154,6 +155,14 @@
                   </div>
                 </div>
                 <p class="voucher__description">{{ viewing.description }}</p>
+                <button
+                  v-if="viewing.receipt"
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  @click="showReceipt = true"
+                >
+                  <Paperclip :size="14" /> عرض الإيصال
+                </button>
 
                 <div class="table-responsive">
                   <table class="data-table">
@@ -306,6 +315,18 @@
                     required
                   />
                 </div>
+                <div class="form-group voucher__wide">
+                  <label>صورة الإيصال</label>
+                  <StbUploader
+                    v-model="form.receipt"
+                    endpoint="/files/expense"
+                    field-name="files"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    :max-size="5 * 1024 * 1024"
+                    idle-title="ارفع صورة الإيصال أو فاتورة المستفيد"
+                    hint="JPG / PNG / PDF — بحد أقصى 5 MB"
+                  />
+                </div>
               </div>
 
               <div class="doc-note">
@@ -378,16 +399,25 @@
         </div>
       </Transition>
     </Teleport>
+
+    <FileViewerModal
+      v-model="showReceipt"
+      :title="viewing ? `إيصال ${viewing.number}` : 'الإيصال'"
+      :files="viewing?.receipt ? [viewing.receipt] : []"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { Ban, BookOpen, Info, Plus, Printer, Receipt, Trash2, X } from "lucide-vue-next";
+import { Ban, BookOpen, Info, Paperclip, Plus, Printer, Receipt, Trash2, X } from "lucide-vue-next";
+import StbUploader from "@/components/global/StbUploader.vue";
+import FileViewerModal from "@/components/global/FileViewerModal.vue";
 import { useAccountingStore } from "@/stores/accounting";
 import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
 import type { ExpenseVoucherStatus, ExpenseVoucherView } from "@/types/accounting";
+import type { FileRef } from "@/types";
 
 definePageMeta({ middleware: "auth" });
 
@@ -524,8 +554,11 @@ const form = reactive({
   payeeTaxNumber: "",
   reference: "",
   description: "",
+  receipt: null as FileRef | null,
   lines: [] as FormLine[],
 });
+
+const showReceipt = ref(false);
 
 const draft = useFormDraft("expense-voucher", {
   open: showForm,
@@ -566,6 +599,7 @@ const openCreate = async () => {
     payeeTaxNumber: "",
     reference: "",
     description: "",
+    receipt: null,
     lines: [blankLine()],
   });
   showForm.value = true;
@@ -586,6 +620,7 @@ const save = async () => {
       payeeTaxNumber: form.payeeTaxNumber || null,
       reference: form.reference || null,
       description: form.description,
+      receiptFileId: form.receipt?.id ?? null,
       lines: form.lines
         .filter((l) => l.accountId && Number(l.amount) > 0)
         .map((l) => ({

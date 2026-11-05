@@ -31,12 +31,24 @@
             v-can="'generate_payroll'"
             v-if="!payroll.isDisbursed"
             class="btn btn--success"
-            @click="handleDisburse"
-            :disabled="disbursing"
+            @click="showDisburseConfirm = true"
+            :disabled="disbursing || deleting"
           >
             <span v-if="disbursing" class="spinner spinner--sm" />
             <CheckCircle v-else :size="16" />
             {{ disbursing ? "جاري التأكيد..." : "تأكيد الصرف" }}
+          </button>
+
+          <!-- المسودة تُحذف ليُعاد إعداد الشهر بعد تصحيحه؛ المصروف لا -->
+          <button
+            v-can="'delete_payroll'"
+            v-if="!payroll.isDisbursed"
+            class="btn btn--danger-outline"
+            :disabled="disbursing"
+            @click="showDeleteConfirm = true"
+          >
+            <Trash2 :size="16" />
+            حذف المسودة
           </button>
 
           <!-- ✅ معلومات الصرف إذا تم بالفعل -->
@@ -249,6 +261,24 @@
         العودة للقائمة
       </button>
     </div>
+
+    <ConfirmDialog
+      v-model="showDisburseConfirm"
+      title="تأكيد صرف المسير"
+      :message="disburseMessage"
+      confirm-text="تأكيد الصرف"
+      :loading="disbursing"
+      @confirm="handleDisburse"
+    />
+
+    <ConfirmDialog
+      v-model="showDeleteConfirm"
+      title="حذف مسودة المسير"
+      :message="payroll ? `تُحذف مسودة ${getMonthName(payroll.month)} ${payroll.year} بكل بنودها، ويمكن إعداد الشهر من جديد بعدها.` : ''"
+      confirm-text="حذف"
+      :loading="deleting"
+      @confirm="handleDeleteDraft"
+    />
   </div>
 </template>
 
@@ -268,7 +298,9 @@ import {
   MinusCircle,
   Search,
   CheckCircle,
+  Trash2,
 } from "lucide-vue-next";
+import ConfirmDialog from "@/components/global/ConfirmDialog.vue";
 
 definePageMeta({ middleware: "auth" });
 
@@ -356,6 +388,37 @@ const handleDisburse = async () => {
     toast.error(getErrorMessage(e, "فشل في تأكيد الصرف"));
   } finally {
     disbursing.value = false;
+    showDisburseConfirm.value = false;
+  }
+};
+
+// الصرف لا رجوع فيه: نافذة تعرض ما سيُصرف قبل التنفيذ (كتطبيق الجوال)
+const showDisburseConfirm = ref(false);
+const disburseMessage = computed(() => {
+  const p = payroll.value;
+  if (!p) return "";
+  return (
+    `صرف رواتب ${getMonthName(p.month)} ${p.year}: ${p.items?.length ?? 0} موظف ` +
+    `بصافي ${formatCurrency(p.totalNetSalary)}. تُرقَّم أقساط القروض والخصومات ` +
+    `ويُقفل المسير، ولا رجوع بعد التأكيد.`
+  );
+});
+
+const showDeleteConfirm = ref(false);
+const deleting = ref(false);
+
+const handleDeleteDraft = async () => {
+  if (!payroll.value) return;
+  deleting.value = true;
+  try {
+    await store.removeDraft(payroll.value.id);
+    toast.success("تم حذف المسودة، ويمكن إعداد الشهر من جديد");
+    await navigateTo("/dashboard/payroll");
+  } catch (e) {
+    toast.error(getErrorMessage(e, "تعذر حذف المسودة"));
+  } finally {
+    deleting.value = false;
+    showDeleteConfirm.value = false;
   }
 };
 

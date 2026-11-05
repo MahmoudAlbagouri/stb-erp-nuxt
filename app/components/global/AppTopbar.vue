@@ -18,6 +18,7 @@
     <div class="topbar-actions">
       <!-- ✅ إضافة جرس الإشعارات هنا -->
       <ThemeToggle />
+      <OfficeMenu />
       <NotificationBell />
 
       <div class="topbar-badge">

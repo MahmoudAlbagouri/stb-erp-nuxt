@@ -1,7 +1,9 @@
-// sw.js — يجعل الشاشات المستقلة تفتح وتعمل بلا إنترنت:
+// sw.js — يجعل هذه الشاشات تفتح وتعمل بلا إنترنت:
 //   /pos         شاشة الكاشير
 //   /driver      شاشة الطيار على جواله
 //   /stocktake/* شاشة العدّ (جرد بالباركود داخل المخزن)
+//   صفحات المكتب: /dashboard/{sales,purchasing,inventory,products}/*
+//                (بياناتها وطابور حفظها في IndexedDB: stores/office)
 //
 // يخزّن "هيكل" كل شاشة (صفحتها وملفات الواجهة والخطوط) عند أول زيارة وهي
 // متصلة، فيمكن بعدها إعادة تحميل الصفحة أو إعادة تشغيل الجهاز بلا شبكة.
@@ -14,6 +16,18 @@ const CACHE = "stb-pos-shell-v1";
 
 /** الشاشات التي تفتح بلا إنترنت: مسارها هو مفتاح هيكلها في المخزن */
 const SHELLS = ["/pos", "/driver", "/stocktake"];
+
+/**
+ * صفحات المكتب تُرسم في المتصفح (ssr: false في nuxt.config)، فهيكلها واحد:
+ * يُخزَّن مرة بمفتاح OFFICE_SHELL ويفتح أياً منها بلا إنترنت
+ */
+const OFFICE = [
+  "/dashboard/sales",
+  "/dashboard/purchasing",
+  "/dashboard/inventory",
+  "/dashboard/products",
+];
+const OFFICE_SHELL = "/__office-shell";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -33,9 +47,13 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-/** هيكل الشاشة التي يقع فيها المسار (أو undefined لصفحات لوحة التحكم) */
+const under = (pathname, root) =>
+  pathname === root || pathname.startsWith(root + "/");
+
+/** هيكل الشاشة التي يقع فيها المسار (أو undefined لباقي لوحة التحكم) */
 const shellOf = (pathname) =>
-  SHELLS.find((shell) => pathname === shell || pathname.startsWith(shell + "/"));
+  SHELLS.find((shell) => under(pathname, shell)) ??
+  (OFFICE.some((root) => under(pathname, root)) ? OFFICE_SHELL : undefined);
 
 // ملفات الواجهة تحمل بصمة في اسمها: محتواها لا يتغير، فالمخزَّن يكفي دائماً
 const isStaticAsset = (url) =>
@@ -88,7 +106,7 @@ async function warm(path, urls) {
   const shell = shellOf(path || "/pos");
   if (shell && !(await cache.match(shell))) {
     try {
-      const page = await fetch(path || shell);
+      const page = await fetch(path || shell, { credentials: "include" });
       if (page.ok) await cache.put(shell, page);
     } catch {
       // انقطع النت قبل التسخين: يُخزَّن الهيكل في الزيارة القادمة

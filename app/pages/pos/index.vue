@@ -161,6 +161,8 @@
         >
           <Settings :size="15" />
         </button>
+        <!-- المكتب: المبيعات والعملاء والموردون والمخزون، بلا إنترنت أيضاً -->
+        <OfficeMenu compact />
         <ThemeToggle />
         <NuxtLink
           to="/dashboard"
