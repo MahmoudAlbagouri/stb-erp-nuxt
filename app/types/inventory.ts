@@ -70,6 +70,8 @@ export interface StockLookupRow {
   allowsFractions: boolean;
   quantity: number;
   avgCost: number;
+  /** يتتبع دفعاته */
+  trackLots?: boolean;
 }
 
 // ─── الحركات ─────────────────────────────────────────────────────────────────
@@ -82,7 +84,24 @@ export type StockMovementType =
   | "transfer_out"
   | "transfer_in"
   | "adjustment"
-  | "stocktake";
+  | "stocktake"
+  | "production_issue"
+  | "production_return"
+  | "production_output"
+  | "consumption"
+  | "lot_assignment";
+
+/** سبب التسوية اليدوية (مرآة StockAdjustmentReason في الباك إند) */
+export type StockAdjustmentReason =
+  | "damage"
+  | "expiry"
+  | "waste"
+  | "theft"
+  | "internal_use"
+  | "sample"
+  | "found"
+  | "correction"
+  | "other";
 
 export interface StockMovement {
   id: string;
@@ -98,6 +117,8 @@ export interface StockMovement {
   referenceType?: string | null;
   referenceId?: string | null;
   note?: string | null;
+  /** سبب التسوية — للتسويات اليدوية فقط */
+  reason?: StockAdjustmentReason | null;
   occurredAt: string;
 }
 
@@ -105,6 +126,7 @@ export interface MovementFilters {
   warehouseId?: string;
   productId?: string;
   type?: StockMovementType | "";
+  reason?: StockAdjustmentReason | "";
   from?: string;
   to?: string;
   page?: number;
@@ -114,8 +136,17 @@ export interface MovementFilters {
 export interface AdjustmentPayload {
   warehouseId: string;
   type: "opening" | "adjustment";
+  /** للتسوية فقط */
+  reason?: StockAdjustmentReason;
   note?: string;
-  lines: { productId: string; quantity: number; unitCost?: number }[];
+  lines: {
+    productId: string;
+    quantity: number;
+    unitCost?: number;
+    /** دفعة الكمية الداخلة (لصنف يتتبع دفعاته) */
+    lotNumber?: string;
+    expiryDate?: string;
+  }[];
 }
 
 // ─── التحويلات ───────────────────────────────────────────────────────────────
@@ -126,6 +157,7 @@ export interface LineProduct {
   id: string;
   name: string;
   sku: string;
+  trackLots?: boolean;
   baseUnitId?: string;
   baseUnit?: { name: string; allowsFractions: boolean } | null;
 }

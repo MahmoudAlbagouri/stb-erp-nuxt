@@ -107,6 +107,7 @@
           <tr v-for="line in invoice.lines" :key="line.id">
             <td>
               {{ line.productName }}
+              <small v-if="line.modifiers?.length"> + {{ line.modifiers.map((m) => m.name).join("، ") }}</small>
               <small v-if="line.discount > 0">
                 (خصم {{ formatMoney(line.discount) }})
               </small>

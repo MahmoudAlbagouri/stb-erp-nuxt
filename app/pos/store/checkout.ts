@@ -186,6 +186,22 @@ export const createCheckout = (
           // السيرفر يُبلّغ عن سعر تحت الحد ما لم يصله اسم من وافق عليه
           approvedBy: approver ?? fromQuote?.approvedBy ?? undefined,
           quoteUuid: fromQuote?.uuid,
+          // سياق الطلب (المطاعم): النوع والطاولة والضيوف ومتى فُتح — لدوران الطاولات
+          ...(state.restaurant.value
+            ? {
+                order: {
+                  orderType: delivery ? "delivery" : state.order.value.type,
+                  ...(state.order.value.type === "dine_in" && state.order.value.tableId
+                    ? {
+                        tableId: state.order.value.tableId,
+                        tableName: state.order.value.tableName ?? undefined,
+                        guestCount: state.order.value.guestCount ?? undefined,
+                      }
+                    : {}),
+                  openedAt: state.order.value.openedAt,
+                },
+              }
+            : {}),
           // أسماء الجهة والمنطقة للإيصال وحده
           ...(delivery
             ? {
@@ -193,6 +209,9 @@ export const createCheckout = (
                   recipientName: delivery.recipientName,
                   phone: delivery.phone,
                   address: delivery.address,
+                  ...(delivery.latitude != null && delivery.longitude != null
+                    ? { latitude: delivery.latitude, longitude: delivery.longitude }
+                    : {}),
                   zoneId: delivery.zoneId ?? undefined,
                   deliveryFee: delivery.deliveryFee,
                   agentId: delivery.agentId ?? undefined,

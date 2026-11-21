@@ -24,6 +24,16 @@
             {{ b.name }}
           </option>
         </select>
+        <select
+          v-if="stations.length"
+          v-model="stationId"
+          class="form-select kds__branch"
+          @change="onStationChange"
+        >
+          <option value="">كل المطبخ</option>
+          <option v-for="s in stations" :key="s.id" :value="s.id">{{ s.name }}</option>
+          <option value="general">المطبخ العام (بلا محطة)</option>
+        </select>
         <span class="kds__status" :class="online ? 'is-on' : 'is-off'">
           <Wifi v-if="online" :size="14" />
           <WifiOff v-else :size="14" />
@@ -91,6 +101,7 @@
                   <template v-if="line.quantity < 0">إلغاء: </template>{{ line.name }}
                   <small v-if="line.unitName" class="kds__muted"> ({{ line.unitName }})</small>
                   <em v-if="line.note">{{ line.note }}</em>
+                  <em v-for="m in line.modifiers ?? []" :key="m" class="kds__modifier">+ {{ m }}</em>
                 </span>
               </li>
             </ul>
@@ -153,6 +164,7 @@ import {
   WifiOff,
 } from "lucide-vue-next";
 import { NetworkError } from "@/composables/useConnection";
+import { useApi } from "@/composables/useApi";
 import { useToast } from "@/composables/useToast";
 import type { KitchenOrderRecord, KitchenOrderStatus } from "@/pos/types";
 import { useBranchesStore } from "@/stores/branches";
@@ -183,6 +195,14 @@ const loaded = ref(false);
 const online = ref(true);
 const denied = ref("");
 const branchId = ref("");
+/** شاشة محطة (من الرابط ?stationId= أو الاختيار) */
+const stationId = ref(typeof useRoute().query.stationId === "string" ? String(useRoute().query.stationId) : "");
+const stations = ref<{ id: string; name: string }[]>([]);
+const onStationChange = () => {
+  known.clear();
+  loaded.value = false;
+  void load();
+};
 const busy = ref(new Set<string>());
 /** طلبات وصلت للتو: تومض لحظات */
 const fresh = ref(new Set<string>());
@@ -220,7 +240,10 @@ const urgency = (order: KitchenOrderRecord) => {
 
 const load = async () => {
   try {
-    const next = await store.fetchKitchenBoard(branchId.value || undefined);
+    const next = await store.fetchKitchenBoard(
+      branchId.value || undefined,
+      stationId.value || undefined,
+    );
     const arrived = next.filter((o) => !known.has(o.id));
     next.forEach((o) => known.add(o.id));
     // أول تحميل ليس "وصولاً": لا صوت لما كان على الشاشة قبل فتحها
@@ -251,7 +274,15 @@ const load = async () => {
 const move = async (order: KitchenOrderRecord, status: KitchenOrderStatus) => {
   busy.value.add(order.id);
   try {
-    const updated = await store.setKitchenStatus(order.id, status);
+    // شاشة محطة تنقل نصيبها (والتسليم للبون كله من الشاشة العامة)
+    const station = stationId.value && status !== "served" && status !== "cancelled"
+      ? stationId.value
+      : undefined;
+    const updated = await store.setKitchenStatus(order.id, status, station);
+    if (station) {
+      void load();
+      return;
+    }
     orders.value =
       status === "served" || status === "cancelled"
         ? orders.value.filter((o) => o.id !== order.id)
@@ -289,6 +320,10 @@ onMounted(async () => {
     // بالصوت
   }
   branches.fetchOptions().catch(() => {});
+  useApi()
+    .get<{ id: string; name: string; isActive: boolean }[]>("/restaurant/stations")
+    .then((res) => (stations.value = res.data.filter((s) => s.isActive)))
+    .catch(() => {});
   await load();
   poll = setInterval(() => void load(), POLL_MS);
   tick = setInterval(() => (now.value = Date.now()), 1_000);
@@ -491,6 +526,13 @@ onBeforeUnmount(() => {
   gap: $space-2;
   font-size: $font-size-sm;
 }
+.kds__modifier {
+  display: block;
+  font-style: normal;
+  font-weight: 600;
+  color: $stb-warning;
+}
+
 .kds__muted {
   color: $stb-text-muted;
 }

@@ -124,6 +124,8 @@ export interface SalesInvoiceLine {
   productName: string;
   sku: string;
   isStocked: boolean;
+  /** الإضافات المختارة (المطاعم) */
+  modifiers?: { optionId: string | null; name: string; priceDelta: number; quantity: number }[] | null;
   unitId: string;
   unitName: string;
   factor: number;
@@ -288,6 +290,8 @@ export interface PrintableInvoice {
     unitPrice: number;
     discount: number;
     total: number;
+    /** الإضافات المختارة (المطاعم) */
+    modifiers?: { name: string }[] | null;
   }[];
 }
 

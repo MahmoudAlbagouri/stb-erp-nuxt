@@ -22,6 +22,8 @@ export interface AccessRule {
   permissions?: readonly string[];
   /** ميزة الخطة المطلوبة */
   feature?: FeatureKey;
+  /** تكفي أي ميزة منها (الوصفات: للمطاعم أو للمصانع) */
+  anyFeatures?: readonly FeatureKey[];
   /** لمالك النظام فقط */
   systemOnly?: boolean;
   /** لحسابات الشركات فقط: مالك النظام بلا شركة فلا بيانات له هنا */
@@ -94,6 +96,7 @@ export const useAccess = () => {
     if (rule.tenantOnly && auth.isSystemAdmin) return "denied";
     if (rule.permissions && !canAny(rule.permissions)) return "denied";
     if (rule.feature && !hasFeature(rule.feature)) return "locked";
+    if (rule.anyFeatures && !rule.anyFeatures.some(hasFeature)) return "locked";
     return "allowed";
   };
 

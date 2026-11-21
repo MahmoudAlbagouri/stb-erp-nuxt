@@ -9,6 +9,7 @@ import type {
   CartLine,
   HeldCart,
   PosCustomer,
+  LineModifier,
   PosProduct,
   StoredCart,
 } from "@/pos/types";
@@ -309,7 +310,8 @@ export const createCart = (
             line.product.id === product.id &&
             line.unitId === (unit?.unitId ?? null) &&
             !line.note?.trim() &&
-            !line.quoted,
+            !line.quoted &&
+            !line.modifiers?.length,
         );
     if (existing) {
       existing.quantity = roundQuantity((Number(existing.quantity) || 0) + quantity);
@@ -320,6 +322,26 @@ export const createCart = (
     cart.value.push(line);
     selectedKey.value = line.key;
     // من مصفوفة السلة: الكائن التفاعلي الذي يراه القالب
+    return cart.value.at(-1)!;
+  };
+
+  /**
+   * صنف بإضافات مختارة (جبنة زيادة، مشروب الوجبة): سطر مستقل دائماً، وسعر
+   * الوحدة = سعر الصنف + أسعار الإضافات. أثرها في المخزون يحسبه السيرفر.
+   */
+  const addWithModifiers = (
+    product: PosProduct,
+    modifiers: LineModifier[],
+    quantity = 1,
+  ): CartLine => {
+    if (!modifiers.length) return addProduct(product, null, quantity);
+    const line = buildLine(product, null, quantity);
+    line.modifiers = modifiers;
+    line.unitPrice = roundAmount(
+      line.unitPrice + modifiers.reduce((sum, m) => sum + m.priceDelta * m.quantity, 0),
+    );
+    cart.value.push(line);
+    selectedKey.value = line.key;
     return cart.value.at(-1)!;
   };
 
@@ -594,6 +616,7 @@ export const createCart = (
     setLinePrice,
     resetLinePrice,
     addProduct,
+    addWithModifiers,
     scan,
     removeLine,
     clearCart,

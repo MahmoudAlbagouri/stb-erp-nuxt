@@ -72,6 +72,9 @@ export interface DeliveryOrder {
   recipientName: string;
   phone: string;
   address: string;
+  /** موقع المستلم على الخريطة (اختياري) */
+  latitude?: number | null;
+  longitude?: number | null;
   zoneId: string | null;
   zone: DeliveryZone | null;
   agentId: string | null;
@@ -121,6 +124,8 @@ export interface DeliveryOrderPayload {
   recipientName: string;
   phone: string;
   address: string;
+  latitude?: number | null;
+  longitude?: number | null;
   zoneId?: string | null;
   deliveryFee?: number;
   paymentMode: DeliveryPaymentMode;

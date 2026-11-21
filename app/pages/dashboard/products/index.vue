@@ -52,6 +52,7 @@
         <option value="">كل الأنواع</option>
         <option value="stocked">بضاعة مخزنية</option>
         <option value="service">خدمة</option>
+        <option value="composite">مركّب</option>
       </select>
       <select
         v-model="filters.isActive"
@@ -116,9 +117,10 @@
                   <div class="product-cell">
                     <span class="product-cell__name">{{ p.name }}</span>
                     <span class="product-cell__meta">
-                      {{ p.type === "service" ? "خدمة" : p.baseUnit?.name }}
+                      {{ p.type === "service" ? "خدمة" : p.type === "composite" ? "مركّب" : p.baseUnit?.name }}
                       <template v-if="p.isWeighted"> · بالوزن</template>
                       <template v-if="p.openPrice"> · سعر مفتوح</template>
+                      <template v-if="p.trackLots"> · بالدفعات</template>
                     </span>
                   </div>
                 </td>
@@ -259,8 +261,30 @@
                     <select v-model="form.type" class="form-select">
                       <option value="stocked">بضاعة مخزنية</option>
                       <option value="service">خدمة (بدون مخزون)</option>
+                      <option value="composite">صنف مركّب / طبق (يُخصم من وصفته)</option>
                     </select>
+                    <small v-if="form.type === 'composite'" class="doc-hint">
+                      لا رصيد له: بيعه يخصم مكوّنات وصفته (من صفحة الوصفات)
+                    </small>
                   </div>
+                  <template v-if="form.type === 'stocked'">
+                    <div class="form-group">
+                      <label>المصدر عند النقص</label>
+                      <select v-model="form.procurement" class="form-select">
+                        <option value="buy">يُشترى من مورد</option>
+                        <option value="make">يُصنَّع (أمر إنتاج)</option>
+                      </select>
+                    </div>
+                    <div v-feature="'lot_tracking'" class="form-group">
+                      <label>مدة الصلاحية (يوم)</label>
+                      <StbNumberInput
+                        v-model.number="form.shelfLifeDays"
+                        class="form-input"
+                        min="1"
+                        placeholder="بلا مدة"
+                      />
+                    </div>
+                  </template>
                   <div class="form-group">
                     <label>التصنيف</label>
                     <select v-model="form.categoryId" class="form-select">
@@ -341,6 +365,15 @@
                   >
                     <input v-model="form.openPrice" type="checkbox" />
                     <span>سعر مفتوح (يُكتب عند البيع)</span>
+                  </label>
+                  <label
+                    v-if="form.type === 'stocked'"
+                    v-feature="'lot_tracking'"
+                    class="toggle"
+                    title="كل دخول بدفعة وتاريخ انتهاء، وكل خروج من الأقرب انتهاءً"
+                  >
+                    <input v-model="form.trackLots" type="checkbox" />
+                    <span>تتبع الدفعات وتواريخ الانتهاء</span>
                   </label>
                   <label class="toggle">
                     <input v-model="form.isActive" type="checkbox" />
@@ -617,6 +650,9 @@ const emptyForm = () => ({
   allowDiscount: true,
   isWeighted: false,
   openPrice: false,
+  trackLots: false,
+  shelfLifeDays: "" as number | "",
+  procurement: "buy" as "buy" | "make",
   isActive: true,
   units: [] as UnitRow[],
   barcodes: [] as BarcodeRow[],
@@ -694,6 +730,9 @@ const openEdit = async (product: Product) => {
       allowDiscount: full.allowDiscount,
       isWeighted: full.isWeighted,
       openPrice: full.openPrice ?? false,
+      trackLots: full.trackLots ?? false,
+      shelfLifeDays: full.shelfLifeDays ?? "",
+      procurement: full.procurement ?? "buy",
       isActive: full.isActive,
       units: (full.units ?? []).map((u) => ({
         unitId: u.unitId,
@@ -730,6 +769,9 @@ const buildPayload = (): ProductPayload => ({
   allowDiscount: form.allowDiscount,
   isWeighted: form.isWeighted,
   openPrice: form.openPrice,
+  trackLots: form.type === "stocked" ? form.trackLots : false,
+  shelfLifeDays: form.shelfLifeDays === "" ? null : Number(form.shelfLifeDays),
+  procurement: form.procurement,
   isActive: form.isActive,
   units: form.units.map((u) => ({
     unitId: u.unitId,

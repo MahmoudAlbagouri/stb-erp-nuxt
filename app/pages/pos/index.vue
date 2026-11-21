@@ -530,6 +530,22 @@
           </span>
           <span class="pos-cart__order-change">تغيير</span>
         </button>
+        <label
+          v-if="pos.features.tables && pos.order.type === 'dine_in' && !pos.quoteMode"
+          class="pos-cart__guests"
+          title="عدد الضيوف على الطاولة"
+        >
+          <Users :size="14" />
+          <input
+            :value="pos.order.guestCount ?? ''"
+            type="number"
+            min="1"
+            max="99"
+            class="form-input"
+            placeholder="ضيوف"
+            @change="setGuests(($event.target as HTMLInputElement).value)"
+          />
+        </label>
         <div v-if="pos.features.customers" class="pos-cart__customer">
           <select v-model="pos.customerId" class="form-select">
             <option value="">عميل نقدي</option>
@@ -585,6 +601,7 @@
                   غير متوفر حالياً
                 </span>
                 <span v-if="line.note" class="pos-line__note">{{ line.note }}</span>
+                <span v-if="line.modifiers?.length" class="pos-line__note">+ {{ line.modifiers.map((m) => m.name).join("، ") }}</span>
               </span>
               <button
                 v-if="pos.features.kitchen"
@@ -1280,6 +1297,13 @@
     <PosPriceModal :line="priceLine" @close="closePrice" @submit="submitPrice" />
     <PosApprovalModal ref="approval" />
     <PosShiftReport ref="shiftReport" :logo="pos.tenant?.logo ?? null" />
+    <PosModifiersModal
+      :product="modifierTarget?.product ?? null"
+      :groups="modifierTarget?.groups ?? []"
+      :base-price="modifierTarget ? unitPriceOf(modifierTarget.product, null) : 0"
+      @close="modifierTarget = null"
+      @confirm="confirmModifiers"
+    />
     <PosTablesModal
       v-model="showTables"
       @open="openTable"
@@ -1351,6 +1375,7 @@ import {
   ScanBarcode,
   Settings,
   ShoppingBag,
+  Users,
   Store,
   Trash2,
   Truck,
@@ -1382,6 +1407,8 @@ import type {
   OutboxType,
   PosDevice,
   PosOptions,
+  LineModifier,
+  PosModifierGroup,
   PosProduct,
   SaleDelivery,
   SalePayment,
@@ -1731,12 +1758,49 @@ const onSearchEnter = () => {
   );
 };
 
+/** عدد ضيوف الطاولة: يُرفع مع الفاتورة (إيراد الضيف، دوران الطاولات) */
+const setGuests = (value: string) => {
+  const guests = Math.round(Number(value));
+  pos.order.guestCount = Number.isFinite(guests) && guests > 0 ? guests : null;
+};
+
+// ─── الإضافات (المطاعم) ──────────────────────────────────────────────────────
+const modifierGroupsOf = (product: PosProduct): PosModifierGroup[] => {
+  const options = pos.restaurant;
+  const ids = options?.productModifierGroups?.[product.id] ?? [];
+  if (!ids.length) return [];
+  const byId = new Map((options?.modifierGroups ?? []).map((g) => [g.id, g]));
+  return ids.map((id) => byId.get(id)).filter((g): g is PosModifierGroup => !!g);
+};
+const modifierTarget = ref<{
+  product: PosProduct;
+  groups: PosModifierGroup[];
+  quantity: number;
+} | null>(null);
+const confirmModifiers = (modifiers: LineModifier[]) => {
+  const target = modifierTarget.value;
+  modifierTarget.value = null;
+  if (!target) return;
+  try {
+    pos.addWithModifiers(target.product, modifiers, target.quantity);
+  } catch (e) {
+    sound("error");
+    toast.warning(getErrorMessage(e, "تعذرت إضافة الصنف"));
+  }
+};
+
 // ─── السلة ────────────────────────────────────────────────────────────────────
 /**
  * يضيف صنفاً للسلة (رصيد غير كافٍ في مخزن لا يسمح بالسالب: تنبيه). يعيد
  * false إن لم يُضَف.
  */
 const add = (product: PosProduct): boolean => {
+  // صنف له إضافات (المطاعم): تُختار أولاً ثم يُضاف بسعرها
+  const groups = modifierGroupsOf(product);
+  if (groups.length && !pos.quoteMode) {
+    modifierTarget.value = { product, groups, quantity: takePendingQty(product) };
+    return true;
+  }
   try {
     pos.addProduct(product, null, takePendingQty(product));
     promptPendingPrice();
@@ -2333,6 +2397,7 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
   lines: sale.lines.map((line, index) => ({
     id: String(index),
     productName: line.productName,
+    modifiers: line.modifiers ?? null,
     unitName: line.unitName,
     quantity: line.quantity,
     unitPrice: line.unitPrice,
@@ -3513,6 +3578,19 @@ onBeforeUnmount(() => {
 }
 
 // نوع الطلب أعلى السلة: سفري أو الطاولة (يفتح الطاولات)
+.pos-cart__guests {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  margin-top: $space-1;
+  color: $stb-text-muted;
+
+  input {
+    width: 80px;
+    padding: 2px $space-2;
+  }
+}
+
 .pos-cart__order {
   display: flex;
   align-items: center;

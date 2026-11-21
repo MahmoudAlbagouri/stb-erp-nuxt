@@ -424,6 +424,10 @@
                       placeholder="الحي، الشارع، رقم المبنى، علامة مميزة"
                     />
                   </div>
+                  <div class="form-group doc-grid__full">
+                    <label>الموقع على الخريطة</label>
+                    <StbLocationInput v-model="form.location" />
+                  </div>
                 </div>
               </section>
 
@@ -738,6 +742,15 @@
                   <span class="doc-cell__main">
                     <template v-if="details.zone">{{ details.zone.name }} — </template>{{ details.address }}
                   </span>
+                  <a
+                    v-if="details.latitude != null && details.longitude != null"
+                    class="doc-cell__sub"
+                    :href="mapsLink({ latitude: details.latitude, longitude: details.longitude })"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    فتح الموقع على الخريطة
+                  </a>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">الفاتورة</span>
@@ -849,6 +862,7 @@ import type {
   DeliverySummary,
 } from "@/types/delivery";
 import type { StockLookupRow } from "@/types/inventory";
+import { mapsLink, type GeoPoint } from "@/utils/geo";
 import type { PrintableInvoice, PublicSalesPaymentMethod } from "@/types/sales";
 
 definePageMeta({ middleware: "auth" });
@@ -1047,6 +1061,7 @@ const emptyForm = () => ({
   recipientName: "",
   phone: "",
   address: "",
+  location: null as GeoPoint | null,
   zoneId: "",
   warehouseId:
     activeWarehouses.value.find((w) => w.type === "main")?.id ??
@@ -1182,6 +1197,9 @@ const submitCreate = async () => {
       recipientName: form.recipientName,
       phone: form.phone,
       address: form.address,
+      ...(form.location
+        ? { latitude: form.location.latitude, longitude: form.location.longitude }
+        : {}),
       zoneId: form.zoneId || null,
       deliveryFee: Number(form.deliveryFee) || 0,
       paymentMode: form.paymentMode,

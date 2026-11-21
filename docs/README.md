@@ -181,10 +181,12 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/dashboard/companies` · `/plans` · `/admin/subscriptions` · `/subscription` | tenants · plans · subscriptions | `tenants` · `plans` · `subscription` |
 | `/dashboard/notifications` · `/profile` | notifications · profile | `notifications` · `profile` |
 | `/dashboard/products` · `/products/settings` | catalog | `catalog` |
-| `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` · `/stocktake/[id]` (شاشة العدّ، بلا إنترنت) | inventory | `inventory` |
+| `/dashboard/inventory` · `/movements` · `/transfers` · `/stocktakes` · `/warehouses` · `/lots` (الدفعات والانتهاء) · `/stocktake/[id]` (شاشة العدّ، بلا إنترنت) | inventory | `inventory` |
 | `/dashboard/purchasing` · `/returns` · `/payments` · `/suppliers` | purchasing | `purchasing` |
 | `/dashboard/sales` · `/quotes` · `/returns` · `/payments` · `/customers` · `/settings` | sales | `sales` |
-| `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/settings` (مميزات الشاشة) · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
+| `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ، بمحطة أو بالكل) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/settings` (مميزات الشاشة) · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
+| `/dashboard/manufacturing` · `/manufacturing/orders/[id]` · `/boms` · `/work-centers` · `/planning` | manufacturing | `manufacturing` |
+| `/dashboard/restaurant/recipes` · `/menu` (الإضافات) · `/stations` · `/reservations` · `/reports` | pos · manufacturing (الوصفات) | `restaurant` · `manufacturing` |
 | `/dashboard/delivery` · `/agents` · `/settlements` · `/driver` (شاشة الطيار على جواله، برابطه بلا تسجيل دخول) | delivery | `delivery` |
 | `/dashboard/accounting` · `/chart` · `/journals` · `/expenses` · `/ledger` · `/trial-balance` · `/statements` · `/vat-return` | accounting | `accounting` |
 | `/dashboard/quotations` | quotation | `quotations` |

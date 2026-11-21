@@ -32,8 +32,10 @@ import {
 /** كل كم تسأل الشاشة عن حالة طلباتها في المطبخ */
 export const KITCHEN_POLL_MS = 10_000;
 
-const lineKey = (line: Pick<KitchenLine, "productId" | "unitId" | "note">) =>
-  `${line.productId}|${line.unitId ?? ""}|${line.note}`;
+const lineKey = (
+  line: Pick<KitchenLine, "productId" | "unitId" | "note" | "modifiers">,
+) =>
+  `${line.productId}|${line.unitId ?? ""}|${line.note}|${(line.modifiers ?? []).join("،")}`;
 
 export const createRestaurant = (
   state: PosState,
@@ -100,6 +102,9 @@ export const createRestaurant = (
         unitName: line.unitName,
         quantity,
         note: line.note?.trim() ?? "",
+        ...(line.modifiers?.length
+          ? { modifiers: line.modifiers.map((m) => (m.quantity > 1 ? `${m.name} ×${m.quantity}` : m.name)) }
+          : {}),
       };
       const key = lineKey(item);
       const existing = merged.get(key);
@@ -192,6 +197,7 @@ export const createRestaurant = (
             unitName: line.unitName,
             quantity: line.quantity,
             note: line.note || undefined,
+            modifiers: line.modifiers?.length ? line.modifiers : undefined,
           })),
         },
       },

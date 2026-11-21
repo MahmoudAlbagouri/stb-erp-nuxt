@@ -41,7 +41,8 @@ export interface TaxRate {
   isActive: boolean;
 }
 
-export type ProductType = "stocked" | "service";
+/** stocked = مخزني، service = خدمة، composite = مركّب (طبق تُخصم مكوّنات وصفته عند البيع) */
+export type ProductType = "stocked" | "service" | "composite";
 
 export interface ProductBarcode {
   id?: string;
@@ -79,6 +80,12 @@ export interface Product {
   isWeighted: boolean;
   /** سعر مفتوح: يُكتب على شاشة الكاشير عند البيع */
   openPrice?: boolean;
+  /** تتبع الدفعات وتواريخ الانتهاء */
+  trackLots?: boolean;
+  /** مدة الصلاحية بالأيام */
+  shelfLifeDays?: number | null;
+  /** يُشترى أم يُصنَّع حين ينقص */
+  procurement?: "buy" | "make";
   description?: string | null;
   imageFileId?: string | null;
   image?: FileRef | null;
@@ -103,6 +110,9 @@ export interface ProductPayload {
   allowDiscount?: boolean;
   isWeighted?: boolean;
   openPrice?: boolean;
+  trackLots?: boolean;
+  shelfLifeDays?: number | null;
+  procurement?: "buy" | "make";
   description?: string;
   isActive?: boolean;
   barcodes?: ProductBarcode[];

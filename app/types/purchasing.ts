@@ -14,6 +14,8 @@ export interface Supplier {
   commercialRegister?: string | null;
   address?: string | null;
   paymentTermsDays: number;
+  /** مدة التوريد المعتادة بالأيام (null = غير معروفة) */
+  leadTimeDays?: number | null;
   openingBalance: number;
   notes?: string | null;
   isActive: boolean;
@@ -30,6 +32,7 @@ export interface SupplierPayload {
   commercialRegister?: string;
   address?: string;
   paymentTermsDays?: number;
+  leadTimeDays?: number | null;
   openingBalance?: number;
   notes?: string;
   isActive?: boolean;
@@ -98,6 +101,8 @@ export interface PurchaseInvoiceLine {
   baseQuantity: number;
   unitCost: number;
   returnedQuantity: number;
+  lotNumber?: string | null;
+  expiryDate?: string | null;
 }
 
 export interface PurchaseInvoice {
@@ -110,6 +115,8 @@ export interface PurchaseInvoice {
   supplierReference?: string | null;
   invoiceDate: string;
   dueDate?: string | null;
+  /** تاريخ طلب البضاعة من المورد (منه تُقاس مدة التوريد الفعلية) */
+  orderDate?: string | null;
   status: PurchaseInvoiceStatus;
   pricesIncludeTax: boolean;
   subtotal: number;
@@ -133,6 +140,9 @@ export interface PurchaseLinePayload {
   quantity: number;
   unitPrice: number;
   discount?: number;
+  /** الدفعة (لصنف يتتبع دفعاته) */
+  lotNumber?: string;
+  expiryDate?: string;
 }
 
 export interface PurchaseInvoicePayload {
@@ -141,6 +151,7 @@ export interface PurchaseInvoicePayload {
   supplierReference?: string;
   invoiceDate: string;
   dueDate?: string;
+  orderDate?: string | null;
   pricesIncludeTax?: boolean;
   note?: string;
   lines: PurchaseLinePayload[];

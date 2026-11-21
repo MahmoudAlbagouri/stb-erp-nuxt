@@ -32,10 +32,21 @@
           {{ w.name }}
         </option>
       </select>
-      <select v-model="filters.type" class="form-select" @change="list.load(1)">
+      <select v-model="filters.type" class="form-select" @change="onTypeChange">
         <option value="">كل أنواع الحركات</option>
         <option v-for="(label, type) in MOVEMENT_TYPE_LABELS" :key="type" :value="type">
           {{ label }}
+        </option>
+      </select>
+      <select
+        v-if="filters.type === 'adjustment'"
+        v-model="filters.reason"
+        class="form-select"
+        @change="list.load(1)"
+      >
+        <option value="">كل أسباب التسوية</option>
+        <option v-for="r in ADJUSTMENT_REASONS" :key="r.value" :value="r.value">
+          {{ r.label }}
         </option>
       </select>
       <StbDateInput
@@ -96,6 +107,9 @@
                   <span class="badge doc-status--info">
                     {{ MOVEMENT_TYPE_LABELS[m.type] }}
                   </span>
+                  <span v-if="m.reason" class="doc-cell__sub">
+                    {{ ADJUSTMENT_REASON_LABELS[m.reason] }}
+                  </span>
                 </td>
                 <td>
                   <span
@@ -139,7 +153,7 @@ import { onMounted, reactive, ref, watch } from "vue";
 import { ArrowRight, History } from "lucide-vue-next";
 import { useInventoryStore } from "@/stores/inventory";
 import { usePagedList } from "@/composables/usePagedList";
-import type { StockMovementType } from "@/types/inventory";
+import type { StockAdjustmentReason, StockMovementType } from "@/types/inventory";
 
 definePageMeta({ middleware: "auth" });
 
@@ -158,6 +172,7 @@ const filters = reactive({
   productId: queryValue("productId"),
   warehouseId: queryValue("warehouseId"),
   type: "" as StockMovementType | "",
+  reason: "" as StockAdjustmentReason | "",
   fromDate: "",
   toDate: "",
 });
@@ -168,6 +183,7 @@ const list = usePagedList(
       productId: filters.productId,
       warehouseId: filters.warehouseId,
       type: filters.type,
+      reason: filters.type === "adjustment" ? filters.reason : "",
       // اليوم كاملاً بتوقيت المستخدم
       from: filters.fromDate
         ? new Date(`${filters.fromDate}T00:00:00`).toISOString()
@@ -184,6 +200,12 @@ watch(
   () => [filters.fromDate, filters.toDate],
   () => list.load(1),
 );
+
+/** السبب للتسويات وحدها: تغيير النوع يمسحه */
+const onTypeChange = () => {
+  filters.reason = "";
+  list.load(1);
+};
 
 const clearProduct = () => {
   filters.productId = "";

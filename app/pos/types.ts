@@ -167,6 +167,29 @@ export interface PosRestaurantOptions {
   printKitchenTicket: boolean;
   /** ما لم يُرسل للمطبخ يُرسل تلقائياً عند الدفع */
   sendOnPayment: boolean;
+  /** الإضافات والوجبات (أجهزة قديمة السيرفر: غائبة) */
+  modifierGroups?: PosModifierGroup[];
+  /** أي مجموعات تظهر مع أي صنف */
+  productModifierGroups?: Record<string, string[]>;
+}
+
+/** مجموعة إضافات كما تنزل للشاشة */
+export interface PosModifierGroup {
+  id: string;
+  name: string;
+  /** أقل عدد يُختار (1+ = إلزامية) */
+  minSelect: number;
+  /** أقصى عدد (0 = بلا حد) */
+  maxSelect: number;
+  options: { id: string; name: string; priceDelta: number; isDefault: boolean }[];
+}
+
+/** إضافة مختارة على سطر: سعرها داخل سعر الوحدة */
+export interface LineModifier {
+  optionId: string;
+  name: string;
+  priceDelta: number;
+  quantity: number;
 }
 
 export type OrderType = "takeaway" | "dine_in";
@@ -179,6 +202,8 @@ export interface KitchenLine {
   unitName: string;
   quantity: number;
   note: string;
+  /** أسماء الإضافات (جزء من هوية السطر: برجر بجبنة غير برجر عادي) */
+  modifiers?: string[];
 }
 
 /**
@@ -192,6 +217,8 @@ export interface OrderContext {
   tableId: string | null;
   tableName: string | null;
   openedAt: string;
+  /** عدد ضيوف الطاولة (اختياري) */
+  guestCount?: number | null;
   sent: KitchenLine[];
   /** كم مرة أُرسل للمطبخ */
   rounds: number;
@@ -249,6 +276,9 @@ export interface SaleDelivery {
   recipientName: string;
   phone: string;
   address: string;
+  /** موقع المستلم (اختياري) — لتخطيط مسارات التوصيل لاحقاً */
+  latitude?: number | null;
+  longitude?: number | null;
   zoneId: string | null;
   zoneName?: string | null;
   deliveryFee: number;
@@ -475,6 +505,8 @@ export interface CartLine {
   note?: string;
   /** سطر من عرض سعر ساري: سعره وخصمه مثبّتان كما طُبعا (انظر quotedTerms) */
   quoted?: QuotedTerms | null;
+  /** الإضافات المختارة: سعرها داخل unitPrice، وأثرها المخزني يحسبه السيرفر */
+  modifiers?: LineModifier[];
 }
 
 /** ما وُعد به العميل على سطر في عرض السعر */
@@ -620,6 +652,11 @@ export interface SaleLine {
   baseQuantity?: number;
   /** العرض المطبَّق (للإيصال، لا يُرفع) */
   promoName?: string | null;
+  /** عرض الإدارة المطبَّق وما وفّره — يُرفعان لقياس أثر العروض */
+  promotionId?: string;
+  promotionSaving?: number;
+  /** الإضافات المختارة (تُطبع على الإيصال وتُرفع) */
+  modifiers?: LineModifier[];
   /** السعر الأصلي حين غيّر الكاشير السعر في هذه الفاتورة */
   listPrice?: number;
   priceReason?: string;
@@ -811,6 +848,10 @@ export interface KitchenOrderRecord {
     unitName: string | null;
     quantity: number;
     note: string | null;
+    /** أسماء الإضافات المختارة */
+    modifiers?: string[];
+    /** محطة المطبخ (null = العامة) */
+    stationId?: string | null;
   }[];
   status: KitchenOrderStatus;
   sentAt: string;

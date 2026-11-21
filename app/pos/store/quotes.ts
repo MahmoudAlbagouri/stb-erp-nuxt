@@ -44,6 +44,10 @@ export const saleLinesOf = (cart: PricedCart): SaleLine[] =>
     total: p.total,
     baseQuantity: roundQuantity(Number(p.line.quantity) * p.line.factor),
     promoName: p.promoName,
+    ...(p.promotionId
+      ? { promotionId: p.promotionId, promotionSaving: p.promotionSaving }
+      : {}),
+    ...(p.line.modifiers?.length ? { modifiers: p.line.modifiers } : {}),
     // سعر غيّره الكاشير: السيرفر يحفظ الأصلي وسببه
     ...(isRepriced(p.line)
       ? {

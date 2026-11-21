@@ -321,6 +321,10 @@
                     {{ viewing.dueDate ? formatDate(viewing.dueDate) : "—" }}
                   </span>
                 </div>
+                <div v-if="viewing.orderDate" class="doc-cell">
+                  <span class="doc-cell__sub">تاريخ الطلب من المورد</span>
+                  <span class="doc-num">{{ formatDate(viewing.orderDate) }}</span>
+                </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">رقم فاتورة المورد</span>
                   <span>{{ viewing.supplierReference || "—" }}</span>
@@ -512,6 +516,15 @@
                   />
                 </div>
                 <div class="form-group">
+                  <label>تاريخ الطلب من المورد</label>
+                  <StbDateInput
+                    v-model="form.orderDate"
+                    class="form-input"
+                    :max="form.invoiceDate"
+                  />
+                  <small class="doc-hint">متى طلبت البضاعة؟ منه تُعرف مدة توريد المورد</small>
+                </div>
+                <div class="form-group">
                   <label>رقم فاتورة المورد</label>
                   <input
                     v-model.trim="form.supplierReference"
@@ -569,6 +582,20 @@
                       <span class="doc-cell__sub">
                         {{ line.sku }} · ضريبة {{ formatNumber(line.taxRate) }}%
                       </span>
+                      <div v-if="line.trackLots" class="lot-inputs">
+                        <input
+                          v-model.trim="line.lotNumber"
+                          class="form-input form-input--sm"
+                          dir="ltr"
+                          maxlength="60"
+                          placeholder="رقم الدفعة (فارغ = رقم الفاتورة)"
+                        />
+                        <StbDateInput
+                          v-model="line.expiryDate"
+                          class="form-input form-input--sm"
+                          title="تاريخ الانتهاء (فارغ = من مدة الصلاحية)"
+                        />
+                      </div>
                     </div>
                     <div>
                       <span class="doc-lines__label">الوحدة</span>
@@ -835,6 +862,10 @@ interface FormLine {
   quantity: number | "";
   unitPrice: number | "";
   discount: number | "";
+  /** صنف يتتبع دفعاته: رقم الدفعة وتاريخ انتهائها */
+  trackLots: boolean;
+  lotNumber: string;
+  expiryDate: string;
 }
 
 let lineKey = 0;
@@ -850,6 +881,7 @@ const form = reactive({
   warehouseId: "",
   invoiceDate: "",
   dueDate: "",
+  orderDate: "",
   supplierReference: "",
   note: "",
   pricesIncludeTax: false,
@@ -911,6 +943,7 @@ const openCreate = () => {
       activeWarehouses.value.find((w) => w.type === "main")?.id ?? "",
     invoiceDate: companyToday(),
     dueDate: "",
+    orderDate: "",
     supplierReference: "",
     note: "",
     pricesIncludeTax: false,
@@ -940,6 +973,7 @@ const openForm = async (invoice: PurchaseInvoice) => {
       warehouseId: full.warehouseId,
       invoiceDate: full.invoiceDate,
       dueDate: full.dueDate ?? "",
+      orderDate: full.orderDate ?? "",
       supplierReference: full.supplierReference ?? "",
       note: full.note ?? "",
       pricesIncludeTax: full.pricesIncludeTax,
@@ -973,6 +1007,9 @@ const openForm = async (invoice: PurchaseInvoice) => {
           quantity: line.quantity,
           unitPrice: line.unitPrice,
           discount: line.discount || "",
+          trackLots: !!line.product?.trackLots,
+          lotNumber: line.lotNumber ?? "",
+          expiryDate: line.expiryDate ?? "",
         };
       }),
     });
@@ -1026,6 +1063,9 @@ const addLine = async (row: StockLookupRow) => {
       quantity: "",
       unitPrice: "",
       discount: "",
+      trackLots: !!product.trackLots,
+      lotNumber: "",
+      expiryDate: "",
     };
     line.unitPrice = suggestedPrice(line);
     form.lines.push(line);
@@ -1040,6 +1080,8 @@ const buildPayload = (): PurchaseInvoicePayload => ({
   supplierReference: form.supplierReference || undefined,
   invoiceDate: form.invoiceDate,
   dueDate: form.dueDate || undefined,
+  // فارغ = غير معروف (null يمسح تاريخاً سابقاً عند التعديل)
+  orderDate: form.orderDate || null,
   pricesIncludeTax: form.pricesIncludeTax,
   note: form.note || undefined,
   lines: form.lines.map((l) => ({
@@ -1048,6 +1090,8 @@ const buildPayload = (): PurchaseInvoicePayload => ({
     quantity: Number(l.quantity),
     unitPrice: Number(l.unitPrice),
     discount: Number(l.discount) || 0,
+    ...(l.trackLots && l.lotNumber ? { lotNumber: l.lotNumber } : {}),
+    ...(l.trackLots && l.expiryDate ? { expiryDate: l.expiryDate } : {}),
   })),
 });
 
@@ -1152,6 +1196,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+
 .modal.invoice-modal {
   max-width: 980px;
 }

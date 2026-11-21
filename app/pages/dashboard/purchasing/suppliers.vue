@@ -266,6 +266,19 @@
                   </small>
                 </div>
                 <div class="form-group">
+                  <label>مدة التوريد (يوم)</label>
+                  <StbNumberInput
+                    v-model.number="form.leadTimeDays"
+                    class="form-input"
+                    min="0"
+                    max="365"
+                    placeholder="غير معروفة"
+                  />
+                  <small class="doc-hint">
+                    من طلب البضاعة حتى وصولها — بها يُعرف متى تطلب
+                  </small>
+                </div>
+                <div class="form-group">
                   <label>رصيد افتتاحي ({{ currencyLabel() }})</label>
                   <StbNumberInput
                     v-model.number="form.openingBalance"
@@ -539,6 +552,7 @@ const emptyForm = () => ({
   commercialRegister: "",
   address: "",
   paymentTermsDays: "" as number | "",
+  leadTimeDays: "" as number | "",
   openingBalance: "" as number | "",
   notes: "",
   isActive: true,
@@ -561,6 +575,7 @@ const openEdit = (supplier: Supplier) => {
     commercialRegister: supplier.commercialRegister ?? "",
     address: supplier.address ?? "",
     paymentTermsDays: supplier.paymentTermsDays || "",
+    leadTimeDays: supplier.leadTimeDays ?? "",
     openingBalance: supplier.openingBalance || "",
     notes: supplier.notes ?? "",
     isActive: supplier.isActive,
@@ -585,6 +600,8 @@ const handleSubmit = async () => {
       commercialRegister: form.commercialRegister || undefined,
       address: form.address || undefined,
       paymentTermsDays: Number(form.paymentTermsDays) || 0,
+      // فارغ = غير معروفة (لا صفر: صفر يعني "تصل في نفس اليوم")
+      leadTimeDays: form.leadTimeDays === "" ? null : Number(form.leadTimeDays),
       openingBalance: Number(form.openingBalance) || 0,
       notes: form.notes || undefined,
       isActive: form.isActive,

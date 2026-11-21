@@ -49,6 +49,10 @@
                   placeholder="الحي، الشارع، رقم المبنى، علامة مميزة"
                 />
               </div>
+              <div class="form-group doc-grid__full">
+                <label>الموقع على الخريطة</label>
+                <StbLocationInput v-model="form.location" />
+              </div>
               <div class="form-group">
                 <label>المنطقة</label>
                 <select v-model="form.zoneId" class="form-select" @change="applyZone">
@@ -137,6 +141,7 @@ import { nextTick, reactive, ref, watch } from "vue";
 import { Printer, Truck, X } from "lucide-vue-next";
 import { sumAmounts } from "@/pos/calc";
 import type { PosDeliveryOptions, SaleDelivery } from "@/pos/types";
+import type { GeoPoint } from "@/utils/geo";
 import { usePosStore } from "@/stores/pos";
 
 export type DeliveryPayment = "cod" | "cash" | "card" | "bank_transfer";
@@ -161,6 +166,7 @@ const emptyForm = () => ({
   recipientName: props.customer?.name ?? "",
   phone: props.customer?.phone ?? "",
   address: "",
+  location: null as GeoPoint | null,
   zoneId: "",
   fee: "" as number | "",
   agentId: "",
@@ -196,6 +202,8 @@ const submit = () => {
       recipientName: form.recipientName,
       phone: form.phone,
       address: form.address,
+      latitude: form.location?.latitude ?? null,
+      longitude: form.location?.longitude ?? null,
       zoneId: zone?.id ?? null,
       zoneName: zone?.name ?? null,
       deliveryFee: Number(form.fee) || 0,

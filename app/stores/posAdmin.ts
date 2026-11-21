@@ -103,16 +103,28 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
       await api.patch<RestaurantSettingsRecord>(`${BASE}/restaurant/settings`, payload)
     ).data;
 
-  const fetchKitchenBoard = async (branchId?: string) =>
+  /** stationId: شاشة محطة (أسطرها وحالتها فقط) */
+  const fetchKitchenBoard = async (branchId?: string, stationId?: string) =>
     (
       await api.get<KitchenOrderRecord[]>(
-        `${BASE}/kitchen/orders${toQueryString({ branchId })}`,
+        `${BASE}/kitchen/orders${toQueryString({ branchId, stationId })}`,
       )
     ).data;
 
-  const setKitchenStatus = async (id: string, status: KitchenOrderStatus) =>
-    (await api.patch<KitchenOrderRecord>(`${BASE}/kitchen/orders/${id}`, { status }))
-      .data;
+  /** stationId: المحطة تنقل نصيبها، والبون جاهز حين تجهز كل محطاته */
+  const setKitchenStatus = async (
+    id: string,
+    status: KitchenOrderStatus,
+    stationId?: string,
+  ) =>
+    (
+      await api.patch<KitchenOrderRecord>(
+        stationId
+          ? `${BASE}/kitchen/orders/${id}/stations/${stationId}`
+          : `${BASE}/kitchen/orders/${id}`,
+        { status },
+      )
+    ).data;
 
   const fetchShifts = async (
     filters: { deviceId?: string; status?: string; page?: number } = {},

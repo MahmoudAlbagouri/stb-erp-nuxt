@@ -271,13 +271,22 @@
                     احذف الأصناف لتغيير المخزن
                   </small>
                 </div>
+                <div v-if="!isOpening" class="form-group">
+                  <label>سبب التسوية *</label>
+                  <select v-model="adjust.reason" class="form-select" required>
+                    <option value="" disabled>اختر السبب...</option>
+                    <option v-for="r in ADJUSTMENT_REASONS" :key="r.value" :value="r.value">
+                      {{ r.label }}
+                    </option>
+                  </select>
+                </div>
                 <div class="form-group">
-                  <label>{{ isOpening ? "ملاحظة" : "سبب التسوية" }}</label>
+                  <label>{{ isOpening ? "ملاحظة" : "تفاصيل" }}</label>
                   <input
                     v-model.trim="adjust.note"
                     class="form-input"
                     maxlength="500"
-                    :placeholder="isOpening ? 'اختياري' : 'تالف، فاقد، خطأ إدخال...'"
+                    :placeholder="isOpening ? 'اختياري' : 'اختياري: كرتونة سقطت، دفعة 12...'"
                   />
                 </div>
               </div>
@@ -321,6 +330,23 @@
                       <span class="doc-cell__sub">
                         {{ line.sku }} · {{ line.unit }}
                       </span>
+                      <div
+                        v-if="line.trackLots && Number(line.quantity) > 0"
+                        class="lot-inputs"
+                      >
+                        <input
+                          v-model.trim="line.lotNumber"
+                          class="form-input"
+                          dir="ltr"
+                          maxlength="60"
+                          placeholder="رقم الدفعة (فارغ = بلا دفعة)"
+                        />
+                        <StbDateInput
+                          v-model="line.expiryDate"
+                          class="form-input"
+                          title="تاريخ الانتهاء"
+                        />
+                      </div>
                     </div>
                     <div>
                       <span class="doc-lines__label">الرصيد الحالي</span>
@@ -468,6 +494,7 @@ import { useInventoryStore } from "@/stores/inventory";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
 import type {
+  StockAdjustmentReason,
   StockAlert,
   StockLookupRow,
   StockRow,
@@ -558,6 +585,9 @@ interface AdjustLine {
   current: number;
   quantity: number | "";
   unitCost: number | "";
+  trackLots: boolean;
+  lotNumber: string;
+  expiryDate: string;
 }
 
 const showAdjust = ref(false);
@@ -565,6 +595,7 @@ const submitting = ref(false);
 const adjust = reactive({
   type: "adjustment" as "opening" | "adjustment",
   warehouseId: "",
+  reason: "" as StockAdjustmentReason | "",
   note: "",
   lines: [] as AdjustLine[],
 });
@@ -573,6 +604,7 @@ const isOpening = computed(() => adjust.type === "opening");
 
 const openAdjust = (type: "opening" | "adjustment") => {
   adjust.type = type;
+  adjust.reason = "";
   adjust.note = "";
   adjust.lines = [];
   // الافتراضي: المخزن المفلتر عليه، وإلا الرئيسي
@@ -598,6 +630,9 @@ const addAdjustLine = (row: StockLookupRow) => {
     quantity: "",
     // الرصيد الافتتاحي: نقترح متوسط التكلفة الحالي إن وُجد
     unitCost: isOpening.value && row.avgCost > 0 ? row.avgCost : "",
+    trackLots: !!row.trackLots,
+    lotNumber: "",
+    expiryDate: "",
   });
 };
 
@@ -609,11 +644,16 @@ const submitAdjust = async () => {
     toast.error("أدخل كمية (غير الصفر) لكل صنف");
     return;
   }
+  if (!isOpening.value && !adjust.reason) {
+    toast.error("اختر سبب التسوية");
+    return;
+  }
   submitting.value = true;
   try {
     await store.adjust({
       warehouseId: adjust.warehouseId,
       type: adjust.type,
+      reason: isOpening.value ? undefined : adjust.reason || undefined,
       note: adjust.note || undefined,
       lines: adjust.lines.map((l) => ({
         productId: l.productId,
@@ -622,6 +662,9 @@ const submitAdjust = async () => {
           l.unitCost === "" || Number(l.quantity) < 0
             ? undefined
             : Number(l.unitCost),
+        ...(l.trackLots && Number(l.quantity) > 0 && l.lotNumber
+          ? { lotNumber: l.lotNumber, expiryDate: l.expiryDate || undefined }
+          : {}),
       })),
     });
     toast.success(isOpening.value ? "تم تسجيل الرصيد الافتتاحي" : "تمت التسوية");

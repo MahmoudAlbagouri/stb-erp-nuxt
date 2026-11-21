@@ -272,6 +272,10 @@
   &--sm {
     max-width: 480px;
   }
+
+  &--lg {
+    max-width: 1100px;
+  }
 }
 
 .doc-modal__icon {
@@ -565,5 +569,17 @@
     .table-responsive {
       overflow: visible !important;
     }
+  }
+}
+
+/* دفعة سطر (رقمها وتاريخ انتهائها) تحت اسم الصنف في مستندات المخزون والشراء */
+.lot-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-1;
+  margin-top: $space-1;
+
+  @include respond-to("sm") {
+    grid-template-columns: 1fr;
   }
 }

@@ -185,6 +185,7 @@ export const usePosStore = defineStore("pos", () => {
     cartIssues: cartModule.cartIssues,
     discountLimit: cartModule.discountLimit,
     addProduct: cartModule.addProduct,
+    addWithModifiers: cartModule.addWithModifiers,
     setDeliveryFee: cartModule.setDeliveryFee,
     listPriceOf: cartModule.listPriceOf,
     setLinePrice: cartModule.setLinePrice,

@@ -22,6 +22,12 @@ export interface PricedLine {
   promoDiscount: number;
   /** العرض المطبَّق على السطر (سعر خاص أو خصم) */
   promoName: string | null;
+  /**
+   * معرّف عرض الإدارة المطبَّق وما وفّره (خصمه، أو فرق السعر الخاص × الكمية).
+   * يُرفعان مع السطر لقياس أثر العروض لاحقاً. عرض السعر ليس عرضاً: null
+   */
+  promotionId: string | null;
+  promotionSaving: number;
   /** خصم الكاشير على السطر */
   manualDiscount: number;
   /** نصيب السطر من خصم الفاتورة */
@@ -173,6 +179,8 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
       gross,
       promoDiscount,
       promoName: quoted ? `عرض سعر ${quoted.number}` : (promo?.promo.name ?? null),
+      promotionId: promo?.promo.id ?? null,
+      promotionSaving: promo ? roundAmount(promo.saving) : 0,
       manualDiscount,
       priceReduction,
       /** ما يبقى من قيمة السطر ليُخصم منه */
@@ -217,6 +225,8 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
       gross: draft.gross,
       promoDiscount: draft.promoDiscount,
       promoName: draft.promoName,
+      promotionId: draft.promotionId,
+      promotionSaving: draft.promotionSaving,
       manualDiscount: draft.manualDiscount,
       invoiceDiscount,
       priceReduction: draft.priceReduction,
