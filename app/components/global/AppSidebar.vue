@@ -77,7 +77,7 @@
         </div>
         <div class="sidebar-footer__info">
           <span class="sidebar-footer__name">{{
-            profile.fullName || "جاري  التحميل..."
+            profile.fullName || "جاري  التحميل...."
           }}</span>
           <span class="sidebar-footer__role">{{ roleLabel }}</span>
         </div>
