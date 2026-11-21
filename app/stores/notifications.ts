@@ -286,7 +286,10 @@ export const useNotificationsStore = defineStore("notifications", () => {
           connected.value = true;
           attempt = 0;
           // ما فات أثناء الانقطاع
-          await Promise.all([fetchUnread(), recentLoaded.value ? fetchRecent() : null]);
+          await Promise.all([
+            fetchUnread(),
+            recentLoaded.value ? fetchRecent() : null,
+          ]);
           await readEventStream(res, (event, data) => {
             if (event === "notification") {
               receive(JSON.parse(data) as NotificationItem);
@@ -356,9 +359,8 @@ export const useNotificationsStore = defineStore("notifications", () => {
 
   // ─── رسائل الإدارة ─────────────────────────────────────
   const previewMessage = async (audience: MessageAudience) =>
-    (
-      await api.post<MessageReach>(`${BASE}/messages/preview`, { audience })
-    ).data;
+    (await api.post<MessageReach>(`${BASE}/messages/preview`, { audience }))
+      .data;
 
   /** موظفون بعينهم من المسار المباشر، والجماعي من مسار broadcast */
   const sendMessage = async (payload: SendMessagePayload) => {

@@ -4,7 +4,9 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>التحويلات بين المخازن</h1>
-        <p>تُرسَل البضاعة من مخزن وتُستلَم في الآخر — وبينهما تكون "في الطريق"</p>
+        <p>
+          تُرسَل البضاعة من مخزن وتُستلَم في الآخر — وبينهما تكون "في الطريق"
+        </p>
       </div>
       <div class="page-header__actions">
         <button
@@ -81,18 +83,27 @@
             </thead>
             <tbody>
               <tr v-for="t in list.rows.value" :key="t.id">
-                <td><code class="doc-code">{{ t.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ t.number }}</code>
+                </td>
                 <td>{{ t.fromWarehouse?.name || "—" }}</td>
                 <td>{{ t.toWarehouse?.name || "—" }}</td>
                 <td>
-                  <span class="doc-num">{{ formatNumber(t.linesCount ?? 0) }}</span>
+                  <span class="doc-num">{{
+                    formatNumber(t.linesCount ?? 0)
+                  }}</span>
                 </td>
                 <td>
-                  <span class="doc-num">{{ formatDate(t.sentAt || t.createdAt) }}</span>
+                  <span class="doc-num">{{
+                    formatDate(t.sentAt || t.createdAt)
+                  }}</span>
                 </td>
                 <td>
                   <span
-                    :class="['badge', `doc-status--${TRANSFER_STATUS[t.status].tone}`]"
+                    :class="[
+                      'badge',
+                      `doc-status--${TRANSFER_STATUS[t.status].tone}`,
+                    ]"
                   >
                     {{ TRANSFER_STATUS[t.status].label }}
                   </span>
@@ -164,7 +175,9 @@
             <div class="modal__header">
               <h3>
                 <ArrowLeftRight :size="20" class="doc-modal__icon" />
-                {{ editingId ? `تعديل التحويل ${editingNumber}` : "تحويل جديد" }}
+                {{
+                  editingId ? `تعديل التحويل ${editingNumber}` : "تحويل جديد"
+                }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -187,7 +200,11 @@
                     :disabled="form.lines.length > 0"
                   >
                     <option value="" disabled>اختر...</option>
-                    <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
+                    <option
+                      v-for="w in activeWarehouses"
+                      :key="w.id"
+                      :value="w.id"
+                    >
                       {{ w.name }}
                     </option>
                   </select>
@@ -197,7 +214,11 @@
                 </div>
                 <div class="form-group">
                   <label>إلى مخزن *</label>
-                  <select v-model="form.toWarehouseId" class="form-select" required>
+                  <select
+                    v-model="form.toWarehouseId"
+                    class="form-select"
+                    required
+                  >
                     <option value="" disabled>اختر...</option>
                     <option
                       v-for="w in activeWarehouses.filter(
@@ -332,7 +353,8 @@
                   :size="20"
                   class="doc-modal__icon"
                 />
-                {{ receiving ? "استلام التحويل" : "التحويل" }} {{ details.number }}
+                {{ receiving ? "استلام التحويل" : "التحويل" }}
+                {{ details.number }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -347,11 +369,15 @@
               <div class="doc-grid">
                 <div class="doc-cell">
                   <span class="doc-cell__sub">من</span>
-                  <span class="doc-cell__main">{{ details.fromWarehouse?.name }}</span>
+                  <span class="doc-cell__main">{{
+                    details.fromWarehouse?.name
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">إلى</span>
-                  <span class="doc-cell__main">{{ details.toWarehouse?.name }}</span>
+                  <span class="doc-cell__main">{{
+                    details.toWarehouse?.name
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">الحالة</span>
@@ -368,10 +394,16 @@
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">
-                    {{ details.receivedAt ? "أُرسل / استُلم" : "تاريخ الإرسال" }}
+                    {{
+                      details.receivedAt ? "أُرسل / استُلم" : "تاريخ الإرسال"
+                    }}
                   </span>
                   <span class="doc-num">
-                    {{ details.sentAt ? formatDateTime(details.sentAt) : "لم يُرسل" }}
+                    {{
+                      details.sentAt
+                        ? formatDateTime(details.sentAt)
+                        : "لم يُرسل"
+                    }}
                     <template v-if="details.receivedAt">
                       / {{ formatDateTime(details.receivedAt) }}
                     </template>
@@ -386,8 +418,8 @@
               <div v-if="receiving" class="doc-note">
                 <Info :size="16" />
                 <span>
-                  عدّل الكمية المستلمة إذا وصل أقل من المرسَل. الفرق يُسجَّل عجزاً
-                  على التحويل ولا يدخل أي مخزن.
+                  عدّل الكمية المستلمة إذا وصل أقل من المرسَل. الفرق يُسجَّل
+                  عجزاً على التحويل ولا يدخل أي مخزن.
                 </span>
               </div>
 
@@ -405,7 +437,9 @@
                 >
                   <div class="doc-cell">
                     <span class="doc-cell__main">{{ line.name }}</span>
-                    <span class="doc-cell__sub">{{ line.sku }} · {{ line.unit }}</span>
+                    <span class="doc-cell__sub"
+                      >{{ line.sku }} · {{ line.unit }}</span
+                    >
                   </div>
                   <div>
                     <span class="doc-lines__label">المرسَل</span>
@@ -425,7 +459,9 @@
                       required
                     />
                     <span v-else class="doc-num">
-                      {{ line.received === "" ? "—" : formatNumber(line.received) }}
+                      {{
+                        line.received === "" ? "—" : formatNumber(line.received)
+                      }}
                     </span>
                   </div>
                   <div>
@@ -447,7 +483,11 @@
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeDetails">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeDetails"
+                >
                   {{ receiving ? "إلغاء" : "إغلاق" }}
                 </button>
                 <button

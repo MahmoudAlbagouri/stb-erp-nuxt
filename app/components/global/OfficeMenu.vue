@@ -71,20 +71,64 @@ const open = ref(false);
 const showQueue = ref(false);
 
 const ALL = [
-  { to: "/dashboard/sales", label: "فواتير البيع", icon: ReceiptText, perm: "view_sales" },
-  { to: "/dashboard/sales/customers", label: "العملاء", icon: Users, perm: "view_customers" },
-  { to: "/dashboard/sales/payments", label: "المقبوضات", icon: HandCoins, perm: "view_sales" },
-  { to: "/dashboard/purchasing", label: "فواتير الشراء", icon: ShoppingBag, perm: "view_purchases" },
-  { to: "/dashboard/purchasing/suppliers", label: "الموردون", icon: Truck, perm: "view_suppliers" },
-  { to: "/dashboard/inventory", label: "المخزون", icon: Boxes, perm: "view_inventory" },
-  { to: "/dashboard/inventory/transfers", label: "التحويلات", icon: ArrowLeftRight, perm: "view_inventory" },
-  { to: "/dashboard/products", label: "الأصناف", icon: Package, perm: "view_products" },
+  {
+    to: "/dashboard/sales",
+    label: "فواتير البيع",
+    icon: ReceiptText,
+    perm: "view_sales",
+  },
+  {
+    to: "/dashboard/sales/customers",
+    label: "العملاء",
+    icon: Users,
+    perm: "view_customers",
+  },
+  {
+    to: "/dashboard/sales/payments",
+    label: "المقبوضات",
+    icon: HandCoins,
+    perm: "view_sales",
+  },
+  {
+    to: "/dashboard/purchasing",
+    label: "فواتير الشراء",
+    icon: ShoppingBag,
+    perm: "view_purchases",
+  },
+  {
+    to: "/dashboard/purchasing/suppliers",
+    label: "الموردون",
+    icon: Truck,
+    perm: "view_suppliers",
+  },
+  {
+    to: "/dashboard/inventory",
+    label: "المخزون",
+    icon: Boxes,
+    perm: "view_inventory",
+  },
+  {
+    to: "/dashboard/inventory/transfers",
+    label: "التحويلات",
+    icon: ArrowLeftRight,
+    perm: "view_inventory",
+  },
+  {
+    to: "/dashboard/products",
+    label: "الأصناف",
+    icon: Package,
+    perm: "view_products",
+  },
 ];
 
 const links = computed(() => ALL.filter((link) => can(link.perm)));
 
 const tone = computed(() =>
-  office.failed.length ? "danger" : office.pending.length ? "warning" : "success",
+  office.failed.length
+    ? "danger"
+    : office.pending.length
+      ? "warning"
+      : "success",
 );
 
 const statusText = computed(() => {
@@ -98,7 +142,11 @@ const statusText = computed(() => {
 });
 
 const statusIcon = computed(() =>
-  office.failed.length ? CircleAlert : office.pending.length ? CloudUpload : CloudCheck,
+  office.failed.length
+    ? CircleAlert
+    : office.pending.length
+      ? CloudUpload
+      : CloudCheck,
 );
 
 const close = () => {
@@ -110,16 +158,20 @@ const openQueue = () => {
   showQueue.value = true;
 };
 
-type ClickOutsideEl = HTMLElement & { clickOutsideEvent?: (event: Event) => void };
+type ClickOutsideEl = HTMLElement & {
+  clickOutsideEvent?: (event: Event) => void;
+};
 const vClickOutside: Directive<ClickOutsideEl, () => void> = {
   mounted: (el, binding) => {
     el.clickOutsideEvent = (event: Event) => {
-      if (!(el === event.target || el.contains(event.target as Node))) binding.value();
+      if (!(el === event.target || el.contains(event.target as Node)))
+        binding.value();
     };
     document.addEventListener("click", el.clickOutsideEvent);
   },
   unmounted: (el) => {
-    if (el.clickOutsideEvent) document.removeEventListener("click", el.clickOutsideEvent);
+    if (el.clickOutsideEvent)
+      document.removeEventListener("click", el.clickOutsideEvent);
   },
 };
 </script>

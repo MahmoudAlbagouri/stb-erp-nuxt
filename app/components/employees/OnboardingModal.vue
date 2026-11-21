@@ -182,7 +182,8 @@
                     placeholder="اختياري"
                   />
                   <small class="form-hint">
-                    إن كان مسجّلاً على جهاز البصمة من قبل برقم؛ فارغ = يُعرف بكوده.
+                    إن كان مسجّلاً على جهاز البصمة من قبل برقم؛ فارغ = يُعرف
+                    بكوده.
                   </small>
                 </div>
 
@@ -1267,7 +1268,10 @@
                     <div class="salary-summary__rows">
                       <div class="salary-row">
                         <span>الراتب الأساسي</span>
-                        <span>{{ fmt(form.salary.basicSalary) }} {{ currencyLabel() }}</span>
+                        <span
+                          >{{ fmt(form.salary.basicSalary) }}
+                          {{ currencyLabel() }}</span
+                        >
                       </div>
                       <div
                         v-if="form.salary.housingAllowance"
@@ -1275,7 +1279,8 @@
                       >
                         <span>بدل السكن</span>
                         <span
-                          >+ {{ fmt(form.salary.housingAllowance) }} {{ currencyLabel() }}</span
+                          >+ {{ fmt(form.salary.housingAllowance) }}
+                          {{ currencyLabel() }}</span
                         >
                       </div>
                       <div
@@ -1284,7 +1289,8 @@
                       >
                         <span>بدل النقل</span>
                         <span
-                          >+ {{ fmt(form.salary.transportAllowance) }} {{ currencyLabel() }}</span
+                          >+ {{ fmt(form.salary.transportAllowance) }}
+                          {{ currencyLabel() }}</span
                         >
                       </div>
                       <div
@@ -1293,12 +1299,15 @@
                       >
                         <span>بدلات أخرى</span>
                         <span
-                          >+ {{ fmt(form.salary.otherAllowances) }} {{ currencyLabel() }}</span
+                          >+ {{ fmt(form.salary.otherAllowances) }}
+                          {{ currencyLabel() }}</span
                         >
                       </div>
                       <div class="salary-row salary-row--total">
                         <span>الإجمالي</span>
-                        <span>{{ fmt(totalSalary) }} {{ currencyLabel() }}</span>
+                        <span
+                          >{{ fmt(totalSalary) }} {{ currencyLabel() }}</span
+                        >
                       </div>
                     </div>
                   </div>
@@ -1476,7 +1485,10 @@
                   <div v-if="form.withSalary" class="review-rows">
                     <div class="review-row">
                       <span>الراتب الأساسي</span>
-                      <strong>{{ fmt(form.salary.basicSalary) }} {{ currencyLabel() }}</strong>
+                      <strong
+                        >{{ fmt(form.salary.basicSalary) }}
+                        {{ currencyLabel() }}</strong
+                      >
                     </div>
                     <div class="review-row">
                       <span>طريقة الدفع</span>
@@ -1495,7 +1507,9 @@
                     </div>
                     <div class="review-row review-row--total">
                       <span>الإجمالي</span>
-                      <strong>{{ fmt(totalSalary) }} {{ currencyLabel() }}</strong>
+                      <strong
+                        >{{ fmt(totalSalary) }} {{ currencyLabel() }}</strong
+                      >
                     </div>
                   </div>
                   <div v-else class="review-skip">
@@ -2533,10 +2547,7 @@ const handleSubmit = async () => {
 
     const { useApi } = await import("@/composables/useApi");
     const api = useApi();
-    const res = await api.post<OnboardingResult>(
-      "/employees/onboard",
-      payload,
-    );
+    const res = await api.post<OnboardingResult>("/employees/onboard", payload);
 
     employeesStore.employees.unshift(res.data.employee);
     toast.success(`تم إنشاء ملف الموظف "${form.employee.fullName}" بنجاح ✅`);
@@ -3383,7 +3394,8 @@ const calculateContractDates = () => {
     padding: $space-4;
   }
   .ob-footer {
-    padding: $space-3 $space-4 calc(#{$space-3} + env(safe-area-inset-bottom, 0px));
+    padding: $space-3 $space-4
+      calc(#{$space-3} + env(safe-area-inset-bottom, 0px));
   }
 }
 </style>

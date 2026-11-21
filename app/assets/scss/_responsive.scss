@@ -91,7 +91,9 @@ canvas {
 
   // مساحة أسفل المحتوى حتى لا يغطيه شريط التنقل السفلي
   .app-content {
-    padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + #{$space-4});
+    padding-bottom: calc(
+      var(--tabbar-height) + var(--safe-bottom) + #{$space-4}
+    );
   }
 
   .page-container {

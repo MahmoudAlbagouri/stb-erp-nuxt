@@ -117,17 +117,27 @@
                   <div class="product-cell">
                     <span class="product-cell__name">{{ p.name }}</span>
                     <span class="product-cell__meta">
-                      {{ p.type === "service" ? "خدمة" : p.type === "composite" ? "مركّب" : p.baseUnit?.name }}
+                      {{
+                        p.type === "service"
+                          ? "خدمة"
+                          : p.type === "composite"
+                            ? "مركّب"
+                            : p.baseUnit?.name
+                      }}
                       <template v-if="p.isWeighted"> · بالوزن</template>
                       <template v-if="p.openPrice"> · سعر مفتوح</template>
                       <template v-if="p.trackLots"> · بالدفعات</template>
                     </span>
                   </div>
                 </td>
-                <td><code class="sku">{{ p.sku }}</code></td>
+                <td>
+                  <code class="sku">{{ p.sku }}</code>
+                </td>
                 <td>{{ p.category?.name || "—" }}</td>
                 <td>
-                  <strong class="price">{{ formatCurrency(p.salePrice) }}</strong>
+                  <strong class="price">{{
+                    formatCurrency(p.salePrice)
+                  }}</strong>
                   <span class="price-note">
                     {{ p.priceIncludesTax ? "شامل الضريبة" : "قبل الضريبة" }}
                   </span>
@@ -261,7 +271,9 @@
                     <select v-model="form.type" class="form-select">
                       <option value="stocked">بضاعة مخزنية</option>
                       <option value="service">خدمة (بدون مخزون)</option>
-                      <option value="composite">صنف مركّب / طبق (يُخصم من وصفته)</option>
+                      <option value="composite">
+                        صنف مركّب / طبق (يُخصم من وصفته)
+                      </option>
                     </select>
                     <small v-if="form.type === 'composite'" class="doc-hint">
                       لا رصيد له: بيعه يخصم مكوّنات وصفته (من صفحة الوصفات)
@@ -340,9 +352,17 @@
                   <div class="form-group price-preview">
                     <label>تفصيل السعر</label>
                     <div class="price-preview__box">
-                      <span>قبل الضريبة: {{ formatCurrency(priceBreakdown.net) }}</span>
-                      <span>الضريبة: {{ formatCurrency(priceBreakdown.tax) }}</span>
-                      <strong>الإجمالي: {{ formatCurrency(priceBreakdown.gross) }}</strong>
+                      <span
+                        >قبل الضريبة:
+                        {{ formatCurrency(priceBreakdown.net) }}</span
+                      >
+                      <span
+                        >الضريبة: {{ formatCurrency(priceBreakdown.tax) }}</span
+                      >
+                      <strong
+                        >الإجمالي:
+                        {{ formatCurrency(priceBreakdown.gross) }}</strong
+                      >
                     </div>
                   </div>
                 </div>
@@ -510,7 +530,11 @@
               </section>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button
@@ -661,7 +685,8 @@ const emptyForm = () => ({
 const form = reactive(emptyForm());
 
 const baseUnitName = computed(
-  () => store.units.find((u) => u.id === form.baseUnitId)?.name ?? "وحدة الأساس",
+  () =>
+    store.units.find((u) => u.id === form.baseUnitId)?.name ?? "وحدة الأساس",
 );
 
 /** الوحدات المتاحة لصف إضافي: غير الأساس وغير المختارة في صفوف أخرى */
@@ -691,7 +716,8 @@ const priceBreakdown = computed(() => {
   return { net, tax: gross - net, gross };
 });
 
-const addUnit = () => form.units.push({ unitId: "", factor: "", salePrice: "" });
+const addUnit = () =>
+  form.units.push({ unitId: "", factor: "", salePrice: "" });
 
 const removeUnit = (index: number) => {
   const [removed] = form.units.splice(index, 1);

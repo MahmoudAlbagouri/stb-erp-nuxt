@@ -3,7 +3,12 @@
   الرقم هو الرسم — رقم واحد لا يحتاج عموداً أو دائرة.
 -->
 <template>
-  <component :is="to ? NuxtLink : 'div'" :to="to" class="stat-tile" :class="{ 'stat-tile--link': to, 'stat-tile--spark': !!sparkPath }">
+  <component
+    :is="to ? NuxtLink : 'div'"
+    :to="to"
+    class="stat-tile"
+    :class="{ 'stat-tile--link': to, 'stat-tile--spark': !!sparkPath }"
+  >
     <div class="stat-tile__head">
       <span class="stat-tile__icon" :class="`stat-tile__icon--${tone}`">
         <component :is="icon" :size="18" />
@@ -71,7 +76,8 @@ const direction = computed(() => {
 });
 
 const deltaIcon = computed(
-  () => ({ up: ArrowUpRight, down: ArrowDownRight, flat: Minus })[direction.value],
+  () =>
+    ({ up: ArrowUpRight, down: ArrowDownRight, flat: Minus })[direction.value],
 );
 
 const deltaTone = computed(() => {

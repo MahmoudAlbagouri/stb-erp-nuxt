@@ -30,7 +30,10 @@
       </button>
     </div>
 
-    <div v-if="store.settingsLoading && !store.settingsLoaded" class="empty-state">
+    <div
+      v-if="store.settingsLoading && !store.settingsLoaded"
+      class="empty-state"
+    >
       <div class="spinner spinner--lg" />
     </div>
 
@@ -90,7 +93,9 @@
           </thead>
           <tbody>
             <tr v-for="u in store.units" :key="u.id">
-              <td><strong>{{ u.name }}</strong></td>
+              <td>
+                <strong>{{ u.name }}</strong>
+              </td>
               <td>{{ u.symbol || "—" }}</td>
               <td>{{ u.allowsFractions ? "نعم (وزن/حجم)" : "لا" }}</td>
               <td><StatusBadge :active="u.isActive" /></td>
@@ -170,7 +175,11 @@
                 <div class="form-group">
                   <label>لون الزر في شاشة الكاشير</label>
                   <div class="color-row">
-                    <input v-model="form.color" type="color" class="color-input" />
+                    <input
+                      v-model="form.color"
+                      type="color"
+                      class="color-input"
+                    />
                     <button
                       type="button"
                       class="btn btn--sm btn--ghost"
@@ -234,7 +243,11 @@
               </label>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button
@@ -339,23 +352,25 @@ const StatusBadge = defineComponent({
 
 const RowActions = defineComponent({
   emits: ["edit", "remove"],
-  setup: (_, { emit }) => () =>
-    h("div", { class: "row-actions" }, [
-      h(
-        "button",
-        { class: "btn btn--sm btn--ghost", onClick: () => emit("edit") },
-        [h(Pencil, { size: 14 }), " تعديل"],
-      ),
-      h(
-        "button",
-        {
-          class: "btn btn--sm btn--danger btn--icon",
-          title: "حذف",
-          onClick: () => emit("remove"),
-        },
-        [h(Trash2, { size: 14 })],
-      ),
-    ]),
+  setup:
+    (_, { emit }) =>
+    () =>
+      h("div", { class: "row-actions" }, [
+        h(
+          "button",
+          { class: "btn btn--sm btn--ghost", onClick: () => emit("edit") },
+          [h(Pencil, { size: 14 }), " تعديل"],
+        ),
+        h(
+          "button",
+          {
+            class: "btn btn--sm btn--danger btn--icon",
+            title: "حذف",
+            onClick: () => emit("remove"),
+          },
+          [h(Trash2, { size: 14 })],
+        ),
+      ]),
 });
 
 const store = useCatalogStore();
@@ -475,7 +490,9 @@ const handleSubmit = async () => {
         allowsFractions: form.allowsFractions,
         isActive: form.isActive,
       };
-      await (id ? store.unitApi.update(id, payload) : store.unitApi.create(payload));
+      await (id
+        ? store.unitApi.update(id, payload)
+        : store.unitApi.create(payload));
     } else {
       const payload = {
         name: form.name,

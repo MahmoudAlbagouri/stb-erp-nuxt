@@ -36,7 +36,9 @@
         :class="{ 'is-active': filters.tab === 'waiting' }"
         @click="setTab('waiting')"
       >
-        <div class="stat-card__icon doc-tone--info"><PackageOpen :size="22" /></div>
+        <div class="stat-card__icon doc-tone--info">
+          <PackageOpen :size="22" />
+        </div>
         <div class="stat-card__info">
           <div class="stat-card__value">
             {{ formatNumber(summary.counts.new + summary.counts.assigned) }}
@@ -73,9 +75,13 @@
         </div>
       </button>
       <NuxtLink to="/dashboard/delivery/agents" class="stat-card">
-        <div class="stat-card__icon doc-tone--warning"><HandCoins :size="22" /></div>
+        <div class="stat-card__icon doc-tone--warning">
+          <HandCoins :size="22" />
+        </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.heldTotal) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.heldTotal) }}
+          </div>
           <div class="stat-card__label">
             مع الطيارين والشركات
             <template v-if="summary.outCodTotal">
@@ -89,7 +95,9 @@
         :class="{ 'is-active': filters.tab === 'delivered' }"
         @click="setTab('delivered')"
       >
-        <div class="stat-card__icon doc-tone--success"><PackageCheck :size="22" /></div>
+        <div class="stat-card__icon doc-tone--success">
+          <PackageCheck :size="22" />
+        </div>
         <div class="stat-card__info">
           <div class="stat-card__value">
             {{ formatNumber(summary.counts.delivered) }}
@@ -129,7 +137,11 @@
           @input="onSearchInput"
         />
       </div>
-      <select v-model="filters.agentId" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filters.agentId"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل الطيارين والشركات</option>
         <option v-for="a in store.agents" :key="a.id" :value="a.id">
           {{ a.name }}
@@ -163,7 +175,11 @@
           >
             <Bike :size="16" /> الطيارون وشركات الشحن
           </NuxtLink>
-          <button v-can="'manage_delivery'" class="btn btn--primary" @click="openCreate">
+          <button
+            v-can="'manage_delivery'"
+            class="btn btn--primary"
+            @click="openCreate"
+          >
             <Plus :size="16" /> أوردر جديد
           </button>
         </div>
@@ -195,7 +211,9 @@
                     <code class="doc-code">{{ o.number }}</code>
                     <span class="doc-cell__sub">
                       {{ formatDateTime(o.createdAt) }}
-                      <template v-if="o.source === 'pos'"> · من الكاشير</template>
+                      <template v-if="o.source === 'pos'">
+                        · من الكاشير</template
+                      >
                     </span>
                   </div>
                 </td>
@@ -219,7 +237,11 @@
                       />
                       {{ o.agent.name }}
                     </span>
-                    <span v-if="o.trackingNumber" class="doc-cell__sub" dir="ltr">
+                    <span
+                      v-if="o.trackingNumber"
+                      class="doc-cell__sub"
+                      dir="ltr"
+                    >
                       {{ o.trackingNumber }}
                     </span>
                   </div>
@@ -242,7 +264,12 @@
                 <td>
                   <div class="doc-cell">
                     <span>
-                      <span :class="['badge', `doc-status--${STATUS[o.status].tone}`]">
+                      <span
+                        :class="[
+                          'badge',
+                          `doc-status--${STATUS[o.status].tone}`,
+                        ]"
+                      >
                         {{ STATUS[o.status].label }}
                       </span>
                     </span>
@@ -259,10 +286,7 @@
                     >
                       {{ o.failReason }}
                     </span>
-                    <span
-                      v-if="o.settlementId"
-                      class="doc-cell__sub"
-                    >
+                    <span v-if="o.settlementId" class="doc-cell__sub">
                       سُوّي
                     </span>
                   </div>
@@ -324,7 +348,11 @@
                     </button>
                     <button
                       class="btn btn--sm btn--ghost btn--icon"
-                      :title="o.invoice.status === 'issued' ? 'طباعة الفاتورة (حراري)' : 'طباعة أمر التوصيل'"
+                      :title="
+                        o.invoice.status === 'issued'
+                          ? 'طباعة الفاتورة (حراري)'
+                          : 'طباعة أمر التوصيل'
+                      "
                       @click="printOrder(o, 'thermal')"
                     >
                       <Printer :size="14" />
@@ -372,7 +400,11 @@
                 <Truck :size="20" class="doc-modal__icon" />
                 أوردر توصيل جديد
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeCreate">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="closeCreate"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -383,16 +415,29 @@
                 <div class="doc-grid">
                   <div class="form-group">
                     <label>عميل مسجّل</label>
-                    <select v-model="form.customerId" class="form-select" @change="fillCustomer">
+                    <select
+                      v-model="form.customerId"
+                      class="form-select"
+                      @change="fillCustomer"
+                    >
                       <option value="">عميل عابر</option>
-                      <option v-for="c in sales.customerOptions" :key="c.id" :value="c.id">
+                      <option
+                        v-for="c in sales.customerOptions"
+                        :key="c.id"
+                        :value="c.id"
+                      >
                         {{ c.name }}{{ c.phone ? ` — ${c.phone}` : "" }}
                       </option>
                     </select>
                   </div>
                   <div class="form-group">
                     <label>اسم المستلم *</label>
-                    <input v-model.trim="form.recipientName" class="form-input" required maxlength="150" />
+                    <input
+                      v-model.trim="form.recipientName"
+                      class="form-input"
+                      required
+                      maxlength="150"
+                    />
                   </div>
                   <div class="form-group">
                     <label>الجوال *</label>
@@ -407,9 +452,17 @@
                   </div>
                   <div class="form-group">
                     <label>المنطقة</label>
-                    <select v-model="form.zoneId" class="form-select" @change="applyZoneFee">
+                    <select
+                      v-model="form.zoneId"
+                      class="form-select"
+                      @change="applyZoneFee"
+                    >
                       <option value="">بدون منطقة</option>
-                      <option v-for="z in activeZones" :key="z.id" :value="z.id">
+                      <option
+                        v-for="z in activeZones"
+                        :key="z.id"
+                        :value="z.id"
+                      >
                         {{ z.name }} — {{ formatCurrency(z.fee) }}
                       </option>
                     </select>
@@ -440,17 +493,26 @@
                       class="form-select"
                       required
                       :disabled="form.lines.length > 0"
-                      :title="form.lines.length ? 'احذف الأصناف لتغيير المخزن' : ''"
+                      :title="
+                        form.lines.length ? 'احذف الأصناف لتغيير المخزن' : ''
+                      "
                     >
                       <option value="" disabled>يخرج من مخزن...</option>
-                      <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
+                      <option
+                        v-for="w in activeWarehouses"
+                        :key="w.id"
+                        :value="w.id"
+                      >
                         {{ w.name }}
                       </option>
                     </select>
                   </div>
                 </div>
 
-                <StockProductPicker :warehouse-id="form.warehouseId" @pick="addLine" />
+                <StockProductPicker
+                  :warehouse-id="form.warehouseId"
+                  @pick="addLine"
+                />
 
                 <div class="doc-lines" :style="{ '--doc-cols': LINE_COLS }">
                   <div class="doc-lines__head">
@@ -464,29 +526,58 @@
                   <div v-if="!form.lines.length" class="doc-lines__empty">
                     ابحث عن صنف بالأعلى أو امسح الباركود
                   </div>
-                  <div v-for="(line, index) in form.lines" :key="line.key" class="doc-lines__row">
+                  <div
+                    v-for="(line, index) in form.lines"
+                    :key="line.key"
+                    class="doc-lines__row"
+                  >
                     <div class="doc-cell">
                       <span class="doc-cell__main">{{ line.name }}</span>
                       <span class="doc-cell__sub">
                         المتاح
-                        <span class="doc-num" :class="{ 'doc-num--out': exceeds(line) }">
+                        <span
+                          class="doc-num"
+                          :class="{ 'doc-num--out': exceeds(line) }"
+                        >
                           {{ formatNumber(line.available) }}
                         </span>
                       </span>
                     </div>
                     <div>
                       <span class="doc-lines__label">الوحدة</span>
-                      <select v-model="line.unitId" class="form-select" @change="line.unitPrice = priceFor(line)">
-                        <option v-for="u in line.units" :key="u.id" :value="u.id">{{ u.name }}</option>
+                      <select
+                        v-model="line.unitId"
+                        class="form-select"
+                        @change="line.unitPrice = priceFor(line)"
+                      >
+                        <option
+                          v-for="u in line.units"
+                          :key="u.id"
+                          :value="u.id"
+                        >
+                          {{ u.name }}
+                        </option>
                       </select>
                     </div>
                     <div>
                       <span class="doc-lines__label">الكمية</span>
-                      <StbNumberInput v-model.number="line.quantity" class="form-input" min="0.0001" step="any" required />
+                      <StbNumberInput
+                        v-model.number="line.quantity"
+                        class="form-input"
+                        min="0.0001"
+                        step="any"
+                        required
+                      />
                     </div>
                     <div>
                       <span class="doc-lines__label">السعر</span>
-                      <StbNumberInput v-model.number="line.unitPrice" class="form-input" min="0" step="any" required />
+                      <StbNumberInput
+                        v-model.number="line.unitPrice"
+                        class="form-input"
+                        min="0"
+                        step="any"
+                        required
+                      />
                     </div>
                     <div>
                       <span class="doc-lines__label">الإجمالي</span>
@@ -518,9 +609,15 @@
                   </div>
                   <div v-if="form.paymentMode === 'prepaid'" class="form-group">
                     <label>دُفع عن طريق *</label>
-                    <select v-model="form.prepaidMethod" class="form-select" required>
+                    <select
+                      v-model="form.prepaidMethod"
+                      class="form-select"
+                      required
+                    >
                       <option
-                        v-for="(label, method) in PUBLIC_SALES_PAYMENT_METHOD_LABELS"
+                        v-for="(
+                          label, method
+                        ) in PUBLIC_SALES_PAYMENT_METHOD_LABELS"
                         :key="method"
                         :value="method"
                       >
@@ -540,9 +637,17 @@
                   </div>
                   <div class="form-group">
                     <label>الطيار / شركة الشحن</label>
-                    <select v-model="form.agentId" class="form-select" @change="suggestAgentFee">
+                    <select
+                      v-model="form.agentId"
+                      class="form-select"
+                      @change="suggestAgentFee"
+                    >
                       <option value="">أسنده لاحقاً</option>
-                      <option v-for="a in activeAgents" :key="a.id" :value="a.id">
+                      <option
+                        v-for="a in activeAgents"
+                        :key="a.id"
+                        :value="a.id"
+                      >
                         {{ a.name }} ({{ AGENT_TYPE[a.type] }})
                       </option>
                     </select>
@@ -556,11 +661,21 @@
                         min="0"
                         :step="moneyStep()"
                       />
-                      <small class="doc-hint">أجرة الطيار أو رسوم الشركة — تُعتمد في التسوية</small>
+                      <small class="doc-hint"
+                        >أجرة الطيار أو رسوم الشركة — تُعتمد في التسوية</small
+                      >
                     </div>
-                    <div v-if="selectedAgent?.type === 'carrier'" class="form-group">
+                    <div
+                      v-if="selectedAgent?.type === 'carrier'"
+                      class="form-group"
+                    >
                       <label>رقم البوليصة</label>
-                      <input v-model.trim="form.trackingNumber" class="form-input" dir="ltr" maxlength="80" />
+                      <input
+                        v-model.trim="form.trackingNumber"
+                        class="form-input"
+                        dir="ltr"
+                        maxlength="80"
+                      />
                     </div>
                   </template>
                   <div class="form-group doc-grid__full">
@@ -577,21 +692,37 @@
                 <div class="doc-totals doc-totals--box">
                   <div>
                     <span>الأصناف</span>
-                    <span class="doc-money">{{ formatCurrency(totals.items) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.items)
+                    }}</span>
                   </div>
                   <div>
                     <span>رسوم التوصيل</span>
-                    <span class="doc-money">{{ formatCurrency(totals.fee) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.fee)
+                    }}</span>
                   </div>
                   <div class="is-grand">
-                    <span>{{ form.paymentMode === "cod" ? "يُحصَّل من العميل" : "الإجمالي" }}</span>
-                    <span class="doc-money">{{ formatCurrency(totals.total) }}</span>
+                    <span>{{
+                      form.paymentMode === "cod"
+                        ? "يُحصَّل من العميل"
+                        : "الإجمالي"
+                    }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.total)
+                    }}</span>
                   </div>
                 </div>
               </section>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeCreate">إلغاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeCreate"
+                >
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -610,41 +741,75 @@
     <!-- ══ الإسناد ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="assignTarget" class="modal-overlay" @click.self="assignTarget = null">
+        <div
+          v-if="assignTarget"
+          class="modal-overlay"
+          @click.self="assignTarget = null"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
               <h3>
                 <UserCheck :size="20" class="doc-modal__icon" />
                 إسناد {{ assignTarget.number }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="assignTarget = null">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="assignTarget = null"
+              >
                 <X :size="20" />
               </button>
             </div>
             <form class="doc-form" @submit.prevent="submitAssign">
               <div class="form-group">
                 <label>الطيار / شركة الشحن *</label>
-                <select v-model="assignForm.agentId" class="form-select" required @change="suggestAssignFee">
+                <select
+                  v-model="assignForm.agentId"
+                  class="form-select"
+                  required
+                  @change="suggestAssignFee"
+                >
                   <option value="" disabled>اختر...</option>
                   <option v-for="a in activeAgents" :key="a.id" :value="a.id">
                     {{ a.name }} ({{ AGENT_TYPE[a.type] }})
-                    <template v-if="a.outCount"> · معه {{ a.outCount }}</template>
+                    <template v-if="a.outCount">
+                      · معه {{ a.outCount }}</template
+                    >
                   </option>
                 </select>
               </div>
               <div class="form-group">
                 <label>تكلفة التوصيل علينا</label>
-                <StbNumberInput v-model.number="assignForm.agentFee" class="form-input" min="0" :step="moneyStep()" />
+                <StbNumberInput
+                  v-model.number="assignForm.agentFee"
+                  class="form-input"
+                  min="0"
+                  :step="moneyStep()"
+                />
               </div>
               <div
-                v-if="store.agents.find((a) => a.id === assignForm.agentId)?.type === 'carrier'"
+                v-if="
+                  store.agents.find((a) => a.id === assignForm.agentId)
+                    ?.type === 'carrier'
+                "
                 class="form-group"
               >
                 <label>رقم البوليصة</label>
-                <input v-model.trim="assignForm.trackingNumber" class="form-input" dir="ltr" maxlength="80" />
+                <input
+                  v-model.trim="assignForm.trackingNumber"
+                  class="form-input"
+                  dir="ltr"
+                  maxlength="80"
+                />
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="assignTarget = null">إلغاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="assignTarget = null"
+                >
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -663,14 +828,22 @@
     <!-- ══ لم يُسلَّم ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="failTarget" class="modal-overlay" @click.self="failTarget = null">
+        <div
+          v-if="failTarget"
+          class="modal-overlay"
+          @click.self="failTarget = null"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
               <h3>
                 <PackageX :size="20" class="doc-modal__icon" />
                 لم يُسلَّم {{ failTarget.number }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="failTarget = null">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="failTarget = null"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -688,16 +861,34 @@
               </div>
               <div class="form-group">
                 <label>السبب *</label>
-                <select v-model="failForm.preset" class="form-select" @change="failForm.reason = failForm.preset">
+                <select
+                  v-model="failForm.preset"
+                  class="form-select"
+                  @change="failForm.reason = failForm.preset"
+                >
                   <option value="">اختر أو اكتب السبب...</option>
-                  <option v-for="r in FAIL_REASONS" :key="r" :value="r">{{ r }}</option>
+                  <option v-for="r in FAIL_REASONS" :key="r" :value="r">
+                    {{ r }}
+                  </option>
                 </select>
               </div>
               <div class="form-group">
-                <input v-model.trim="failForm.reason" class="form-input" required maxlength="300" placeholder="السبب" />
+                <input
+                  v-model.trim="failForm.reason"
+                  class="form-input"
+                  required
+                  maxlength="300"
+                  placeholder="السبب"
+                />
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="failTarget = null">إلغاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="failTarget = null"
+                >
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--danger"
@@ -722,11 +913,20 @@
               <h3>
                 <Truck :size="20" class="doc-modal__icon" />
                 {{ details.number }}
-                <span :class="['badge', `doc-status--${STATUS[details.status].tone}`]">
+                <span
+                  :class="[
+                    'badge',
+                    `doc-status--${STATUS[details.status].tone}`,
+                  ]"
+                >
                   {{ STATUS[details.status].label }}
                 </span>
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="details = null">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="details = null"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -734,18 +934,29 @@
               <div class="doc-grid">
                 <div class="doc-cell">
                   <span class="doc-cell__sub">المستلم</span>
-                  <span class="doc-cell__main">{{ details.recipientName }}</span>
-                  <span class="doc-cell__sub" dir="ltr">{{ details.phone }}</span>
+                  <span class="doc-cell__main">{{
+                    details.recipientName
+                  }}</span>
+                  <span class="doc-cell__sub" dir="ltr">{{
+                    details.phone
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">العنوان</span>
                   <span class="doc-cell__main">
-                    <template v-if="details.zone">{{ details.zone.name }} — </template>{{ details.address }}
+                    <template v-if="details.zone"
+                      >{{ details.zone.name }} — </template
+                    >{{ details.address }}
                   </span>
                   <a
                     v-if="details.latitude != null && details.longitude != null"
                     class="doc-cell__sub"
-                    :href="mapsLink({ latitude: details.latitude, longitude: details.longitude })"
+                    :href="
+                      mapsLink({
+                        latitude: details.latitude,
+                        longitude: details.longitude,
+                      })
+                    "
                     target="_blank"
                     rel="noopener"
                   >
@@ -760,10 +971,14 @@
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">الجهة</span>
-                  <span class="doc-cell__main">{{ details.agent?.name ?? "لم يُسند" }}</span>
+                  <span class="doc-cell__main">{{
+                    details.agent?.name ?? "لم يُسند"
+                  }}</span>
                   <span v-if="details.agent" class="doc-cell__sub">
                     تكلفتها {{ formatCurrency(details.agentFee) }}
-                    <template v-if="details.trackingNumber"> · بوليصة {{ details.trackingNumber }}</template>
+                    <template v-if="details.trackingNumber">
+                      · بوليصة {{ details.trackingNumber }}</template
+                    >
                   </span>
                 </div>
               </div>
@@ -774,31 +989,53 @@
                   <span>الكمية</span>
                   <span>الإجمالي</span>
                 </div>
-                <div v-for="line in details.invoice.lines ?? []" :key="line.id" class="doc-lines__row">
+                <div
+                  v-for="line in details.invoice.lines ?? []"
+                  :key="line.id"
+                  class="doc-lines__row"
+                >
                   <span class="doc-cell__main">{{ line.productName }}</span>
-                  <span class="doc-num">{{ formatNumber(line.quantity) }} {{ line.unitName }}</span>
-                  <span class="doc-money">{{ formatCurrency(line.total) }}</span>
+                  <span class="doc-num"
+                    >{{ formatNumber(line.quantity) }} {{ line.unitName }}</span
+                  >
+                  <span class="doc-money">{{
+                    formatCurrency(line.total)
+                  }}</span>
                 </div>
               </div>
               <div class="doc-totals doc-totals--box">
                 <div class="is-grand">
                   <span>الإجمالي</span>
-                  <span class="doc-money">{{ formatCurrency(details.invoice.total) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.invoice.total)
+                  }}</span>
                 </div>
               </div>
 
               <ol class="dlv-timeline">
                 <li v-for="step in timeline(details)" :key="step.label">
                   <span class="doc-cell__main">{{ step.label }}</span>
-                  <span class="doc-cell__sub">{{ formatDateTime(step.at) }}</span>
+                  <span class="doc-cell__sub">{{
+                    formatDateTime(step.at)
+                  }}</span>
                 </li>
               </ol>
-              <p v-if="details.note" class="doc-hint">ملاحظة: {{ details.note }}</p>
+              <p v-if="details.note" class="doc-hint">
+                ملاحظة: {{ details.note }}
+              </p>
               <div class="doc-actions">
-                <button type="button" class="btn btn--ghost" @click="printOrder(details, 'thermal')">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="printOrder(details, 'thermal')"
+                >
                   <Printer :size="16" /> طباعة حراري
                 </button>
-                <button type="button" class="btn btn--ghost" @click="printOrder(details, 'a4')">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="printOrder(details, 'a4')"
+                >
                   <Printer :size="16" /> طباعة A4
                 </button>
               </div>
@@ -811,7 +1048,11 @@
       </Transition>
     </Teleport>
 
-    <SalesInvoicePrint ref="printer" :invoice="printTarget" :settings="sales.settings" />
+    <SalesInvoicePrint
+      ref="printer"
+      :invoice="printTarget"
+      :settings="sales.settings"
+    />
 
     <ConfirmDialog
       v-model="showCancel"
@@ -825,7 +1066,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+} from "vue";
 import {
   Ban,
   Bike,
@@ -979,7 +1227,9 @@ let clock: ReturnType<typeof setInterval> | null = null;
 let poller: ReturnType<typeof setInterval> | null = null;
 
 const minutesSince = (at: string | null) =>
-  at ? Math.max(0, Math.floor((now.value - new Date(at).getTime()) / 60000)) : 0;
+  at
+    ? Math.max(0, Math.floor((now.value - new Date(at).getTime()) / 60000))
+    : 0;
 
 const durationLabel = (minutes: number) =>
   minutes < 60
@@ -1013,7 +1263,10 @@ const whatsappLink = (o: DeliveryOrder) => {
 const timeline = (o: DeliveryOrder) =>
   [
     { label: "أُنشئ", at: o.createdAt },
-    { label: `أُسند${o.agent ? ` إلى ${o.agent.name}` : ""}`, at: o.assignedAt },
+    {
+      label: `أُسند${o.agent ? ` إلى ${o.agent.name}` : ""}`,
+      at: o.assignedAt,
+    },
     { label: "خرج للتوصيل", at: o.dispatchedAt },
     { label: "تم التسليم", at: o.deliveredAt },
     { label: "لم يُسلَّم", at: o.failedAt },
@@ -1023,7 +1276,9 @@ const timeline = (o: DeliveryOrder) =>
 // ─── الجهات والمناطق ──────────────────────────────────────────────────────────
 const activeAgents = computed(() => store.agents.filter((a) => a.isActive));
 const activeZones = computed(() => store.zones.filter((z) => z.isActive));
-const activeWarehouses = computed(() => inventory.warehouses.filter((w) => w.isActive));
+const activeWarehouses = computed(() =>
+  inventory.warehouses.filter((w) => w.isActive),
+);
 
 /** تكلفة الجهة المقترحة = أجرتها + نسبة التحصيل (كما يحسبها السيرفر) */
 const agentFeeFor = (agentId: string, codAmount: number) => {
@@ -1080,7 +1335,9 @@ const emptyForm = () => ({
 const form = reactive(emptyForm());
 
 const vatRegistered = computed(() => sales.settings?.vatRegistered !== false);
-const selectedAgent = computed(() => store.agents.find((a) => a.id === form.agentId));
+const selectedAgent = computed(() =>
+  store.agents.find((a) => a.id === form.agentId),
+);
 
 const amountsOf = (line: FormLine) =>
   previewPurchaseLine({
@@ -1198,14 +1455,21 @@ const submitCreate = async () => {
       phone: form.phone,
       address: form.address,
       ...(form.location
-        ? { latitude: form.location.latitude, longitude: form.location.longitude }
+        ? {
+            latitude: form.location.latitude,
+            longitude: form.location.longitude,
+          }
         : {}),
       zoneId: form.zoneId || null,
       deliveryFee: Number(form.deliveryFee) || 0,
       paymentMode: form.paymentMode,
-      ...(form.paymentMode === "prepaid" ? { prepaidMethod: form.prepaidMethod } : {}),
+      ...(form.paymentMode === "prepaid"
+        ? { prepaidMethod: form.prepaidMethod }
+        : {}),
       agentId: form.agentId || null,
-      ...(form.agentId && form.agentFee !== "" ? { agentFee: Number(form.agentFee) } : {}),
+      ...(form.agentId && form.agentFee !== ""
+        ? { agentFee: Number(form.agentFee) }
+        : {}),
       trackingNumber: form.trackingNumber || null,
       note: form.note || null,
       lines: form.lines.map((l) => ({
@@ -1227,7 +1491,11 @@ const submitCreate = async () => {
 
 // ─── الإسناد ──────────────────────────────────────────────────────────────────
 const assignTarget = ref<DeliveryOrder | null>(null);
-const assignForm = reactive({ agentId: "", agentFee: "" as number | "", trackingNumber: "" });
+const assignForm = reactive({
+  agentId: "",
+  agentFee: "" as number | "",
+  trackingNumber: "",
+});
 
 const openAssign = (o: DeliveryOrder) => {
   assignTarget.value = o;
@@ -1240,7 +1508,10 @@ const openAssign = (o: DeliveryOrder) => {
 
 const suggestAssignFee = () => {
   if (!assignTarget.value) return;
-  assignForm.agentFee = agentFeeFor(assignForm.agentId, assignTarget.value.codAmount);
+  assignForm.agentFee = agentFeeFor(
+    assignForm.agentId,
+    assignTarget.value.codAmount,
+  );
 };
 
 const submitAssign = async () => {
@@ -1249,7 +1520,9 @@ const submitAssign = async () => {
   try {
     await store.assignOrder(assignTarget.value.id, {
       agentId: assignForm.agentId,
-      ...(assignForm.agentFee !== "" ? { agentFee: Number(assignForm.agentFee) } : {}),
+      ...(assignForm.agentFee !== ""
+        ? { agentFee: Number(assignForm.agentFee) }
+        : {}),
       trackingNumber: assignForm.trackingNumber || null,
     });
     toast.success("تم الإسناد");
@@ -1330,7 +1603,9 @@ const doCancel = async () => {
 };
 
 // ─── الطباعة: فاتورة الأوردر (أو "أمر توصيل" لمسودة لم تخرج) ────────────────
-const printer = ref<{ print: (size: "a4" | "thermal") => Promise<void> } | null>(null);
+const printer = ref<{
+  print: (size: "a4" | "thermal") => Promise<void>;
+} | null>(null);
 const printTarget = ref<PrintableInvoice | null>(null);
 
 const printOrder = async (o: DeliveryOrder, size: "a4" | "thermal") => {

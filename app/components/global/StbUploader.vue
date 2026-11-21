@@ -268,7 +268,11 @@
   قيمة الحقل (v-model): ملف FileRef، أو قائمة ملفات مع multiple. النموذج يرسل
   معرّفاتها للخادم (nationalIdCardFileId، attachmentFileIds…).
 -->
-<script setup lang="ts" generic="T extends FileRef | FileRef[] | null | undefined">
+<script
+  setup
+  lang="ts"
+  generic="T extends FileRef | FileRef[] | null | undefined"
+>
 import { ref, computed } from "vue";
 import { useUpload } from "../../composables/useUpload";
 import type { UploadedFile } from "../../composables/useUpload";
@@ -343,7 +347,9 @@ const uploader = useUpload({
   extraFields: props.extraFields,
   onSuccess(files) {
     // مع multiple: كل ما رُفع في الحقل (لا الدفعة الأخيرة وحدها)
-    emitFiles(props.multiple ? uploader.uploadedFiles.value : files.slice(0, 1));
+    emitFiles(
+      props.multiple ? uploader.uploadedFiles.value : files.slice(0, 1),
+    );
     emit("success", files);
   },
   onError(msg) {

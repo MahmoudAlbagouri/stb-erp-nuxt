@@ -29,7 +29,11 @@
         </button>
 
         <!-- زر طلب قرض شخصي -->
-        <button v-can="'request_loan_self'" class="btn btn--primary" @click="openCreateModal(false)">
+        <button
+          v-can="'request_loan_self'"
+          class="btn btn--primary"
+          @click="openCreateModal(false)"
+        >
           <Plus :size="16" /> طلب قرض جديد
         </button>
 
@@ -79,7 +83,11 @@
         <div class="empty-state__illustration"><Landmark :size="32" /></div>
         <div class="empty-state__title">لا توجد طلبات قروض</div>
         <div class="empty-state__text">ابدأ بتقديم طلب قرض جديد</div>
-        <button v-can="'request_loan_self'" class="btn btn--primary mt-4" @click="openCreateModal(false)">
+        <button
+          v-can="'request_loan_self'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal(false)"
+        >
           <Plus :size="15" /> طلب قرض
         </button>
       </div>
@@ -154,10 +162,18 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === loan.id" class="dropdown-menu">
-                <button v-can="'view_loans'" v-feature="'reports_export'" @click="downloadLoan(loan.id, 'pdf')">
+                <button
+                  v-can="'view_loans'"
+                  v-feature="'reports_export'"
+                  @click="downloadLoan(loan.id, 'pdf')"
+                >
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button v-can="'view_loans'" v-feature="'reports_export'" @click="downloadLoan(loan.id, 'excel')">
+                <button
+                  v-can="'view_loans'"
+                  v-feature="'reports_export'"
+                  @click="downloadLoan(loan.id, 'excel')"
+                >
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>

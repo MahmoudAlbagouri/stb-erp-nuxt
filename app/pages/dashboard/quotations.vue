@@ -7,7 +7,11 @@
         <p>إدارة عروض الأسعار وتحويلها إلى فواتير ضريبية</p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'system:create_quotation'" class="btn btn--primary" @click="openCreate">
+        <button
+          v-can="'system:create_quotation'"
+          class="btn btn--primary"
+          @click="openCreate"
+        >
           <Plus :size="18" />
           <span>إنشاء عرض سعر جديد</span>
         </button>
@@ -26,7 +30,11 @@
         <div class="empty-state__text">
           أنشئ عرض سعر جديد لبدء إدارة المبيعات والفواتير
         </div>
-        <button v-can="'system:create_quotation'" class="btn btn--primary mt-4" @click="openCreate">
+        <button
+          v-can="'system:create_quotation'"
+          class="btn btn--primary mt-4"
+          @click="openCreate"
+        >
           <Plus :size="16" />
           إنشاء عرض سعر
         </button>
@@ -442,8 +450,6 @@ const getStatusLabel = (s: string) =>
     approved: "معتمد (فاتورة)",
     rejected: "مرفوض",
   })[s] ?? s;
-
-
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 onMounted(() => {

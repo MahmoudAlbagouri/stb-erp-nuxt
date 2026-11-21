@@ -4,7 +4,9 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>فواتير الشراء</h1>
-        <p>اعتماد الفاتورة يُدخل البضاعة المخزن بتكلفتها ويُسجّل المبلغ للمورد</p>
+        <p>
+          اعتماد الفاتورة يُدخل البضاعة المخزن بتكلفتها ويُسجّل المبلغ للمورد
+        </p>
       </div>
       <div class="page-header__actions">
         <button
@@ -25,9 +27,13 @@
         :class="{ 'is-active': filters.payment === 'due' }"
         @click="togglePayment('due')"
       >
-        <div class="stat-card__icon doc-tone--accent"><Banknote :size="22" /></div>
+        <div class="stat-card__icon doc-tone--accent">
+          <Banknote :size="22" />
+        </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.payables) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.payables) }}
+          </div>
           <div class="stat-card__label">مستحق للموردين</div>
         </div>
       </button>
@@ -40,7 +46,9 @@
           <CalendarClock :size="22" />
         </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.overdue) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.overdue) }}
+          </div>
           <div class="stat-card__label">متأخر السداد</div>
         </div>
       </button>
@@ -104,7 +112,11 @@
           {{ s.name }}
         </option>
       </select>
-      <select v-model="filters.payment" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filters.payment"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل حالات السداد</option>
         <option value="due">عليها متبقٍ</option>
         <option value="overdue">متأخرة السداد</option>
@@ -159,7 +171,9 @@
               <tr v-for="inv in list.rows.value" :key="inv.id">
                 <td>
                   <div class="doc-cell">
-                    <span><code class="doc-code">{{ inv.number }}</code></span>
+                    <span
+                      ><code class="doc-code">{{ inv.number }}</code></span
+                    >
                     <span v-if="inv.supplierReference" class="doc-cell__sub">
                       فاتورة المورد: {{ inv.supplierReference }}
                     </span>
@@ -173,9 +187,15 @@
                 </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-num">{{ formatDate(inv.invoiceDate) }}</span>
+                    <span class="doc-num">{{
+                      formatDate(inv.invoiceDate)
+                    }}</span>
                     <span
-                      v-if="inv.dueDate && inv.status === 'posted' && inv.remaining > 0"
+                      v-if="
+                        inv.dueDate &&
+                        inv.status === 'posted' &&
+                        inv.remaining > 0
+                      "
                       class="doc-cell__sub"
                       :class="{ 'text-danger': isOverdue(inv) }"
                     >
@@ -289,7 +309,11 @@
             <div class="modal__header">
               <h3>
                 <ShoppingCart :size="20" class="doc-modal__icon" />
-                {{ form.number ? `فاتورة شراء ${form.number}` : "فاتورة شراء جديدة" }}
+                {{
+                  form.number
+                    ? `فاتورة شراء ${form.number}`
+                    : "فاتورة شراء جديدة"
+                }}
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -305,15 +329,21 @@
               <div class="doc-info">
                 <div class="doc-cell">
                   <span class="doc-cell__sub">المورد</span>
-                  <span class="doc-cell__main">{{ viewing.supplier?.name }}</span>
+                  <span class="doc-cell__main">{{
+                    viewing.supplier?.name
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">المخزن</span>
-                  <span class="doc-cell__main">{{ viewing.warehouse?.name }}</span>
+                  <span class="doc-cell__main">{{
+                    viewing.warehouse?.name
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">تاريخ الفاتورة</span>
-                  <span class="doc-num">{{ formatDate(viewing.invoiceDate) }}</span>
+                  <span class="doc-num">{{
+                    formatDate(viewing.invoiceDate)
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">تاريخ الاستحقاق</span>
@@ -323,7 +353,9 @@
                 </div>
                 <div v-if="viewing.orderDate" class="doc-cell">
                   <span class="doc-cell__sub">تاريخ الطلب من المورد</span>
-                  <span class="doc-num">{{ formatDate(viewing.orderDate) }}</span>
+                  <span class="doc-num">{{
+                    formatDate(viewing.orderDate)
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">رقم فاتورة المورد</span>
@@ -387,7 +419,9 @@
                   </div>
                   <div>
                     <span class="doc-lines__label">الضريبة</span>
-                    <span class="doc-num">{{ formatNumber(line.taxRate) }}%</span>
+                    <span class="doc-num"
+                      >{{ formatNumber(line.taxRate) }}%</span
+                    >
                   </div>
                   <div>
                     <span class="doc-lines__label">الإجمالي</span>
@@ -401,15 +435,21 @@
               <div class="doc-totals doc-totals--box">
                 <div>
                   <span>قبل الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(viewing.subtotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(viewing.subtotal)
+                  }}</span>
                 </div>
                 <div>
                   <span>الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(viewing.taxTotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(viewing.taxTotal)
+                  }}</span>
                 </div>
                 <div class="is-grand">
                   <span>الإجمالي</span>
-                  <span class="doc-money">{{ formatCurrency(viewing.total) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(viewing.total)
+                  }}</span>
                 </div>
                 <template v-if="viewing.status === 'posted'">
                   <div v-if="viewing.returnedAmount > 0">
@@ -482,7 +522,9 @@
                   </select>
                   <small v-if="!store.supplierOptions.length" class="doc-hint">
                     لا يوجد موردون —
-                    <NuxtLink to="/dashboard/purchasing/suppliers">أضف مورداً</NuxtLink>
+                    <NuxtLink to="/dashboard/purchasing/suppliers"
+                      >أضف مورداً</NuxtLink
+                    >
                   </small>
                 </div>
                 <div class="form-group">
@@ -493,7 +535,11 @@
                     required
                   >
                     <option value="" disabled>اختر المخزن...</option>
-                    <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
+                    <option
+                      v-for="w in activeWarehouses"
+                      :key="w.id"
+                      :value="w.id"
+                    >
                       {{ w.name }}
                     </option>
                   </select>
@@ -522,7 +568,9 @@
                     class="form-input"
                     :max="form.invoiceDate"
                   />
-                  <small class="doc-hint">متى طلبت البضاعة؟ منه تُعرف مدة توريد المورد</small>
+                  <small class="doc-hint"
+                    >متى طلبت البضاعة؟ منه تُعرف مدة توريد المورد</small
+                  >
                 </div>
                 <div class="form-group">
                   <label>رقم فاتورة المورد</label>
@@ -604,7 +652,11 @@
                         class="form-select"
                         @change="onUnitChange(line)"
                       >
-                        <option v-for="u in line.units" :key="u.id" :value="u.id">
+                        <option
+                          v-for="u in line.units"
+                          :key="u.id"
+                          :value="u.id"
+                        >
                           {{ u.name }}
                         </option>
                       </select>
@@ -659,15 +711,21 @@
                 <div class="doc-totals doc-totals--box">
                   <div>
                     <span>قبل الضريبة</span>
-                    <span class="doc-money">{{ formatCurrency(totals.subtotal) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.subtotal)
+                    }}</span>
                   </div>
                   <div>
                     <span>الضريبة</span>
-                    <span class="doc-money">{{ formatCurrency(totals.tax) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.tax)
+                    }}</span>
                   </div>
                   <div class="is-grand">
                     <span>الإجمالي</span>
-                    <span class="doc-money">{{ formatCurrency(totals.total) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.total)
+                    }}</span>
                   </div>
                 </div>
               </section>
@@ -1196,7 +1254,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-
 .modal.invoice-modal {
   max-width: 980px;
 }

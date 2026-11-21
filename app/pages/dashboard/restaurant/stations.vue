@@ -4,34 +4,91 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>محطات المطبخ</h1>
-        <p>كل محطة (شواية، مقلاة، مشروبات) تستلم أسطر تصنيفاتها من البون وتجهّزها وحدها — والبون جاهز حين تجهز كل محطاته</p>
+        <p>
+          كل محطة (شواية، مقلاة، مشروبات) تستلم أسطر تصنيفاتها من البون وتجهّزها
+          وحدها — والبون جاهز حين تجهز كل محطاته
+        </p>
       </div>
       <div class="page-header__actions">
-        <NuxtLink to="/kitchen" class="btn btn--ghost"><ChefHat :size="16" /> شاشة المطبخ</NuxtLink>
-        <button v-can="'manage_restaurant'" class="btn btn--primary" @click="open()"><Plus :size="18" /> محطة</button>
+        <NuxtLink to="/kitchen" class="btn btn--ghost"
+          ><ChefHat :size="16" /> شاشة المطبخ</NuxtLink
+        >
+        <button
+          v-can="'manage_restaurant'"
+          class="btn btn--primary"
+          @click="open()"
+        >
+          <Plus :size="18" /> محطة
+        </button>
       </div>
     </div>
 
-    <div v-if="!store.stations.length" class="card"><div class="empty-state">
-      <Flame :size="44" class="empty-state__icon" />
-      <div class="empty-state__title">لا محطات</div>
-      <div class="empty-state__text">بلا محطات: المطبخ كله شاشة واحدة. أضف محطة لكل قسم يجهّز وحده</div>
-    </div></div>
+    <div v-if="!store.stations.length" class="card">
+      <div class="empty-state">
+        <Flame :size="44" class="empty-state__icon" />
+        <div class="empty-state__title">لا محطات</div>
+        <div class="empty-state__text">
+          بلا محطات: المطبخ كله شاشة واحدة. أضف محطة لكل قسم يجهّز وحده
+        </div>
+      </div>
+    </div>
     <div v-else class="card doc-table-card">
       <div class="table-responsive">
         <table class="data-table">
-          <thead><tr><th>المحطة</th><th>التصنيفات</th><th>الوقت المستهدف</th><th>الحالة</th><th /></tr></thead>
+          <thead>
+            <tr>
+              <th>المحطة</th>
+              <th>التصنيفات</th>
+              <th>الوقت المستهدف</th>
+              <th>الحالة</th>
+              <th />
+            </tr>
+          </thead>
           <tbody>
             <tr v-for="s in store.stations" :key="s.id">
-              <td><strong>{{ s.name }}</strong></td>
-              <td>{{ s.categoryIds.length ? s.categoryIds.map(categoryName).join("، ") : "ما لم تأخذه المحطات الأخرى" }}</td>
-              <td class="doc-num">{{ s.targetMinutes ? `${s.targetMinutes} د` : "—" }}</td>
-              <td><span :class="['badge', s.isActive ? 'badge--active' : 'badge--inactive']">{{ s.isActive ? "نشطة" : "موقوفة" }}</span></td>
+              <td>
+                <strong>{{ s.name }}</strong>
+              </td>
+              <td>
+                {{
+                  s.categoryIds.length
+                    ? s.categoryIds.map(categoryName).join("، ")
+                    : "ما لم تأخذه المحطات الأخرى"
+                }}
+              </td>
+              <td class="doc-num">
+                {{ s.targetMinutes ? `${s.targetMinutes} د` : "—" }}
+              </td>
+              <td>
+                <span
+                  :class="[
+                    'badge',
+                    s.isActive ? 'badge--active' : 'badge--inactive',
+                  ]"
+                  >{{ s.isActive ? "نشطة" : "موقوفة" }}</span
+                >
+              </td>
               <td>
                 <div class="doc-actions">
-                  <NuxtLink :to="{ path: '/kitchen', query: { stationId: s.id } }" class="btn btn--sm btn--ghost">شاشتها</NuxtLink>
-                  <button v-can="'manage_restaurant'" class="btn btn--sm btn--ghost" @click="open(s)"><Pencil :size="14" /></button>
-                  <button v-can="'manage_restaurant'" class="btn btn--sm btn--danger btn--icon" @click="remove(s)"><Trash2 :size="14" /></button>
+                  <NuxtLink
+                    :to="{ path: '/kitchen', query: { stationId: s.id } }"
+                    class="btn btn--sm btn--ghost"
+                    >شاشتها</NuxtLink
+                  >
+                  <button
+                    v-can="'manage_restaurant'"
+                    class="btn btn--sm btn--ghost"
+                    @click="open(s)"
+                  >
+                    <Pencil :size="14" />
+                  </button>
+                  <button
+                    v-can="'manage_restaurant'"
+                    class="btn btn--sm btn--danger btn--icon"
+                    @click="remove(s)"
+                  >
+                    <Trash2 :size="14" />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -45,32 +102,68 @@
         <div v-if="form" class="modal-overlay" @click.self="form = null">
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
-              <h3><Flame :size="20" class="doc-modal__icon" /> {{ form.id ? "تعديل محطة" : "محطة جديدة" }}</h3>
-              <button class="btn btn--icon btn--ghost" @click="form = null"><X :size="20" /></button>
+              <h3>
+                <Flame :size="20" class="doc-modal__icon" />
+                {{ form.id ? "تعديل محطة" : "محطة جديدة" }}
+              </h3>
+              <button class="btn btn--icon btn--ghost" @click="form = null">
+                <X :size="20" />
+              </button>
             </div>
             <form class="doc-form" @submit.prevent="save">
               <div class="form-group">
                 <label>الاسم *</label>
-                <input v-model.trim="form.name" class="form-input" required maxlength="80" />
+                <input
+                  v-model.trim="form.name"
+                  class="form-input"
+                  required
+                  maxlength="80"
+                />
               </div>
               <div class="form-group">
                 <label>الوقت المستهدف للتحضير (دقيقة)</label>
-                <StbNumberInput v-model.number="form.targetMinutes" class="form-input" min="1" placeholder="اختياري" />
+                <StbNumberInput
+                  v-model.number="form.targetMinutes"
+                  class="form-input"
+                  min="1"
+                  placeholder="اختياري"
+                />
               </div>
               <div class="form-group">
                 <label>التصنيفات</label>
                 <div class="categories">
-                  <label v-for="c in catalog.categories" :key="c.id" class="checkbox-label">
-                    <input v-model="form.categoryIds" type="checkbox" :value="c.id" />
+                  <label
+                    v-for="c in catalog.categories"
+                    :key="c.id"
+                    class="checkbox-label"
+                  >
+                    <input
+                      v-model="form.categoryIds"
+                      type="checkbox"
+                      :value="c.id"
+                    />
                     <span>{{ c.name }}</span>
                   </label>
                 </div>
-                <small class="doc-hint">بلا تصنيفات: تستلم كل ما لم تأخذه محطة أخرى</small>
+                <small class="doc-hint"
+                  >بلا تصنيفات: تستلم كل ما لم تأخذه محطة أخرى</small
+                >
               </div>
-              <label class="checkbox-label"><input v-model="form.isActive" type="checkbox" /> <span>نشطة</span></label>
+              <label class="checkbox-label"
+                ><input v-model="form.isActive" type="checkbox" />
+                <span>نشطة</span></label
+              >
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="form = null">إلغاء</button>
-                <button type="submit" class="btn btn--primary" :disabled="busy">حفظ</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="form = null"
+                >
+                  إلغاء
+                </button>
+                <button type="submit" class="btn btn--primary" :disabled="busy">
+                  حفظ
+                </button>
               </div>
             </form>
           </div>
@@ -102,7 +195,8 @@ const form = ref<{
   isActive: boolean;
 } | null>(null);
 
-const categoryName = (id: string) => catalog.categories.find((c) => c.id === id)?.name ?? "—";
+const categoryName = (id: string) =>
+  catalog.categories.find((c) => c.id === id)?.name ?? "—";
 
 const open = (station?: KitchenStation) => {
   form.value = {

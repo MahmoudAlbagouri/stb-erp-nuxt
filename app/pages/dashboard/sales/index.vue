@@ -4,10 +4,16 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>فواتير البيع</h1>
-        <p>الإصدار يعطي الفاتورة رقمها التسلسلي ورمز QR ويُخرج بضاعتها من المخزن</p>
+        <p>
+          الإصدار يعطي الفاتورة رقمها التسلسلي ورمز QR ويُخرج بضاعتها من المخزن
+        </p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'manage_sales'" class="btn btn--primary" @click="openCreate">
+        <button
+          v-can="'manage_sales'"
+          class="btn btn--primary"
+          @click="openCreate"
+        >
           <Plus :size="18" />
           <span>فاتورة بيع</span>
         </button>
@@ -17,9 +23,13 @@
     <!-- ══ الأرقام ══ -->
     <div class="doc-stats">
       <div class="stat-card">
-        <div class="stat-card__icon doc-tone--success"><Banknote :size="22" /></div>
+        <div class="stat-card__icon doc-tone--success">
+          <Banknote :size="22" />
+        </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.todaySales) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.todaySales) }}
+          </div>
           <div class="stat-card__label">مبيعات اليوم</div>
         </div>
       </div>
@@ -28,7 +38,9 @@
           <TrendingUp :size="22" />
         </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.monthSales) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.monthSales) }}
+          </div>
           <div class="stat-card__label">
             مبيعات الشهر
             <template v-if="summary.monthProfit !== null">
@@ -46,7 +58,9 @@
           <HandCoins :size="22" />
         </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.receivables) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.receivables) }}
+          </div>
           <div class="stat-card__label">على العملاء</div>
         </div>
       </button>
@@ -59,7 +73,9 @@
           <CalendarClock :size="22" />
         </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.overdue) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.overdue) }}
+          </div>
           <div class="stat-card__label">متأخر التحصيل</div>
         </div>
       </button>
@@ -100,7 +116,11 @@
           {{ c.name }}
         </option>
       </select>
-      <select v-model="filters.payment" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filters.payment"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل حالات التحصيل</option>
         <option value="due">عليها متبقٍ</option>
         <option value="overdue">متأخرة التحصيل</option>
@@ -154,7 +174,9 @@
             <tbody>
               <tr v-for="inv in list.rows.value" :key="inv.id">
                 <td>
-                  <code v-if="inv.number" class="doc-code">{{ inv.number }}</code>
+                  <code v-if="inv.number" class="doc-code">{{
+                    inv.number
+                  }}</code>
                   <span v-else class="doc-cell__sub">بلا رقم بعد</span>
                 </td>
                 <td>
@@ -167,9 +189,15 @@
                 </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-num">{{ formatDate(inv.invoiceDate) }}</span>
+                    <span class="doc-num">{{
+                      formatDate(inv.invoiceDate)
+                    }}</span>
                     <span
-                      v-if="inv.dueDate && inv.status === 'issued' && inv.remaining > 0"
+                      v-if="
+                        inv.dueDate &&
+                        inv.status === 'issued' &&
+                        inv.remaining > 0
+                      "
                       class="doc-cell__sub"
                       :class="{ 'text-danger': isOverdue(inv) }"
                     >
@@ -330,7 +358,9 @@
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">المخزن</span>
-                  <span class="doc-cell__main">{{ viewing.warehouse?.name }}</span>
+                  <span class="doc-cell__main">{{
+                    viewing.warehouse?.name
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">
@@ -403,12 +433,16 @@
                       {{ formatCurrency(line.unitPrice) }}
                     </span>
                     <span
-                      v-if="line.listPrice !== null && line.listPrice !== undefined"
+                      v-if="
+                        line.listPrice !== null && line.listPrice !== undefined
+                      "
                       class="doc-cell__sub"
                       :title="line.priceReason || ''"
                     >
                       سعر معدّل من {{ formatMoney(line.listPrice) }}
-                      <template v-if="line.priceReason">· {{ line.priceReason }}</template>
+                      <template v-if="line.priceReason"
+                        >· {{ line.priceReason }}</template
+                      >
                     </span>
                     <span v-if="line.discount > 0" class="doc-cell__sub">
                       خصم {{ formatMoney(line.discount) }}
@@ -416,7 +450,9 @@
                   </div>
                   <div>
                     <span class="doc-lines__label">الضريبة</span>
-                    <span class="doc-num">{{ formatNumber(line.taxRate) }}%</span>
+                    <span class="doc-num"
+                      >{{ formatNumber(line.taxRate) }}%</span
+                    >
                   </div>
                   <div>
                     <span class="doc-lines__label">الإجمالي</span>
@@ -430,15 +466,21 @@
               <div class="doc-totals doc-totals--box">
                 <div>
                   <span>قبل الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(viewing.subtotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(viewing.subtotal)
+                  }}</span>
                 </div>
                 <div>
                   <span>الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(viewing.taxTotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(viewing.taxTotal)
+                  }}</span>
                 </div>
                 <div class="is-grand">
                   <span>الإجمالي</span>
-                  <span class="doc-money">{{ formatCurrency(viewing.total) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(viewing.total)
+                  }}</span>
                 </div>
                 <template v-if="viewing.status === 'issued'">
                   <div v-if="viewing.returnedAmount > 0">
@@ -466,7 +508,11 @@
                     </span>
                   </div>
                   <!-- التكلفة والربح: السيرفر يرسلهما فقط لمن له الصلاحية -->
-                  <div v-if="access.can('view_sales_profit') && viewing.costTotal > 0">
+                  <div
+                    v-if="
+                      access.can('view_sales_profit') && viewing.costTotal > 0
+                    "
+                  >
                     <span>مجمل الربح</span>
                     <span class="doc-money doc-money--in">
                       {{ formatCurrency(viewing.subtotal - viewing.costTotal) }}
@@ -548,7 +594,11 @@
                     :disabled="form.lines.length > 0"
                   >
                     <option value="" disabled>اختر المخزن...</option>
-                    <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
+                    <option
+                      v-for="w in activeWarehouses"
+                      :key="w.id"
+                      :value="w.id"
+                    >
                       {{ w.name }}
                     </option>
                   </select>
@@ -642,7 +692,11 @@
                         class="form-select"
                         @change="line.unitPrice = priceFor(line)"
                       >
-                        <option v-for="u in line.units" :key="u.id" :value="u.id">
+                        <option
+                          v-for="u in line.units"
+                          :key="u.id"
+                          :value="u.id"
+                        >
                           {{ u.name }}
                         </option>
                       </select>
@@ -676,7 +730,11 @@
                         :step="moneyStep()"
                         placeholder="0"
                         :disabled="!line.allowDiscount"
-                        :title="line.allowDiscount ? '' : 'هذا الصنف لا يُسمح بالخصم عليه'"
+                        :title="
+                          line.allowDiscount
+                            ? ''
+                            : 'هذا الصنف لا يُسمح بالخصم عليه'
+                        "
                       />
                     </div>
                     <div>
@@ -699,15 +757,21 @@
                 <div class="doc-totals doc-totals--box">
                   <div>
                     <span>قبل الضريبة</span>
-                    <span class="doc-money">{{ formatCurrency(totals.subtotal) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.subtotal)
+                    }}</span>
                   </div>
                   <div>
                     <span>الضريبة</span>
-                    <span class="doc-money">{{ formatCurrency(totals.tax) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.tax)
+                    }}</span>
                   </div>
                   <div class="is-grand">
                     <span>الإجمالي</span>
-                    <span class="doc-money">{{ formatCurrency(totals.total) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(totals.total)
+                    }}</span>
                   </div>
                 </div>
               </section>
@@ -763,7 +827,9 @@
             <form class="doc-form" @submit.prevent="submitIssue">
               <div class="doc-totals">
                 <span>{{ customerLabel(issuing.customer) }}</span>
-                <strong class="doc-money">{{ formatCurrency(issuing.total) }}</strong>
+                <strong class="doc-money">{{
+                  formatCurrency(issuing.total)
+                }}</strong>
               </div>
 
               <div class="doc-grid">
@@ -787,7 +853,10 @@
                     placeholder="0"
                   />
                 </div>
-                <div v-if="Number(tender.card) > 0" class="form-group doc-grid__full">
+                <div
+                  v-if="Number(tender.card) > 0"
+                  class="form-group doc-grid__full"
+                >
                   <label>رقم عملية الشبكة</label>
                   <input
                     v-model.trim="tender.cardReference"
@@ -800,10 +869,18 @@
               </div>
 
               <div class="doc-actions">
-                <button type="button" class="btn btn--sm btn--ghost" @click="payAll('cash')">
+                <button
+                  type="button"
+                  class="btn btn--sm btn--ghost"
+                  @click="payAll('cash')"
+                >
                   الكل نقداً
                 </button>
-                <button type="button" class="btn btn--sm btn--ghost" @click="payAll('card')">
+                <button
+                  type="button"
+                  class="btn btn--sm btn--ghost"
+                  @click="payAll('card')"
+                >
                   الكل شبكة
                 </button>
                 <button
@@ -816,12 +893,13 @@
                 </button>
               </div>
 
-              <div
-                class="doc-totals"
-                :class="{ 'issue-error': issueError }"
-              >
+              <div class="doc-totals" :class="{ 'issue-error': issueError }">
                 <span>
-                  {{ creditAmount < 0 ? "زيادة عن الإجمالي" : "يبقى آجلاً على العميل" }}
+                  {{
+                    creditAmount < 0
+                      ? "زيادة عن الإجمالي"
+                      : "يبقى آجلاً على العميل"
+                  }}
                 </span>
                 <strong class="doc-money">
                   {{ formatCurrency(Math.abs(creditAmount)) }}
@@ -832,13 +910,17 @@
               <div class="doc-note">
                 <Info :size="16" />
                 <span>
-                  بعد الإصدار لا تُعدَّل الفاتورة ولا تُلغى — تصحيحها يكون بمرتجع
-                  بيع.
+                  بعد الإصدار لا تُعدَّل الفاتورة ولا تُلغى — تصحيحها يكون
+                  بمرتجع بيع.
                 </span>
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeIssue">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeIssue"
+                >
                   إلغاء
                 </button>
                 <button
@@ -1378,9 +1460,9 @@ const openReturn = (invoiceId: string) => {
   showReturn.value = true;
 };
 
-const printer = ref<{ print: (size: "a4" | "thermal") => Promise<void> } | null>(
-  null,
-);
+const printer = ref<{
+  print: (size: "a4" | "thermal") => Promise<void>;
+} | null>(null);
 const printTarget = ref<SalesInvoice | null>(null);
 
 const printInvoice = async (invoice: SalesInvoice, size: "a4" | "thermal") => {

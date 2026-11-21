@@ -31,7 +31,10 @@
       <span>{{ emptyText }}</span>
     </div>
 
-    <div v-else-if="showTable && table" class="chart-card__table table-responsive">
+    <div
+      v-else-if="showTable && table"
+      class="chart-card__table table-responsive"
+    >
       <table class="data-table">
         <thead>
           <tr>

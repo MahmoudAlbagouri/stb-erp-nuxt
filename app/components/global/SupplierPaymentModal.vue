@@ -100,7 +100,11 @@
               </div>
               <div class="form-group doc-grid__full">
                 <label>ملاحظة</label>
-                <input v-model.trim="form.note" class="form-input" maxlength="500" />
+                <input
+                  v-model.trim="form.note"
+                  class="form-input"
+                  maxlength="500"
+                />
               </div>
             </div>
 

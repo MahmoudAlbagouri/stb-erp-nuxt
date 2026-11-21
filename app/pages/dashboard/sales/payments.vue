@@ -4,7 +4,10 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>مقبوضات العملاء</h1>
-        <p>كل ما قُبض من العملاء (عند الإصدار، على الفواتير الآجلة، أو على الحساب) وما رُدّ لهم</p>
+        <p>
+          كل ما قُبض من العملاء (عند الإصدار، على الفواتير الآجلة، أو على
+          الحساب) وما رُدّ لهم
+        </p>
       </div>
       <div class="page-header__actions">
         <button
@@ -75,15 +78,23 @@
             </thead>
             <tbody>
               <tr v-for="p in list.rows.value" :key="p.id">
-                <td><code class="doc-code">{{ p.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ p.number }}</code>
+                </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-cell__main">{{ customerLabel(p.customer) }}</span>
-                    <span v-if="p.note" class="doc-cell__sub">{{ p.note }}</span>
+                    <span class="doc-cell__main">{{
+                      customerLabel(p.customer)
+                    }}</span>
+                    <span v-if="p.note" class="doc-cell__sub">{{
+                      p.note
+                    }}</span>
                   </div>
                 </td>
                 <td>
-                  <code v-if="p.invoice" class="doc-code">{{ p.invoice.number }}</code>
+                  <code v-if="p.invoice" class="doc-code">{{
+                    p.invoice.number
+                  }}</code>
                   <span v-else class="doc-cell__sub">على الحساب</span>
                 </td>
                 <td>
@@ -92,7 +103,9 @@
                 <td>
                   <span
                     class="doc-money doc-money--strong"
-                    :class="p.direction === 'in' ? 'doc-money--in' : 'doc-money--out'"
+                    :class="
+                      p.direction === 'in' ? 'doc-money--in' : 'doc-money--out'
+                    "
                   >
                     {{ formatCurrency(p.amount) }}
                   </span>
@@ -123,7 +136,11 @@
                 <td>
                   <div class="doc-actions">
                     <button
-                      v-if="p.status === 'posted' && p.direction === 'in' && p.customerId"
+                      v-if="
+                        p.status === 'posted' &&
+                        p.direction === 'in' &&
+                        p.customerId
+                      "
                       v-can="'manage_customer_payments'"
                       class="btn btn--sm btn--danger btn--icon"
                       title="إلغاء القبض"
@@ -168,10 +185,7 @@ import { Ban, CircleDollarSign, Plus } from "lucide-vue-next";
 import { useSalesStore } from "@/stores/sales";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
-import type {
-  CustomerPayment,
-  CustomerPaymentStatus,
-} from "@/types/sales";
+import type { CustomerPayment, CustomerPaymentStatus } from "@/types/sales";
 
 definePageMeta({ middleware: "auth" });
 

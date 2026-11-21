@@ -12,7 +12,11 @@
               <BookOpen :size="20" class="doc-modal__icon" />
               {{ entry ? `القيد ${entry.number}` : "القيد" }}
             </h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -32,17 +36,29 @@
                 <span class="doc-cell__sub">المصدر</span>
                 <span>
                   {{ JOURNAL_SOURCE_LABEL[entry.sourceType] }}
-                  <code v-if="entry.sourceRef" class="doc-code">{{ entry.sourceRef }}</code>
+                  <code v-if="entry.sourceRef" class="doc-code">{{
+                    entry.sourceRef
+                  }}</code>
                 </span>
               </div>
               <div class="doc-cell">
                 <span class="doc-cell__sub">الإجمالي</span>
-                <span class="doc-num doc-num--strong">{{ formatMoney(entry.total) }}</span>
+                <span class="doc-num doc-num--strong">{{
+                  formatMoney(entry.total)
+                }}</span>
               </div>
               <div class="doc-cell">
                 <span class="doc-cell__sub">الحالة</span>
-                <span v-if="entry.reversedById" class="badge doc-status--cancelled">معكوس</span>
-                <span v-else-if="entry.reversalOfId" class="badge doc-status--progress">قيد عكسي</span>
+                <span
+                  v-if="entry.reversedById"
+                  class="badge doc-status--cancelled"
+                  >معكوس</span
+                >
+                <span
+                  v-else-if="entry.reversalOfId"
+                  class="badge doc-status--progress"
+                  >قيد عكسي</span
+                >
                 <span v-else class="badge doc-status--done">مُرحَّل</span>
               </div>
             </div>
@@ -70,13 +86,19 @@
                     <td>{{ line.branchName || "—" }}</td>
                     <td>
                       <template v-if="line.partyName">
-                        <span class="doc-cell__sub">{{ PARTY_LABEL[line.partyType!] }}:</span>
+                        <span class="doc-cell__sub"
+                          >{{ PARTY_LABEL[line.partyType!] }}:</span
+                        >
                         {{ line.partyName }}
                       </template>
                       <template v-else>—</template>
                     </td>
-                    <td class="doc-num">{{ line.debit ? formatMoney(line.debit) : "" }}</td>
-                    <td class="doc-num">{{ line.credit ? formatMoney(line.credit) : "" }}</td>
+                    <td class="doc-num">
+                      {{ line.debit ? formatMoney(line.debit) : "" }}
+                    </td>
+                    <td class="doc-num">
+                      {{ line.credit ? formatMoney(line.credit) : "" }}
+                    </td>
                   </tr>
                 </tbody>
                 <tfoot>
@@ -90,9 +112,14 @@
             </div>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="close">إغلاق</button>
+              <button type="button" class="btn btn--ghost" @click="close">
+                إغلاق
+              </button>
               <template v-if="reversible">
-                <StbDateInput v-model="reverseDate" class="journal-modal__date" />
+                <StbDateInput
+                  v-model="reverseDate"
+                  class="journal-modal__date"
+                />
                 <button
                   v-can="'create_journal_entries'"
                   type="button"
@@ -138,7 +165,8 @@ const reversing = ref(false);
 const reversible = computed(
   () =>
     !!entry.value &&
-    (entry.value.sourceType === "manual" || entry.value.sourceType === "opening") &&
+    (entry.value.sourceType === "manual" ||
+      entry.value.sourceType === "opening") &&
     !entry.value.reversedById &&
     !entry.value.reversalOfId,
 );
@@ -164,7 +192,10 @@ const reverse = async () => {
   if (!entry.value) return;
   reversing.value = true;
   try {
-    const reversal = await store.reverseJournal(entry.value.id, reverseDate.value);
+    const reversal = await store.reverseJournal(
+      entry.value.id,
+      reverseDate.value,
+    );
     toast.success(`سُجّل القيد العكسي ${reversal.number}`);
     emit("reversed");
     close();

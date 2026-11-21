@@ -19,8 +19,12 @@
       />
     </div>
     <div v-if="open && search.trim()" class="doc-picker__results">
-      <div v-if="loading && !results.length" class="doc-picker__state">جارٍ البحث...</div>
-      <div v-else-if="!results.length" class="doc-picker__state">لا أصناف مطابقة</div>
+      <div v-if="loading && !results.length" class="doc-picker__state">
+        جارٍ البحث...
+      </div>
+      <div v-else-if="!results.length" class="doc-picker__state">
+        لا أصناف مطابقة
+      </div>
       <button
         v-for="row in results"
         :key="row.id"
@@ -54,7 +58,11 @@ const props = withDefaults(
     exclude?: string[];
     placeholder?: string;
   }>(),
-  { types: undefined, exclude: () => [], placeholder: "ابحث بالاسم أو الكود..." },
+  {
+    types: undefined,
+    exclude: () => [],
+    placeholder: "ابحث بالاسم أو الكود...",
+  },
 );
 const emit = defineEmits<{ pick: [product: Product] }>();
 

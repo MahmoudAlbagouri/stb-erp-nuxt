@@ -31,7 +31,9 @@
           @change="onStationChange"
         >
           <option value="">كل المطبخ</option>
-          <option v-for="s in stations" :key="s.id" :value="s.id">{{ s.name }}</option>
+          <option v-for="s in stations" :key="s.id" :value="s.id">
+            {{ s.name }}
+          </option>
           <option value="general">المطبخ العام (بلا محطة)</option>
         </select>
         <span class="kds__status" :class="online ? 'is-on' : 'is-off'">
@@ -47,10 +49,18 @@
           <VolumeX v-if="muted" :size="16" />
           <Volume2 v-else :size="16" />
         </button>
-        <button class="btn btn--sm btn--ghost btn--icon" title="ملء الشاشة" @click="toggleFullscreen">
+        <button
+          class="btn btn--sm btn--ghost btn--icon"
+          title="ملء الشاشة"
+          @click="toggleFullscreen"
+        >
           <Maximize :size="16" />
         </button>
-        <NuxtLink to="/dashboard" class="btn btn--sm btn--ghost btn--icon" title="لوحة التحكم">
+        <NuxtLink
+          to="/dashboard"
+          class="btn btn--sm btn--ghost btn--icon"
+          title="لوحة التحكم"
+        >
           <LogOut :size="16" />
         </NuxtLink>
       </div>
@@ -62,21 +72,34 @@
       <NuxtLink to="/dashboard" class="btn btn--primary">لوحة التحكم</NuxtLink>
     </div>
 
-    <div v-else-if="!loaded" class="kds__empty"><div class="spinner spinner--lg" /></div>
+    <div v-else-if="!loaded" class="kds__empty">
+      <div class="spinner spinner--lg" />
+    </div>
 
     <main v-else class="kds__board">
-      <section v-for="column in COLUMNS" :key="column.status" class="kds__column">
+      <section
+        v-for="column in COLUMNS"
+        :key="column.status"
+        class="kds__column"
+      >
         <h2 :class="`is-${column.status}`">
           {{ column.title }}
-          <span class="kds__count">{{ formatNumber(byStatus(column.status).length) }}</span>
+          <span class="kds__count">{{
+            formatNumber(byStatus(column.status).length)
+          }}</span>
         </h2>
         <div class="kds__cards">
-          <p v-if="!byStatus(column.status).length" class="kds__none">{{ column.empty }}</p>
+          <p v-if="!byStatus(column.status).length" class="kds__none">
+            {{ column.empty }}
+          </p>
           <article
             v-for="order in byStatus(column.status)"
             :key="order.id"
             class="kds__card"
-            :class="[`is-${urgency(order)}`, { 'is-fresh': fresh.has(order.id) }]"
+            :class="[
+              `is-${urgency(order)}`,
+              { 'is-fresh': fresh.has(order.id) },
+            ]"
           >
             <div class="kds__head">
               <strong class="kds__no">#{{ order.ticketNo }}</strong>
@@ -88,7 +111,9 @@
                 إضافة ({{ order.round }})
               </span>
               <span v-if="order.label">{{ order.label }}</span>
-              <span v-if="order.cashierName" class="kds__muted">{{ order.cashierName }}</span>
+              <span v-if="order.cashierName" class="kds__muted">{{
+                order.cashierName
+              }}</span>
             </div>
             <ul class="kds__lines">
               <li
@@ -96,27 +121,49 @@
                 :key="index"
                 :class="{ 'is-cancel': line.quantity < 0 }"
               >
-                <strong dir="ltr">{{ formatNumber(Math.abs(line.quantity)) }}×</strong>
+                <strong dir="ltr"
+                  >{{ formatNumber(Math.abs(line.quantity)) }}×</strong
+                >
                 <span>
-                  <template v-if="line.quantity < 0">إلغاء: </template>{{ line.name }}
-                  <small v-if="line.unitName" class="kds__muted"> ({{ line.unitName }})</small>
+                  <template v-if="line.quantity < 0">إلغاء: </template
+                  >{{ line.name }}
+                  <small v-if="line.unitName" class="kds__muted">
+                    ({{ line.unitName }})</small
+                  >
                   <em v-if="line.note">{{ line.note }}</em>
-                  <em v-for="m in line.modifiers ?? []" :key="m" class="kds__modifier">+ {{ m }}</em>
+                  <em
+                    v-for="m in line.modifiers ?? []"
+                    :key="m"
+                    class="kds__modifier"
+                    >+ {{ m }}</em
+                  >
                 </span>
               </li>
             </ul>
             <p v-if="order.note" class="kds__note">{{ order.note }}</p>
             <div class="kds__buttons">
               <template v-if="order.status === 'new'">
-                <button class="btn btn--primary" :disabled="busy.has(order.id)" @click="move(order, 'preparing')">
+                <button
+                  class="btn btn--primary"
+                  :disabled="busy.has(order.id)"
+                  @click="move(order, 'preparing')"
+                >
                   ابدأ التحضير
                 </button>
-                <button class="btn btn--ghost" :disabled="busy.has(order.id)" @click="move(order, 'ready')">
+                <button
+                  class="btn btn--ghost"
+                  :disabled="busy.has(order.id)"
+                  @click="move(order, 'ready')"
+                >
                   جاهز
                 </button>
               </template>
               <template v-else-if="order.status === 'preparing'">
-                <button class="btn btn--success" :disabled="busy.has(order.id)" @click="move(order, 'ready')">
+                <button
+                  class="btn btn--success"
+                  :disabled="busy.has(order.id)"
+                  @click="move(order, 'ready')"
+                >
                   <Check :size="16" /> جاهز
                 </button>
                 <button
@@ -129,7 +176,11 @@
                 </button>
               </template>
               <template v-else>
-                <button class="btn btn--primary" :disabled="busy.has(order.id)" @click="move(order, 'served')">
+                <button
+                  class="btn btn--primary"
+                  :disabled="busy.has(order.id)"
+                  @click="move(order, 'served')"
+                >
                   تم التسليم
                 </button>
                 <button
@@ -174,7 +225,11 @@ import { installSoundUnlock, playSound } from "@/utils/sounds";
 definePageMeta({ middleware: "auth", layout: "pos" });
 useHead({ title: "شاشة المطبخ" });
 
-const COLUMNS: { status: "new" | "preparing" | "ready"; title: string; empty: string }[] = [
+const COLUMNS: {
+  status: "new" | "preparing" | "ready";
+  title: string;
+  empty: string;
+}[] = [
   { status: "new", title: "جديد", empty: "لا طلبات جديدة" },
   { status: "preparing", title: "قيد التحضير", empty: "لا شيء على النار" },
   { status: "ready", title: "جاهز للتسليم", empty: "لا طلبات جاهزة" },
@@ -196,7 +251,11 @@ const online = ref(true);
 const denied = ref("");
 const branchId = ref("");
 /** شاشة محطة (من الرابط ?stationId= أو الاختيار) */
-const stationId = ref(typeof useRoute().query.stationId === "string" ? String(useRoute().query.stationId) : "");
+const stationId = ref(
+  typeof useRoute().query.stationId === "string"
+    ? String(useRoute().query.stationId)
+    : "",
+);
 const stations = ref<{ id: string; name: string }[]>([]);
 const onStationChange = () => {
   known.clear();
@@ -211,10 +270,14 @@ const muted = ref(false);
 
 const now = ref(Date.now());
 const clock = computed(() =>
-  new Date(now.value).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+  new Date(now.value).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }),
 );
 
-const byStatus = (status: KitchenOrderStatus) => orders.value.filter((o) => o.status === status);
+const byStatus = (status: KitchenOrderStatus) =>
+  orders.value.filter((o) => o.status === status);
 
 const typeLabel = (order: KitchenOrderRecord) => {
   if (order.orderType === "dine_in") return order.tableName || "صالة";
@@ -275,9 +338,10 @@ const move = async (order: KitchenOrderRecord, status: KitchenOrderStatus) => {
   busy.value.add(order.id);
   try {
     // شاشة محطة تنقل نصيبها (والتسليم للبون كله من الشاشة العامة)
-    const station = stationId.value && status !== "served" && status !== "cancelled"
-      ? stationId.value
-      : undefined;
+    const station =
+      stationId.value && status !== "served" && status !== "cancelled"
+        ? stationId.value
+        : undefined;
     const updated = await store.setKitchenStatus(order.id, status, station);
     if (station) {
       void load();
@@ -321,7 +385,9 @@ onMounted(async () => {
   }
   branches.fetchOptions().catch(() => {});
   useApi()
-    .get<{ id: string; name: string; isActive: boolean }[]>("/restaurant/stations")
+    .get<{ id: string; name: string; isActive: boolean }[]>(
+      "/restaurant/stations",
+    )
     .then((res) => (stations.value = res.data.filter((s) => s.isActive)))
     .catch(() => {});
   await load();

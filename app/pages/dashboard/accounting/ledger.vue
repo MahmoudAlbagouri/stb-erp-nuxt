@@ -4,7 +4,10 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>كشف حساب</h1>
-        <p>حركة حساب (أو مجموعة حسابات) في فترة، برصيد أول المدة والرصيد بعد كل حركة</p>
+        <p>
+          حركة حساب (أو مجموعة حسابات) في فترة، برصيد أول المدة والرصيد بعد كل
+          حركة
+        </p>
       </div>
       <div class="page-header__actions">
         <ReportExport
@@ -23,23 +26,46 @@
 
     <template v-else>
       <form class="card doc-filters report-filters" @submit.prevent="load">
-        <AccountSelect v-model="query.accountId" :accounts="store.accounts" required />
+        <AccountSelect
+          v-model="query.accountId"
+          :accounts="store.accounts"
+          required
+        />
         <StbDateInput v-model="query.from" required />
         <StbDateInput v-model="query.to" required />
-        <select v-if="branches.hasMany" v-model="query.branchId" class="form-select">
+        <select
+          v-if="branches.hasMany"
+          v-model="query.branchId"
+          class="form-select"
+        >
           <option value="">كل الفروع</option>
-          <option v-for="b in branches.options" :key="b.id" :value="b.id">{{ b.name }}</option>
+          <option v-for="b in branches.options" :key="b.id" :value="b.id">
+            {{ b.name }}
+          </option>
         </select>
-        <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': loading }" :disabled="loading">
+        <button
+          type="submit"
+          class="btn btn--primary"
+          :class="{ 'btn--loading': loading }"
+          :disabled="loading"
+        >
           عرض
         </button>
       </form>
 
-      <div v-if="loading && !result" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="loading && !result" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
 
-      <div v-else-if="result" ref="report" class="card doc-table-card printable">
+      <div
+        v-else-if="result"
+        ref="report"
+        class="card doc-table-card printable"
+      >
         <div class="report-title">
-          <h2>كشف حساب {{ result.account.code }} — {{ result.account.name }}</h2>
+          <h2>
+            كشف حساب {{ result.account.code }} — {{ result.account.name }}
+          </h2>
           <span>من {{ result.from }} إلى {{ result.to }}</span>
         </div>
         <div class="table-responsive">
@@ -62,36 +88,56 @@
                 <td v-if="result.account.isGroup" />
                 <td />
                 <td />
-                <td class="doc-num doc-num--strong">{{ signed(result.opening) }}</td>
+                <td class="doc-num doc-num--strong">
+                  {{ signed(result.opening) }}
+                </td>
               </tr>
               <tr v-for="line in result.lines" :key="line.id">
                 <td class="doc-num">{{ line.date }}</td>
                 <td>
-                  <button type="button" class="link-btn" @click="viewing = line.entryId">
+                  <button
+                    type="button"
+                    class="link-btn"
+                    @click="viewing = line.entryId"
+                  >
                     <code class="doc-code">{{ line.entryNumber }}</code>
                   </button>
                 </td>
                 <td>
                   {{ line.description }}
-                  <span v-if="line.partyName" class="doc-cell__sub"> — {{ line.partyName }}</span>
-                  <span v-if="line.sourceRef" class="doc-cell__sub"> ({{ line.sourceRef }})</span>
+                  <span v-if="line.partyName" class="doc-cell__sub">
+                    — {{ line.partyName }}</span
+                  >
+                  <span v-if="line.sourceRef" class="doc-cell__sub">
+                    ({{ line.sourceRef }})</span
+                  >
                 </td>
                 <td v-if="result.account.isGroup">
-                  <code class="doc-code">{{ line.accountCode }}</code> {{ line.accountName }}
+                  <code class="doc-code">{{ line.accountCode }}</code>
+                  {{ line.accountName }}
                 </td>
-                <td class="doc-num">{{ line.debit ? formatMoney(line.debit) : "" }}</td>
-                <td class="doc-num">{{ line.credit ? formatMoney(line.credit) : "" }}</td>
+                <td class="doc-num">
+                  {{ line.debit ? formatMoney(line.debit) : "" }}
+                </td>
+                <td class="doc-num">
+                  {{ line.credit ? formatMoney(line.credit) : "" }}
+                </td>
                 <td class="doc-num">{{ signed(line.balance) }}</td>
               </tr>
               <tr v-if="!result.lines.length">
-                <td :colspan="result.account.isGroup ? 7 : 6" class="empty-state__text">
+                <td
+                  :colspan="result.account.isGroup ? 7 : 6"
+                  class="empty-state__text"
+                >
                   لا حركة في هذه الفترة
                 </td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
-                <th :colspan="result.account.isGroup ? 4 : 3">الإجمالي والرصيد الختامي</th>
+                <th :colspan="result.account.isGroup ? 4 : 3">
+                  الإجمالي والرصيد الختامي
+                </th>
                 <th class="doc-num">{{ formatMoney(result.debit) }}</th>
                 <th class="doc-num">{{ formatMoney(result.credit) }}</th>
                 <th class="doc-num">{{ signed(result.closing) }}</th>
@@ -132,7 +178,8 @@ const shownQuery = ref<object>({});
 
 const today = companyToday();
 const query = reactive({
-  accountId: typeof route.query.accountId === "string" ? route.query.accountId : "",
+  accountId:
+    typeof route.query.accountId === "string" ? route.query.accountId : "",
   from: `${today.slice(0, 7)}-01`,
   to: today,
   branchId: "",
@@ -140,7 +187,9 @@ const query = reactive({
 
 /** الرصيد بطبيعته: مدين (م) أو دائن (د) */
 const signed = (value: number) =>
-  value === 0 ? "0" : `${formatMoney(Math.abs(value))} ${value > 0 ? "م" : "د"}`;
+  value === 0
+    ? "0"
+    : `${formatMoney(Math.abs(value))} ${value > 0 ? "م" : "د"}`;
 
 const load = async () => {
   if (!query.accountId) return;

@@ -102,10 +102,7 @@ export const useQuotationsStore = defineStore("quotations", () => {
   const downloadInvoicePdf = async (id: string) => {
     pdfLoading.value = id;
     try {
-      await api.download(
-        `/quotations/${id}/invoice-pdf`,
-        `invoice-${id}.pdf`,
-      );
+      await api.download(`/quotations/${id}/invoice-pdf`, `invoice-${id}.pdf`);
     } finally {
       pdfLoading.value = null;
     }

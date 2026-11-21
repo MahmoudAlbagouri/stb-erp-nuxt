@@ -4,7 +4,9 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>عروض أسعار العملاء</h1>
-        <p>ما أصدره الكاشير للعملاء — ليس بيعاً ولا يمس المخزون حتى يتحول لفاتورة</p>
+        <p>
+          ما أصدره الكاشير للعملاء — ليس بيعاً ولا يمس المخزون حتى يتحول لفاتورة
+        </p>
       </div>
       <div class="page-header__actions">
         <NuxtLink to="/dashboard/sales" class="btn btn--ghost">
@@ -17,8 +19,8 @@
     <div class="doc-note page-note">
       <Info :size="16" />
       <span>
-        يُنشأ العرض من شاشة الكاشير، ويتحول لفاتورة عليها برقمه حين يعود العميل. يُشغَّل
-        ويُقفل من إعدادات شاشة الكاشير.
+        يُنشأ العرض من شاشة الكاشير، ويتحول لفاتورة عليها برقمه حين يعود العميل.
+        يُشغَّل ويُقفل من إعدادات شاشة الكاشير.
       </span>
     </div>
 
@@ -77,17 +79,29 @@
             </thead>
             <tbody>
               <tr v-for="q in list.rows.value" :key="q.id">
-                <td><code class="doc-code">{{ q.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ q.number }}</code>
+                </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-cell__main">{{ q.customerName || "عميل نقدي" }}</span>
-                    <span v-if="q.customerPhone" class="doc-cell__sub" dir="ltr">
+                    <span class="doc-cell__main">{{
+                      q.customerName || "عميل نقدي"
+                    }}</span>
+                    <span
+                      v-if="q.customerPhone"
+                      class="doc-cell__sub"
+                      dir="ltr"
+                    >
                       {{ q.customerPhone }}
                     </span>
                   </div>
                 </td>
-                <td><span class="doc-num">{{ formatDate(q.issuedAt) }}</span></td>
-                <td><span class="doc-num">{{ formatDate(q.validUntil) }}</span></td>
+                <td>
+                  <span class="doc-num">{{ formatDate(q.issuedAt) }}</span>
+                </td>
+                <td>
+                  <span class="doc-num">{{ formatDate(q.validUntil) }}</span>
+                </td>
                 <td>
                   <span class="doc-money doc-money--strong">
                     {{ formatCurrency(q.total) }}
@@ -183,17 +197,23 @@
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">التاريخ</span>
-                  <span class="doc-num">{{ formatDateTime(details.issuedAt) }}</span>
+                  <span class="doc-num">{{
+                    formatDateTime(details.issuedAt)
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">صالح حتى</span>
-                  <span class="doc-num">{{ formatDate(details.validUntil) }}</span>
+                  <span class="doc-num">{{
+                    formatDate(details.validUntil)
+                  }}</span>
                 </div>
               </div>
               <p v-if="details.approvedBy" class="doc-hint">
                 وافق عليه المشرف: {{ details.approvedBy }}
               </p>
-              <p v-if="details.note" class="doc-hint">ملاحظة: {{ details.note }}</p>
+              <p v-if="details.note" class="doc-hint">
+                ملاحظة: {{ details.note }}
+              </p>
 
               <div class="doc-lines" :style="{ '--doc-cols': COLS }">
                 <div class="doc-lines__head">
@@ -224,7 +244,9 @@
                   </div>
                   <div>
                     <span class="doc-lines__label">السعر</span>
-                    <span class="doc-money">{{ formatCurrency(line.unitPrice) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(line.unitPrice)
+                    }}</span>
                   </div>
                   <div>
                     <span class="doc-lines__label">الإجمالي</span>
@@ -238,20 +260,30 @@
               <div class="doc-totals doc-totals--box">
                 <div v-if="details.taxTotal > 0">
                   <span>قبل الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(details.subtotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.subtotal)
+                  }}</span>
                 </div>
                 <div v-if="details.taxTotal > 0">
                   <span>الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(details.taxTotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.taxTotal)
+                  }}</span>
                 </div>
                 <div class="is-grand">
                   <span>إجمالي العرض</span>
-                  <span class="doc-money">{{ formatCurrency(details.total) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.total)
+                  }}</span>
                 </div>
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="details = null">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="details = null"
+                >
                   إغلاق
                 </button>
               </div>
@@ -342,9 +374,9 @@ const statusOf = (quote: SalesQuote) =>
 const details = ref<SalesQuote | null>(null);
 
 // ─── الطباعة ──────────────────────────────────────────────────────────────────
-const printer = ref<{ print: (size: "a4" | "thermal") => Promise<void> } | null>(
-  null,
-);
+const printer = ref<{
+  print: (size: "a4" | "thermal") => Promise<void>;
+} | null>(null);
 const printTarget = ref<PrintableInvoice | null>(null);
 
 const print = async (quote: SalesQuote, size: "a4" | "thermal") => {

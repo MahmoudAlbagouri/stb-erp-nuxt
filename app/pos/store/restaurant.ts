@@ -55,12 +55,15 @@ export const createRestaurant = (
     reloadOutbox,
   } = state;
   const { sync, deviceApi, markContact } = connection;
-  const { priced, serializeCart, restoreCart, resetCart, holdCart } = cartModule;
+  const { priced, serializeCart, restoreCart, resetCart, holdCart } =
+    cartModule;
 
   /** الطاولات والمطبخ ميزتان منفصلتان (كافيه سفري بمطبخ بلا طاولات مثلاً) */
   const tablesEnabled = computed(() => state.features.value.tables);
   const kitchenEnabled = computed(() => state.features.value.kitchen);
-  const tables = computed<DiningTableInfo[]>(() => restaurant.value?.tables ?? []);
+  const tables = computed<DiningTableInfo[]>(
+    () => restaurant.value?.tables ?? [],
+  );
 
   // ─── حفظ الطلب الجاري ───────────────────────────────────────────────────────
   // مع السلة: طاولة مفتوحة على الشاشة تعود بعد إغلاق المتصفح
@@ -83,10 +86,13 @@ export const createRestaurant = (
   /** الصنف يُحضَّر في المطبخ؟ (بلا تصنيفات محددة: كل الأصناف) */
   const goesToKitchen = (line: CartLine): boolean => {
     // سطر رسوم التوصيل ليس طعاماً
-    if (line.product.id === state.deliveryOptions.value?.feeProductId) return false;
+    if (line.product.id === state.deliveryOptions.value?.feeProductId)
+      return false;
     const categories = restaurant.value?.kitchenCategoryIds ?? [];
     if (!categories.length) return true;
-    return !!line.product.categoryId && categories.includes(line.product.categoryId);
+    return (
+      !!line.product.categoryId && categories.includes(line.product.categoryId)
+    );
   };
 
   /** أصناف السلة للمطبخ مجمّعة (نفس الصنف والوحدة والملاحظة سطر واحد) */
@@ -103,23 +109,33 @@ export const createRestaurant = (
         quantity,
         note: line.note?.trim() ?? "",
         ...(line.modifiers?.length
-          ? { modifiers: line.modifiers.map((m) => (m.quantity > 1 ? `${m.name} ×${m.quantity}` : m.name)) }
+          ? {
+              modifiers: line.modifiers.map((m) =>
+                m.quantity > 1 ? `${m.name} ×${m.quantity}` : m.name,
+              ),
+            }
           : {}),
       };
       const key = lineKey(item);
       const existing = merged.get(key);
-      if (existing) existing.quantity = roundQuantity(existing.quantity + quantity);
+      if (existing)
+        existing.quantity = roundQuantity(existing.quantity + quantity);
       else merged.set(key, item);
     }
     return [...merged.values()];
   };
 
   /** الفرق بين السلة وما وصل المطبخ: الإضافات موجبة والإلغاءات سالبة */
-  const diffLines = (current: KitchenLine[], sent: KitchenLine[]): KitchenLine[] => {
+  const diffLines = (
+    current: KitchenLine[],
+    sent: KitchenLine[],
+  ): KitchenLine[] => {
     const before = new Map(sent.map((line) => [lineKey(line), line]));
     const result: KitchenLine[] = [];
     for (const line of current) {
-      const delta = roundQuantity(line.quantity - (before.get(lineKey(line))?.quantity ?? 0));
+      const delta = roundQuantity(
+        line.quantity - (before.get(lineKey(line))?.quantity ?? 0),
+      );
       if (Math.abs(delta) > 1e-9) result.push({ ...line, quantity: delta });
       before.delete(lineKey(line));
     }
@@ -132,13 +148,17 @@ export const createRestaurant = (
 
   /** ما لم يصل المطبخ بعد من الطلب الجاري */
   const pendingKitchen = computed<KitchenLine[]>(() =>
-    kitchenEnabled.value ? diffLines(kitchenLinesOf(cart.value), order.value.sent) : [],
+    kitchenEnabled.value
+      ? diffLines(kitchenLinesOf(cart.value), order.value.sent)
+      : [],
   );
 
   // ─── بون المطبخ ─────────────────────────────────────────────────────────────
   /** رقم الطلب التالي في الوردية (يُنادى به في المطبخ والاستلام) */
   const nextTicketNo = async (): Promise<number> => {
-    const saved = await posDb.getMeta<{ shiftId: string; seq: number }>("kitchenSeq");
+    const saved = await posDb.getMeta<{ shiftId: string; seq: number }>(
+      "kitchenSeq",
+    );
     const shiftId = shift.value?.id ?? "";
     return saved && saved.shiftId === shiftId ? saved.seq + 1 : 1;
   };
@@ -147,7 +167,8 @@ export const createRestaurant = (
   const ticketToPrint = ref<LocalKitchenTicket | null>(null);
 
   /** هل يُطبع البون؟ إعداد الشركة، وبلا إنترنت دائماً (شاشة المطبخ لن تراه) */
-  const shouldPrint = () => !!restaurant.value?.printKitchenTicket || !online.value;
+  const shouldPrint = () =>
+    !!restaurant.value?.printKitchenTicket || !online.value;
 
   /**
    * يرسل للمطبخ ما لم يصله من طلب: بون في طابور الرفع، ويُحدَّث ما أُرسل.
@@ -156,7 +177,10 @@ export const createRestaurant = (
   const sendTicket = async (
     context: OrderContext,
     lines: KitchenLine[],
-    info: { label?: string | null; orderType?: LocalKitchenTicket["orderType"] } = {},
+    info: {
+      label?: string | null;
+      orderType?: LocalKitchenTicket["orderType"];
+    } = {},
   ): Promise<LocalKitchenTicket | null> => {
     if (!lines.length) return null;
     if (!shift.value) throw new Error("افتح وردية أولاً");
@@ -173,7 +197,9 @@ export const createRestaurant = (
       sentAt: new Date().toISOString(),
       lines,
     };
-    const tickets = [...kitchenTickets.value, ticket].slice(-KEEP_KITCHEN_TICKETS);
+    const tickets = [...kitchenTickets.value, ticket].slice(
+      -KEEP_KITCHEN_TICKETS,
+    );
     await posDb.enqueue(
       {
         id: `kitchen-${ticket.id}`,
@@ -184,7 +210,10 @@ export const createRestaurant = (
           ticketNo,
           shiftId: shift.value.id,
           orderType: ticket.orderType,
-          tableId: context.type === "dine_in" ? (context.tableId ?? undefined) : undefined,
+          tableId:
+            context.type === "dine_in"
+              ? (context.tableId ?? undefined)
+              : undefined,
           tableName: ticket.tableName ?? undefined,
           label: ticket.label ?? undefined,
           orderRef: context.ref,
@@ -201,7 +230,10 @@ export const createRestaurant = (
           })),
         },
       },
-      { kitchenSeq: { shiftId: shift.value.id, seq: ticketNo }, kitchenTickets: tickets },
+      {
+        kitchenSeq: { shiftId: shift.value.id, seq: ticketNo },
+        kitchenTickets: tickets,
+      },
     );
     kitchenTickets.value = tickets;
     await reloadOutbox();
@@ -216,8 +248,12 @@ export const createRestaurant = (
   const sendToKitchen = async (): Promise<LocalKitchenTicket | null> => {
     const lines = pendingKitchen.value;
     if (!lines.length) return null;
-    const customer = state.customers.value.find((c) => c.id === state.customerId.value);
-    const ticket = await sendTicket(order.value, lines, { label: customer?.name ?? null });
+    const customer = state.customers.value.find(
+      (c) => c.id === state.customerId.value,
+    );
+    const ticket = await sendTicket(order.value, lines, {
+      label: customer?.name ?? null,
+    });
     order.value =
       order.value.type === "takeaway" && !cart.value.length
         ? newOrderContext()
@@ -253,7 +289,9 @@ export const createRestaurant = (
   const parkCurrent = async (): Promise<LocalKitchenTicket | null> => {
     let ticket: LocalKitchenTicket | null = null;
     if (order.value.type === "dine_in") {
-      const others = tableOrders.value.filter((t) => t.order.tableId !== order.value.tableId);
+      const others = tableOrders.value.filter(
+        (t) => t.order.tableId !== order.value.tableId,
+      );
       if (cart.value.length) {
         tableOrders.value = [...others, snapshot()];
       } else {
@@ -277,8 +315,11 @@ export const createRestaurant = (
   };
 
   /** يفتح طاولة: طلبها المفتوح، أو طلباً جديداً عليها */
-  const openTable = async (table: DiningTableInfo): Promise<LocalKitchenTicket | null> => {
-    if (order.value.type === "dine_in" && order.value.tableId === table.id) return null;
+  const openTable = async (
+    table: DiningTableInfo,
+  ): Promise<LocalKitchenTicket | null> => {
+    if (order.value.type === "dine_in" && order.value.tableId === table.id)
+      return null;
     if (state.quoteMode.value) throw new Error(QUOTE_IN_PROGRESS);
     const ticket = await parkCurrent();
     const saved = tableOrders.value.find((t) => t.order.tableId === table.id);
@@ -302,7 +343,8 @@ export const createRestaurant = (
 
   /** ينقل طلب الطاولة الجارية لطاولة فارغة */
   const moveTable = (table: DiningTableInfo) => {
-    if (order.value.type !== "dine_in") throw new Error("لا طاولة مفتوحة لنقلها");
+    if (order.value.type !== "dine_in")
+      throw new Error("لا طاولة مفتوحة لنقلها");
     if (tableOrders.value.some((t) => t.order.tableId === table.id)) {
       throw new Error(`الطاولة "${table.name}" مشغولة`);
     }
@@ -311,7 +353,8 @@ export const createRestaurant = (
 
   /** قبل تقفيل الوردية: طاولة مفتوحة على الشاشة تُحفظ عليها (تُحاسب بعدها) */
   const parkActiveTable = async () => {
-    if (order.value.type === "dine_in" && cart.value.length) await parkCurrent();
+    if (order.value.type === "dine_in" && cart.value.length)
+      await parkCurrent();
   };
 
   /** يسترجع معلّقة: الطاولة الجارية تُحفظ عليها أولاً */
@@ -325,12 +368,21 @@ export const createRestaurant = (
   const tableStatus = computed(() => {
     const status = new Map<
       string,
-      { total: number; items: number; openedAt: string; ready: number; current: boolean }
+      {
+        total: number;
+        items: number;
+        openedAt: string;
+        ready: number;
+        current: boolean;
+      }
     >();
     const readyByRef = new Map<string, number>();
     for (const ticket of kitchenOrders.value) {
       if (ticket.status === "ready") {
-        readyByRef.set(ticket.orderRef, (readyByRef.get(ticket.orderRef) ?? 0) + 1);
+        readyByRef.set(
+          ticket.orderRef,
+          (readyByRef.get(ticket.orderRef) ?? 0) + 1,
+        );
       }
     }
     for (const saved of tableOrders.value) {
@@ -361,7 +413,8 @@ export const createRestaurant = (
     context: order.value,
     pending: pendingKitchen.value,
     customerName:
-      state.customers.value.find((c) => c.id === state.customerId.value)?.name ?? null,
+      state.customers.value.find((c) => c.id === state.customerId.value)
+        ?.name ?? null,
   });
 
   /**
@@ -374,7 +427,11 @@ export const createRestaurant = (
   ) => {
     const { context, pending, customerName } = captured;
     order.value = newOrderContext();
-    if (kitchenEnabled.value && pending.length && restaurant.value?.sendOnPayment) {
+    if (
+      kitchenEnabled.value &&
+      pending.length &&
+      restaurant.value?.sendOnPayment
+    ) {
       const ticket = await sendTicket(context, pending, {
         label: [sale.number, customerName].filter(Boolean).join(" — "),
         orderType: sale.delivery ? "delivery" : context.type,
@@ -389,7 +446,9 @@ export const createRestaurant = (
         createdAt: closedAt,
         payload: { orderRef: context.ref, closedAt },
       });
-      tableOrders.value = tableOrders.value.filter((t) => t.order.ref !== context.ref);
+      tableOrders.value = tableOrders.value.filter(
+        (t) => t.order.ref !== context.ref,
+      );
       await saveTables();
       await reloadOutbox();
       void sync();
@@ -403,9 +462,11 @@ export const createRestaurant = (
 
   /** يسأل السيرفر عن حالة بونات هذه الشاشة (بلا إنترنت: تبقى آخر حالة معروفة) */
   const refreshKitchen = async () => {
-    if (!kitchenEnabled.value || !state.device.value || !state.deviceKey.value) return;
+    if (!kitchenEnabled.value || !state.device.value || !state.deviceKey.value)
+      return;
     try {
-      kitchenOrders.value = await deviceApi().get<DeviceKitchenOrder[]>("/kitchen");
+      kitchenOrders.value =
+        await deviceApi().get<DeviceKitchenOrder[]>("/kitchen");
       online.value = true;
       markContact();
     } catch (error) {
@@ -416,7 +477,9 @@ export const createRestaurant = (
   /** الكاشير استلم طلباً جاهزاً (يحتاج إنترنت) */
   const markServed = async (id: string) => {
     await deviceApi().post(`/kitchen/${id}/served`, {});
-    kitchenOrders.value = kitchenOrders.value.filter((ticket) => ticket.id !== id);
+    kitchenOrders.value = kitchenOrders.value.filter(
+      (ticket) => ticket.id !== id,
+    );
   };
 
   let kitchenTimer: ReturnType<typeof setInterval> | null = null;

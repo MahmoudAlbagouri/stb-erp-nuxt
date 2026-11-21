@@ -5,8 +5,14 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><PauseCircle :size="20" class="doc-modal__icon" /> فواتير معلّقة</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <PauseCircle :size="20" class="doc-modal__icon" /> فواتير معلّقة
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -19,7 +25,9 @@
               <div v-for="h in pos.held" :key="h.id" class="pos-rows__row">
                 <div class="doc-cell pos-rows__main">
                   <span class="doc-cell__main">
-                    {{ h.label || customerName(h.customerId) || "فاتورة معلّقة" }}
+                    {{
+                      h.label || customerName(h.customerId) || "فاتورة معلّقة"
+                    }}
                   </span>
                   <span class="doc-cell__sub">
                     {{ formatNumber(h.items) }} قطعة ·
@@ -27,7 +35,10 @@
                   </span>
                 </div>
                 <strong class="doc-money">{{ formatCurrency(h.total) }}</strong>
-                <button class="btn btn--sm btn--primary" @click="emit('resume', h.id)">
+                <button
+                  class="btn btn--sm btn--primary"
+                  @click="emit('resume', h.id)"
+                >
                   استرجاع
                 </button>
                 <button

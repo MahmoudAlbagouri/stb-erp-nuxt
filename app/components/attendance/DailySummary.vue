@@ -43,7 +43,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in rows" :key="row.employeeId ?? `pin:${row.employeeCode}`">
+            <tr
+              v-for="row in rows"
+              :key="row.employeeId ?? `pin:${row.employeeCode}`"
+            >
               <td>
                 <div class="employee-cell">
                   <span class="employee-name">
@@ -110,10 +113,18 @@ const counts = computed(() => [
     badge: "badge--active",
     value: countOf("present", "early_leave", "incomplete", "unclassified"),
   },
-  { label: "متأخر", badge: "badge--pending", value: countOf("late", "late_and_early_leave") },
+  {
+    label: "متأخر",
+    badge: "badge--pending",
+    value: countOf("late", "late_and_early_leave"),
+  },
   { label: "غائب", badge: "badge--terminated", value: countOf("absent") },
   { label: "إجازة", badge: "badge--trial", value: countOf("on_leave") },
-  { label: "راحة / عطلة", badge: "badge--inactive", value: countOf("off_day", "holiday") },
+  {
+    label: "راحة / عطلة",
+    badge: "badge--inactive",
+    value: countOf("off_day", "holiday"),
+  },
 ]);
 
 const load = async () => {

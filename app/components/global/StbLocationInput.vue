@@ -30,7 +30,12 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { MapPin } from "lucide-vue-next";
-import { formatLocation, mapsLink, parseLocation, type GeoPoint } from "@/utils/geo";
+import {
+  formatLocation,
+  mapsLink,
+  parseLocation,
+  type GeoPoint,
+} from "@/utils/geo";
 
 const props = withDefaults(
   defineProps<{ modelValue: GeoPoint | null; placeholder?: string }>(),

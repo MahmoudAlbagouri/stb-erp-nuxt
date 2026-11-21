@@ -26,9 +26,7 @@ export interface PosTaxMode {
 
 let taxMode: PosTaxMode = { vatRegistered: true, pricesIncludeTax: true };
 
-export const setTaxMode = (
-  settings?: Partial<PosTaxMode> | null,
-): void => {
+export const setTaxMode = (settings?: Partial<PosTaxMode> | null): void => {
   taxMode = {
     vatRegistered: settings?.vatRegistered ?? true,
     pricesIncludeTax: settings?.pricesIncludeTax ?? true,
@@ -99,7 +97,9 @@ const roundHalfUp = (value: number): number => {
   const text = String(clean);
   // أرقام صغيرة/كبيرة جداً تُكتب بصيغة أُسّية: التقريب العادي يكفيها
   if (/e/i.test(text)) return roundAmount(value);
-  const rounded = Number(`${Math.round(Number(`${text}e${decimals}`))}e-${decimals}`);
+  const rounded = Number(
+    `${Math.round(Number(`${text}e${decimals}`))}e-${decimals}`,
+  );
   return value < 0 ? -rounded : rounded;
 };
 
@@ -152,6 +152,7 @@ export const newUuid = (): string =>
       "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
         (
           Number(c) ^
-          (crypto.getRandomValues(new Uint8Array(1))[0]! & (15 >> (Number(c) / 4)))
+          (crypto.getRandomValues(new Uint8Array(1))[0]! &
+            (15 >> (Number(c) / 4)))
         ).toString(16),
       );

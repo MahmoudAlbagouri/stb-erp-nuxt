@@ -17,7 +17,11 @@
         </p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'manage_boms'" class="btn btn--primary" @click="openCreate">
+        <button
+          v-can="'manage_boms'"
+          class="btn btn--primary"
+          @click="openCreate"
+        >
           <Plus :size="18" />
           <span>{{ isRecipe ? "وصفة جديدة" : "قائمة جديدة" }}</span>
         </button>
@@ -36,7 +40,9 @@
       </div>
     </div>
 
-    <div v-if="!list.ready.value" class="empty-state"><div class="spinner spinner--lg" /></div>
+    <div v-if="!list.ready.value" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
     <div v-else-if="!list.rows.value.length" class="card">
       <div class="empty-state">
         <ListTree :size="44" class="empty-state__icon" />
@@ -46,7 +52,7 @@
         <div class="empty-state__text">
           {{
             isRecipe
-              ? "اجعل نوع الطبق \"صنفاً مركّباً\" من الأصناف، ثم اكتب وصفته هنا"
+              ? 'اجعل نوع الطبق "صنفاً مركّباً" من الأصناف، ثم اكتب وصفته هنا'
               : "المنتج المصنّع صنف مخزني؛ اكتب خاماته وخطواته هنا ثم أنشئ له أمر إنتاج"
           }}
         </div>
@@ -83,11 +89,17 @@
                 </div>
               </td>
               <td class="doc-num">
-                {{ formatNumber(b.outputQuantity) }} {{ b.product?.baseUnit?.name }}
+                {{ formatNumber(b.outputQuantity) }}
+                {{ b.product?.baseUnit?.name }}
               </td>
               <td class="doc-num">{{ b.linesCount ?? "—" }}</td>
               <td>
-                <span :class="['badge', b.isActive ? 'badge--active' : 'badge--inactive']">
+                <span
+                  :class="[
+                    'badge',
+                    b.isActive ? 'badge--active' : 'badge--inactive',
+                  ]"
+                >
                   {{ b.isActive ? "فعّالة" : "موقوفة" }}
                 </span>
               </td>
@@ -96,7 +108,11 @@
                   <button class="btn btn--sm btn--ghost" @click="showCost(b)">
                     <Calculator :size="14" /> التكلفة
                   </button>
-                  <button v-can="'manage_boms'" class="btn btn--sm btn--ghost" @click="openEdit(b)">
+                  <button
+                    v-can="'manage_boms'"
+                    class="btn btn--sm btn--ghost"
+                    @click="openEdit(b)"
+                  >
                     <Pencil :size="14" /> تعديل
                   </button>
                   <button
@@ -139,18 +155,33 @@
             <div class="modal__header">
               <h3>
                 <ListTree :size="20" class="doc-modal__icon" />
-                {{ editingId ? "تعديل" : "إنشاء" }} {{ isRecipe ? "وصفة" : "قائمة مكوّنات" }}
+                {{ editingId ? "تعديل" : "إنشاء" }}
+                {{ isRecipe ? "وصفة" : "قائمة مكوّنات" }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeForm">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="closeForm"
+              >
                 <X :size="20" />
               </button>
             </div>
             <form class="doc-form" @submit.prevent="submit">
               <div class="doc-grid">
                 <div class="form-group doc-grid__full">
-                  <label>{{ isRecipe ? "الطبق (صنف مركّب)" : "المنتج المصنّع (صنف مخزني)" }} *</label>
+                  <label
+                    >{{
+                      isRecipe
+                        ? "الطبق (صنف مركّب)"
+                        : "المنتج المصنّع (صنف مخزني)"
+                    }}
+                    *</label
+                  >
                   <div v-if="form.product" class="picked">
-                    <span>{{ form.product.name }} <small>{{ form.product.sku }}</small></span>
+                    <span
+                      >{{ form.product.name }}
+                      <small>{{ form.product.sku }}</small></span
+                    >
                     <button
                       v-if="!editingId"
                       type="button"
@@ -163,30 +194,61 @@
                   <CatalogProductPicker
                     v-else
                     :types="[isRecipe ? 'composite' : 'stocked']"
-                    :placeholder="isRecipe ? 'ابحث عن الطبق...' : 'ابحث عن المنتج...'"
+                    :placeholder="
+                      isRecipe ? 'ابحث عن الطبق...' : 'ابحث عن المنتج...'
+                    "
                     @pick="(p: Product) => (form.product = p)"
                   />
                 </div>
                 <div class="form-group">
                   <label>اسم القائمة</label>
-                  <input v-model.trim="form.name" class="form-input" maxlength="150" placeholder="فارغ = اسم المنتج" />
+                  <input
+                    v-model.trim="form.name"
+                    class="form-input"
+                    maxlength="150"
+                    placeholder="فارغ = اسم المنتج"
+                  />
                 </div>
                 <div class="form-group">
                   <label>كمية الدفعة *</label>
-                  <StbNumberInput v-model.number="form.outputQuantity" class="form-input" min="0.0001" step="any" required />
-                  <small class="doc-hint">الكميات بالأسفل لإنتاج هذه الكمية</small>
+                  <StbNumberInput
+                    v-model.number="form.outputQuantity"
+                    class="form-input"
+                    min="0.0001"
+                    step="any"
+                    required
+                  />
+                  <small class="doc-hint"
+                    >الكميات بالأسفل لإنتاج هذه الكمية</small
+                  >
                 </div>
                 <div v-if="!isRecipe" class="form-group">
                   <label>نسبة الناتج المتوقعة %</label>
-                  <StbNumberInput v-model.number="form.expectedYieldPercent" class="form-input" min="1" max="100" step="any" />
+                  <StbNumberInput
+                    v-model.number="form.expectedYieldPercent"
+                    class="form-input"
+                    min="1"
+                    max="100"
+                    step="any"
+                  />
                 </div>
                 <div v-else class="form-group">
                   <label>وقت التحضير (دقيقة)</label>
-                  <StbNumberInput v-model.number="form.prepMinutes" class="form-input" min="0" placeholder="اختياري" />
+                  <StbNumberInput
+                    v-model.number="form.prepMinutes"
+                    class="form-input"
+                    min="0"
+                    placeholder="اختياري"
+                  />
                 </div>
                 <div class="form-group doc-grid__full">
                   <label>ملاحظات / طريقة التحضير</label>
-                  <textarea v-model="form.note" class="form-input" rows="2" maxlength="4000" />
+                  <textarea
+                    v-model="form.note"
+                    class="form-input"
+                    rows="2"
+                    maxlength="4000"
+                  />
                 </div>
               </div>
               <div class="toggles">
@@ -208,7 +270,14 @@
                   placeholder="ابحث عن مكوّن لإضافته..."
                   @pick="addLine"
                 />
-                <div class="doc-lines" :style="{ '--doc-cols': isRecipe ? '2fr 1fr 1fr auto' : '2fr 1fr 1fr 1fr auto' }">
+                <div
+                  class="doc-lines"
+                  :style="{
+                    '--doc-cols': isRecipe
+                      ? '2fr 1fr 1fr auto'
+                      : '2fr 1fr 1fr 1fr auto',
+                  }"
+                >
                   <div class="doc-lines__head">
                     <span>المكوّن</span>
                     <span>الكمية</span>
@@ -216,30 +285,59 @@
                     <span v-if="!isRecipe">في الخطوة</span>
                     <span />
                   </div>
-                  <div v-if="!form.lines.length" class="doc-lines__empty">لم تُضف مكوّنات بعد</div>
-                  <div v-for="(line, index) in form.lines" :key="line.componentId" class="doc-lines__row">
+                  <div v-if="!form.lines.length" class="doc-lines__empty">
+                    لم تُضف مكوّنات بعد
+                  </div>
+                  <div
+                    v-for="(line, index) in form.lines"
+                    :key="line.componentId"
+                    class="doc-lines__row"
+                  >
                     <div class="doc-cell">
                       <span class="doc-cell__main">{{ line.name }}</span>
                       <span class="doc-cell__sub">{{ line.unit }}</span>
                     </div>
                     <div>
                       <span class="doc-lines__label">الكمية</span>
-                      <StbNumberInput v-model.number="line.quantity" class="form-input" min="0.0001" step="any" required />
+                      <StbNumberInput
+                        v-model.number="line.quantity"
+                        class="form-input"
+                        min="0.0001"
+                        step="any"
+                        required
+                      />
                     </div>
                     <div>
                       <span class="doc-lines__label">هالك %</span>
-                      <StbNumberInput v-model.number="line.scrapPercent" class="form-input" min="0" step="any" placeholder="0" />
+                      <StbNumberInput
+                        v-model.number="line.scrapPercent"
+                        class="form-input"
+                        min="0"
+                        step="any"
+                        placeholder="0"
+                      />
                     </div>
                     <div v-if="!isRecipe">
                       <span class="doc-lines__label">في الخطوة</span>
-                      <select v-model="line.operationSequence" class="form-select">
+                      <select
+                        v-model="line.operationSequence"
+                        class="form-select"
+                      >
                         <option :value="null">—</option>
-                        <option v-for="op in form.operations" :key="op.sequence" :value="op.sequence">
+                        <option
+                          v-for="op in form.operations"
+                          :key="op.sequence"
+                          :value="op.sequence"
+                        >
                           {{ op.sequence }} · {{ op.name }}
                         </option>
                       </select>
                     </div>
-                    <button type="button" class="btn btn--sm btn--danger btn--icon" @click="form.lines.splice(index, 1)">
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--danger btn--icon"
+                      @click="form.lines.splice(index, 1)"
+                    >
                       <Trash2 :size="14" />
                     </button>
                   </div>
@@ -250,28 +348,78 @@
                 <section class="doc-section">
                   <div class="section-head">
                     <h4 class="doc-section__title">خطوات التصنيع</h4>
-                    <button type="button" class="btn btn--sm btn--ghost" @click="addOperation">
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--ghost"
+                      @click="addOperation"
+                    >
                       <Plus :size="14" /> خطوة
                     </button>
                   </div>
-                  <div class="doc-lines" style="--doc-cols: 0.6fr 1.6fr 1.4fr 0.9fr 0.9fr auto">
+                  <div
+                    class="doc-lines"
+                    style="--doc-cols: 0.6fr 1.6fr 1.4fr 0.9fr 0.9fr auto"
+                  >
                     <div class="doc-lines__head">
                       <span>#</span><span>الخطوة</span><span>مركز العمل</span>
-                      <span>تجهيز (د)</span><span>تشغيل للدفعة (د)</span><span />
+                      <span>تجهيز (د)</span><span>تشغيل للدفعة (د)</span
+                      ><span />
                     </div>
-                    <div v-if="!form.operations.length" class="doc-lines__empty">
+                    <div
+                      v-if="!form.operations.length"
+                      class="doc-lines__empty"
+                    >
                       بلا خطوات: التكلفة خامات فقط
                     </div>
-                    <div v-for="(op, index) in form.operations" :key="index" class="doc-lines__row">
-                      <StbNumberInput v-model.number="op.sequence" class="form-input" min="0" required />
-                      <input v-model.trim="op.name" class="form-input" required maxlength="150" placeholder="خلط، خَبز، تعبئة..." />
-                      <select v-model="op.workCenterId" class="form-select" required>
+                    <div
+                      v-for="(op, index) in form.operations"
+                      :key="index"
+                      class="doc-lines__row"
+                    >
+                      <StbNumberInput
+                        v-model.number="op.sequence"
+                        class="form-input"
+                        min="0"
+                        required
+                      />
+                      <input
+                        v-model.trim="op.name"
+                        class="form-input"
+                        required
+                        maxlength="150"
+                        placeholder="خلط، خَبز، تعبئة..."
+                      />
+                      <select
+                        v-model="op.workCenterId"
+                        class="form-select"
+                        required
+                      >
                         <option value="" disabled>اختر...</option>
-                        <option v-for="c in activeCenters" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        <option
+                          v-for="c in activeCenters"
+                          :key="c.id"
+                          :value="c.id"
+                        >
+                          {{ c.name }}
+                        </option>
                       </select>
-                      <StbNumberInput v-model.number="op.setupMinutes" class="form-input" min="0" step="any" />
-                      <StbNumberInput v-model.number="op.runMinutes" class="form-input" min="0" step="any" />
-                      <button type="button" class="btn btn--sm btn--danger btn--icon" @click="form.operations.splice(index, 1)">
+                      <StbNumberInput
+                        v-model.number="op.setupMinutes"
+                        class="form-input"
+                        min="0"
+                        step="any"
+                      />
+                      <StbNumberInput
+                        v-model.number="op.runMinutes"
+                        class="form-input"
+                        min="0"
+                        step="any"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--danger btn--icon"
+                        @click="form.operations.splice(index, 1)"
+                      >
                         <Trash2 :size="14" />
                       </button>
                     </div>
@@ -284,12 +432,32 @@
                     :types="['stocked']"
                     :exclude="form.byproducts.map((b) => b.productId)"
                     placeholder="منتج ثانوي يخرج مع الإنتاج..."
-                    @pick="(p: Product) => form.byproducts.push({ productId: p.id, name: p.name, quantity: 1 })"
+                    @pick="
+                      (p: Product) =>
+                        form.byproducts.push({
+                          productId: p.id,
+                          name: p.name,
+                          quantity: 1,
+                        })
+                    "
                   />
-                  <div v-for="(b, index) in form.byproducts" :key="b.productId" class="byproduct-row">
+                  <div
+                    v-for="(b, index) in form.byproducts"
+                    :key="b.productId"
+                    class="byproduct-row"
+                  >
                     <span>{{ b.name }}</span>
-                    <StbNumberInput v-model.number="b.quantity" class="form-input" min="0.0001" step="any" />
-                    <button type="button" class="btn btn--sm btn--danger btn--icon" @click="form.byproducts.splice(index, 1)">
+                    <StbNumberInput
+                      v-model.number="b.quantity"
+                      class="form-input"
+                      min="0.0001"
+                      step="any"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--danger btn--icon"
+                      @click="form.byproducts.splice(index, 1)"
+                    >
                       <Trash2 :size="14" />
                     </button>
                   </div>
@@ -297,8 +465,15 @@
               </template>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeForm">إلغاء</button>
-                <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': submitting }" :disabled="submitting">
+                <button type="button" class="btn btn--ghost" @click="closeForm">
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn--primary"
+                  :class="{ 'btn--loading': submitting }"
+                  :disabled="submitting"
+                >
                   حفظ
                 </button>
               </div>
@@ -314,20 +489,38 @@
         <div v-if="cost" class="modal-overlay" @click.self="cost = null">
           <div class="modal doc-modal">
             <div class="modal__header">
-              <h3><Calculator :size="20" class="doc-modal__icon" /> التكلفة المقدّرة الآن</h3>
-              <button class="btn btn--icon btn--ghost" @click="cost = null"><X :size="20" /></button>
+              <h3>
+                <Calculator :size="20" class="doc-modal__icon" /> التكلفة
+                المقدّرة الآن
+              </h3>
+              <button class="btn btn--icon btn--ghost" @click="cost = null">
+                <X :size="20" />
+              </button>
             </div>
             <div class="doc-form">
               <div class="table-responsive">
                 <table class="data-table">
                   <thead>
-                    <tr><th>المكوّن</th><th>الكمية</th><th>تكلفة الوحدة</th><th>التكلفة</th><th>النصيب</th></tr>
+                    <tr>
+                      <th>المكوّن</th>
+                      <th>الكمية</th>
+                      <th>تكلفة الوحدة</th>
+                      <th>التكلفة</th>
+                      <th>النصيب</th>
+                    </tr>
                   </thead>
                   <tbody>
                     <tr v-for="m in cost.materials" :key="m.componentId">
-                      <td>{{ m.name }} <small v-if="m.isComposite">(وصفة فرعية)</small></td>
-                      <td class="doc-num">{{ formatNumber(m.quantity) }} {{ m.unit }}</td>
-                      <td class="doc-money">{{ formatCurrency(m.unitCost) }}</td>
+                      <td>
+                        {{ m.name }}
+                        <small v-if="m.isComposite">(وصفة فرعية)</small>
+                      </td>
+                      <td class="doc-num">
+                        {{ formatNumber(m.quantity) }} {{ m.unit }}
+                      </td>
+                      <td class="doc-money">
+                        {{ formatCurrency(m.unitCost) }}
+                      </td>
                       <td class="doc-money">{{ formatCurrency(m.cost) }}</td>
                       <td class="doc-num">{{ formatNumber(m.share) }}%</td>
                     </tr>
@@ -335,21 +528,68 @@
                 </table>
               </div>
               <div class="doc-totals doc-totals--box">
-                <div><span>الخامات</span><span class="doc-money">{{ formatCurrency(cost.materialCost) }}</span></div>
-                <div v-if="cost.laborCost"><span>العمالة والتشغيل</span><span class="doc-money">{{ formatCurrency(cost.laborCost) }}</span></div>
-                <div v-if="cost.overheadCost"><span>غير مباشرة</span><span class="doc-money">{{ formatCurrency(cost.overheadCost) }}</span></div>
-                <div v-if="cost.byproductCredit"><span>المنتجات الثانوية</span><span class="doc-money">-{{ formatCurrency(cost.byproductCredit) }}</span></div>
-                <div><span>للدفعة ({{ formatNumber(cost.outputQuantity) }})</span><span class="doc-money">{{ formatCurrency(cost.totalCost) }}</span></div>
-                <div class="is-grand"><span>تكلفة الوحدة</span><span class="doc-money">{{ formatCurrency(cost.unitCost) }}</span></div>
+                <div>
+                  <span>الخامات</span
+                  ><span class="doc-money">{{
+                    formatCurrency(cost.materialCost)
+                  }}</span>
+                </div>
+                <div v-if="cost.laborCost">
+                  <span>العمالة والتشغيل</span
+                  ><span class="doc-money">{{
+                    formatCurrency(cost.laborCost)
+                  }}</span>
+                </div>
+                <div v-if="cost.overheadCost">
+                  <span>غير مباشرة</span
+                  ><span class="doc-money">{{
+                    formatCurrency(cost.overheadCost)
+                  }}</span>
+                </div>
+                <div v-if="cost.byproductCredit">
+                  <span>المنتجات الثانوية</span
+                  ><span class="doc-money"
+                    >-{{ formatCurrency(cost.byproductCredit) }}</span
+                  >
+                </div>
+                <div>
+                  <span>للدفعة ({{ formatNumber(cost.outputQuantity) }})</span
+                  ><span class="doc-money">{{
+                    formatCurrency(cost.totalCost)
+                  }}</span>
+                </div>
+                <div class="is-grand">
+                  <span>تكلفة الوحدة</span
+                  ><span class="doc-money">{{
+                    formatCurrency(cost.unitCost)
+                  }}</span>
+                </div>
                 <template v-if="cost.netSalePrice !== null">
-                  <div><span>سعر البيع قبل الضريبة</span><span class="doc-money">{{ formatCurrency(cost.netSalePrice) }}</span></div>
+                  <div>
+                    <span>سعر البيع قبل الضريبة</span
+                    ><span class="doc-money">{{
+                      formatCurrency(cost.netSalePrice)
+                    }}</span>
+                  </div>
                   <div>
                     <span>نسبة التكلفة (Food cost)</span>
-                    <span class="doc-num" :class="(cost.costPercent ?? 0) > 35 ? 'doc-num--out' : 'doc-num--in'">
+                    <span
+                      class="doc-num"
+                      :class="
+                        (cost.costPercent ?? 0) > 35
+                          ? 'doc-num--out'
+                          : 'doc-num--in'
+                      "
+                    >
                       {{ formatNumber(cost.costPercent ?? 0) }}%
                     </span>
                   </div>
-                  <div><span>الهامش للوحدة</span><span class="doc-money">{{ formatCurrency(cost.margin ?? 0) }}</span></div>
+                  <div>
+                    <span>الهامش للوحدة</span
+                    ><span class="doc-money">{{
+                      formatCurrency(cost.margin ?? 0)
+                    }}</span>
+                  </div>
                 </template>
               </div>
             </div>
@@ -371,7 +611,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { Calculator, Copy, ListTree, Pencil, Plus, Search, Trash2, X } from "lucide-vue-next";
+import {
+  Calculator,
+  Copy,
+  ListTree,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-vue-next";
 import { useManufacturingStore } from "@/stores/manufacturing";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
@@ -389,7 +638,12 @@ const search = ref("");
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 const list = usePagedList(
-  (page) => store.fetchBoms({ kind: props.kind, search: search.value || undefined, page }),
+  (page) =>
+    store.fetchBoms({
+      kind: props.kind,
+      search: search.value || undefined,
+      page,
+    }),
   "تعذر تحميل القوائم",
 );
 const onSearch = () => {
@@ -397,7 +651,9 @@ const onSearch = () => {
   searchTimer = setTimeout(() => list.load(1), 300);
 };
 
-const activeCenters = computed(() => store.workCenters.filter((c) => c.isActive));
+const activeCenters = computed(() =>
+  store.workCenters.filter((c) => c.isActive),
+);
 
 interface LineRow {
   componentId: string;
@@ -424,7 +680,11 @@ const emptyForm = () => ({
     setupMinutes: number | "";
     runMinutes: number | "";
   }[],
-  byproducts: [] as { productId: string; name: string; quantity: number | "" }[],
+  byproducts: [] as {
+    productId: string;
+    name: string;
+    quantity: number | "";
+  }[],
 });
 const form = reactive(emptyForm());
 const showForm = ref(false);
@@ -492,7 +752,10 @@ const addLine = (product: Product) =>
   });
 
 const addOperation = () => {
-  const last = form.operations.reduce((max, o) => Math.max(max, Number(o.sequence) || 0), 0);
+  const last = form.operations.reduce(
+    (max, o) => Math.max(max, Number(o.sequence) || 0),
+    0,
+  );
   form.operations.push({
     sequence: last + 10,
     name: "",
@@ -515,7 +778,10 @@ const submit = async () => {
       isActive: form.isActive,
       outputQuantity: Number(form.outputQuantity) || 1,
       ...(isRecipe.value
-        ? { prepMinutes: form.prepMinutes === "" ? null : Number(form.prepMinutes) }
+        ? {
+            prepMinutes:
+              form.prepMinutes === "" ? null : Number(form.prepMinutes),
+          }
         : { expectedYieldPercent: Number(form.expectedYieldPercent) || 100 }),
       note: form.note || undefined,
       lines: form.lines.map((l) => ({
@@ -568,7 +834,9 @@ const showCost = async (bom: Bom) => {
 const duplicate = async (bom: Bom) => {
   try {
     const copy = await store.duplicateBom(bom.id);
-    toast.success(`أُنشئت نسخة (إصدار ${copy.version}) — عدّلها ثم اجعلها افتراضية`);
+    toast.success(
+      `أُنشئت نسخة (إصدار ${copy.version}) — عدّلها ثم اجعلها افتراضية`,
+    );
     await list.load();
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر النسخ"));

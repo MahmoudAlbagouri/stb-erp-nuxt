@@ -28,7 +28,11 @@
           <span v-if="exporting === 'pdf'" class="spinner spinner--sm" />
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
-        <button v-can="'manage_salary'" class="btn btn--primary" @click="openCreateModal">
+        <button
+          v-can="'manage_salary'"
+          class="btn btn--primary"
+          @click="openCreateModal"
+        >
           <Plus :size="18" /><span>تعيين الأجر جديد</span>
         </button>
       </div>
@@ -39,7 +43,9 @@
       <div class="stat-card stat-total">
         <div class="stat-card__icon"><Banknote :size="24" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ totalPayroll }} {{ currencyLabel() }}</div>
+          <div class="stat-card__value">
+            {{ totalPayroll }} {{ currencyLabel() }}
+          </div>
           <div class="stat-card__label">إجمالي الرواتب</div>
         </div>
       </div>
@@ -53,7 +59,9 @@
       <div class="stat-card stat-avg">
         <div class="stat-card__icon"><TrendingUp :size="24" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ avgSalary }} {{ currencyLabel() }}</div>
+          <div class="stat-card__value">
+            {{ avgSalary }} {{ currencyLabel() }}
+          </div>
           <div class="stat-card__label">متوسط الأجر</div>
         </div>
       </div>
@@ -70,7 +78,11 @@
         <Wallet :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد بيانات رواتب</div>
         <div class="empty-state__text">قم بتعيين الأجور للموظفين للبدء</div>
-        <button v-can="'manage_salary'" class="btn btn--primary mt-4" @click="openCreateModal">
+        <button
+          v-can="'manage_salary'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal"
+        >
           <Plus :size="16" /> تعيين أجر
         </button>
       </div>
@@ -147,10 +159,18 @@
                         v-if="activeExportMenu === sal.id"
                         class="dropdown-menu"
                       >
-                        <button v-can="'view_salaries'" v-feature="'reports_export'" @click="downloadSalary(sal.id, 'pdf')">
+                        <button
+                          v-can="'view_salaries'"
+                          v-feature="'reports_export'"
+                          @click="downloadSalary(sal.id, 'pdf')"
+                        >
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button v-can="'view_salaries'" v-feature="'reports_export'" @click="downloadSalary(sal.id, 'excel')">
+                        <button
+                          v-can="'view_salaries'"
+                          v-feature="'reports_export'"
+                          @click="downloadSalary(sal.id, 'excel')"
+                        >
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>
@@ -392,7 +412,9 @@ const calculateTotal = computed(
     (Number(form.otherAllowances) || 0),
 );
 const totalPayroll = computed(() =>
-  formatNumber(store.salaries.reduce((sum, s) => sum + Number(s.totalSalary), 0)),
+  formatNumber(
+    store.salaries.reduce((sum, s) => sum + Number(s.totalSalary), 0),
+  ),
 );
 const avgSalary = computed(() => {
   if (!store.salaries.length) return 0;

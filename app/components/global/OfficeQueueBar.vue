@@ -12,15 +12,19 @@
       :class="{ 'office-bar--failed': office.failed.length }"
       role="status"
     >
-      <CloudUpload v-if="!office.failed.length" :size="18" class="office-bar__icon" />
+      <CloudUpload
+        v-if="!office.failed.length"
+        :size="18"
+        class="office-bar__icon"
+      />
       <CircleAlert v-else :size="18" class="office-bar__icon" />
       <span class="office-bar__text">
         <strong v-if="office.pending.length">
           {{ office.pending.length }} عملية على هذا الجهاز تنتظر الرفع
         </strong>
         <strong v-if="office.failed.length">
-          {{ office.pending.length ? " · " : "" }}{{ office.failed.length }} رفضها
-          السيرفر وتحتاج مراجعتك
+          {{ office.pending.length ? " · " : ""
+          }}{{ office.failed.length }} رفضها السيرفر وتحتاج مراجعتك
         </strong>
         — تُرفع وحدها بترتيبها حين يعود الاتصال، ولا تتكرر.
       </span>

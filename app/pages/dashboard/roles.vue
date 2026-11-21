@@ -5,7 +5,11 @@
         <h1>الأدوار</h1>
         <p>إدارة أدوار المستخدمين وصلاحياتهم</p>
       </div>
-      <button v-can="'create_role'" class="btn btn--primary" @click="openCreate">
+      <button
+        v-can="'create_role'"
+        class="btn btn--primary"
+        @click="openCreate"
+      >
         <span>+</span> إضافة دور
       </button>
     </div>
@@ -64,10 +68,18 @@
           <div v-else class="text-muted text-xs">لا توجد صلاحيات</div>
         </div>
         <div class="role-card__footer">
-          <button v-can="'update_role'" class="btn btn--ghost btn--sm" @click="openEdit(role)">
+          <button
+            v-can="'update_role'"
+            class="btn btn--ghost btn--sm"
+            @click="openEdit(role)"
+          >
             تعديل
           </button>
-          <button v-can="'delete_role'" class="btn btn--danger btn--sm" @click="confirmDelete(role)">
+          <button
+            v-can="'delete_role'"
+            class="btn btn--danger btn--sm"
+            @click="confirmDelete(role)"
+          >
             حذف
           </button>
         </div>

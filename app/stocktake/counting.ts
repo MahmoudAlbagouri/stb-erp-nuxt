@@ -1,5 +1,8 @@
 // stocktake/counting.ts — حسابات شاشة العدّ (بلا شبكة ولا تخزين)
-import type { StocktakeCatalogProduct, StocktakeCountLine } from "@/types/inventory";
+import type {
+  StocktakeCatalogProduct,
+  StocktakeCountLine,
+} from "@/types/inventory";
 import type { PendingCount } from "./db";
 
 /** الصنف كما تعرضه الشاشة: الكمية المعدودة الآن ومن أين جاءت */
@@ -65,19 +68,29 @@ export interface CatalogIndex {
   search: (term: string, limit?: number) => StocktakeCatalogProduct[];
 }
 
-export const indexCatalog = (products: StocktakeCatalogProduct[]): CatalogIndex => {
+export const indexCatalog = (
+  products: StocktakeCatalogProduct[],
+): CatalogIndex => {
   const byId = new Map(products.map((p) => [p.id, p]));
-  const byCode = new Map<string, { product: StocktakeCatalogProduct; factor: number }>();
+  const byCode = new Map<
+    string,
+    { product: StocktakeCatalogProduct; factor: number }
+  >();
   for (const product of products) {
     byCode.set(product.sku.toLowerCase(), { product, factor: 1 });
     for (const barcode of product.barcodes) {
-      byCode.set(barcode.code.toLowerCase(), { product, factor: barcode.factor });
+      byCode.set(barcode.code.toLowerCase(), {
+        product,
+        factor: barcode.factor,
+      });
     }
   }
   const texts = products.map((product) => ({
     product,
     text: normalizeSearch(
-      [product.name, product.sku, ...product.barcodes.map((b) => b.code)].join(" "),
+      [product.name, product.sku, ...product.barcodes.map((b) => b.code)].join(
+        " ",
+      ),
     ),
   }));
 
@@ -96,8 +109,13 @@ export const indexCatalog = (products: StocktakeCatalogProduct[]): CatalogIndex 
 };
 
 /** كمية صالحة للعدّ: لا سالب، وبلا كسور لوحدة لا تقبلها، و4 خانات على الأكثر */
-export const cleanQuantity = (value: number, allowsFractions: boolean): number | null => {
+export const cleanQuantity = (
+  value: number,
+  allowsFractions: boolean,
+): number | null => {
   if (!Number.isFinite(value) || value < 0) return null;
-  const rounded = allowsFractions ? Math.round(value * 10000) / 10000 : Math.round(value);
+  const rounded = allowsFractions
+    ? Math.round(value * 10000) / 10000
+    : Math.round(value);
   return rounded;
 };

@@ -10,12 +10,7 @@ import { OfflineError } from "@/pos/api";
 import { newUuid, posTaxMode, taxRateOf, unitPriceOf } from "@/pos/calc";
 import { posDb } from "@/pos/db";
 import { isRepriced, type PricedCart } from "@/pos/promotions";
-import type {
-  CartLine,
-  LocalQuote,
-  PosCustomer,
-  SaleLine,
-} from "@/pos/types";
+import type { CartLine, LocalQuote, PosCustomer, SaleLine } from "@/pos/types";
 import type { PosCart } from "./cart";
 import type { PosConnection } from "./connection";
 import type { PosShiftModule } from "./shift";
@@ -121,7 +116,8 @@ export const createQuotes = (
     if (state.order.value.rounds) {
       throw new Error("أُرسل هذا الطلب للمطبخ — لا يتحول لعرض سعر");
     }
-    if (quoteRef.value) throw new Error("السلة من عرض سعر — أتمّ بيعها أو أفرغها");
+    if (quoteRef.value)
+      throw new Error("السلة من عرض سعر — أتمّ بيعها أو أفرغها");
     quoteMode.value = true;
   };
 
@@ -135,13 +131,20 @@ export const createQuotes = (
 
   /** آخر يوم صلاحية لعرض يصدر الآن */
   const validUntilFor = (days: number): string => {
-    const [year, month, day] = today().split("-").map(Number) as [number, number, number];
-    return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+    const [year, month, day] = today().split("-").map(Number) as [
+      number,
+      number,
+      number,
+    ];
+    return new Date(Date.UTC(year, month - 1, day + days))
+      .toISOString()
+      .slice(0, 10);
   };
 
   /** انتهت صلاحيته؟ (بتوقيت الشركة) */
-  const quoteExpired = (quote: Pick<LocalQuote, "validUntil" | "status">): boolean =>
-    quote.status === "open" && quote.validUntil < today();
+  const quoteExpired = (
+    quote: Pick<LocalQuote, "validUntil" | "status">,
+  ): boolean => quote.status === "open" && quote.validUntil < today();
 
   /**
    * يحفظ العرض على الجهاز ويضعه في طابور الرفع، ثم يفرغ السلة. يعيد العرض
@@ -245,7 +248,11 @@ export const createQuotes = (
     if (!quotes.value.some((quote) => quote.uuid === uuid)) return;
     quotes.value = quotes.value.map((quote) =>
       quote.uuid === uuid
-        ? { ...quote, status: "converted", convertedInvoiceNumber: invoiceNumber }
+        ? {
+            ...quote,
+            status: "converted",
+            convertedInvoiceNumber: invoiceNumber,
+          }
         : quote,
     );
     await posDb.setMeta({ quotes: quotes.value });
@@ -285,10 +292,13 @@ export const createQuotes = (
       if (error instanceof OfflineError) online.value = false;
       // عرض صدر هنا ولم يصل السيرفر بعد: نسخة الجهاز تكفي
       const waiting =
-        local && state.outbox.value.some((entry) => entry.id === `quote-${local.uuid}`);
+        local &&
+        state.outbox.value.some((entry) => entry.id === `quote-${local.uuid}`);
       if (!(error instanceof OfflineError) && !waiting) throw error;
       if (!local) {
-        throw new Error("لا يوجد اتصال — بلا إنترنت تُسترجع عروض هذه الشاشة فقط");
+        throw new Error(
+          "لا يوجد اتصال — بلا إنترنت تُسترجع عروض هذه الشاشة فقط",
+        );
       }
       return local;
     }
@@ -337,18 +347,26 @@ export const createQuotes = (
     const notices: string[] = [];
     const expired = quoteExpired(quote);
     // أساس التسعير تغيّر: سعر العرض يعني شيئاً آخر الآن
-    const basisChanged = quote.pricesIncludeTax !== posTaxMode().pricesIncludeTax;
+    const basisChanged =
+      quote.pricesIncludeTax !== posTaxMode().pricesIncludeTax;
     const frozen = !expired && !basisChanged;
-    if (expired) notices.push("انتهت صلاحية العرض — الأسعار الحالية هي السارية");
-    else if (basisChanged) notices.push("تغيّر أساس التسعير — الأسعار الحالية هي السارية");
+    if (expired)
+      notices.push("انتهت صلاحية العرض — الأسعار الحالية هي السارية");
+    else if (basisChanged)
+      notices.push("تغيّر أساس التسعير — الأسعار الحالية هي السارية");
 
     const byId = new Map(products.value.map((p) => [p.id, p]));
     const dropped: string[] = [];
     for (const source of quote.lines) {
       const product = byId.get(source.productId);
       const unitId =
-        source.unitId && source.unitId !== product?.baseUnitId ? source.unitId : null;
-      if (!product || (unitId && !product.units.some((u) => u.unitId === unitId))) {
+        source.unitId && source.unitId !== product?.baseUnitId
+          ? source.unitId
+          : null;
+      if (
+        !product ||
+        (unitId && !product.units.some((u) => u.unitId === unitId))
+      ) {
         dropped.push(source.productName);
         continue;
       }

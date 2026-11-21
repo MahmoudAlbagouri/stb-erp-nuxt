@@ -5,13 +5,15 @@
       <div class="page-header__title">
         <h1>المحاسبة</h1>
         <p>
-          دفاتر بالقيد المزدوج تُرحَّل إليها كل مستندات النظام تلقائياً: المبيعات
-          والمشتريات والمخزون والكاشير والتوصيل والرواتب
+          دفاتر بالقيد المزدوج تُرحَّل إليها كل مستندات النظام تلقائياً:
+          المبيعات والمشتريات والمخزون والكاشير والتوصيل والرواتب
         </p>
       </div>
     </div>
 
-    <div v-if="!status" class="empty-state"><div class="spinner spinner--lg" /></div>
+    <div v-if="!status" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
 
     <!-- ══ غير مفعّلة ══ -->
     <template v-else-if="!status.active">
@@ -26,8 +28,9 @@
         <ul class="setup__points">
           <li>تُنشأ شجرة حسابات جاهزة لدولتك (تعدّلها كما تشاء بعد ذلك).</li>
           <li>
-            يُقيَّد <strong>قيد افتتاحي</strong> بأرصدة هذه اللحظة: العملاء، الموردون،
-            المخزون بمتوسط تكلفته، ما مع جهات التوصيل، وسلف الموظفين وقروضهم.
+            يُقيَّد <strong>قيد افتتاحي</strong> بأرصدة هذه اللحظة: العملاء،
+            الموردون، المخزون بمتوسط تكلفته، ما مع جهات التوصيل، وسلف الموظفين
+            وقروضهم.
           </li>
           <li>
             من بعدها كل فاتورة وسند ومرتجع وتسوية ومسير يُرحَّل تلقائياً خلال
@@ -48,7 +51,8 @@
               </option>
             </select>
             <small class="doc-hint">
-              {{ preview.length }} حساباً — {{ previewDetail }} فرعياً تُسجَّل عليه القيود
+              {{ preview.length }} حساباً — {{ previewDetail }} فرعياً تُسجَّل
+              عليه القيود
             </small>
           </div>
         </div>
@@ -88,11 +92,17 @@
         </div>
         <div class="card stat">
           <span>الفترة مقفلة حتى</span>
-          <strong class="doc-num">{{ status.settings!.lockDate || "مفتوحة" }}</strong>
+          <strong class="doc-num">{{
+            status.settings!.lockDate || "مفتوحة"
+          }}</strong>
         </div>
         <div class="card stat">
           <span>آخر ترحيل</span>
-          <strong>{{ status.settings!.lastSyncAt ? formatDateTime(status.settings!.lastSyncAt) : "—" }}</strong>
+          <strong>{{
+            status.settings!.lastSyncAt
+              ? formatDateTime(status.settings!.lastSyncAt)
+              : "—"
+          }}</strong>
         </div>
         <div class="card stat" :class="{ 'is-warning': status.errorsCount }">
           <span>مستندات تعذّر ترحيلها</span>
@@ -135,10 +145,11 @@
         <div class="section__head">
           <h3><CalendarCheck :size="18" /> إقفال السنة المالية</h3>
           <p>
-            بعد انتهاء السنة ومراجعتها: قيد بتاريخ 31/12 يصفّر الإيرادات والمصروفات
-            في «{{ years?.retainedEarningsAccount?.name ?? "الأرباح المحتجزة" }}»، وتُقفل
-            الفترة حتى نهايتها. السنوات تُقفل بالترتيب، وآخر سنة مقفلة يمكن إعادة
-            فتحها (بقيد عكسي) لتسجيل تسويات ثم إقفالها ثانية.
+            بعد انتهاء السنة ومراجعتها: قيد بتاريخ 31/12 يصفّر الإيرادات
+            والمصروفات في «{{
+              years?.retainedEarningsAccount?.name ?? "الأرباح المحتجزة"
+            }}»، وتُقفل الفترة حتى نهايتها. السنوات تُقفل بالترتيب، وآخر سنة
+            مقفلة يمكن إعادة فتحها (بقيد عكسي) لتسجيل تسويات ثم إقفالها ثانية.
           </p>
         </div>
         <div v-if="!years" class="empty-state"><div class="spinner" /></div>
@@ -162,14 +173,27 @@
                 </td>
                 <td class="doc-num">{{ formatMoney(y.revenue) }}</td>
                 <td class="doc-num">{{ formatMoney(y.expenses) }}</td>
-                <td class="doc-num" :class="y.netProfit < 0 ? 'doc-money--out' : 'doc-money--in'">
+                <td
+                  class="doc-num"
+                  :class="y.netProfit < 0 ? 'doc-money--out' : 'doc-money--in'"
+                >
                   {{ formatMoney(y.netProfit) }}
                 </td>
                 <td>
-                  <span v-if="y.status === 'closed'" class="badge doc-status--done">
-                    مقفلة <template v-if="y.closingEntry">({{ y.closingEntry.number }})</template>
+                  <span
+                    v-if="y.status === 'closed'"
+                    class="badge doc-status--done"
+                  >
+                    مقفلة
+                    <template v-if="y.closingEntry"
+                      >({{ y.closingEntry.number }})</template
+                    >
                   </span>
-                  <span v-else-if="y.status === 'current'" class="badge doc-status--progress">جارية</span>
+                  <span
+                    v-else-if="y.status === 'current'"
+                    class="badge doc-status--progress"
+                    >جارية</span
+                  >
                   <span v-else class="badge doc-status--draft">مفتوحة</span>
                 </td>
                 <td>
@@ -250,8 +274,8 @@
         <div class="section__head">
           <h3><AlertTriangle :size="18" /> مستندات تعذّر ترحيلها</h3>
           <p>
-            المستند نفسه سليم ولم يتوقف — قيده فقط لم يُسجَّل بعد. أصلح السبب (حساب
-            موقوف مثلاً) ثم «ترحيل الآن».
+            المستند نفسه سليم ولم يتوقف — قيده فقط لم يُسجَّل بعد. أصلح السبب
+            (حساب موقوف مثلاً) ثم «ترحيل الآن».
           </p>
           <button
             v-can="'manage_accounting_settings'"
@@ -263,7 +287,10 @@
             <RefreshCw :size="16" /> ترحيل الآن
           </button>
         </div>
-        <div v-if="!status.errors.length" class="empty-state empty-state--compact">
+        <div
+          v-if="!status.errors.length"
+          class="empty-state empty-state--compact"
+        >
           <CheckCheck :size="28" class="empty-state__icon" />
           <div class="empty-state__text">كل المستندات مُرحَّلة</div>
         </div>
@@ -279,7 +306,9 @@
             </thead>
             <tbody>
               <tr v-for="e in status.errors" :key="e.id">
-                <td>{{ JOURNAL_SOURCE_LABEL[e.sourceType] || e.sourceType }}</td>
+                <td>
+                  {{ JOURNAL_SOURCE_LABEL[e.sourceType] || e.sourceType }}
+                </td>
                 <td>{{ e.message }}</td>
                 <td class="doc-num">{{ e.attempts }}</td>
                 <td>{{ formatDateTime(e.lastSeenAt) }}</td>
@@ -348,7 +377,9 @@ const syncing = ref(false);
 // ─── التفعيل ───
 const country = ref(auth.country);
 const preview = ref<TemplateAccount[]>([]);
-const previewDetail = computed(() => preview.value.filter((a) => !a.isGroup).length);
+const previewDetail = computed(
+  () => preview.value.filter((a) => !a.isGroup).length,
+);
 const countryName = computed(
   () => COUNTRIES.find((c) => c.code === country.value)?.nameAr ?? "",
 );
@@ -451,7 +482,11 @@ const closeYear = async (year: number, netProfit: number) => {
 };
 
 const reopenYear = async (year: number) => {
-  if (!confirm(`إعادة فتح سنة ${year}: يُعكس قيد إقفالها. قفل الفترة يبقى كما هو — عدّله لتسجيل التسويات. متابعة؟`)) {
+  if (
+    !confirm(
+      `إعادة فتح سنة ${year}: يُعكس قيد إقفالها. قفل الفترة يبقى كما هو — عدّله لتسجيل التسويات. متابعة؟`,
+    )
+  ) {
     return;
   }
   yearBusy.value = year;
@@ -472,9 +507,12 @@ const syncNow = async () => {
   try {
     const result = await store.sync();
     await store.fetchStatus();
-    if (result.skipped) toast.info("ترحيل آخر يعمل الآن — أعد المحاولة بعد لحظة");
+    if (result.skipped)
+      toast.info("ترحيل آخر يعمل الآن — أعد المحاولة بعد لحظة");
     else if (result.failed) {
-      toast.warning(`رُحّل ${result.posted} وتعذّر ${result.failed} — انظر الأسباب`);
+      toast.warning(
+        `رُحّل ${result.posted} وتعذّر ${result.failed} — انظر الأسباب`,
+      );
     } else toast.success(`رُحّل ${result.posted} مستنداً`);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر الترحيل"));

@@ -9,15 +9,19 @@
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
             <h3><ChefHat :size="20" class="doc-modal__icon" /> المطبخ</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
 
           <div class="doc-form">
             <p v-if="!pos.online" class="pos-note">
-              بلا إنترنت: حالة المطبخ آخر ما عُرف، والبونات الجديدة تُطبع ورقاً وتصل
-              شاشة المطبخ عند عودة الاتصال.
+              بلا إنترنت: حالة المطبخ آخر ما عُرف، والبونات الجديدة تُطبع ورقاً
+              وتصل شاشة المطبخ عند عودة الاتصال.
             </p>
 
             <div class="pos-rows">
@@ -31,7 +35,9 @@
                   </span>
                   <span class="doc-cell__sub">{{ STATUS[o.status] }}</span>
                 </div>
-                <span class="badge" :class="BADGE[o.status]">{{ STATUS[o.status] }}</span>
+                <span class="badge" :class="BADGE[o.status]">{{
+                  STATUS[o.status]
+                }}</span>
                 <button
                   v-if="o.status === 'ready'"
                   class="btn btn--sm btn--primary"
@@ -52,8 +58,11 @@
                       #{{ t.ticketNo }} · {{ t.tableName || t.label || "سفري" }}
                     </span>
                     <span class="doc-cell__sub">
-                      {{ formatDateTime(t.sentAt) }} · {{ formatNumber(t.lines.length) }} صنف
-                      <template v-if="queued(t.id)"> · لم يصل المطبخ بعد</template>
+                      {{ formatDateTime(t.sentAt) }} ·
+                      {{ formatNumber(t.lines.length) }} صنف
+                      <template v-if="queued(t.id)">
+                        · لم يصل المطبخ بعد</template
+                      >
                     </span>
                   </div>
                   <button
@@ -110,7 +119,8 @@ const sorted = computed(() =>
   [...pos.kitchenOrders].sort((a, b) => ORDER[a.status] - ORDER[b.status]),
 );
 const recent = computed(() => [...pos.kitchenTickets].reverse().slice(0, 15));
-const queued = (id: string) => pos.outbox.some((entry) => entry.id === `kitchen-${id}`);
+const queued = (id: string) =>
+  pos.outbox.some((entry) => entry.id === `kitchen-${id}`);
 </script>
 
 <style lang="scss" scoped>

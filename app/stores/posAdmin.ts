@@ -68,14 +68,16 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
     features?: Partial<PosFeatures>;
     quoteValidityDays?: number;
   }) =>
-    (await api.patch<PosScreenSettings>(`${BASE}/screen-settings`, payload)).data;
+    (await api.patch<PosScreenSettings>(`${BASE}/screen-settings`, payload))
+      .data;
 
   // ─── المطاعم: الطاولات وإعدادات المطبخ وشاشته ───
   const fetchTables = async () =>
     (await api.get<DiningTableRecord[]>(`${BASE}/restaurant/tables`)).data;
 
   const createTable = async (payload: DiningTablePayload) =>
-    (await api.post<DiningTableRecord>(`${BASE}/restaurant/tables`, payload)).data;
+    (await api.post<DiningTableRecord>(`${BASE}/restaurant/tables`, payload))
+      .data;
 
   const createTables = async (payload: BulkTablesPayload) =>
     (
@@ -86,21 +88,29 @@ export const usePosAdminStore = defineStore("posAdmin", () => {
     ).data;
 
   const updateTable = async (id: string, payload: DiningTablePayload) =>
-    (await api.patch<DiningTableRecord>(`${BASE}/restaurant/tables/${id}`, payload))
-      .data;
+    (
+      await api.patch<DiningTableRecord>(
+        `${BASE}/restaurant/tables/${id}`,
+        payload,
+      )
+    ).data;
 
   const removeTable = async (id: string) => {
     await api.del(`${BASE}/restaurant/tables/${id}`);
   };
 
   const fetchRestaurantSettings = async () =>
-    (await api.get<RestaurantSettingsRecord>(`${BASE}/restaurant/settings`)).data;
+    (await api.get<RestaurantSettingsRecord>(`${BASE}/restaurant/settings`))
+      .data;
 
   const updateRestaurantSettings = async (
     payload: Partial<RestaurantSettingsRecord>,
   ) =>
     (
-      await api.patch<RestaurantSettingsRecord>(`${BASE}/restaurant/settings`, payload)
+      await api.patch<RestaurantSettingsRecord>(
+        `${BASE}/restaurant/settings`,
+        payload,
+      )
     ).data;
 
   /** stationId: شاشة محطة (أسطرها وحالتها فقط) */

@@ -26,14 +26,18 @@
           </template>
           <template v-else>
             منشأة غير مسجّلة (مثل المنشآت دون حد التسجيل الإلزامي): الفواتير
-            بعنوان «فاتورة مبيعات» <strong>بلا ضريبة</strong> على أي صنف، وبلا رقم
-            ضريبي ولا رمز QR. ضريبة المشتريات لا تُسترد فتدخل في تكلفة البضاعة.
-            نسب الضريبة على الأصناف تبقى كما هي وتعود للعمل إن سجّلت المنشأة.
+            بعنوان «فاتورة مبيعات» <strong>بلا ضريبة</strong> على أي صنف، وبلا
+            رقم ضريبي ولا رمز QR. ضريبة المشتريات لا تُسترد فتدخل في تكلفة
+            البضاعة. نسب الضريبة على الأصناف تبقى كما هي وتعود للعمل إن سجّلت
+            المنشأة.
           </template>
         </p>
         <div v-if="form.vatRegistered && !form.taxNumber" class="doc-note">
           <Info :size="16" />
-          <span>أدخل الرقم الضريبي للمنشأة (أدناه) — يُطبع على كل فاتورة وفي رمز QR.</span>
+          <span
+            >أدخل الرقم الضريبي للمنشأة (أدناه) — يُطبع على كل فاتورة وفي رمز
+            QR.</span
+          >
         </div>
 
         <label v-if="form.vatRegistered" class="checkbox-label">
@@ -92,7 +96,11 @@
           </div>
           <div class="form-group">
             <label>العنوان</label>
-            <input v-model.trim="form.address" class="form-input" maxlength="300" />
+            <input
+              v-model.trim="form.address"
+              class="form-input"
+              maxlength="300"
+            />
           </div>
         </div>
       </section>
@@ -114,8 +122,8 @@
         <section class="doc-section">
           <h4 class="doc-section__title">شاشة الكاشير: موافقة المشرف</h4>
           <p class="doc-hint">
-            ما يُحدَّد هنا يطلب رقم مشرف السري على شاشة الكاشير (المشرف يُعيَّن من
-            صفحة الكاشيرات). الخصم فوق حد الكاشير والبيع تحت أقل سعر يحتاجان
+            ما يُحدَّد هنا يطلب رقم مشرف السري على شاشة الكاشير (المشرف يُعيَّن
+            من صفحة الكاشيرات). الخصم فوق حد الكاشير والبيع تحت أقل سعر يحتاجان
             موافقة دائماً. يُسجَّل كل ذلك في «تدقيق الكاشير».
           </p>
           <label class="checkbox-label">
@@ -133,8 +141,8 @@
           <label class="checkbox-label">
             <input v-model="pos.approvals.priceChange" type="checkbox" />
             <span>
-              تغيير سعر صنف في الفاتورة — بدونها يغيّره الكاشير بنفسه في حدود خصمه
-              (إن ملك الصلاحية)
+              تغيير سعر صنف في الفاتورة — بدونها يغيّره الكاشير بنفسه في حدود
+              خصمه (إن ملك الصلاحية)
             </span>
           </label>
         </section>
@@ -143,7 +151,10 @@
           <h4 class="doc-section__title">شاشة الكاشير: باركود الميزان</h4>
           <label class="checkbox-label">
             <input v-model="pos.scale.enabled" type="checkbox" />
-            <span>الميزان يطبع باركوداً يحمل الوزن أو السعر (خضار، لحوم، عطارة)</span>
+            <span
+              >الميزان يطبع باركوداً يحمل الوزن أو السعر (خضار، لحوم،
+              عطارة)</span
+            >
           </label>
           <div v-if="pos.scale.enabled" class="doc-grid">
             <div class="form-group">
@@ -173,7 +184,10 @@
             </div>
             <div class="form-group">
               <label>خانات الكسر في القيمة</label>
-              <select v-model.number="pos.scale.valueDecimals" class="form-select">
+              <select
+                v-model.number="pos.scale.valueDecimals"
+                class="form-select"
+              >
                 <option :value="0">0</option>
                 <option :value="1">1</option>
                 <option :value="2">2 (سعر بالهللة)</option>
@@ -181,8 +195,8 @@
               </select>
             </div>
             <p class="doc-hint doc-grid__full">
-              مثال: <span dir="ltr">{{ scaleExample }}</span>. الصنف يُعرَّف بكوده
-              أو بباركود يساوي كود الميزان.
+              مثال: <span dir="ltr">{{ scaleExample }}</span
+              >. الصنف يُعرَّف بكوده أو بباركود يساوي كود الميزان.
             </p>
           </div>
         </section>
@@ -259,7 +273,10 @@ const save = async () => {
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
-  if (pos.scale.enabled && (!prefixes.length || prefixes.some((p) => !/^\d{2}$/.test(p)))) {
+  if (
+    pos.scale.enabled &&
+    (!prefixes.length || prefixes.some((p) => !/^\d{2}$/.test(p)))
+  ) {
     toast.warning("بادئات الميزان: خانتان رقميتان لكل بادئة، بينها فاصلة");
     return;
   }
@@ -277,7 +294,10 @@ const save = async () => {
       // غير المسجّلة لا ضريبة عندها أصلاً: الأساس يبقى كما حُفظ
       pricesIncludeTax: form.pricesIncludeTax,
       posOptions: {
-        scale: { ...pos.scale, prefixes: prefixes.length ? prefixes : pos.scale.prefixes },
+        scale: {
+          ...pos.scale,
+          prefixes: prefixes.length ? prefixes : pos.scale.prefixes,
+        },
         approvals: { ...pos.approvals },
       },
     });

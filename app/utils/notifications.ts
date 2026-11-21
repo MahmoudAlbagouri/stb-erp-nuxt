@@ -125,8 +125,14 @@ export const dueText = (data: Record<string, unknown>): string | null => {
   const due = typeof data.dueDate === "string" ? data.dueDate : null;
   if (!due) return null;
   const today = new Date();
-  const start = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const days = Math.round((Date.parse(`${due}T00:00:00Z`) - start) / 86_400_000);
+  const start = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const days = Math.round(
+    (Date.parse(`${due}T00:00:00Z`) - start) / 86_400_000,
+  );
   if (days === 0) return "ينتهي اليوم";
   if (days === 1) return "ينتهي غداً";
   if (days > 1) return `باقي ${days} ${days <= 10 ? "أيام" : "يوماً"}`;

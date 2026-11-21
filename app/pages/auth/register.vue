@@ -34,11 +34,7 @@
         <label>الدولة *</label>
         <div class="input-wrapper">
           <Globe :size="18" class="input-icon" />
-          <select
-            v-model="form.country"
-            class="form-select with-icon"
-            required
-          >
+          <select v-model="form.country" class="form-select with-icon" required>
             <option v-for="c in COUNTRIES" :key="c.code" :value="c.code">
               {{ c.nameAr }}
             </option>

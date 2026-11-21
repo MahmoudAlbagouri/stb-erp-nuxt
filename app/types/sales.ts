@@ -125,7 +125,14 @@ export interface SalesInvoiceLine {
   sku: string;
   isStocked: boolean;
   /** الإضافات المختارة (المطاعم) */
-  modifiers?: { optionId: string | null; name: string; priceDelta: number; quantity: number }[] | null;
+  modifiers?:
+    | {
+        optionId: string | null;
+        name: string;
+        priceDelta: number;
+        quantity: number;
+      }[]
+    | null;
   unitId: string;
   unitName: string;
   factor: number;

@@ -62,7 +62,10 @@ export const useSalesStore = defineStore("sales", () => {
 
   const fetchCustomerOptions = async (force = false) => {
     if (optionsLoaded.value && !force) return;
-    const res = await fetchCustomers({ isActive: "true", limit: OPTIONS_LIMIT });
+    const res = await fetchCustomers({
+      isActive: "true",
+      limit: OPTIONS_LIMIT,
+    });
     customerOptions.value = res.data;
     optionsLoaded.value = true;
   };
@@ -73,7 +76,10 @@ export const useSalesStore = defineStore("sales", () => {
     return res.data;
   };
 
-  const updateCustomer = async (id: string, payload: Partial<CustomerPayload>) => {
+  const updateCustomer = async (
+    id: string,
+    payload: Partial<CustomerPayload>,
+  ) => {
     const res = await api.patch<Customer>(`${BASE}/customers/${id}`, payload);
     optionsLoaded.value = false;
     return res.data;
@@ -125,10 +131,17 @@ export const useSalesStore = defineStore("sales", () => {
 
   // ─── عروض الأسعار ───────────────────────────────────────────────────────────
   const fetchQuotes = async (
-    filters: { status?: SalesQuoteFilter | ""; search?: string; page?: number } = {},
+    filters: {
+      status?: SalesQuoteFilter | "";
+      search?: string;
+      page?: number;
+    } = {},
   ) =>
-    (await api.get<Paginated<SalesQuote>>(`${BASE}/quotes${toQueryString(filters)}`))
-      .data;
+    (
+      await api.get<Paginated<SalesQuote>>(
+        `${BASE}/quotes${toQueryString(filters)}`,
+      )
+    ).data;
 
   const getQuote = async (id: string) =>
     (await api.get<SalesQuote>(`${BASE}/quotes/${id}`)).data;

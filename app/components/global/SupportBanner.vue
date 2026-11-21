@@ -10,7 +10,10 @@
       <strong>{{ auth.supportTenant.companyName }}</strong>
       بصلاحيات مديرها، وأي تعديل يقع على بياناتها الفعلية.
     </span>
-    <button class="btn btn--sm support-banner__exit" @click="auth.exitSupport()">
+    <button
+      class="btn btn--sm support-banner__exit"
+      @click="auth.exitSupport()"
+    >
       <LogOut :size="14" /> العودة لحساب مالك النظام
     </button>
   </div>

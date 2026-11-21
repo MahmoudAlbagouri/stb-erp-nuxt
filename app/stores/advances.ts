@@ -41,10 +41,7 @@ export const useAdvancesStore = defineStore("advances", () => {
     return res.data;
   };
 
-  const updateStatus = async (
-    id: string,
-    status: AdvanceStatus,
-  ) => {
+  const updateStatus = async (id: string, status: AdvanceStatus) => {
     const res = await api.patch<Advance>(`/advances/${id}/status`, { status });
     await fetchAll();
     return res.data;

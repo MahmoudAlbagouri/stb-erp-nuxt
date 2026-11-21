@@ -274,7 +274,11 @@
     <ConfirmDialog
       v-model="showDeleteConfirm"
       title="حذف مسودة المسير"
-      :message="payroll ? `تُحذف مسودة ${getMonthName(payroll.month)} ${payroll.year} بكل بنودها، ويمكن إعداد الشهر من جديد بعدها.` : ''"
+      :message="
+        payroll
+          ? `تُحذف مسودة ${getMonthName(payroll.month)} ${payroll.year} بكل بنودها، ويمكن إعداد الشهر من جديد بعدها.`
+          : ''
+      "
       confirm-text="حذف"
       :loading="deleting"
       @confirm="handleDeleteDraft"

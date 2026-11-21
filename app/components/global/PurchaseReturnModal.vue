@@ -11,7 +11,9 @@
             <h3>
               <Undo2 :size="20" class="doc-modal__icon" />
               مرتجع شراء
-              <template v-if="invoice">من الفاتورة {{ invoice.number }}</template>
+              <template v-if="invoice"
+                >من الفاتورة {{ invoice.number }}</template
+              >
             </h3>
             <button
               class="btn btn--icon btn--ghost"
@@ -34,7 +36,9 @@
               </div>
               <div class="doc-cell">
                 <span class="doc-cell__sub">يخرج من مخزن</span>
-                <span class="doc-cell__main">{{ invoice.warehouse?.name }}</span>
+                <span class="doc-cell__main">{{
+                  invoice.warehouse?.name
+                }}</span>
               </div>
               <div class="form-group">
                 <label>تاريخ المرتجع *</label>
@@ -89,7 +93,9 @@
                 </div>
                 <div>
                   <span class="doc-lines__label">القيمة</span>
-                  <span class="doc-money">{{ formatCurrency(valueOf(line)) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(valueOf(line))
+                  }}</span>
                 </div>
               </div>
             </div>

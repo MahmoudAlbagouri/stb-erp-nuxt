@@ -26,7 +26,9 @@ export const registerOfflineShell = (): void => {
       registration.active?.postMessage({
         type: "warm",
         path: window.location.pathname,
-        urls: performance.getEntriesByType("resource").map((entry) => entry.name),
+        urls: performance
+          .getEntriesByType("resource")
+          .map((entry) => entry.name),
       });
     })
     .catch(() => {

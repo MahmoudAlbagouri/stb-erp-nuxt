@@ -1,7 +1,12 @@
 // types/accounting.ts — المحاسبة (مرآة src/modules/accounting في الباك إند)
 import type { FileRef } from "./index";
 
-export type AccountType = "asset" | "liability" | "equity" | "revenue" | "expense";
+export type AccountType =
+  | "asset"
+  | "liability"
+  | "equity"
+  | "revenue"
+  | "expense";
 
 export const ACCOUNT_TYPE_LABEL: Record<AccountType, string> = {
   asset: "الأصول",

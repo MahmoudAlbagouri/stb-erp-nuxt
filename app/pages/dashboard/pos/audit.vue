@@ -33,7 +33,11 @@
       <template v-if="view === 'audit'">
         <select v-model="filters.action" class="form-select" @change="reload">
           <option value="">كل الأحداث</option>
-          <option v-for="(label, action) in ACTION_LABELS" :key="action" :value="action">
+          <option
+            v-for="(label, action) in ACTION_LABELS"
+            :key="action"
+            :value="action"
+          >
             {{ label }}
           </option>
         </select>
@@ -72,7 +76,11 @@
               </thead>
               <tbody>
                 <tr v-for="row in audit.rows.value" :key="row.id">
-                  <td><span class="doc-num">{{ formatDateTime(row.occurredAt) }}</span></td>
+                  <td>
+                    <span class="doc-num">{{
+                      formatDateTime(row.occurredAt)
+                    }}</span>
+                  </td>
                   <td>
                     <span :class="['badge', ACTION_TONES[row.action]]">
                       {{ ACTION_LABELS[row.action] }}
@@ -80,8 +88,12 @@
                   </td>
                   <td>
                     <div class="doc-cell">
-                      <span class="doc-cell__main">{{ row.deviceName || "—" }}</span>
-                      <span class="doc-cell__sub">{{ row.cashierName || "—" }}</span>
+                      <span class="doc-cell__main">{{
+                        row.deviceName || "—"
+                      }}</span>
+                      <span class="doc-cell__sub">{{
+                        row.cashierName || "—"
+                      }}</span>
                     </div>
                   </td>
                   <td>{{ row.details || "—" }}</td>
@@ -137,12 +149,18 @@
               </thead>
               <tbody>
                 <tr v-for="row in moves.rows.value" :key="row.id">
-                  <td><span class="doc-num">{{ formatDateTime(row.occurredAt) }}</span></td>
+                  <td>
+                    <span class="doc-num">{{
+                      formatDateTime(row.occurredAt)
+                    }}</span>
+                  </td>
                   <td>
                     <span
                       :class="[
                         'badge',
-                        row.type === 'in' ? 'doc-status--done' : 'doc-status--progress',
+                        row.type === 'in'
+                          ? 'doc-status--done'
+                          : 'doc-status--progress',
                       ]"
                     >
                       {{ row.type === "in" ? "إيداع" : "سحب" }}

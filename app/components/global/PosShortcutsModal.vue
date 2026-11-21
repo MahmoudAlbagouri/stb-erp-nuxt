@@ -5,25 +5,40 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><Keyboard :size="20" class="doc-modal__icon" /> اختصارات لوحة المفاتيح</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <Keyboard :size="20" class="doc-modal__icon" /> اختصارات لوحة
+              المفاتيح
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
           <div class="doc-form">
             <div class="pos-rows">
-              <div v-for="item in shortcuts" :key="item.keys" class="pos-rows__row">
+              <div
+                v-for="item in shortcuts"
+                :key="item.keys"
+                class="pos-rows__row"
+              >
                 <span class="pos-rows__main">{{ item.label }}</span>
                 <span>
-                  <kbd v-for="key in item.keys.split(' ')" :key="key" class="pos-key">
+                  <kbd
+                    v-for="key in item.keys.split(' ')"
+                    :key="key"
+                    class="pos-key"
+                  >
                     {{ key }}
                   </kbd>
                 </span>
               </div>
             </div>
             <p class="doc-hint">
-              + و − و Delete تعمل على السطر المحدد في السلة (المظلَّل)، حين لا يكون
-              المؤشر داخل حقل كتابة.
+              + و − و Delete تعمل على السطر المحدد في السلة (المظلَّل)، حين لا
+              يكون المؤشر داخل حقل كتابة.
             </p>
           </div>
         </div>
@@ -46,7 +61,8 @@ const pos = usePosStore();
 /** اختصارات المميزات المفعّلة فقط */
 const shortcuts = computed(() =>
   POS_SHORTCUTS.filter(
-    (item) => !("feature" in item) || pos.features[item.feature as PosFeatureKey],
+    (item) =>
+      !("feature" in item) || pos.features[item.feature as PosFeatureKey],
   ),
 );
 </script>
@@ -67,7 +83,11 @@ export const POS_SHORTCUTS = [
   { keys: "+ −", label: "زيادة / إنقاص كمية السطر المحدد" },
   { keys: "*", label: "كتابة كمية السطر المحدد" },
   { keys: "/", label: "كتابة خصم السطر المحدد", feature: "lineDiscount" },
-  { keys: "=", label: "تغيير سعر السطر المحدد في هذه الفاتورة", feature: "priceChange" },
+  {
+    keys: "=",
+    label: "تغيير سعر السطر المحدد في هذه الفاتورة",
+    feature: "priceChange",
+  },
   { keys: "Delete", label: "حذف السطر المحدد" },
   { keys: "Esc", label: "إغلاق النافذة المفتوحة" },
 ] as const;

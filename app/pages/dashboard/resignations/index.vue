@@ -30,7 +30,11 @@
           <span>PDF</span>
         </button>
 
-        <button v-can="'request_resignation_self'" class="btn btn--primary" @click="openCreateModal">
+        <button
+          v-can="'request_resignation_self'"
+          class="btn btn--primary"
+          @click="openCreateModal"
+        >
           <FilePlus :size="18" />
           <span>تقديم طلب استقالة</span>
         </button>
@@ -85,7 +89,11 @@
         <div class="empty-state__text">
           ابدأ بتقديم طلب استقالة جديد أو انتظر وصول طلبات من الموظفين
         </div>
-        <button v-can="'request_resignation_self'" class="btn btn--primary mt-4" @click="openCreateModal">
+        <button
+          v-can="'request_resignation_self'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal"
+        >
           <FilePlus :size="16" />
           تقديم طلب جديد
         </button>

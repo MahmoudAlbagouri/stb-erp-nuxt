@@ -19,7 +19,10 @@
       </div>
     </div>
 
-    <div v-if="store.warehousesLoading && !store.warehouses.length" class="empty-state">
+    <div
+      v-if="store.warehousesLoading && !store.warehouses.length"
+      class="empty-state"
+    >
       <div class="spinner spinner--lg" />
     </div>
 
@@ -50,7 +53,9 @@
                 <span
                   :class="[
                     'badge',
-                    w.type === 'main' ? 'doc-status--info' : 'doc-status--draft',
+                    w.type === 'main'
+                      ? 'doc-status--info'
+                      : 'doc-status--draft',
                   ]"
                 >
                   {{ w.type === "main" ? "رئيسي" : "فرعي" }}
@@ -67,7 +72,10 @@
               <td>{{ w.allowNegativeStock ? "مسموح" : "ممنوع" }}</td>
               <td>
                 <span
-                  :class="['badge', w.isActive ? 'badge--active' : 'badge--inactive']"
+                  :class="[
+                    'badge',
+                    w.isActive ? 'badge--active' : 'badge--inactive',
+                  ]"
                 >
                   {{ w.isActive ? "نشط" : "موقوف" }}
                 </span>
@@ -76,7 +84,10 @@
                 <div class="doc-actions">
                   <NuxtLink
                     class="btn btn--sm btn--ghost"
-                    :to="{ path: '/dashboard/inventory', query: { warehouseId: w.id } }"
+                    :to="{
+                      path: '/dashboard/inventory',
+                      query: { warehouseId: w.id },
+                    }"
                   >
                     <PackageSearch :size="14" /> الأرصدة
                   </NuxtLink>
@@ -135,7 +146,10 @@
                     placeholder="مثال: فرع الرياض"
                   />
                 </div>
-                <div v-if="branches.options.length > 1" class="form-group doc-grid__full">
+                <div
+                  v-if="branches.options.length > 1"
+                  class="form-group doc-grid__full"
+                >
                   <label>الفرع *</label>
                   <select v-model="form.branchId" class="form-select" required>
                     <option
@@ -147,8 +161,8 @@
                     </option>
                   </select>
                   <small v-if="editing" class="doc-hint">
-                    نقل المخزن إلى فرع آخر ينقل معه كل فواتيره وحركاته السابقة في
-                    التقارير.
+                    نقل المخزن إلى فرع آخر ينقل معه كل فواتيره وحركاته السابقة
+                    في التقارير.
                   </small>
                 </div>
                 <div class="form-group">
@@ -167,7 +181,11 @@
                 </div>
                 <div class="form-group doc-grid__full">
                   <label>العنوان</label>
-                  <input v-model.trim="form.address" class="form-input" maxlength="300" />
+                  <input
+                    v-model.trim="form.address"
+                    class="form-input"
+                    maxlength="300"
+                  />
                 </div>
               </div>
 
@@ -186,7 +204,11 @@
               </label>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button

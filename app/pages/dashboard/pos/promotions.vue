@@ -60,7 +60,9 @@
           </thead>
           <tbody>
             <tr v-for="p in promotions" :key="p.id">
-              <td><span class="doc-cell__main">{{ p.name }}</span></td>
+              <td>
+                <span class="doc-cell__main">{{ p.name }}</span>
+              </td>
               <td>{{ TYPE_LABELS[p.type] }}</td>
               <td>
                 <div class="doc-cell">
@@ -70,7 +72,9 @@
                   </span>
                 </div>
               </td>
-              <td><span class="doc-num">{{ valueLabel(p) }}</span></td>
+              <td>
+                <span class="doc-num">{{ valueLabel(p) }}</span>
+              </td>
               <td>
                 <div class="doc-cell">
                   <span class="doc-num">
@@ -82,7 +86,9 @@
                 </div>
               </td>
               <td>
-                <span :class="['badge', stateOf(p).tone]">{{ stateOf(p).label }}</span>
+                <span :class="['badge', stateOf(p).tone]">{{
+                  stateOf(p).label
+                }}</span>
               </td>
               <td>
                 <div class="doc-actions">
@@ -119,7 +125,11 @@
                 <Tag :size="20" class="doc-modal__icon" />
                 {{ editing ? "تعديل عرض" : "إضافة عرض" }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeModal">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="closeModal"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -139,7 +149,11 @@
                 <div class="form-group doc-grid__full">
                   <label>النوع *</label>
                   <select v-model="form.type" class="form-select">
-                    <option v-for="(label, type) in TYPE_LABELS" :key="type" :value="type">
+                    <option
+                      v-for="(label, type) in TYPE_LABELS"
+                      :key="type"
+                      :value="type"
+                    >
                       {{ label }}
                     </option>
                   </select>
@@ -152,7 +166,11 @@
                   </label>
                   <div v-if="form.productId" class="promo-picked">
                     <span>{{ names.products[form.productId] ?? "صنف" }}</span>
-                    <button type="button" class="btn btn--sm btn--ghost" @click="clearProduct">
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--ghost"
+                      @click="clearProduct"
+                    >
                       تغيير
                     </button>
                   </div>
@@ -172,7 +190,8 @@
                       >
                         <span>{{ product.name }}</span>
                         <span class="doc-cell__sub">
-                          {{ product.sku }} · {{ formatMoney(product.salePrice) }}
+                          {{ product.sku }} ·
+                          {{ formatMoney(product.salePrice) }}
                         </span>
                       </button>
                     </div>
@@ -186,15 +205,24 @@
                   <label>أو تصنيف كامل</label>
                   <select v-model="form.categoryId" class="form-select">
                     <option value="">كل الأصناف</option>
-                    <option v-for="c in catalog.categories" :key="c.id" :value="c.id">
+                    <option
+                      v-for="c in catalog.categories"
+                      :key="c.id"
+                      :value="c.id"
+                    >
                       {{ c.name }}
                     </option>
                   </select>
                 </div>
 
                 <!-- القيمة -->
-                <div v-if="form.type === 'special_price'" class="form-group doc-grid__full">
-                  <label>السعر الخاص لوحدة الأساس ({{ currencyLabel() }}) *</label>
+                <div
+                  v-if="form.type === 'special_price'"
+                  class="form-group doc-grid__full"
+                >
+                  <label
+                    >السعر الخاص لوحدة الأساس ({{ currencyLabel() }}) *</label
+                  >
                   <StbNumberInput
                     v-model.number="form.price"
                     class="form-input"
@@ -203,10 +231,14 @@
                     required
                   />
                   <small class="doc-hint">
-                    بنفس أساس سعر الصنف (شامل الضريبة أو قبلها، كما هو معرّف عليه).
+                    بنفس أساس سعر الصنف (شامل الضريبة أو قبلها، كما هو معرّف
+                    عليه).
                   </small>
                 </div>
-                <div v-if="form.type === 'percent_off'" class="form-group doc-grid__full">
+                <div
+                  v-if="form.type === 'percent_off'"
+                  class="form-group doc-grid__full"
+                >
                   <label>نسبة الخصم % *</label>
                   <StbNumberInput
                     v-model.number="form.percent"
@@ -244,7 +276,11 @@
                   <label>لعميل بعينه (اختياري)</label>
                   <select v-model="form.customerId" class="form-select">
                     <option value="">كل العملاء</option>
-                    <option v-for="c in sales.customerOptions" :key="c.id" :value="c.id">
+                    <option
+                      v-for="c in sales.customerOptions"
+                      :key="c.id"
+                      :value="c.id"
+                    >
                       {{ c.name }}
                     </option>
                   </select>
@@ -252,16 +288,24 @@
 
                 <div class="form-group">
                   <label>يبدأ</label>
-                  <input v-model="form.startsAt" type="datetime-local" class="form-input" />
+                  <input
+                    v-model="form.startsAt"
+                    type="datetime-local"
+                    class="form-input"
+                  />
                 </div>
                 <div class="form-group">
                   <label>ينتهي</label>
-                  <input v-model="form.endsAt" type="datetime-local" class="form-input" />
+                  <input
+                    v-model="form.endsAt"
+                    type="datetime-local"
+                    class="form-input"
+                  />
                 </div>
               </div>
               <small class="doc-hint">
-                السعر الخاص و«اشترِ واحصل» يسريان على البيع بوحدة الأساس. بلا تاريخ
-                = يسري دائماً.
+                السعر الخاص و«اشترِ واحصل» يسريان على البيع بوحدة الأساس. بلا
+                تاريخ = يسري دائماً.
               </small>
 
               <label class="checkbox-label">
@@ -270,7 +314,11 @@
               </label>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button
@@ -483,7 +531,8 @@ const closeModal = () => {
   if (!submitting.value) showModal.value = false;
 };
 
-const numberOrNull = (value: number | "") => (value === "" ? null : Number(value));
+const numberOrNull = (value: number | "") =>
+  value === "" ? null : Number(value);
 
 const handleSubmit = async () => {
   if (form.type !== "percent_off" && !form.productId) {
@@ -502,7 +551,9 @@ const handleSubmit = async () => {
       percent: numberOrNull(form.percent),
       buyQuantity: numberOrNull(form.buyQuantity),
       getQuantity: numberOrNull(form.getQuantity),
-      startsAt: form.startsAt ? fromZonedInput(form.startsAt, auth.timezone) : null,
+      startsAt: form.startsAt
+        ? fromZonedInput(form.startsAt, auth.timezone)
+        : null,
       endsAt: form.endsAt ? fromZonedInput(form.endsAt, auth.timezone) : null,
       isActive: form.isActive,
     };
@@ -549,7 +600,10 @@ const doDelete = async () => {
 
 onMounted(async () => {
   // قوائم النموذج: فشلها (بلا صلاحية الأصناف مثلاً) لا يمنع عرض العروض
-  await Promise.allSettled([catalog.fetchSettings(), sales.fetchCustomerOptions()]);
+  await Promise.allSettled([
+    catalog.fetchSettings(),
+    sales.fetchCustomerOptions(),
+  ]);
   await load();
 });
 </script>

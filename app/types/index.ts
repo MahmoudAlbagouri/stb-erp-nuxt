@@ -673,7 +673,12 @@ export type UpdateDevicePayload = Partial<CreateDevicePayload> & {
 export interface DeviceSetup {
   protocol: DeviceProtocol;
   serialNumber: string;
-  zk?: { serverAddress: string; serverPort: number; https: boolean; path: string };
+  zk?: {
+    serverAddress: string;
+    serverPort: number;
+    https: boolean;
+    path: string;
+  };
   hikvision?: { host: string; port: number; https: boolean; urlPath: string };
   api?: { url: string; deviceIdHeader: string; deviceKeyHeader: string };
 }

@@ -10,7 +10,10 @@ export interface GeoPoint {
 }
 
 const inRange = (lat: number, lng: number) =>
-  Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  Number.isFinite(lat) &&
+  Number.isFinite(lng) &&
+  Math.abs(lat) <= 90 &&
+  Math.abs(lng) <= 180;
 
 const NUMBER = String.raw`-?\d{1,3}(?:\.\d+)?`;
 
@@ -19,7 +22,10 @@ const PATTERNS: RegExp[] = [
   // دبوس خرائط Google: ...!3d24.71!4d46.67
   new RegExp(String.raw`!3d(${NUMBER})!4d(${NUMBER})`),
   // ?q=24.71,46.67 أو &ll= أو query= أو destination=
-  new RegExp(String.raw`[?&](?:q|ll|query|destination|daddr)=(${NUMBER})(?:,|%2C)\s*(${NUMBER})`, "i"),
+  new RegExp(
+    String.raw`[?&](?:q|ll|query|destination|daddr)=(${NUMBER})(?:,|%2C)\s*(${NUMBER})`,
+    "i",
+  ),
   // @24.71,46.67,15z (مركز الخريطة)
   new RegExp(String.raw`@(${NUMBER}),(${NUMBER})`),
   // geo:24.71,46.67

@@ -15,7 +15,11 @@ export interface DrawerConfig {
   pin: 0 | 1;
 }
 
-export const DEFAULT_DRAWER: DrawerConfig = { mode: "off", baudRate: 9600, pin: 0 };
+export const DEFAULT_DRAWER: DrawerConfig = {
+  mode: "off",
+  baudRate: 9600,
+  pin: 0,
+};
 export const BAUD_RATES = [9600, 19200, 38400, 57600, 115200];
 
 // Web Serial ليس في تعريفات TypeScript القياسية: نعرّف ما نستخدمه فقط
@@ -47,7 +51,10 @@ export const drawerPaired = async (): Promise<boolean> =>
 /** يطلب من المستخدم اختيار منفذ الطابعة (مرة واحدة؛ المتصفح يتذكره) */
 export const pairDrawer = async (): Promise<void> => {
   const api = serial();
-  if (!api) throw new Error("هذا المتصفح لا يدعم التحكم بالدرج — استخدم Chrome أو Edge على الكمبيوتر");
+  if (!api)
+    throw new Error(
+      "هذا المتصفح لا يدعم التحكم بالدرج — استخدم Chrome أو Edge على الكمبيوتر",
+    );
   await api.requestPort();
 };
 
@@ -59,7 +66,8 @@ export const kickDrawer = (config: DrawerConfig): Promise<void> => {
     const api = serial();
     if (!api) throw new Error("هذا المتصفح لا يدعم التحكم بالدرج");
     const [port] = await api.getPorts();
-    if (!port) throw new Error("لم يُختر منفذ الطابعة — اختره من إعدادات الشاشة");
+    if (!port)
+      throw new Error("لم يُختر منفذ الطابعة — اختره من إعدادات الشاشة");
 
     await port.open({ baudRate: config.baudRate });
     try {

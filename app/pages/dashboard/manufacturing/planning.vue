@@ -9,7 +9,13 @@
     </div>
 
     <div class="doc-tabs">
-      <button v-for="t in TABS" :key="t.id" class="doc-tab" :class="{ 'is-active': tab === t.id }" @click="setTab(t.id)">
+      <button
+        v-for="t in TABS"
+        :key="t.id"
+        class="doc-tab"
+        :class="{ 'is-active': tab === t.id }"
+        @click="setTab(t.id)"
+      >
         {{ t.label }}
       </button>
     </div>
@@ -17,57 +23,122 @@
     <!-- ══ MRP ══ -->
     <template v-if="tab === 'mrp'">
       <div class="card doc-filters">
-        <select v-model="mrpFilters.warehouseId" class="form-select" @change="loadMrp">
+        <select
+          v-model="mrpFilters.warehouseId"
+          class="form-select"
+          @change="loadMrp"
+        >
           <option value="">كل المخازن</option>
-          <option v-for="w in inventory.warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
+          <option v-for="w in inventory.warehouses" :key="w.id" :value="w.id">
+            {{ w.name }}
+          </option>
         </select>
         <label class="checkbox-label">
-          <input v-model="mrpFilters.includeReorder" type="checkbox" @change="loadMrp" />
+          <input
+            v-model="mrpFilters.includeReorder"
+            type="checkbox"
+            @change="loadMrp"
+          />
           <span>أضف ما نقص عن حد إعادة الطلب</span>
         </label>
-        <button v-can="'manage_purchases'" class="btn btn--primary" :disabled="!selectedBuy.length || busy" @click="showDrafts = true">
+        <button
+          v-can="'manage_purchases'"
+          class="btn btn--primary"
+          :disabled="!selectedBuy.length || busy"
+          @click="showDrafts = true"
+        >
           <ShoppingCart :size="16" /> مسودات شراء ({{ selectedBuy.length }})
         </button>
       </div>
-      <div v-if="loading" class="empty-state"><div class="spinner spinner--lg" /></div>
-      <div v-else-if="!mrpRows.length" class="card"><div class="empty-state">
-        <div class="empty-state__title">لا احتياجات</div>
-        <div class="empty-state__text">الأوامر المفتوحة يغطيها المتاح والقادم</div>
-      </div></div>
+      <div v-if="loading" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
+      <div v-else-if="!mrpRows.length" class="card">
+        <div class="empty-state">
+          <div class="empty-state__title">لا احتياجات</div>
+          <div class="empty-state__text">
+            الأوامر المفتوحة يغطيها المتاح والقادم
+          </div>
+        </div>
+      </div>
       <div v-else class="card doc-table-card">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th /><th>الصنف</th><th>المطلوب</th><th>المتاح</th><th>القادم</th><th>الناقص</th>
-                <th>الإجراء</th><th>المورد</th><th>اطلب قبل</th><th>للأوامر</th>
+                <th />
+                <th>الصنف</th>
+                <th>المطلوب</th>
+                <th>المتاح</th>
+                <th>القادم</th>
+                <th>الناقص</th>
+                <th>الإجراء</th>
+                <th>المورد</th>
+                <th>اطلب قبل</th>
+                <th>للأوامر</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="r in mrpRows" :key="r.productId" :class="{ 'is-muted': r.action === 'none' }">
-                <td><input v-if="r.action === 'buy' && r.supplierId" v-model="selected" type="checkbox" :value="r.productId" /></td>
+              <tr
+                v-for="r in mrpRows"
+                :key="r.productId"
+                :class="{ 'is-muted': r.action === 'none' }"
+              >
+                <td>
+                  <input
+                    v-if="r.action === 'buy' && r.supplierId"
+                    v-model="selected"
+                    type="checkbox"
+                    :value="r.productId"
+                  />
+                </td>
                 <td>
                   <div class="doc-cell">
                     <span class="doc-cell__main">{{ r.name }}</span>
-                    <span class="doc-cell__sub">{{ r.sku }}<template v-if="r.level > 1"> · مستوى {{ r.level }}</template></span>
+                    <span class="doc-cell__sub"
+                      >{{ r.sku
+                      }}<template v-if="r.level > 1">
+                        · مستوى {{ r.level }}</template
+                      ></span
+                    >
                   </div>
                 </td>
-                <td class="doc-num">{{ formatNumber(r.required) }} {{ r.unit }}</td>
+                <td class="doc-num">
+                  {{ formatNumber(r.required) }} {{ r.unit }}
+                </td>
                 <td class="doc-num">{{ formatNumber(r.onHand) }}</td>
                 <td class="doc-num">{{ formatNumber(r.incoming) }}</td>
-                <td class="doc-num" :class="r.shortage > 0 ? 'doc-num--out' : ''">{{ formatNumber(r.shortage) }}</td>
+                <td
+                  class="doc-num"
+                  :class="r.shortage > 0 ? 'doc-num--out' : ''"
+                >
+                  {{ formatNumber(r.shortage) }}
+                </td>
                 <td>
-                  <span v-if="r.action === 'buy'" class="badge doc-status--progress">شراء</span>
-                  <span v-else-if="r.action === 'make'" class="badge doc-status--info">تصنيع</span>
+                  <span
+                    v-if="r.action === 'buy'"
+                    class="badge doc-status--progress"
+                    >شراء</span
+                  >
+                  <span
+                    v-else-if="r.action === 'make'"
+                    class="badge doc-status--info"
+                    >تصنيع</span
+                  >
                   <span v-else class="badge doc-status--done">مغطّى</span>
                 </td>
                 <td>
                   <div class="doc-cell">
                     <span>{{ r.supplierName || "—" }}</span>
-                    <span v-if="r.leadTimeDays !== null" class="doc-cell__sub">توريد {{ r.leadTimeDays }} يوم</span>
+                    <span v-if="r.leadTimeDays !== null" class="doc-cell__sub"
+                      >توريد {{ r.leadTimeDays }} يوم</span
+                    >
                   </div>
                 </td>
-                <td class="doc-num" :class="{ 'doc-num--out': r.orderBy && r.orderBy < today }">
+                <td
+                  class="doc-num"
+                  :class="{ 'doc-num--out': r.orderBy && r.orderBy < today }"
+                >
                   {{ r.orderBy ? formatDate(r.orderBy) : "—" }}
                 </td>
                 <td class="doc-cell__sub">{{ r.orders.join("، ") }}</td>
@@ -85,13 +156,22 @@
         <StbDateInput v-model="range.to" class="form-input" title="إلى" />
         <button class="btn btn--ghost" @click="loadCapacity">عرض</button>
       </div>
-      <div v-if="loading" class="empty-state"><div class="spinner spinner--lg" /></div>
-      <div v-for="c in capacityRows" v-else :key="c.workCenterId" class="card section">
+      <div v-if="loading" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
+      <div
+        v-for="c in capacityRows"
+        v-else
+        :key="c.workCenterId"
+        class="card section"
+      >
         <div class="cap-head">
           <strong>{{ c.name }}</strong>
           <span :class="c.utilization > 100 ? 'doc-num--out' : 'doc-num--in'">
             {{ formatNumber(c.utilization) }}% حمل
-            <template v-if="c.overloadedDays"> · {{ c.overloadedDays }} يوم فوق الطاقة</template>
+            <template v-if="c.overloadedDays">
+              · {{ c.overloadedDays }} يوم فوق الطاقة</template
+            >
           </span>
         </div>
         <div class="cap-days">
@@ -102,15 +182,20 @@
             :title="`${formatDate(d.date)}: ${formatMinutes(d.load)} من ${formatMinutes(d.available)}`"
           >
             <div class="cap-day__bar">
-              <span :style="{ height: `${Math.min(d.utilization, 100)}%` }" :class="{ over: d.utilization > 100 }" />
+              <span
+                :style="{ height: `${Math.min(d.utilization, 100)}%` }"
+                :class="{ over: d.utilization > 100 }"
+              />
             </div>
             <small>{{ d.date.slice(8) }}</small>
           </div>
         </div>
       </div>
-      <div v-if="!loading && !capacityRows.length" class="card"><div class="empty-state">
-        <div class="empty-state__title">لا مراكز عمل فعّالة</div>
-      </div></div>
+      <div v-if="!loading && !capacityRows.length" class="card">
+        <div class="empty-state">
+          <div class="empty-state__title">لا مراكز عمل فعّالة</div>
+        </div>
+      </div>
     </template>
 
     <!-- ══ الأداء ══ -->
@@ -120,25 +205,63 @@
         <StbDateInput v-model="range.to" class="form-input" title="إلى" />
         <button class="btn btn--ghost" @click="loadPerformance">عرض</button>
       </div>
-      <div v-if="loading" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="loading" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
       <template v-else-if="performance">
         <section class="card section">
           <h3 class="section__title">المنتجات: المخطط مقابل الفعلي</h3>
           <div class="table-responsive">
             <table class="data-table">
-              <thead><tr><th>المنتج</th><th>أوامر</th><th>أُنتج</th><th>هالك</th><th>تكلفة الوحدة المخططة</th><th>الفعلية</th><th>الفرق</th><th>متوسط المدة</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>أوامر</th>
+                  <th>أُنتج</th>
+                  <th>هالك</th>
+                  <th>تكلفة الوحدة المخططة</th>
+                  <th>الفعلية</th>
+                  <th>الفرق</th>
+                  <th>متوسط المدة</th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="p in performance.products" :key="p.productId">
                   <td>{{ p.name }}</td>
                   <td class="doc-num">{{ p.orders }}</td>
-                  <td class="doc-num">{{ formatNumber(p.producedQuantity) }}</td>
-                  <td class="doc-num">{{ formatNumber(p.scrapQuantity) }} ({{ formatNumber(p.scrapRate) }}%)</td>
-                  <td class="doc-money">{{ formatCurrency(p.plannedUnitCost) }}</td>
-                  <td class="doc-money">{{ formatCurrency(p.actualUnitCost) }}</td>
-                  <td class="doc-num" :class="p.costVariance > 0 ? 'doc-num--out' : 'doc-num--in'">{{ formatNumber(p.costVariance) }}%</td>
-                  <td class="doc-num">{{ p.avgLeadHours !== null ? `${formatNumber(p.avgLeadHours)} س` : "—" }}</td>
+                  <td class="doc-num">
+                    {{ formatNumber(p.producedQuantity) }}
+                  </td>
+                  <td class="doc-num">
+                    {{ formatNumber(p.scrapQuantity) }} ({{
+                      formatNumber(p.scrapRate)
+                    }}%)
+                  </td>
+                  <td class="doc-money">
+                    {{ formatCurrency(p.plannedUnitCost) }}
+                  </td>
+                  <td class="doc-money">
+                    {{ formatCurrency(p.actualUnitCost) }}
+                  </td>
+                  <td
+                    class="doc-num"
+                    :class="p.costVariance > 0 ? 'doc-num--out' : 'doc-num--in'"
+                  >
+                    {{ formatNumber(p.costVariance) }}%
+                  </td>
+                  <td class="doc-num">
+                    {{
+                      p.avgLeadHours !== null
+                        ? `${formatNumber(p.avgLeadHours)} س`
+                        : "—"
+                    }}
+                  </td>
                 </tr>
-                <tr v-if="!performance.products.length"><td colspan="8" class="doc-lines__empty">لا أوامر مكتملة في الفترة</td></tr>
+                <tr v-if="!performance.products.length">
+                  <td colspan="8" class="doc-lines__empty">
+                    لا أوامر مكتملة في الفترة
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -147,13 +270,26 @@
           <h3 class="section__title">كفاءة مراكز العمل (OEE)</h3>
           <div class="table-responsive">
             <table class="data-table">
-              <thead><tr><th>المركز</th><th>تشغيل</th><th>تجهيز</th><th>توقف</th><th>الإتاحة</th><th>الأداء</th><th>الجودة</th><th>OEE</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>المركز</th>
+                  <th>تشغيل</th>
+                  <th>تجهيز</th>
+                  <th>توقف</th>
+                  <th>الإتاحة</th>
+                  <th>الأداء</th>
+                  <th>الجودة</th>
+                  <th>OEE</th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="w in performance.workCenters" :key="w.workCenterId">
                   <td>{{ w.name }}</td>
                   <td class="doc-num">{{ formatMinutes(w.runMinutes) }}</td>
                   <td class="doc-num">{{ formatMinutes(w.setupMinutes) }}</td>
-                  <td class="doc-num">{{ formatMinutes(w.downtimeMinutes) }}</td>
+                  <td class="doc-num">
+                    {{ formatMinutes(w.downtimeMinutes) }}
+                  </td>
                   <td class="doc-num">{{ pct(w.availability) }}</td>
                   <td class="doc-num">{{ pct(w.performance) }}</td>
                   <td class="doc-num">{{ pct(w.quality) }}</td>
@@ -166,21 +302,40 @@
         <div class="two-cols">
           <section class="card section">
             <h3 class="section__title">التوقف بأسبابه</h3>
-            <div v-for="d in performance.downtime" :key="`${d.workCenterId}-${d.reason}`" class="bar-row">
-              <span>{{ DOWNTIME_REASONS[d.reason] ?? d.reason }} <small>({{ d.workCenter }})</small></span>
-              <div class="bar"><span :style="{ width: `${share(d.minutes, maxDowntime)}%` }" /></div>
+            <div
+              v-for="d in performance.downtime"
+              :key="`${d.workCenterId}-${d.reason}`"
+              class="bar-row"
+            >
+              <span
+                >{{ DOWNTIME_REASONS[d.reason] ?? d.reason }}
+                <small>({{ d.workCenter }})</small></span
+              >
+              <div class="bar">
+                <span :style="{ width: `${share(d.minutes, maxDowntime)}%` }" />
+              </div>
               <span class="doc-num">{{ formatMinutes(d.minutes) }}</span>
             </div>
-            <div v-if="!performance.downtime.length" class="doc-lines__empty">لا توقف مسجّل</div>
+            <div v-if="!performance.downtime.length" class="doc-lines__empty">
+              لا توقف مسجّل
+            </div>
           </section>
           <section class="card section">
             <h3 class="section__title">الهالك بأسبابه</h3>
-            <div v-for="s in performance.scrap" :key="s.reason ?? 'none'" class="bar-row">
+            <div
+              v-for="s in performance.scrap"
+              :key="s.reason ?? 'none'"
+              class="bar-row"
+            >
               <span>{{ s.reason ? SCRAP_REASONS[s.reason] : "بلا سبب" }}</span>
-              <div class="bar bar--danger"><span :style="{ width: `${share(s.quantity, maxScrap)}%` }" /></div>
+              <div class="bar bar--danger">
+                <span :style="{ width: `${share(s.quantity, maxScrap)}%` }" />
+              </div>
               <span class="doc-num">{{ formatNumber(s.quantity) }}</span>
             </div>
-            <div v-if="!performance.scrap.length" class="doc-lines__empty">لا هالك مسجّل</div>
+            <div v-if="!performance.scrap.length" class="doc-lines__empty">
+              لا هالك مسجّل
+            </div>
           </section>
         </div>
       </template>
@@ -189,23 +344,57 @@
     <!-- مسودات الشراء -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showDrafts" class="modal-overlay" @click.self="showDrafts = false">
+        <div
+          v-if="showDrafts"
+          class="modal-overlay"
+          @click.self="showDrafts = false"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
-              <h3><ShoppingCart :size="20" class="doc-modal__icon" /> مسودات شراء من النقص</h3>
-              <button class="btn btn--icon btn--ghost" @click="showDrafts = false"><X :size="20" /></button>
+              <h3>
+                <ShoppingCart :size="20" class="doc-modal__icon" /> مسودات شراء
+                من النقص
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                @click="showDrafts = false"
+              >
+                <X :size="20" />
+              </button>
             </div>
             <form class="doc-form" @submit.prevent="createDrafts">
-              <p>مسودة لكل مورد بكميات النقص وآخر سعر شراء، وتاريخ طلب اليوم. راجعها ثم اعتمدها عند الاستلام.</p>
+              <p>
+                مسودة لكل مورد بكميات النقص وآخر سعر شراء، وتاريخ طلب اليوم.
+                راجعها ثم اعتمدها عند الاستلام.
+              </p>
               <div class="form-group">
                 <label>مخزن الاستلام *</label>
                 <select v-model="draftWarehouse" class="form-select" required>
-                  <option v-for="w in inventory.warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
+                  <option
+                    v-for="w in inventory.warehouses"
+                    :key="w.id"
+                    :value="w.id"
+                  >
+                    {{ w.name }}
+                  </option>
                 </select>
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showDrafts = false">إلغاء</button>
-                <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': busy }" :disabled="busy">إنشاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showDrafts = false"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn--primary"
+                  :class="{ 'btn--loading': busy }"
+                  :disabled="busy"
+                >
+                  إنشاء
+                </button>
               </div>
             </form>
           </div>
@@ -221,8 +410,16 @@ import { ShoppingCart, X } from "lucide-vue-next";
 import { useManufacturingStore } from "@/stores/manufacturing";
 import { useInventoryStore } from "@/stores/inventory";
 import { useToast } from "@/composables/useToast";
-import { DOWNTIME_REASONS, SCRAP_REASONS, formatMinutes } from "@/utils/manufacturing";
-import type { CapacityRow, MrpRow, PerformanceReport } from "@/types/manufacturing";
+import {
+  DOWNTIME_REASONS,
+  SCRAP_REASONS,
+  formatMinutes,
+} from "@/utils/manufacturing";
+import type {
+  CapacityRow,
+  MrpRow,
+  PerformanceReport,
+} from "@/types/manufacturing";
 
 definePageMeta({ middleware: "auth" });
 
@@ -253,7 +450,9 @@ const range = reactive({ from: day(0), to: day(13) });
 const mrpFilters = reactive({ warehouseId: "", includeReorder: false });
 const mrpRows = ref<MrpRow[]>([]);
 const selected = ref<string[]>([]);
-const selectedBuy = computed(() => mrpRows.value.filter((r) => selected.value.includes(r.productId)));
+const selectedBuy = computed(() =>
+  mrpRows.value.filter((r) => selected.value.includes(r.productId)),
+);
 const showDrafts = ref(false);
 const draftWarehouse = ref("");
 
@@ -264,7 +463,9 @@ const loadMrp = async () => {
       warehouseId: mrpFilters.warehouseId || undefined,
       includeReorder: mrpFilters.includeReorder ? "true" : undefined,
     });
-    selected.value = mrpRows.value.filter((r) => r.action === "buy" && r.supplierId).map((r) => r.productId);
+    selected.value = mrpRows.value
+      .filter((r) => r.action === "buy" && r.supplierId)
+      .map((r) => r.productId);
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر حساب الاحتياجات"));
   } finally {
@@ -277,7 +478,11 @@ const createDrafts = async () => {
   try {
     const drafts = await store.mrpPurchaseDrafts({
       warehouseId: draftWarehouse.value,
-      lines: selectedBuy.value.map((r) => ({ productId: r.productId, quantity: r.shortage, supplierId: r.supplierId! })),
+      lines: selectedBuy.value.map((r) => ({
+        productId: r.productId,
+        quantity: r.shortage,
+        supplierId: r.supplierId!,
+      })),
     });
     toast.success(`أُنشئت ${drafts.length} مسودة شراء`);
     showDrafts.value = false;
@@ -312,10 +517,15 @@ const loadPerformance = async () => {
     loading.value = false;
   }
 };
-const maxDowntime = computed(() => Math.max(...(performance.value?.downtime ?? []).map((d) => d.minutes), 1));
-const maxScrap = computed(() => Math.max(...(performance.value?.scrap ?? []).map((s) => s.quantity), 1));
+const maxDowntime = computed(() =>
+  Math.max(...(performance.value?.downtime ?? []).map((d) => d.minutes), 1),
+);
+const maxScrap = computed(() =>
+  Math.max(...(performance.value?.scrap ?? []).map((s) => s.quantity), 1),
+);
 const share = (value: number, max: number) => Math.round((value / max) * 100);
-const pct = (value: number | null) => (value === null ? "—" : `${formatNumber(value)}%`);
+const pct = (value: number | null) =>
+  value === null ? "—" : `${formatNumber(value)}%`;
 
 const setTab = (next: Tab) => {
   tab.value = next;
@@ -333,12 +543,15 @@ const setTab = (next: Tab) => {
 
 onMounted(async () => {
   await inventory.fetchWarehouses().catch(() => {});
-  draftWarehouse.value = inventory.warehouses.find((w) => w.type === "main")?.id ?? "";
+  draftWarehouse.value =
+    inventory.warehouses.find((w) => w.type === "main")?.id ?? "";
   loadMrp();
 });
 </script>
 
 <style lang="scss" scoped>
+@use "~/assets/scss/variables" as *;
+@use "~/assets/scss/mixins" as *;
 .section {
   margin-bottom: $space-4;
   padding: $space-4;

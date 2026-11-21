@@ -177,7 +177,10 @@ export const createPosState = () => {
    * والمطاعم ينزلان لمن في باقته)، وما تحتاجه كل ميزة
    */
   const features = computed<PosFeatures>(() => {
-    const saved = { ...DEFAULT_POS_FEATURES, ...(posOptions.value.features ?? {}) };
+    const saved = {
+      ...DEFAULT_POS_FEATURES,
+      ...(posOptions.value.features ?? {}),
+    };
     return {
       ...saved,
       addCustomer: saved.addCustomer && saved.customers,
@@ -255,7 +258,9 @@ export const createPosState = () => {
 
   /** هل في الطابور عملية من هذا النوع لهذا المعرّف؟ */
   const hasQueued = (type: OutboxEntry["type"], id: string) =>
-    outbox.value.some((entry) => entry.type === type && entry.payload.id === id);
+    outbox.value.some(
+      (entry) => entry.type === type && entry.payload.id === id,
+    );
 
   return {
     ready,

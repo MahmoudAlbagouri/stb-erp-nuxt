@@ -8,8 +8,14 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><Wallet :size="20" class="doc-modal__icon" /> حركة نقدية في الدرج</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <Wallet :size="20" class="doc-modal__icon" /> حركة نقدية في الدرج
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -71,11 +77,19 @@
               <span>المفترض في الدرج بعد الحركة</span>
               <strong class="doc-money">{{ formatCurrency(after) }}</strong>
             </div>
-            <p v-if="after < 0" class="form-error">المبلغ أكبر من المفترض في الدرج</p>
+            <p v-if="after < 0" class="form-error">
+              المبلغ أكبر من المفترض في الدرج
+            </p>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
-              <button type="submit" class="btn btn--primary" :disabled="after < 0">
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                class="btn btn--primary"
+                :disabled="after < 0"
+              >
                 تسجيل الحركة
               </button>
             </div>

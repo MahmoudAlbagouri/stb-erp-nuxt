@@ -12,7 +12,11 @@
         </p>
       </div>
       <div class="page-header__actions">
-        <button v-if="canCreate" class="btn btn--primary" @click="composeOpen = true">
+        <button
+          v-if="canCreate"
+          class="btn btn--primary"
+          @click="composeOpen = true"
+        >
           <Send :size="18" /><span>رسالة للموظفين</span>
         </button>
         <button class="btn btn--outline" @click="prefsOpen = true">
@@ -33,7 +37,10 @@
       >
         <component :is="t.icon" :size="16" />
         {{ t.label }}
-        <span v-if="t.key === 'inbox' && store.unreadCount" class="nc-tab__count">
+        <span
+          v-if="t.key === 'inbox' && store.unreadCount"
+          class="nc-tab__count"
+        >
           {{ store.unreadCount }}
         </span>
       </button>
@@ -99,7 +106,11 @@
           <BellOff :size="32" class="empty-icon" />
           <div class="empty-state__title">لا توجد إشعارات</div>
           <div class="empty-state__text">
-            {{ store.inboxFilters.unread ? "قرأت كل شيء 👌" : "ستظهر هنا تنبيهاتك ورسائل الإدارة فور وصولها" }}
+            {{
+              store.inboxFilters.unread
+                ? "قرأت كل شيء 👌"
+                : "ستظهر هنا تنبيهاتك ورسائل الإدارة فور وصولها"
+            }}
           </div>
         </div>
       </div>
@@ -118,7 +129,9 @@
           <div class="nc-card__content">
             <div class="nc-card__head">
               <h4>{{ n.title }}</h4>
-              <time :title="formatDateTime(n.createdAt)">{{ timeAgo(n.createdAt) }}</time>
+              <time :title="formatDateTime(n.createdAt)">{{
+                timeAgo(n.createdAt)
+              }}</time>
             </div>
             <p>{{ n.body }}</p>
             <div class="nc-card__meta">
@@ -131,7 +144,10 @@
               <span v-if="n.sender" class="nc-meta">
                 <UserRound :size="12" /> {{ n.sender.name }}
               </span>
-              <span v-if="n.requiresAck && !n.acknowledgedAt" class="nc-meta nc-meta--ack">
+              <span
+                v-if="n.requiresAck && !n.acknowledgedAt"
+                class="nc-meta nc-meta--ack"
+              >
                 <ShieldAlert :size="12" /> يتطلب تأكيد الاطلاع
               </span>
             </div>
@@ -150,12 +166,16 @@
 
     <!-- ═════════════ الرسائل المرسلة ═════════════ -->
     <template v-else-if="tab === 'sent'">
-      <div v-if="!sent.ready.value" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="!sent.ready.value" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
       <div v-else-if="!sent.rows.value.length" class="card empty-card">
         <div class="empty-state">
           <Send :size="32" class="empty-icon" />
           <div class="empty-state__title">لم تُرسل رسائل بعد</div>
-          <button class="btn btn--primary" @click="composeOpen = true">رسالة للموظفين</button>
+          <button class="btn btn--primary" @click="composeOpen = true">
+            رسالة للموظفين
+          </button>
         </div>
       </div>
       <div v-else class="nc-list">
@@ -171,16 +191,23 @@
           <div class="nc-card__content">
             <div class="nc-card__head">
               <h4>{{ m.title }}</h4>
-              <time :title="formatDateTime(m.createdAt)">{{ timeAgo(m.createdAt) }}</time>
+              <time :title="formatDateTime(m.createdAt)">{{
+                timeAgo(m.createdAt)
+              }}</time>
             </div>
             <p>{{ m.body }}</p>
-            <div class="nc-progress" :title="`قرأها ${m.read} من ${m.recipients}`">
+            <div
+              class="nc-progress"
+              :title="`قرأها ${m.read} من ${m.recipients}`"
+            >
               <div class="nc-progress__bar">
                 <span :style="{ width: percent(m.read, m.recipients) }" />
               </div>
               <small>
                 قرأها {{ m.read }} من {{ m.recipients }}
-                <template v-if="m.requiresAck"> · أكّد {{ m.acknowledged }}</template>
+                <template v-if="m.requiresAck">
+                  · أكّد {{ m.acknowledged }}</template
+                >
                 <template v-if="m.sender"> · {{ m.sender.name }}</template>
               </small>
             </div>
@@ -200,17 +227,41 @@
     <!-- ═════════════ إشعارات الشركة ═════════════ -->
     <template v-else-if="tab === 'company'">
       <div v-if="stats" class="grid-4 stats-row">
-        <StatTile label="كل الإشعارات" :value="formatNumber(stats.total)" :icon="Bell" />
-        <StatTile label="آخر 7 أيام" :value="formatNumber(stats.last7Days)" :icon="Clock" />
-        <StatTile label="لم تُقرأ بعد" :value="formatNumber(stats.unreadDeliveries)" :icon="MailOpen" />
-        <StatTile label="تنبيهات انتهاء لم تُقرأ" :value="formatNumber(stats.urgentUnread)" :icon="AlertTriangle" />
+        <StatTile
+          label="كل الإشعارات"
+          :value="formatNumber(stats.total)"
+          :icon="Bell"
+        />
+        <StatTile
+          label="آخر 7 أيام"
+          :value="formatNumber(stats.last7Days)"
+          :icon="Clock"
+        />
+        <StatTile
+          label="لم تُقرأ بعد"
+          :value="formatNumber(stats.unreadDeliveries)"
+          :icon="MailOpen"
+        />
+        <StatTile
+          label="تنبيهات انتهاء لم تُقرأ"
+          :value="formatNumber(stats.urgentUnread)"
+          :icon="AlertTriangle"
+        />
       </div>
 
       <div class="card nc-toolbar">
         <div class="nc-filters">
-          <select v-model="companyFilters.group" class="form-select form-select--sm" @change="company.load(1)">
+          <select
+            v-model="companyFilters.group"
+            class="form-select form-select--sm"
+            @change="company.load(1)"
+          >
             <option :value="null">كل المجموعات</option>
-            <option v-for="g in store.catalog?.groups ?? []" :key="g.key" :value="g.key">
+            <option
+              v-for="g in store.catalog?.groups ?? []"
+              :key="g.key"
+              :value="g.key"
+            >
               {{ g.label }}
             </option>
           </select>
@@ -225,12 +276,18 @@
             />
           </div>
         </div>
-        <button class="btn btn--ghost btn--sm" :disabled="busy" @click="runChecks">
+        <button
+          class="btn btn--ghost btn--sm"
+          :disabled="busy"
+          @click="runChecks"
+        >
           <RefreshCw :size="15" /> تشغيل الفحوص الآن
         </button>
       </div>
 
-      <div v-if="!company.ready.value" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="!company.ready.value" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
       <div v-else-if="!company.rows.value.length" class="card empty-card">
         <div class="empty-state">
           <BellOff :size="32" class="empty-icon" />
@@ -250,7 +307,9 @@
           <div class="nc-card__content">
             <div class="nc-card__head">
               <h4>{{ r.title }}</h4>
-              <time :title="formatDateTime(r.createdAt)">{{ timeAgo(r.createdAt) }}</time>
+              <time :title="formatDateTime(r.createdAt)">{{
+                timeAgo(r.createdAt)
+              }}</time>
             </div>
             <p>{{ r.body }}</p>
             <div class="nc-card__meta">
@@ -347,7 +406,9 @@ const tab = computed<Tab>(() => {
   return tabs.value.some((t) => t.key === wanted) ? wanted! : "inbox";
 });
 const setTab = (key: Tab) =>
-  router.replace({ query: { ...route.query, tab: key === "inbox" ? undefined : key } });
+  router.replace({
+    query: { ...route.query, tab: key === "inbox" ? undefined : key },
+  });
 
 const composeOpen = ref(false);
 const prefsOpen = ref(false);
@@ -387,7 +448,10 @@ const hideRead = () =>
   });
 
 // ─── الرسائل المرسلة ───
-const sent = usePagedList((page) => store.sentMessages(page), "تعذر تحميل الرسائل");
+const sent = usePagedList(
+  (page) => store.sentMessages(page),
+  "تعذر تحميل الرسائل",
+);
 
 const onSent = () => {
   if (tab.value === "sent") void sent.load(1);

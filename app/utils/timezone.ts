@@ -37,7 +37,14 @@ const wallParts = (date: Date, timeZone: string) => {
 /** فرق المنطقة عن UTC بالميلي ثانية عند لحظة معينة (يتغير مع التوقيت الصيفي) */
 const offsetMs = (date: Date, timeZone: string): number => {
   const p = wallParts(date, timeZone);
-  const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  const asUtc = Date.UTC(
+    p.year,
+    p.month - 1,
+    p.day,
+    p.hour,
+    p.minute,
+    p.second,
+  );
   return asUtc - Math.floor(date.getTime() / 1000) * 1000;
 };
 
@@ -62,11 +69,20 @@ export const toZonedInput = (
  * يعيد "" لقيمة غير صالحة.
  */
 export const fromZonedInput = (wall: string, timeZone: string): string => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(wall);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(
+    wall,
+  );
   if (!match) return "";
   const [year, month, day, hour, minute, second] = match
     .slice(1)
-    .map((part) => Number(part ?? 0)) as [number, number, number, number, number, number];
+    .map((part) => Number(part ?? 0)) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
 
   // نفترض الأرقام UTC ثم نطرح فرق المنطقة؛ الإعادة مرة ثانية تصحّح اللحظات
   // القريبة من تغيّر التوقيت الصيفي (الفرق عند التخمين قد يختلف عن الفعلي)

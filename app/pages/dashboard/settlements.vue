@@ -346,7 +346,7 @@
                   class="form-group full-width"
                 >
                   <label>عدد الأيام المراد صرفها *</label>
-                  <StbNumberInput
+                  <StbNumberInput
                     v-model.number="confirmForm.daysToSettle"
                     class="form-input"
                     :max="Math.ceil(preview.availableDays)"
@@ -615,7 +615,6 @@ const handleConfirm = async () => {
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 onMounted(() => {

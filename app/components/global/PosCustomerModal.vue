@@ -9,7 +9,11 @@
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
             <h3><UserPlus :size="20" class="doc-modal__icon" /> عميل جديد</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -45,7 +49,9 @@
             </p>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
               <button
                 type="submit"
                 class="btn btn--primary"

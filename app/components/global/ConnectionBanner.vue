@@ -13,9 +13,12 @@
       <WifiOff :size="18" class="connection-banner__icon" />
       <span class="connection-banner__text">
         <strong>لا يوجد اتصال بالسيرفر</strong>
-        <span v-if="since" class="connection-banner__since">منذ {{ since }}</span>
+        <span v-if="since" class="connection-banner__since"
+          >منذ {{ since }}</span
+        >
         — ما تراه آخر نسخة محفوظة. في المبيعات والمشتريات والمخزون يُحفظ ما
-        تكتبه على هذا الجهاز ويُرفع حين يعود الاتصال، وفي غيرها ينتظر الحفظ عودته.
+        تكتبه على هذا الجهاز ويُرفع حين يعود الاتصال، وفي غيرها ينتظر الحفظ
+        عودته.
       </span>
       <button
         class="btn btn--sm connection-banner__retry"

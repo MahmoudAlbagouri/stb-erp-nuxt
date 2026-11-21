@@ -125,7 +125,11 @@
 
           <!-- Actions Toolbar -->
           <div class="actions-toolbar">
-            <button v-can="'system:subscriptions:manage'" class="btn btn--outline btn--sm" @click="openStatusModal">
+            <button
+              v-can="'system:subscriptions:manage'"
+              class="btn btn--outline btn--sm"
+              @click="openStatusModal"
+            >
               <SlidersHorizontal :size="14" /> إدارة الحالة
             </button>
             <button
@@ -546,7 +550,6 @@ const getStatusLabel = (s: string) => {
 
 const getBillingLabel = (c?: string) =>
   c === "monthly" ? "شهر" : c === "yearly" ? "سنة" : "مدى الحياة";
-
 
 // ✅ دالة حساب الأيام المتبقية للتجربة
 const getTrialDaysLeft = (endDate: string) => {

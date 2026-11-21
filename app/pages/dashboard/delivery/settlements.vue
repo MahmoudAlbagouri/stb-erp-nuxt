@@ -10,7 +10,11 @@
         </p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'settle_delivery'" class="btn btn--primary" @click="openSettle()">
+        <button
+          v-can="'settle_delivery'"
+          class="btn btn--primary"
+          @click="openSettle()"
+        >
           <HandCoins :size="18" />
           <span>تسوية جديدة</span>
         </button>
@@ -18,9 +22,15 @@
     </div>
 
     <div class="card doc-filters">
-      <select v-model="filterAgentId" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filterAgentId"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل الطيارين والشركات</option>
-        <option v-for="a in store.agents" :key="a.id" :value="a.id">{{ a.name }}</option>
+        <option v-for="a in store.agents" :key="a.id" :value="a.id">
+          {{ a.name }}
+        </option>
       </select>
     </div>
 
@@ -59,26 +69,51 @@
                 <td>
                   <div class="doc-cell">
                     <code class="doc-code">{{ s.number }}</code>
-                    <span class="doc-cell__sub">{{ formatDateTime(s.settledAt) }}</span>
+                    <span class="doc-cell__sub">{{
+                      formatDateTime(s.settledAt)
+                    }}</span>
                   </div>
                 </td>
-                <td><span class="doc-cell__main">{{ s.agent?.name }}</span></td>
-                <td><span class="doc-num">{{ formatNumber(s.ordersCount) }}</span></td>
-                <td><span class="doc-money">{{ formatCurrency(s.collectedTotal) }}</span></td>
-                <td><span class="doc-money">{{ formatCurrency(s.feesTotal) }}</span></td>
+                <td>
+                  <span class="doc-cell__main">{{ s.agent?.name }}</span>
+                </td>
+                <td>
+                  <span class="doc-num">{{ formatNumber(s.ordersCount) }}</span>
+                </td>
+                <td>
+                  <span class="doc-money">{{
+                    formatCurrency(s.collectedTotal)
+                  }}</span>
+                </td>
+                <td>
+                  <span class="doc-money">{{
+                    formatCurrency(s.feesTotal)
+                  }}</span>
+                </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-money doc-money--strong">{{ formatCurrency(s.receivedAmount) }}</span>
-                    <span class="doc-cell__sub">{{ PUBLIC_SALES_PAYMENT_METHOD_LABELS[s.method] }}</span>
+                    <span class="doc-money doc-money--strong">{{
+                      formatCurrency(s.receivedAmount)
+                    }}</span>
+                    <span class="doc-cell__sub">{{
+                      PUBLIC_SALES_PAYMENT_METHOD_LABELS[s.method]
+                    }}</span>
                   </div>
                 </td>
                 <td>
-                  <span class="doc-money" :class="differenceClass(s.difference)">
+                  <span
+                    class="doc-money"
+                    :class="differenceClass(s.difference)"
+                  >
                     {{ differenceLabel(s.difference) }}
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn--sm btn--ghost btn--icon" title="التفاصيل" @click="openDetails(s.id)">
+                  <button
+                    class="btn btn--sm btn--ghost btn--icon"
+                    title="التفاصيل"
+                    @click="openDetails(s.id)"
+                  >
                     <Eye :size="14" />
                   </button>
                 </td>
@@ -106,32 +141,53 @@
                 <HandCoins :size="20" class="doc-modal__icon" />
                 تسوية جديدة
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeSettle">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="closeSettle"
+              >
                 <X :size="20" />
               </button>
             </div>
             <form class="doc-form" @submit.prevent="submitSettle">
               <div class="form-group">
                 <label>الطيار / شركة الشحن *</label>
-                <select v-model="settleForm.agentId" class="form-select" required @change="loadOrders">
+                <select
+                  v-model="settleForm.agentId"
+                  class="form-select"
+                  required
+                  @change="loadOrders"
+                >
                   <option value="" disabled>اختر...</option>
                   <option v-for="a in store.agents" :key="a.id" :value="a.id">
                     {{ a.name }}
                     <template v-if="a.unsettledCount">
-                      — {{ a.unsettledCount }} أوردر · معه {{ formatCurrency(a.heldAmount) }}
+                      — {{ a.unsettledCount }} أوردر · معه
+                      {{ formatCurrency(a.heldAmount) }}
                     </template>
                   </option>
                 </select>
               </div>
 
-              <div v-if="loadingOrders" class="empty-state"><div class="spinner" /></div>
-              <div v-else-if="settleForm.agentId && !orders.length" class="doc-note">
+              <div v-if="loadingOrders" class="empty-state">
+                <div class="spinner" />
+              </div>
+              <div
+                v-else-if="settleForm.agentId && !orders.length"
+                class="doc-note"
+              >
                 <Info :size="16" />
-                <span>لا توجد أوردرات منتهية (مسلَّمة أو راجعة) لم تُسوَّ مع هذه الجهة.</span>
+                <span
+                  >لا توجد أوردرات منتهية (مسلَّمة أو راجعة) لم تُسوَّ مع هذه
+                  الجهة.</span
+                >
               </div>
 
               <template v-else-if="orders.length">
-                <div class="doc-lines" :style="{ '--doc-cols': 'auto 1fr 1.6fr 1fr 1fr 1fr' }">
+                <div
+                  class="doc-lines"
+                  :style="{ '--doc-cols': 'auto 1fr 1.6fr 1fr 1fr 1fr' }"
+                >
                   <div class="doc-lines__head">
                     <span>
                       <input
@@ -147,20 +203,44 @@
                     <span>المحصّل</span>
                     <span>التكلفة</span>
                   </div>
-                  <label v-for="o in orders" :key="o.id" class="doc-lines__row dlv-pick">
-                    <input type="checkbox" :checked="selected.has(o.id)" @change="toggle(o.id)" />
+                  <label
+                    v-for="o in orders"
+                    :key="o.id"
+                    class="doc-lines__row dlv-pick"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="selected.has(o.id)"
+                      @change="toggle(o.id)"
+                    />
                     <span class="doc-cell">
                       <code class="doc-code">{{ o.number }}</code>
-                      <span v-if="o.trackingNumber" class="doc-cell__sub" dir="ltr">{{ o.trackingNumber }}</span>
+                      <span
+                        v-if="o.trackingNumber"
+                        class="doc-cell__sub"
+                        dir="ltr"
+                        >{{ o.trackingNumber }}</span
+                      >
                     </span>
                     <span class="doc-cell__main">{{ o.recipientName }}</span>
                     <span>
-                      <span :class="['badge', o.status === 'delivered' ? 'doc-status--done' : 'doc-status--cancelled']">
+                      <span
+                        :class="[
+                          'badge',
+                          o.status === 'delivered'
+                            ? 'doc-status--done'
+                            : 'doc-status--cancelled',
+                        ]"
+                      >
                         {{ o.status === "delivered" ? "سُلّم" : "راجع" }}
                       </span>
                     </span>
-                    <span class="doc-money">{{ formatCurrency(collectedOf(o)) }}</span>
-                    <span class="doc-money">{{ formatCurrency(o.agentFee) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(collectedOf(o))
+                    }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(o.agentFee)
+                    }}</span>
                   </label>
                 </div>
 
@@ -174,7 +254,11 @@
                       :step="moneyStep()"
                       :placeholder="String(figures.fees)"
                     />
-                    <small class="doc-hint">فارغ = مجموع تكلفة الأوردرات ({{ formatCurrency(figures.fees) }})</small>
+                    <small class="doc-hint"
+                      >فارغ = مجموع تكلفة الأوردرات ({{
+                        formatCurrency(figures.fees)
+                      }})</small
+                    >
                   </div>
                   <div class="form-group">
                     <label>المستلم فعلاً *</label>
@@ -184,38 +268,60 @@
                       :step="moneyStep()"
                       required
                     />
-                    <small class="doc-hint">سالب = دفعنا للجهة (رسوم أكبر من المحصّل)</small>
+                    <small class="doc-hint"
+                      >سالب = دفعنا للجهة (رسوم أكبر من المحصّل)</small
+                    >
                   </div>
                   <div class="form-group">
                     <label>طريقة الاستلام *</label>
                     <select v-model="settleForm.method" class="form-select">
-                      <option v-for="(label, m) in PUBLIC_SALES_PAYMENT_METHOD_LABELS" :key="m" :value="m">
+                      <option
+                        v-for="(label, m) in PUBLIC_SALES_PAYMENT_METHOD_LABELS"
+                        :key="m"
+                        :value="m"
+                      >
                         {{ label }}
                       </option>
                     </select>
                   </div>
                   <div class="form-group">
                     <label>ملاحظة</label>
-                    <input v-model.trim="settleForm.note" class="form-input" maxlength="500" placeholder="رقم الكشف أو التحويل..." />
+                    <input
+                      v-model.trim="settleForm.note"
+                      class="form-input"
+                      maxlength="500"
+                      placeholder="رقم الكشف أو التحويل..."
+                    />
                   </div>
                 </div>
 
                 <div class="doc-totals doc-totals--box">
                   <div>
-                    <span>المحصّل ({{ formatNumber(selected.size) }} أوردر)</span>
-                    <span class="doc-money">{{ formatCurrency(figures.collected) }}</span>
+                    <span
+                      >المحصّل ({{ formatNumber(selected.size) }} أوردر)</span
+                    >
+                    <span class="doc-money">{{
+                      formatCurrency(figures.collected)
+                    }}</span>
                   </div>
                   <div>
                     <span>− الرسوم</span>
-                    <span class="doc-money">{{ formatCurrency(figures.feesUsed) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(figures.feesUsed)
+                    }}</span>
                   </div>
                   <div>
                     <span>المتوقع</span>
-                    <span class="doc-money">{{ formatCurrency(figures.expected) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(figures.expected)
+                    }}</span>
                   </div>
                   <div class="is-grand">
                     <span>الفرق</span>
-                    <span class="doc-money" :class="differenceClass(figures.difference)">
+                    <span
+                      class="doc-money"
+                      :class="differenceClass(figures.difference)"
+                    >
                       {{ differenceLabel(figures.difference) }}
                     </span>
                   </div>
@@ -223,7 +329,13 @@
               </template>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeSettle">إلغاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeSettle"
+                >
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -249,12 +361,19 @@
                 <HandCoins :size="20" class="doc-modal__icon" />
                 {{ details.number }} — {{ details.agent?.name }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="details = null">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="details = null"
+              >
                 <X :size="20" />
               </button>
             </div>
             <div class="doc-form">
-              <div class="doc-lines" :style="{ '--doc-cols': '1fr 1.6fr 1fr 1fr 1fr' }">
+              <div
+                class="doc-lines"
+                :style="{ '--doc-cols': '1fr 1.6fr 1fr 1fr 1fr' }"
+              >
                 <div class="doc-lines__head">
                   <span>الأوردر</span>
                   <span>المستلم</span>
@@ -262,30 +381,64 @@
                   <span>المحصّل</span>
                   <span>التكلفة</span>
                 </div>
-                <div v-for="o in details.orders ?? []" :key="o.id" class="doc-lines__row">
+                <div
+                  v-for="o in details.orders ?? []"
+                  :key="o.id"
+                  class="doc-lines__row"
+                >
                   <code class="doc-code">{{ o.number }}</code>
                   <span>{{ o.recipientName }}</span>
                   <span>{{ o.status === "delivered" ? "سُلّم" : "راجع" }}</span>
-                  <span class="doc-money">{{ formatCurrency(collectedOf(o)) }}</span>
-                  <span class="doc-money">{{ formatCurrency(o.agentFee) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(collectedOf(o))
+                  }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(o.agentFee)
+                  }}</span>
                 </div>
               </div>
               <div class="doc-totals doc-totals--box">
-                <div><span>المحصّل</span><span class="doc-money">{{ formatCurrency(details.collectedTotal) }}</span></div>
-                <div><span>− الرسوم</span><span class="doc-money">{{ formatCurrency(details.feesTotal) }}</span></div>
-                <div><span>المتوقع</span><span class="doc-money">{{ formatCurrency(details.expectedAmount) }}</span></div>
                 <div>
-                  <span>المستلم ({{ PUBLIC_SALES_PAYMENT_METHOD_LABELS[details.method] }})</span>
-                  <span class="doc-money">{{ formatCurrency(details.receivedAmount) }}</span>
+                  <span>المحصّل</span
+                  ><span class="doc-money">{{
+                    formatCurrency(details.collectedTotal)
+                  }}</span>
+                </div>
+                <div>
+                  <span>− الرسوم</span
+                  ><span class="doc-money">{{
+                    formatCurrency(details.feesTotal)
+                  }}</span>
+                </div>
+                <div>
+                  <span>المتوقع</span
+                  ><span class="doc-money">{{
+                    formatCurrency(details.expectedAmount)
+                  }}</span>
+                </div>
+                <div>
+                  <span
+                    >المستلم ({{
+                      PUBLIC_SALES_PAYMENT_METHOD_LABELS[details.method]
+                    }})</span
+                  >
+                  <span class="doc-money">{{
+                    formatCurrency(details.receivedAmount)
+                  }}</span>
                 </div>
                 <div class="is-grand">
                   <span>الفرق</span>
-                  <span class="doc-money" :class="differenceClass(details.difference)">
+                  <span
+                    class="doc-money"
+                    :class="differenceClass(details.difference)"
+                  >
                     {{ differenceLabel(details.difference) }}
                   </span>
                 </div>
               </div>
-              <p v-if="details.note" class="doc-hint">ملاحظة: {{ details.note }}</p>
+              <p v-if="details.note" class="doc-hint">
+                ملاحظة: {{ details.note }}
+              </p>
             </div>
           </div>
         </div>
@@ -311,7 +464,8 @@ const route = useRoute();
 
 const filterAgentId = ref("");
 const list = usePagedList(
-  (page) => store.fetchSettlements({ agentId: filterAgentId.value || undefined, page }),
+  (page) =>
+    store.fetchSettlements({ agentId: filterAgentId.value || undefined, page }),
   "تعذر تحميل التسويات",
 );
 
@@ -326,7 +480,8 @@ const differenceClass = (value: number) =>
   value < 0 ? "text-danger" : value > 0 ? "text-success" : "";
 
 /** ما حصّلته الجهة من الأوردر: المسلَّم بالتحصيل فقط */
-const collectedOf = (o: DeliveryOrder) => (o.status === "delivered" ? o.codAmount : 0);
+const collectedOf = (o: DeliveryOrder) =>
+  o.status === "delivered" ? o.codAmount : 0;
 
 // ─── تسوية جديدة ──────────────────────────────────────────────────────────────
 const showSettle = ref(false);
@@ -346,10 +501,17 @@ const figures = computed(() => {
   const picked = orders.value.filter((o) => selected.value.has(o.id));
   const collected = sumMoney(picked.map(collectedOf));
   const fees = sumMoney(picked.map((o) => o.agentFee));
-  const feesUsed = settleForm.feesTotal === "" ? fees : Number(settleForm.feesTotal);
+  const feesUsed =
+    settleForm.feesTotal === "" ? fees : Number(settleForm.feesTotal);
   const expected = sumMoney([collected, -feesUsed]);
   const received = Number(settleForm.receivedAmount) || 0;
-  return { collected, fees, feesUsed, expected, difference: sumMoney([received, -expected]) };
+  return {
+    collected,
+    fees,
+    feesUsed,
+    expected,
+    difference: sumMoney([received, -expected]),
+  };
 });
 
 const loadOrders = async () => {
@@ -412,7 +574,9 @@ const submitSettle = async () => {
     const settlement = await store.settle({
       agentId: settleForm.agentId,
       orderIds: [...selected.value],
-      ...(settleForm.feesTotal !== "" ? { feesTotal: Number(settleForm.feesTotal) } : {}),
+      ...(settleForm.feesTotal !== ""
+        ? { feesTotal: Number(settleForm.feesTotal) }
+        : {}),
       receivedAmount: Number(settleForm.receivedAmount) || 0,
       method: settleForm.method,
       note: settleForm.note || null,
@@ -440,7 +604,8 @@ onMounted(async () => {
   list.load(1);
   await store.fetchAgents().catch(() => {});
   // من صفحة الطيارين: "تسوية" تفتح النموذج على الجهة مباشرة
-  const agentId = typeof route.query.agentId === "string" ? route.query.agentId : "";
+  const agentId =
+    typeof route.query.agentId === "string" ? route.query.agentId : "";
   if (agentId) openSettle(agentId);
 });
 </script>

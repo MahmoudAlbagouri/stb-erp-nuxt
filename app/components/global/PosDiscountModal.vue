@@ -8,8 +8,14 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><Percent :size="20" class="doc-modal__icon" /> خصم على الفاتورة</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <Percent :size="20" class="doc-modal__icon" /> خصم على الفاتورة
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -33,7 +39,9 @@
             </div>
 
             <div class="form-group">
-              <label>{{ form.type === "percent" ? "نسبة الخصم %" : "مبلغ الخصم" }}</label>
+              <label>{{
+                form.type === "percent" ? "نسبة الخصم %" : "مبلغ الخصم"
+              }}</label>
               <StbNumberInput
                 ref="valueEl"
                 v-model.number="form.value"
@@ -56,7 +64,8 @@
             </div>
 
             <p v-if="pos.discountLimit !== null" class="doc-hint">
-              حدّ خصمك {{ pos.discountLimit }}% — ما زاد يحتاج موافقة مشرف عند الدفع.
+              حدّ خصمك {{ pos.discountLimit }}% — ما زاد يحتاج موافقة مشرف عند
+              الدفع.
             </p>
 
             <div class="modal__footer">
@@ -68,7 +77,9 @@
               >
                 إزالة الخصم
               </button>
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
               <button type="submit" class="btn btn--primary">تطبيق</button>
             </div>
           </form>
@@ -117,7 +128,10 @@ const apply = () => {
   const value = Number(form.value) || 0;
   pos.invoiceDiscount =
     value > 0
-      ? { type: form.type, value: form.type === "percent" ? Math.min(value, 100) : value }
+      ? {
+          type: form.type,
+          value: form.type === "percent" ? Math.min(value, 100) : value,
+        }
       : null;
   close();
 };

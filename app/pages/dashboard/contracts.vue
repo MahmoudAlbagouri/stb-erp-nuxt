@@ -32,7 +32,11 @@
           <span>PDF</span>
         </button>
 
-        <button v-can="'create_contract'" class="btn btn--primary" @click="openCreateModal">
+        <button
+          v-can="'create_contract'"
+          class="btn btn--primary"
+          @click="openCreateModal"
+        >
           <Plus :size="18" />
           <span>إضافة عقد جديد</span>
         </button>
@@ -52,7 +56,11 @@
         <div class="empty-state__text">
           ابدأ بإضافة عقد للموظفين الجدد أو الحاليين
         </div>
-        <button v-can="'create_contract'" class="btn btn--primary mt-4" @click="openCreateModal">
+        <button
+          v-can="'create_contract'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal"
+        >
           <Plus :size="16" /> إضافة عقد
         </button>
       </div>
@@ -178,10 +186,18 @@
                         v-if="activeExportMenu === contract.id"
                         class="dropdown-menu"
                       >
-                        <button v-can="'export_contracts'" v-feature="'reports_export'" @click="downloadContract(contract.id, 'pdf')">
+                        <button
+                          v-can="'export_contracts'"
+                          v-feature="'reports_export'"
+                          @click="downloadContract(contract.id, 'pdf')"
+                        >
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button v-can="'export_contracts'" v-feature="'reports_export'" @click="downloadContract(contract.id, 'excel')">
+                        <button
+                          v-can="'export_contracts'"
+                          v-feature="'reports_export'"
+                          @click="downloadContract(contract.id, 'excel')"
+                        >
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>

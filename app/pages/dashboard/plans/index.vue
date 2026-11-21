@@ -5,7 +5,11 @@
         <h1>إدارة خطط الاشتراك</h1>
         <p>تحديد الباقات، الأسعار، والميزات التقنية لكل خطة</p>
       </div>
-      <button v-can="'system:plans:create'" class="btn btn--primary" @click="openModal()">
+      <button
+        v-can="'system:plans:create'"
+        class="btn btn--primary"
+        @click="openModal()"
+      >
         <Plus :size="16" /> إضافة خطة جديدة
       </button>
     </div>
@@ -62,7 +66,11 @@
         </div>
 
         <div class="plan-footer">
-          <button v-can="'system:plans:update'" class="btn btn--ghost btn--sm" @click="openModal(plan)">
+          <button
+            v-can="'system:plans:update'"
+            class="btn btn--ghost btn--sm"
+            @click="openModal(plan)"
+          >
             <Edit :size="14" /> تعديل
           </button>
           <button

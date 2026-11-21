@@ -47,7 +47,9 @@
           :key="option.days"
           type="button"
           class="home-range__item"
-          :class="{ 'is-active': !customOpen && !isCustom && days === option.days }"
+          :class="{
+            'is-active': !customOpen && !isCustom && days === option.days,
+          }"
           @click="setPreset(option.days)"
         >
           {{ option.label }}
@@ -103,8 +105,9 @@
       </label>
 
       <p v-if="overview" class="home-filters__note">
-        {{ dayLabel(overview.range.from) }} – {{ dayLabel(overview.range.to) }}
-        · المقارنة مع {{ formatNumber(overview.range.days) }}
+        {{ dayLabel(overview.range.from) }} –
+        {{ dayLabel(overview.range.to) }} · المقارنة مع
+        {{ formatNumber(overview.range.days) }}
         {{ overview.range.days === 1 ? "يوم" : "يوماً" }} قبلها
       </p>
     </div>
@@ -139,7 +142,9 @@
       <section v-if="overview.hr || overview.attendance" class="home-section">
         <h2 class="home-section__title">
           <Users :size="18" /> الموارد البشرية
-          <span v-if="branchName" class="home-section__tag">{{ branchName }}</span>
+          <span v-if="branchName" class="home-section__tag">{{
+            branchName
+          }}</span>
         </h2>
 
         <div v-if="overview.hr" class="home-kpis">
@@ -187,7 +192,10 @@
                   <span class="home-pending__label">{{ item.label }}</span>
                   <!-- شريط بطول نسبي: المقارنة بين الأنواع بنظرة -->
                   <span class="home-meter">
-                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
+                    <span
+                      class="home-meter__fill"
+                      :style="{ width: `${item.share}%` }"
+                    />
                   </span>
                   <strong class="home-pending__count">
                     {{ formatNumber(item.count) }}
@@ -215,7 +223,10 @@
                   </span>
                   <span class="home-pending__label">{{ item.name }}</span>
                   <span class="home-meter">
-                    <span class="home-meter__fill" :style="{ width: `${item.share}%` }" />
+                    <span
+                      class="home-meter__fill"
+                      :style="{ width: `${item.share}%` }"
+                    />
                   </span>
                   <strong class="home-pending__count">
                     {{ formatNumber(item.count) }}
@@ -242,11 +253,17 @@
       <section v-if="overview.sales" class="home-section">
         <h2 class="home-section__title">
           <TrendingUp :size="18" /> المبيعات
-          <span v-if="branchName" class="home-section__tag">{{ branchName }}</span>
+          <span v-if="branchName" class="home-section__tag">{{
+            branchName
+          }}</span>
         </h2>
 
         <div class="home-kpis">
-          <StatTile v-for="tile in salesTiles" :key="tile.label" v-bind="tile" />
+          <StatTile
+            v-for="tile in salesTiles"
+            :key="tile.label"
+            v-bind="tile"
+          />
         </div>
 
         <div class="home-grid home-grid--wide">
@@ -258,8 +275,20 @@
             empty-text="لا مبيعات في هذه الفترة ولا التي قبلها"
           >
             <div class="home-legend">
-              <span><i class="home-legend__line" :style="{ background: palette.series[0] }" /> هذه الفترة</span>
-              <span><i class="home-legend__line" :style="{ background: palette.neutral }" /> الفترة السابقة</span>
+              <span
+                ><i
+                  class="home-legend__line"
+                  :style="{ background: palette.series[0] }"
+                />
+                هذه الفترة</span
+              >
+              <span
+                ><i
+                  class="home-legend__line"
+                  :style="{ background: palette.neutral }"
+                />
+                الفترة السابقة</span
+              >
             </div>
             <ChartBox :option="salesTrendOption" :height="270" />
           </ChartCard>
@@ -374,7 +403,10 @@
               </NuxtLink>
             </template>
             <ul class="home-list">
-              <li v-for="invoice in overview.sales.recentInvoices" :key="invoice.id">
+              <li
+                v-for="invoice in overview.sales.recentInvoices"
+                :key="invoice.id"
+              >
                 <div class="home-list__main">
                   <code class="doc-code">{{ invoice.number || "—" }}</code>
                   <span class="home-list__sub">
@@ -387,9 +419,17 @@
                   <!-- الحالة بنص، لا باللون وحده -->
                   <span
                     class="home-chip"
-                    :class="invoice.remaining > 0 ? 'home-chip--warn' : 'home-chip--good'"
+                    :class="
+                      invoice.remaining > 0
+                        ? 'home-chip--warn'
+                        : 'home-chip--good'
+                    "
                   >
-                    {{ invoice.remaining > 0 ? `متبقٍ ${formatMoney(invoice.remaining)}` : "مدفوعة" }}
+                    {{
+                      invoice.remaining > 0
+                        ? `متبقٍ ${formatMoney(invoice.remaining)}`
+                        : "مدفوعة"
+                    }}
                   </span>
                 </div>
               </li>
@@ -398,7 +438,9 @@
 
           <ChartCard
             title="أكبر المديونيات"
-            :subtitle="receivablesScope || 'عملاء عليهم مبالغ لم تُحصَّل حتى الآن'"
+            :subtitle="
+              receivablesScope || 'عملاء عليهم مبالغ لم تُحصَّل حتى الآن'
+            "
             :empty="!overview.sales.topDebtors.length"
             empty-text="لا مديونيات على العملاء"
             :empty-icon="CircleCheck"
@@ -413,7 +455,10 @@
                 <div class="home-list__main">
                   <span class="home-list__name">{{ debtor.name }}</span>
                   <span class="home-meter">
-                    <span class="home-meter__fill" :style="{ width: `${debtor.share}%` }" />
+                    <span
+                      class="home-meter__fill"
+                      :style="{ width: `${debtor.share}%` }"
+                    />
                   </span>
                 </div>
                 <div class="home-list__end">
@@ -426,14 +471,23 @@
       </section>
 
       <!-- ════════════════ المشتريات والمخزون ════════════════ -->
-      <section v-if="overview.purchasing || overview.inventory" class="home-section">
+      <section
+        v-if="overview.purchasing || overview.inventory"
+        class="home-section"
+      >
         <h2 class="home-section__title">
           <Boxes :size="18" /> المشتريات والمخزون
-          <span v-if="branchName" class="home-section__tag">{{ branchName }}</span>
+          <span v-if="branchName" class="home-section__tag">{{
+            branchName
+          }}</span>
         </h2>
 
         <div class="home-kpis">
-          <StatTile v-for="tile in stockTiles" :key="tile.label" v-bind="tile" />
+          <StatTile
+            v-for="tile in stockTiles"
+            :key="tile.label"
+            v-bind="tile"
+          />
         </div>
 
         <div class="home-grid">
@@ -474,7 +528,10 @@
                   <span class="home-list__sub">{{ item.warehouse }}</span>
                 </div>
                 <div class="home-list__end">
-                  <strong :class="{ 'home-negative': item.quantity < 0 }" dir="ltr">
+                  <strong
+                    :class="{ 'home-negative': item.quantity < 0 }"
+                    dir="ltr"
+                  >
                     {{ formatNumber(item.quantity) }}
                   </strong>
                   <span class="home-list__sub">
@@ -527,8 +584,12 @@ import {
   Wallet,
 } from "lucide-vue-next";
 import ChartBox from "@/components/dashboard/ChartBox.vue";
-import ChartCard, { type ChartTable } from "@/components/dashboard/ChartCard.vue";
-import DonutChart, { type DonutSlice } from "@/components/dashboard/DonutChart.vue";
+import ChartCard, {
+  type ChartTable,
+} from "@/components/dashboard/ChartCard.vue";
+import DonutChart, {
+  type DonutSlice,
+} from "@/components/dashboard/DonutChart.vue";
 import StatTile from "@/components/dashboard/StatTile.vue";
 import { useApi } from "@/composables/useApi";
 import { useTheme } from "@/composables/useTheme";
@@ -634,19 +695,27 @@ const branchName = computed(
  */
 const receivablesScope = computed(() => {
   if (overview.value?.sales?.receivablesBasis !== "invoices") return "";
-  return branchId.value ? "المتبقي على فواتير الفرع" : "المتبقي على فواتير فروعك";
+  return branchId.value
+    ? "المتبقي على فواتير الفرع"
+    : "المتبقي على فواتير فروعك";
 });
 
 const hasAnySection = computed(() => {
   const o = overview.value;
-  return !!o && !!(o.sales || o.purchasing || o.inventory || o.hr || o.attendance);
+  return (
+    !!o && !!(o.sales || o.purchasing || o.inventory || o.hr || o.attendance)
+  );
 });
 
 /** الفترة والفرع يؤثران في المبيعات والمشتريات والمخزون: بدونها لا معنى لهما */
 const hasRangedData = computed(
   () =>
     !overview.value ||
-    !!(overview.value.sales || overview.value.purchasing || overview.value.inventory),
+    !!(
+      overview.value.sales ||
+      overview.value.purchasing ||
+      overview.value.inventory
+    ),
 );
 
 // ─── الترحيب والساعة ──────────────────────────────────────────────────────────
@@ -752,9 +821,10 @@ const salesTiles = computed<Tile[]>(() => {
       label: "مرتجعات المبيعات",
       value: formatCurrency(s.returnsTotal),
       icon: RotateCcw,
-      hint: s.total > 0
-        ? `${formatNumber((s.returnsTotal / s.total) * 100, 1)}% من المبيعات`
-        : "في الفترة",
+      hint:
+        s.total > 0
+          ? `${formatNumber((s.returnsTotal / s.total) * 100, 1)}% من المبيعات`
+          : "في الفترة",
       to: "/dashboard/sales/returns",
     },
   ];
@@ -874,7 +944,9 @@ const hrTiles = computed<Tile[]>(() => {
       label: "إقامات تحتاج تجديداً",
       value: formatNumber(alerts.residencyExpiring),
       icon: IdCard,
-      hint: alerts.residencyExpiring ? "منتهية أو تنتهي خلال 30 يوماً" : "لا شيء",
+      hint: alerts.residencyExpiring
+        ? "منتهية أو تنتهي خلال 30 يوماً"
+        : "لا شيء",
       tone: alerts.residencyExpiring ? "critical" : "good",
       to: "/dashboard/employees",
     },
@@ -931,7 +1003,11 @@ const rankBars = (items: NamedAmount[]): EChartsOption => {
       inverse: true,
       splitNumber: 4,
       splitLine: gridLine.value,
-      axisLabel: { ...axisText.value, hideOverlap: true, formatter: compactNumber },
+      axisLabel: {
+        ...axisText.value,
+        hideOverlap: true,
+        formatter: compactNumber,
+      },
     },
     yAxis: {
       type: "category",
@@ -1048,7 +1124,11 @@ const salesTrendOption = computed<EChartsOption>(() => {
         symbolSize: 8,
         lineStyle: { width: 2, color, cap: "round", join: "round" },
         // النقطة المحددة بحلقة بلون الخلفية فتبقى واضحة فوق الخط
-        itemStyle: { color, borderColor: palette.value.surface, borderWidth: 2 },
+        itemStyle: {
+          color,
+          borderColor: palette.value.surface,
+          borderWidth: 2,
+        },
         areaStyle: { color, opacity: 0.1 },
       },
     ],
@@ -1088,7 +1168,9 @@ const paymentSlices = computed<DonutSlice[]>(() =>
       return {
         name: known?.label ?? m.method,
         value: m.amount,
-        color: known ? palette.value.series[known.slot]! : palette.value.neutral,
+        color: known
+          ? palette.value.series[known.slot]!
+          : palette.value.neutral,
       };
     }),
 );
@@ -1103,7 +1185,9 @@ const paymentsTable = computed<ChartTable>(() => ({
  * يطوي الشرائح الصغيرة في "أخرى"، ويلوّن الظاهرة بترتيب أبجدي ثابت: لا يتبدل
  * لون تصنيف إذا تغيّر ترتيبه بالقيمة بين فترة وأخرى.
  */
-const namedSlices = (items: { name: string; value: number }[]): DonutSlice[] => {
+const namedSlices = (
+  items: { name: string; value: number }[],
+): DonutSlice[] => {
   const folded = foldSlices(items.filter((item) => item.value > 0));
   const order = folded
     .filter((slice) => !slice.isOther)
@@ -1139,10 +1223,11 @@ const hourLabel = (hour: number) => {
 
 const hours = computed(() => overview.value?.sales?.byHour ?? []);
 const peakHour = computed(() =>
-  hours.value.reduce(
-    (best, h) => (h.total > best.total ? h : best),
-    { hour: 0, total: 0, invoices: 0 },
-  ),
+  hours.value.reduce((best, h) => (h.total > best.total ? h : best), {
+    hour: 0,
+    total: 0,
+    invoices: 0,
+  }),
 );
 
 const peakHourText = computed(() =>
@@ -1199,7 +1284,11 @@ const hoursTable = computed<ChartTable>(() => ({
   headers: ["الساعة", `المبيعات (${currencyLabel()})`, "الفواتير"],
   rows: hours.value
     .filter((h) => h.invoices > 0)
-    .map((h) => [hourLabel(h.hour), formatMoney(h.total), formatNumber(h.invoices)]),
+    .map((h) => [
+      hourLabel(h.hour),
+      formatMoney(h.total),
+      formatNumber(h.invoices),
+    ]),
 }));
 
 // ─── جداول القوائم المرتبة ────────────────────────────────────────────────────
@@ -1332,9 +1421,17 @@ const attendanceSlices = computed<DonutSlice[]>(() => {
   const a = overview.value?.attendance;
   if (!a) return [];
   return [
-    { name: "حضر في موعده", value: a.present, color: palette.value.status.good },
+    {
+      name: "حضر في موعده",
+      value: a.present,
+      color: palette.value.status.good,
+    },
     { name: "حضر متأخراً", value: a.late, color: palette.value.status.warning },
-    { name: "لم يسجّل حضوراً", value: a.absent, color: palette.value.status.critical },
+    {
+      name: "لم يسجّل حضوراً",
+      value: a.absent,
+      color: palette.value.status.critical,
+    },
     { name: "في إجازة", value: a.onLeave, color: palette.value.neutral },
   ].filter((slice) => slice.value > 0);
 });
@@ -1354,11 +1451,26 @@ const pendingItems = computed(() => {
   const p = overview.value?.hr?.pending;
   if (!p) return [];
   const items = [
-    { label: "إجازات", count: p.leaves, icon: CalendarDays, to: "/dashboard/leaves" },
-    { label: "سلف", count: p.advances, icon: HandCoins, to: "/dashboard/advances" },
+    {
+      label: "إجازات",
+      count: p.leaves,
+      icon: CalendarDays,
+      to: "/dashboard/leaves",
+    },
+    {
+      label: "سلف",
+      count: p.advances,
+      icon: HandCoins,
+      to: "/dashboard/advances",
+    },
     { label: "قروض", count: p.loans, icon: Landmark, to: "/dashboard/loans" },
     { label: "مكافآت", count: p.bonuses, icon: Gift, to: "/dashboard/bonuses" },
-    { label: "خصومات", count: p.deductions, icon: MinusCircle, to: "/dashboard/deductions" },
+    {
+      label: "خصومات",
+      count: p.deductions,
+      icon: MinusCircle,
+      to: "/dashboard/deductions",
+    },
   ];
   const max = Math.max(...items.map((item) => item.count), 1);
   return items.map((item) => ({ ...item, share: (item.count / max) * 100 }));

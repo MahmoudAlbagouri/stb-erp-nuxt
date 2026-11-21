@@ -12,7 +12,9 @@
             <h3>
               <RotateCcw :size="20" class="doc-modal__icon" />
               مرتجع بيع
-              <template v-if="invoice">من الفاتورة {{ invoice.number }}</template>
+              <template v-if="invoice"
+                >من الفاتورة {{ invoice.number }}</template
+              >
             </h3>
             <button
               class="btn btn--icon btn--ghost"
@@ -37,7 +39,9 @@
               </div>
               <div class="doc-cell">
                 <span class="doc-cell__sub">تعود إلى مخزن</span>
-                <span class="doc-cell__main">{{ invoice.warehouse?.name }}</span>
+                <span class="doc-cell__main">{{
+                  invoice.warehouse?.name
+                }}</span>
               </div>
               <div class="form-group">
                 <label>تاريخ المرتجع *</label>
@@ -92,7 +96,9 @@
                 </div>
                 <div>
                   <span class="doc-lines__label">القيمة</span>
-                  <span class="doc-money">{{ formatCurrency(valueOf(line)) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(valueOf(line))
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -130,7 +136,9 @@
                   <label>طريقة الردّ</label>
                   <select v-model="form.refundMethod" class="form-select">
                     <option
-                      v-for="(label, method) in PUBLIC_SALES_PAYMENT_METHOD_LABELS"
+                      v-for="(
+                        label, method
+                      ) in PUBLIC_SALES_PAYMENT_METHOD_LABELS"
                       :key="method"
                       :value="method"
                     >

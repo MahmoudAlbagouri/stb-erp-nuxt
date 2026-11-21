@@ -11,7 +11,7 @@
 </template>
 
 <style lang="scss">
-@use '~/assets/scss/variables' as *;
+@use "~/assets/scss/variables" as *;
 
 .auth-layout {
   min-height: 100vh;

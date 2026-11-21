@@ -81,10 +81,7 @@
 // ─── الفلاتر ─────────────────────────────────────────────────────────────────
 .doc-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(
-      auto-fit,
-      minmax(150px, 1fr)
-    );
+  grid-template-columns: minmax(220px, 2fr) repeat(auto-fit, minmax(150px, 1fr));
   gap: $space-3;
   padding: $space-4;
   margin-bottom: $space-4;

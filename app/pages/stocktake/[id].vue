@@ -43,8 +43,8 @@
       <ClipboardCheck :size="52" />
       <p v-if="loading">جارٍ التحميل…</p>
       <p v-else>
-        هذا الجرد لم يُفتح على هذا الجهاز من قبل. افتحه مرة وأنت متصل،
-        وبعدها يعمل بلا إنترنت.
+        هذا الجرد لم يُفتح على هذا الجهاز من قبل. افتحه مرة وأنت متصل، وبعدها
+        يعمل بلا إنترنت.
       </p>
     </div>
 
@@ -52,7 +52,11 @@
       <!-- ══ اعتُمد أو أُلغي: لا عدّ بعده ══ -->
       <section v-if="closed" class="count__closed">
         <h2>
-          {{ stocktake.status === "posted" ? "اعتُمد هذا الجرد" : "أُلغي هذا الجرد" }}
+          {{
+            stocktake.status === "posted"
+              ? "اعتُمد هذا الجرد"
+              : "أُلغي هذا الجرد"
+          }}
         </h2>
         <p>لا عدّ بعد الآن.</p>
         <template v-if="pending.length">
@@ -64,7 +68,11 @@
           <ul>
             <li v-for="count in pending" :key="count.key">
               {{ nameOf(count.productId) }}:
-              {{ count.countedQuantity === null ? "إزالة" : formatNumber(count.countedQuantity) }}
+              {{
+                count.countedQuantity === null
+                  ? "إزالة"
+                  : formatNumber(count.countedQuantity)
+              }}
             </li>
           </ul>
           <button type="button" class="count__link" @click="dropAll">
@@ -128,7 +136,11 @@
               </small>
             </span>
             <span class="count__row-qty">
-              {{ quantities.has(product.id) ? formatNumber(quantities.get(product.id)!) : "—" }}
+              {{
+                quantities.has(product.id)
+                  ? formatNumber(quantities.get(product.id)!)
+                  : "—"
+              }}
             </span>
           </button>
         </section>
@@ -137,14 +149,22 @@
           <!-- ══ ما رفضه السيرفر ══ -->
           <section v-if="rejected.length" class="count__rejected">
             <h3>
-              <AlertTriangle :size="18" /> لم يقبلها السيرفر ({{ rejected.length }})
+              <AlertTriangle :size="18" /> لم يقبلها السيرفر ({{
+                rejected.length
+              }})
             </h3>
             <article v-for="count in rejected" :key="count.key">
               <strong>{{ nameOf(count.productId) }}</strong>
               <p>{{ count.error }}</p>
               <div class="count__rejected-actions">
-                <button type="button" @click="retry(count)">إعادة المحاولة</button>
-                <button type="button" class="is-ghost" @click="dropRejected(count)">
+                <button type="button" @click="retry(count)">
+                  إعادة المحاولة
+                </button>
+                <button
+                  type="button"
+                  class="is-ghost"
+                  @click="dropRejected(count)"
+                >
                   حذفه
                 </button>
               </div>
@@ -210,7 +230,9 @@
           @click="loadCatalog(true)"
         >
           تحديث الأصناف
-          <template v-if="catalog">(آخر تحميل {{ formatDateTime(catalog.fetchedAt) }})</template>
+          <template v-if="catalog"
+            >(آخر تحميل {{ formatDateTime(catalog.fetchedAt) }})</template
+          >
         </button>
       </footer>
     </template>
@@ -245,7 +267,9 @@
           >
             إزالة من الجرد
           </button>
-          <button type="button" class="is-ghost" @click="closeEditor">رجوع</button>
+          <button type="button" class="is-ghost" @click="closeEditor">
+            رجوع
+          </button>
         </div>
       </form>
     </div>
@@ -276,7 +300,11 @@ import {
   type LocalStocktake,
   type PendingCount,
 } from "@/stocktake/db";
-import { cleanQuantity, countedItems, indexCatalog } from "@/stocktake/counting";
+import {
+  cleanQuantity,
+  countedItems,
+  indexCatalog,
+} from "@/stocktake/counting";
 import type { StocktakeCounts } from "@/types/inventory";
 
 definePageMeta({ middleware: "auth", layout: false });
@@ -309,13 +337,19 @@ const search = ref("");
 const searchInput = ref<HTMLInputElement | null>(null);
 
 const index = computed(() => indexCatalog(catalog.value?.products ?? []));
-const items = computed(() => countedItems(stocktake.value?.lines ?? [], pending.value));
+const items = computed(() =>
+  countedItems(stocktake.value?.lines ?? [], pending.value),
+);
 const quantities = computed(
   () => new Map(items.value.map((item) => [item.productId, item.quantity])),
 );
 const rejected = computed(() => pending.value.filter((count) => count.error));
-const pendingCount = computed(() => pending.value.filter((count) => !count.error).length);
-const closed = computed(() => !!stocktake.value && stocktake.value.status !== "draft");
+const pendingCount = computed(
+  () => pending.value.filter((count) => !count.error).length,
+);
+const closed = computed(
+  () => !!stocktake.value && stocktake.value.status !== "draft",
+);
 const results = computed(() => index.value.search(search.value));
 
 const nameOf = (productId: string) =>
@@ -340,7 +374,8 @@ const status = computed(() => {
         .join(" · "),
     };
   }
-  if (waiting) return { tone: "pending", text: `بانتظار الرفع: ${waiting} صنف…` };
+  if (waiting)
+    return { tone: "pending", text: `بانتظار الرفع: ${waiting} صنف…` };
   if (online.value === null) return { tone: "pending", text: "جارٍ الاتصال…" };
   return { tone: "online", text: "متصل — كل العدّ مرفوع" };
 });
@@ -396,7 +431,9 @@ const runSync = async () => {
       }
 
       // عُدّ الصنف مرة أخرى أثناء الرفع: الأحدث يبقى ويُرفع في المرة القادمة
-      const current = new Map((await countDb.pendingOf(id)).map((c) => [c.key, c]));
+      const current = new Map(
+        (await countDb.pendingOf(id)).map((c) => [c.key, c]),
+      );
       const accepted: string[] = [];
       const refused: PendingCount[] = [];
       const outvoted: string[] = [];
@@ -414,7 +451,9 @@ const runSync = async () => {
       await countDb.settle(accepted, refused);
       await remember(response.stocktake);
       if (outvoted.length) {
-        toast.info(`عُدّ من جهاز آخر بعد عدّك فاعتُمد عدّه: ${outvoted.join("، ")}`);
+        toast.info(
+          `عُدّ من جهاز آخر بعد عدّك فاعتُمد عدّه: ${outvoted.join("، ")}`,
+        );
       }
     }
     online.value = true;
@@ -453,7 +492,8 @@ const loadCatalog = async (force = false) => {
     const products = await inventory.fetchStocktakeCatalog(id);
     catalog.value = { stocktakeId: id, fetchedAt: Date.now(), products };
     await countDb.putCatalog(catalog.value);
-    if (force) toast.success(`حُدّثت الأصناف (${formatNumber(products.length)})`);
+    if (force)
+      toast.success(`حُدّثت الأصناف (${formatNumber(products.length)})`);
   } catch (error) {
     if (error instanceof NetworkError) online.value = false;
     if (force) toast.error(getErrorMessage(error, "تعذر تحميل الأصناف"));
@@ -476,7 +516,9 @@ const setCount = (productId: string, quantity: number | null) => {
   pending.value = [...pending.value.filter((c) => c.key !== count.key), count];
   countDb
     .putPending(count)
-    .catch((error) => toast.error(getErrorMessage(error, "تعذر الحفظ على الجهاز")));
+    .catch((error) =>
+      toast.error(getErrorMessage(error, "تعذر الحفظ على الجهاز")),
+    );
   scheduleSync();
 };
 
@@ -542,7 +584,8 @@ const saveEditor = () => {
 const removeEditing = () => {
   if (!editor.value) return;
   setCount(editor.value.productId, null);
-  if (flashItem.value?.productId === editor.value.productId) flashItem.value = null;
+  if (flashItem.value?.productId === editor.value.productId)
+    flashItem.value = null;
   closeEditor();
 };
 

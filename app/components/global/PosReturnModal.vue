@@ -10,7 +10,11 @@
         <div class="modal doc-modal pos-return">
           <div class="modal__header">
             <h3><Undo2 :size="20" class="doc-modal__icon" /> مرتجع</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -51,8 +55,12 @@
                   :disabled="finding"
                   @click="find(sale.number)"
                 >
-                  <span><code class="doc-code">{{ sale.number }}</code></span>
-                  <span class="doc-num">{{ formatDateTime(sale.issuedAt) }}</span>
+                  <span
+                    ><code class="doc-code">{{ sale.number }}</code></span
+                  >
+                  <span class="doc-num">{{
+                    formatDateTime(sale.issuedAt)
+                  }}</span>
                   <span class="doc-money doc-money--strong">
                     {{ formatCurrency(sale.total) }}
                   </span>
@@ -70,7 +78,9 @@
               </div>
               <div v-if="invoice.issuedAt">
                 <span>التاريخ</span>
-                <span class="doc-num">{{ formatDateTime(invoice.issuedAt) }}</span>
+                <span class="doc-num">{{
+                  formatDateTime(invoice.issuedAt)
+                }}</span>
               </div>
               <div v-if="invoice.customerName">
                 <span>العميل</span>
@@ -78,14 +88,19 @@
               </div>
               <div>
                 <span>الإجمالي</span>
-                <span class="doc-money">{{ formatCurrency(invoice.total) }}</span>
+                <span class="doc-money">{{
+                  formatCurrency(invoice.total)
+                }}</span>
               </div>
             </div>
             <p v-if="invoice.local" class="doc-hint">
               من نسخة هذه الشاشة (السيرفر غير متاح أو لم تُرفع الفاتورة بعد).
             </p>
 
-            <div class="doc-lines" :style="{ '--doc-cols': '2fr 0.8fr 1.2fr 1fr' }">
+            <div
+              class="doc-lines"
+              :style="{ '--doc-cols': '2fr 0.8fr 1.2fr 1fr' }"
+            >
               <div class="doc-lines__head">
                 <span>الصنف</span>
                 <span>المتاح</span>
@@ -156,13 +171,20 @@
 
             <div class="doc-totals">
               <span>قيمة المرتجع</span>
-              <strong class="doc-money">{{ formatCurrency(preview.total) }}</strong>
+              <strong class="doc-money">{{
+                formatCurrency(preview.total)
+              }}</strong>
             </div>
             <div class="doc-totals pos-return__refund">
               <span>يُردّ للعميل</span>
-              <strong class="doc-money">{{ formatCurrency(preview.refund) }}</strong>
+              <strong class="doc-money">{{
+                formatCurrency(preview.refund)
+              }}</strong>
             </div>
-            <p v-if="preview.total > 0 && preview.refund < preview.total" class="doc-hint">
+            <p
+              v-if="preview.total > 0 && preview.refund < preview.total"
+              class="doc-hint"
+            >
               الباقي يُخصم مما على العميل (الفاتورة لم تُدفع كاملة).
             </p>
             <p v-if="quantityError" class="form-error">{{ quantityError }}</p>
@@ -192,7 +214,11 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Search, Undo2, X } from "lucide-vue-next";
 import { useToast } from "@/composables/useToast";
 import { returnShare } from "@/pos/calc";
-import type { LocalReturn, ReturnableInvoice, ReturnableLine } from "@/pos/types";
+import type {
+  LocalReturn,
+  ReturnableInvoice,
+  ReturnableLine,
+} from "@/pos/types";
 import { usePosStore } from "@/stores/pos";
 import type { SalesPaymentMethod } from "@/types/sales";
 
@@ -262,10 +288,14 @@ const find = async (target: string) => {
 };
 
 const remaining = (line: ReturnableLine) =>
-  Math.max(Math.round((line.quantity - line.returnedQuantity) * 10000) / 10000, 0);
+  Math.max(
+    Math.round((line.quantity - line.returnedQuantity) * 10000) / 10000,
+    0,
+  );
 
 const returnable = computed(
-  () => !!invoice.value && invoice.value.lines.some((line) => remaining(line) > 0),
+  () =>
+    !!invoice.value && invoice.value.lines.some((line) => remaining(line) > 0),
 );
 
 const valueOf = (line: ReturnableLine) => {
@@ -275,7 +305,10 @@ const valueOf = (line: ReturnableLine) => {
 
 const numericQuantities = computed(() =>
   Object.fromEntries(
-    Object.entries(quantities).map(([index, value]) => [index, Number(value) || 0]),
+    Object.entries(quantities).map(([index, value]) => [
+      index,
+      Number(value) || 0,
+    ]),
   ),
 );
 

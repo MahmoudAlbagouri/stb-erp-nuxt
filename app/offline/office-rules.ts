@@ -82,7 +82,11 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 /** وصف العملية للمستخدم: «عميل جديد: محمد»، «إصدار فاتورة بيع» */
-export const labelOf = (method: string, path: string, body: unknown): string => {
+export const labelOf = (
+  method: string,
+  path: string,
+  body: unknown,
+): string => {
   const clean = pathOf(path);
   const name = NAMES.find(([rule]) => rule.test(clean))?.[1] ?? "عملية";
   const action = clean.split("/").pop() ?? "";
@@ -125,7 +129,12 @@ export const optimistic = (op: OfficeOp, current: unknown): unknown => {
   }
   const status = ACTION_STATUS[action];
   const known = typeof current === "object" && current ? current : {};
-  return { ...known, ...(status ? {} : body), ...(status ? { status } : {}), ...base };
+  return {
+    ...known,
+    ...(status ? {} : body),
+    ...(status ? { status } : {}),
+    ...base,
+  };
 };
 
 /** ما أُجري هنا على عنصر لم يصل السيرفر: تعديله وحالته بعد الإجراء */
@@ -150,7 +159,11 @@ const patchItem =
  * يضع ما في الطابور فوق رد محفوظ أو جديد: الجديد أول القائمة، والمعدَّل بما
  * كُتب فيه، والمستند الذي أُجري عليه إجراء بحالته الجديدة.
  */
-export const overlay = (url: string, body: unknown, ops: OfficeOp[]): unknown => {
+export const overlay = (
+  url: string,
+  body: unknown,
+  ops: OfficeOp[],
+): unknown => {
   const path = pathOf(url);
   if (!ops.length || typeof body !== "object" || !body) return body;
 

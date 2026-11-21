@@ -465,7 +465,7 @@ onMounted(() => {
 @use "~/assets/scss/variables" as *;
 @use "~/assets/scss/mixins" as *;
 
-// Stats & Filters
+/* Stats & Filters */
 .stats-bar {
   display: flex;
   gap: $space-3;

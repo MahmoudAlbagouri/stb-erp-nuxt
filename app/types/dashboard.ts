@@ -119,7 +119,9 @@ export interface HrOverview {
     onLeaveToday: number;
     newHires: number;
   };
-  payroll: { year: number; month: number; total: number; paid: boolean }[] | null;
+  payroll:
+    | { year: number; month: number; total: number; paid: boolean }[]
+    | null;
 }
 
 export interface AttendanceOverview {

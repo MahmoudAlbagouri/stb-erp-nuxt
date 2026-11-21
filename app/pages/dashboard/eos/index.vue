@@ -6,7 +6,11 @@
         <h1>إدارة نهاية الخدمة</h1>
         <p>حساب وتسجيل مكافآت نهاية الخدمة وفق نظام العمل السعودي</p>
       </div>
-      <button v-can="'create_eos'" class="btn btn--primary" @click="openModal()">
+      <button
+        v-can="'create_eos'"
+        class="btn btn--primary"
+        @click="openModal()"
+      >
         <FileCheck :size="16" /> تسجيل نهاية خدمة جديدة
       </button>
     </div>
@@ -50,7 +54,11 @@
         <div class="empty-state__text">
           سجل مكافآت نهاية الخدمة للموظفين المنهية خدماتهم
         </div>
-        <button v-can="'create_eos'" class="btn btn--primary mt-4" @click="openModal()">
+        <button
+          v-can="'create_eos'"
+          class="btn btn--primary mt-4"
+          @click="openModal()"
+        >
           <Plus :size="15" /> تسجيل جديد
         </button>
       </div>
@@ -106,7 +114,11 @@
         </div>
 
         <div class="eos-card__footer">
-          <button v-can="'update_eos'" class="btn btn--ghost btn--sm" @click="openModal(record)">
+          <button
+            v-can="'update_eos'"
+            class="btn btn--ghost btn--sm"
+            @click="openModal(record)"
+          >
             <Edit :size="13" /> تعديل
           </button>
           <button
@@ -361,7 +373,6 @@ const handleDelete = async () => {
 };
 
 const closeModal = () => (showModal.value = false);
-
 
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;

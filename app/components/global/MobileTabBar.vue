@@ -70,12 +70,14 @@ const OWNER_PRIORITY: { to: string; short: string }[] = [
 ];
 
 const tabs = computed(() =>
-  (auth.isSystemAdmin ? OWNER_PRIORITY : PRIORITY).flatMap(({ to, short }) => {
-    const item = findNavItem(to);
-    return item && item.to === to && resolve(item) === "allowed"
-      ? [{ ...item, short }]
-      : [];
-  }).slice(0, 4),
+  (auth.isSystemAdmin ? OWNER_PRIORITY : PRIORITY)
+    .flatMap(({ to, short }) => {
+      const item = findNavItem(to);
+      return item && item.to === to && resolve(item) === "allowed"
+        ? [{ ...item, short }]
+        : [];
+    })
+    .slice(0, 4),
 );
 
 const isActive = (to: string) =>

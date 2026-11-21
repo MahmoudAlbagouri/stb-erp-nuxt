@@ -16,18 +16,21 @@ interface StatusMeta {
   tone: Tone;
 }
 
-export const PURCHASE_INVOICE_STATUS: Record<PurchaseInvoiceStatus, StatusMeta> =
+export const PURCHASE_INVOICE_STATUS: Record<
+  PurchaseInvoiceStatus,
+  StatusMeta
+> = {
+  draft: { label: "مسودة", tone: "draft" },
+  posted: { label: "معتمدة", tone: "done" },
+  cancelled: { label: "ملغاة", tone: "cancelled" },
+};
+
+export const PURCHASE_RETURN_STATUS: Record<PurchaseReturnStatus, StatusMeta> =
   {
     draft: { label: "مسودة", tone: "draft" },
-    posted: { label: "معتمدة", tone: "done" },
-    cancelled: { label: "ملغاة", tone: "cancelled" },
+    posted: { label: "معتمد", tone: "done" },
+    cancelled: { label: "ملغي", tone: "cancelled" },
   };
-
-export const PURCHASE_RETURN_STATUS: Record<PurchaseReturnStatus, StatusMeta> = {
-  draft: { label: "مسودة", tone: "draft" },
-  posted: { label: "معتمد", tone: "done" },
-  cancelled: { label: "ملغي", tone: "cancelled" },
-};
 
 export const PAYMENT_STATUS: Record<PaymentStatus, StatusMeta> = {
   unpaid: { label: "غير مدفوعة", tone: "cancelled" },

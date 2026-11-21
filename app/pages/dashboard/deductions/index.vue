@@ -30,7 +30,11 @@
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
 
-        <button v-can="'create_deduction'" class="btn btn--primary" @click="openModal()">
+        <button
+          v-can="'create_deduction'"
+          class="btn btn--primary"
+          @click="openModal()"
+        >
           <MinusCircle :size="16" /> تسجيل خصم جديد
         </button>
       </div>
@@ -77,7 +81,11 @@
         <div class="empty-state__text">
           سجل الغرامات أو الاستقطاعات الإدارية هنا لتظهر تلقائياً في الرواتب
         </div>
-        <button v-can="'create_deduction'" class="btn btn--primary mt-4" @click="openModal()">
+        <button
+          v-can="'create_deduction'"
+          class="btn btn--primary mt-4"
+          @click="openModal()"
+        >
           <Plus :size="15" /> تسجيل خصم
         </button>
       </div>
@@ -142,10 +150,18 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === d.id" class="dropdown-menu">
-                <button v-can="'view_deductions'" v-feature="'reports_export'" @click="downloadDeduction(d.id, 'pdf')">
+                <button
+                  v-can="'view_deductions'"
+                  v-feature="'reports_export'"
+                  @click="downloadDeduction(d.id, 'pdf')"
+                >
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button v-can="'view_deductions'" v-feature="'reports_export'" @click="downloadDeduction(d.id, 'excel')">
+                <button
+                  v-can="'view_deductions'"
+                  v-feature="'reports_export'"
+                  @click="downloadDeduction(d.id, 'excel')"
+                >
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>
@@ -179,7 +195,11 @@
 
             <!-- إذا كان مكتملاً أو ملغى: لا تظهر أزرار حالة -->
 
-            <button v-can="'update_deduction'" class="btn btn--ghost btn--sm" @click="openModal(d)">
+            <button
+              v-can="'update_deduction'"
+              class="btn btn--ghost btn--sm"
+              @click="openModal(d)"
+            >
               <Edit :size="13" /> تعديل
             </button>
             <button

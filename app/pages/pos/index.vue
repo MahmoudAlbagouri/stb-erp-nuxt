@@ -56,7 +56,9 @@
             @click="showTables = true"
           >
             <Armchair :size="15" />
-            <span>{{ pos.order.type === "dine_in" ? pos.order.tableName : "سفري" }}</span>
+            <span>{{
+              pos.order.type === "dine_in" ? pos.order.tableName : "سفري"
+            }}</span>
             <span v-if="openTablesCount" class="pos-status__count">
               {{ formatNumber(openTablesCount) }}
             </span>
@@ -90,7 +92,9 @@
         >
           <PauseCircle :size="15" />
           <span class="pos-hide-sm">معلّقة</span>
-          <span class="pos-status__count">{{ formatNumber(pos.held.length) }}</span>
+          <span class="pos-status__count">{{
+            formatNumber(pos.held.length)
+          }}</span>
         </button>
         <button
           v-if="pos.shift && pos.features.quotes"
@@ -109,7 +113,9 @@
           <Wallet :size="15" /> <span class="pos-hide-sm">نقد</span>
         </button>
         <button
-          v-if="pos.shift && pos.drawer.mode !== 'off' && pos.features.manualDrawer"
+          v-if="
+            pos.shift && pos.drawer.mode !== 'off' && pos.features.manualDrawer
+          "
           class="btn btn--sm btn--ghost pos-drawer-btn"
           title="فتح الدرج بلا بيع — يُسجَّل على الوردية"
           @click="kickDrawer(true)"
@@ -128,7 +134,8 @@
           class="btn btn--sm btn--ghost"
           @click="openCloseShift"
         >
-          <LockKeyhole :size="15" /> <span class="pos-hide-sm">تقفيل الوردية</span>
+          <LockKeyhole :size="15" />
+          <span class="pos-hide-sm">تقفيل الوردية</span>
         </button>
         <button
           v-if="pos.device && pos.features.customerDisplay"
@@ -177,8 +184,8 @@
     <div v-if="pos.sessionExpired" class="pos-banner">
       <AlertTriangle :size="16" />
       <span>
-        هذه الشاشة تحتاج تسجيل دخول مرة واحدة لتُربط بجهازها. البيع مستمر
-        ومحفوظ على الجهاز، ويُرفع بعد الربط.
+        هذه الشاشة تحتاج تسجيل دخول مرة واحدة لتُربط بجهازها. البيع مستمر ومحفوظ
+        على الجهاز، ويُرفع بعد الربط.
       </span>
       <NuxtLink to="/auth/login" class="btn btn--sm btn--primary">
         تسجيل الدخول
@@ -195,13 +202,13 @@
       </span>
     </div>
 
-    <div
-      v-else-if="pos.device && pos.offlineState !== 'ok'"
-      class="pos-banner"
-    >
+    <div v-else-if="pos.device && pos.offlineState !== 'ok'" class="pos-banner">
       <CloudOff :size="16" />
       <span>{{ offlineNotice }}</span>
-      <button class="btn btn--sm btn--primary" @click="pos.sync({ pull: true })">
+      <button
+        class="btn btn--sm btn--primary"
+        @click="pos.sync({ pull: true })"
+      >
         إعادة المحاولة
       </button>
     </div>
@@ -237,8 +244,9 @@
         <h2>هذه الشاشة مربوطة بشركة أخرى</h2>
         <p class="doc-hint">
           الشاشة تحمل جهاز الكاشير «{{ pos.device!.name }}» لشركة
-          <strong>{{ pos.tenant?.companyName || "أخرى" }}</strong>، وأنت مسجّل الدخول
-          بحساب شركة مختلفة — بيانات تلك الشركة لا تُعرض هنا.
+          <strong>{{ pos.tenant?.companyName || "أخرى" }}</strong
+          >، وأنت مسجّل الدخول بحساب شركة مختلفة — بيانات تلك الشركة لا تُعرض
+          هنا.
         </p>
 
         <template v-if="pos.outbox.length">
@@ -247,7 +255,10 @@
             الشركة بعد، ولا تُمسح قبل رفعها. صِل الجهاز بالإنترنت (تُرفع وحدها)،
             أو سجّل الدخول بحساب تلك الشركة.
           </p>
-          <button class="btn btn--ghost btn--sm" @click="pos.sync({ pull: false })">
+          <button
+            class="btn btn--ghost btn--sm"
+            @click="pos.sync({ pull: false })"
+          >
             <RefreshCw :size="14" /> رفع الآن
           </button>
         </template>
@@ -285,8 +296,8 @@
         <h2>اختر جهاز الكاشير</h2>
         <p class="doc-hint">
           يُربط هذا المتصفح بالجهاز مرة واحدة، وتُنزَّل الأصناف والأسعار ليعمل
-          بعدها بلا إنترنت. لكل شاشة بيع (لابتوب، تابلت، موبايل) جهاز كاشير
-          خاص بها وورديتها.
+          بعدها بلا إنترنت. لكل شاشة بيع (لابتوب، تابلت، موبايل) جهاز كاشير خاص
+          بها وورديتها.
         </p>
 
         <div v-if="devicesLoading" class="spinner" />
@@ -316,7 +327,9 @@
                 <template v-else-if="boundElsewhere(d)">
                   · مربوط بشاشة أخرى
                 </template>
-                <template v-else-if="d.hasOpenShift"> · عليه وردية مفتوحة</template>
+                <template v-else-if="d.hasOpenShift">
+                  · عليه وردية مفتوحة</template
+                >
               </span>
             </span>
             <ChevronLeft :size="18" />
@@ -484,7 +497,9 @@
                 {{ formatNumber(pos.stockOf(p)!) }}
               </span>
               <span class="pos-tile__price">
-                {{ p.openPrice ? "سعر مفتوح" : formatMoney(unitPriceOf(p, null)) }}
+                {{
+                  p.openPrice ? "سعر مفتوح" : formatMoney(unitPriceOf(p, null))
+                }}
               </span>
             </span>
           </button>
@@ -523,15 +538,27 @@
           :class="{ 'is-table': pos.order.type === 'dine_in' }"
           @click="showTables = true"
         >
-          <component :is="pos.order.type === 'dine_in' ? Armchair : ShoppingBag" :size="16" />
-          <strong>{{ pos.order.type === "dine_in" ? pos.order.tableName : "سفري" }}</strong>
-          <span v-if="pos.order.rounds && pos.cart.length" class="doc-cell__sub">
+          <component
+            :is="pos.order.type === 'dine_in' ? Armchair : ShoppingBag"
+            :size="16"
+          />
+          <strong>{{
+            pos.order.type === "dine_in" ? pos.order.tableName : "سفري"
+          }}</strong>
+          <span
+            v-if="pos.order.rounds && pos.cart.length"
+            class="doc-cell__sub"
+          >
             أُرسل للمطبخ {{ formatNumber(pos.order.rounds) }} مرة
           </span>
           <span class="pos-cart__order-change">تغيير</span>
         </button>
         <label
-          v-if="pos.features.tables && pos.order.type === 'dine_in' && !pos.quoteMode"
+          v-if="
+            pos.features.tables &&
+            pos.order.type === 'dine_in' &&
+            !pos.quoteMode
+          "
           class="pos-cart__guests"
           title="عدد الضيوف على الطاولة"
         >
@@ -574,7 +601,8 @@
             السلة فارغة — امسح باركود أو اضغط على صنف
           </p>
           <div
-            v-for="{ line, unitPrice, total, promoName, invoiceDiscount } in pos.priced.lines"
+            v-for="{ line, unitPrice, total, promoName, invoiceDiscount } in pos
+              .priced.lines"
             :key="line.key"
             class="pos-line"
             :class="{ 'is-selected': pos.selectedKey === line.key }"
@@ -583,7 +611,10 @@
             <div class="pos-line__head">
               <span class="doc-cell__main">
                 {{ line.product.name }}
-                <span v-if="promoName" class="badge doc-status--done pos-line__promo">
+                <span
+                  v-if="promoName"
+                  class="badge doc-status--done pos-line__promo"
+                >
                   {{ promoName }}
                 </span>
                 <span
@@ -600,8 +631,12 @@
                 >
                   غير متوفر حالياً
                 </span>
-                <span v-if="line.note" class="pos-line__note">{{ line.note }}</span>
-                <span v-if="line.modifiers?.length" class="pos-line__note">+ {{ line.modifiers.map((m) => m.name).join("، ") }}</span>
+                <span v-if="line.note" class="pos-line__note">{{
+                  line.note
+                }}</span>
+                <span v-if="line.modifiers?.length" class="pos-line__note"
+                  >+ {{ line.modifiers.map((m) => m.name).join("، ") }}</span
+                >
               </span>
               <button
                 v-if="pos.features.kitchen"
@@ -620,7 +655,11 @@
                 <Trash2 :size="14" />
               </button>
             </div>
-            <div v-if="noteKey === line.key" class="pos-line__note-edit" @click.stop>
+            <div
+              v-if="noteKey === line.key"
+              class="pos-line__note-edit"
+              @click.stop
+            >
               <input
                 :ref="(el) => (noteEl = el as HTMLInputElement | null)"
                 v-model="line.note"
@@ -636,7 +675,9 @@
                   :key="chip"
                   type="button"
                   class="doc-tab"
-                  @click="line.note = line.note ? `${line.note}، ${chip}` : chip"
+                  @click="
+                    line.note = line.note ? `${line.note}، ${chip}` : chip
+                  "
                 >
                   {{ chip }}
                 </button>
@@ -664,7 +705,9 @@
                 v-if="line.product.units.length && pos.features.units"
                 class="form-select pos-line__unit"
                 :value="line.unitId ?? ''"
-                @change="changeUnit(line, ($event.target as HTMLSelectElement).value)"
+                @change="
+                  changeUnit(line, ($event.target as HTMLSelectElement).value)
+                "
               >
                 <option value="">{{ line.product.baseUnitName }}</option>
                 <option
@@ -686,7 +729,9 @@
                 ×
                 <template v-if="line.pricePending">اكتب السعر</template>
                 <template v-else>
-                  <s v-if="isRepriced(line)">{{ formatMoney(line.listPrice!) }}</s>
+                  <s v-if="isRepriced(line)">{{
+                    formatMoney(line.listPrice!)
+                  }}</s>
                   <s v-else-if="unitPrice < line.unitPrice">
                     {{ formatMoney(line.unitPrice) }}
                   </s>
@@ -702,7 +747,11 @@
               </strong>
             </div>
             <div
-              v-if="line.product.allowDiscount && pos.features.lineDiscount && !quotedTerms(line)"
+              v-if="
+                line.product.allowDiscount &&
+                pos.features.lineDiscount &&
+                !quotedTerms(line)
+              "
               class="pos-line__discount"
             >
               <label>خصم</label>
@@ -735,7 +784,10 @@
                 ({{ pos.invoiceDiscount.value }}% على الفاتورة)
               </template>
             </span>
-            <span class="doc-money" :class="{ 'pos-over': pos.cartIssues.discountOverLimit }">
+            <span
+              class="doc-money"
+              :class="{ 'pos-over': pos.cartIssues.discountOverLimit }"
+            >
               − {{ formatCurrency(pos.priced.manualDiscount) }}
             </span>
           </div>
@@ -766,7 +818,11 @@
             <Trash2 :size="16" />
           </button>
           <button
-            v-if="pos.order.type !== 'dine_in' && pos.features.holdSales && !pos.quoteMode"
+            v-if="
+              pos.order.type !== 'dine_in' &&
+              pos.features.holdSales &&
+              !pos.quoteMode
+            "
             class="btn btn--ghost btn--icon"
             title="تعليق الفاتورة (F6)"
             :disabled="!pos.cart.length"
@@ -841,7 +897,11 @@
             class="btn btn--primary pos-pay"
             :class="{ 'btn--loading': paying && quickMode }"
             :disabled="!pos.cart.length || paying"
-            :title="quickMode ? 'دفع نقدي بالمبلغ بالضبط وطباعة فوراً (F4)' : 'الدفع (F4)'"
+            :title="
+              quickMode
+                ? 'دفع نقدي بالمبلغ بالضبط وطباعة فوراً (F4)'
+                : 'الدفع (F4)'
+            "
             @click="openPay()"
           >
             <span>{{ quickMode ? "دفع نقدي" : "دفع" }}</span>
@@ -900,7 +960,11 @@
               </div>
 
               <div class="doc-actions">
-                <button type="button" class="btn btn--sm btn--ghost" @click="payAll('cash')">
+                <button
+                  type="button"
+                  class="btn btn--sm btn--ghost"
+                  @click="payAll('cash')"
+                >
                   نقداً بالضبط
                 </button>
                 <button
@@ -922,7 +986,10 @@
                 </button>
               </div>
 
-              <label v-if="selectedCustomer && pos.features.creditSales" class="checkbox-label">
+              <label
+                v-if="selectedCustomer && pos.features.creditSales"
+                class="checkbox-label"
+              >
                 <input v-model="pay.credit" type="checkbox" />
                 <span>
                   الباقي على حساب العميل (آجل) — {{ selectedCustomer.name }}
@@ -939,16 +1006,22 @@
               >
                 <span>
                   على الحساب (آجل)
-                  <template v-if="payState.creditOverLimit"> — يتجاوز حد الائتمان</template>
+                  <template v-if="payState.creditOverLimit">
+                    — يتجاوز حد الائتمان</template
+                  >
                 </span>
-                <strong class="doc-money">{{ formatCurrency(payState.credit) }}</strong>
+                <strong class="doc-money">{{
+                  formatCurrency(payState.credit)
+                }}</strong>
               </div>
               <div
                 v-else
                 class="doc-totals"
                 :class="{ 'pos-short': payState.short > 0 }"
               >
-                <span>{{ payState.short > 0 ? "المتبقي" : "الباقي للعميل" }}</span>
+                <span>{{
+                  payState.short > 0 ? "المتبقي" : "الباقي للعميل"
+                }}</span>
                 <strong class="doc-money">
                   {{
                     formatCurrency(
@@ -957,13 +1030,23 @@
                   }}
                 </strong>
               </div>
-              <p v-if="payState.error" class="form-error">{{ payState.error }}</p>
-              <p v-for="message in payOverrides" :key="message" class="pos-note">
+              <p v-if="payState.error" class="form-error">
+                {{ payState.error }}
+              </p>
+              <p
+                v-for="message in payOverrides"
+                :key="message"
+                class="pos-note"
+              >
                 {{ message }} — يحتاج موافقة مشرف
               </p>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showPay = false">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showPay = false"
+                >
                   رجوع
                 </button>
                 <button
@@ -991,7 +1074,9 @@
             <code class="doc-code">{{ doneSale.number }}</code>
             <div v-if="doneSale.change > 0" class="doc-totals">
               <span>الباقي للعميل</span>
-              <strong class="doc-money">{{ formatCurrency(doneSale.change) }}</strong>
+              <strong class="doc-money">{{
+                formatCurrency(doneSale.change)
+              }}</strong>
             </div>
             <div v-if="doneSale.creditAmount" class="doc-totals">
               <span>على حساب {{ doneSale.customerName }}</span>
@@ -1019,7 +1104,11 @@
     <!-- ══ تقفيل الوردية ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showClose" class="modal-overlay" @click.self="showClose = false">
+        <div
+          v-if="showClose"
+          class="modal-overlay"
+          @click.self="showClose = false"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
               <h3>
@@ -1136,11 +1225,19 @@
               </div>
               <div class="form-group">
                 <label>ملاحظة</label>
-                <input v-model.trim="closeForm.note" class="form-input" maxlength="500" />
+                <input
+                  v-model.trim="closeForm.note"
+                  class="form-input"
+                  maxlength="500"
+                />
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showClose = false">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showClose = false"
+                >
                   رجوع
                 </button>
                 <button type="submit" class="btn btn--primary">
@@ -1156,11 +1253,16 @@
     <!-- ══ مبيعات الوردية (إعادة الطباعة) ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showRecent" class="modal-overlay" @click.self="showRecent = false">
+        <div
+          v-if="showRecent"
+          class="modal-overlay"
+          @click.self="showRecent = false"
+        >
           <div class="modal doc-modal">
             <div class="modal__header">
               <h3>
-                <ReceiptText :size="20" class="doc-modal__icon" /> مبيعات الوردية
+                <ReceiptText :size="20" class="doc-modal__icon" /> مبيعات
+                الوردية
               </h3>
               <button
                 class="btn btn--icon btn--ghost"
@@ -1171,11 +1273,17 @@
               </button>
             </div>
             <div class="doc-actions pos-recent__actions">
-              <button class="btn btn--sm btn--ghost" @click="printShiftReport('X')">
+              <button
+                class="btn btn--sm btn--ghost"
+                @click="printShiftReport('X')"
+              >
                 <Printer :size="14" /> طباعة ملخص الوردية (X)
               </button>
             </div>
-            <div class="doc-lines" :style="{ '--doc-cols': '1.2fr 1fr 1fr 0.8fr auto' }">
+            <div
+              class="doc-lines"
+              :style="{ '--doc-cols': '1.2fr 1fr 1fr 0.8fr auto' }"
+            >
               <div class="doc-lines__head">
                 <span>الرقم</span>
                 <span>الوقت</span>
@@ -1186,8 +1294,14 @@
               <p v-if="!shiftSales.length" class="doc-lines__empty">
                 لا مبيعات في هذه الوردية بعد
               </p>
-              <div v-for="sale in shiftSales" :key="sale.uuid" class="doc-lines__row">
-                <span><code class="doc-code">{{ sale.number }}</code></span>
+              <div
+                v-for="sale in shiftSales"
+                :key="sale.uuid"
+                class="doc-lines__row"
+              >
+                <span
+                  ><code class="doc-code">{{ sale.number }}</code></span
+                >
                 <span class="doc-num">{{ formatDateTime(sale.issuedAt) }}</span>
                 <span class="doc-money doc-money--strong">
                   {{ formatCurrency(sale.total) }}
@@ -1196,7 +1310,9 @@
                   <span
                     :class="[
                       'badge',
-                      isPending(sale) ? 'doc-status--progress' : 'doc-status--done',
+                      isPending(sale)
+                        ? 'doc-status--progress'
+                        : 'doc-status--done',
                     ]"
                   >
                     {{ isPending(sale) ? "بانتظار" : "رُفعت" }}
@@ -1219,7 +1335,11 @@
     <!-- ══ عمليات رفضها السيرفر ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showFailed" class="modal-overlay" @click.self="showFailed = false">
+        <div
+          v-if="showFailed"
+          class="modal-overlay"
+          @click.self="showFailed = false"
+        >
           <div class="modal doc-modal">
             <div class="modal__header">
               <h3>
@@ -1236,8 +1356,8 @@
             </div>
             <div class="doc-form">
               <p class="doc-hint">
-                هذه العمليات محفوظة على الجهاز ولم تُسجَّل في السيرفر. راجع السبب
-                مع المسؤول ثم أعد المحاولة.
+                هذه العمليات محفوظة على الجهاز ولم تُسجَّل في السيرفر. راجع
+                السبب مع المسؤول ثم أعد المحاولة.
               </p>
               <div class="doc-lines" :style="{ '--doc-cols': '1fr 2fr' }">
                 <div
@@ -1258,7 +1378,9 @@
                 </div>
               </div>
               <div class="modal__footer">
-                <button class="btn btn--ghost" @click="showFailed = false">إغلاق</button>
+                <button class="btn btn--ghost" @click="showFailed = false">
+                  إغلاق
+                </button>
                 <button class="btn btn--primary" @click="retryFailed">
                   <RefreshCw :size="16" /> إعادة المحاولة
                 </button>
@@ -1271,7 +1393,11 @@
 
     <PosReturnModal v-model="showReturn" @done="onReturned" />
     <PosScreenSettings v-model="showSettings" @test-print="printTestReceipt" />
-    <PosHeldModal v-model="showHeld" @resume="resumeHeld" @remove="removeHeld" />
+    <PosHeldModal
+      v-model="showHeld"
+      @resume="resumeHeld"
+      @remove="removeHeld"
+    />
     <PosQuoteModal
       v-model="showQuote"
       :customer="selectedCustomer"
@@ -1281,7 +1407,11 @@
       :busy="savingQuote"
       @submit="submitQuote"
     />
-    <PosQuotesModal v-model="showQuotes" @print="printQuote" @convert="convertQuote" />
+    <PosQuotesModal
+      v-model="showQuotes"
+      @print="printQuote"
+      @convert="convertQuote"
+    />
     <PosCashMoveModal v-model="showCashMove" @submit="submitCashMove" />
     <PosCustomerModal v-model="showCustomer" />
     <PosDeliveryModal
@@ -1294,13 +1424,19 @@
     />
     <PosDiscountModal v-model="showDiscount" />
     <PosShortcutsModal v-model="showShortcuts" />
-    <PosPriceModal :line="priceLine" @close="closePrice" @submit="submitPrice" />
+    <PosPriceModal
+      :line="priceLine"
+      @close="closePrice"
+      @submit="submitPrice"
+    />
     <PosApprovalModal ref="approval" />
     <PosShiftReport ref="shiftReport" :logo="pos.tenant?.logo ?? null" />
     <PosModifiersModal
       :product="modifierTarget?.product ?? null"
       :groups="modifierTarget?.groups ?? []"
-      :base-price="modifierTarget ? unitPriceOf(modifierTarget.product, null) : 0"
+      :base-price="
+        modifierTarget ? unitPriceOf(modifierTarget.product, null) : 0
+      "
       @close="modifierTarget = null"
       @confirm="confirmModifiers"
     />
@@ -1596,7 +1732,9 @@ const bind = async (target: PosDevice) => {
     await pos.bindDevice(target);
     pos.start();
     pos.startKitchen();
-    toast.success(`تم ربط الجهاز "${target.name}" وتنزيل ${pos.products.length} صنف`);
+    toast.success(
+      `تم ربط الجهاز "${target.name}" وتنزيل ${pos.products.length} صنف`,
+    );
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر ربط الجهاز"));
   } finally {
@@ -1631,7 +1769,8 @@ const submitOpenShift = async () => {
   openingShift.value = true;
   try {
     // التحقق من الرقم على الجهاز نفسه: يعمل بلا إنترنت
-    const cashier = pos.cashiers.find((c) => c.id === shiftForm.cashierId) ?? null;
+    const cashier =
+      pos.cashiers.find((c) => c.id === shiftForm.cashierId) ?? null;
     if (pos.cashiers.length) {
       if (!cashier) {
         toast.warning("اختر الكاشير");
@@ -1664,7 +1803,10 @@ const showClose = ref(false);
 const closeForm = reactive({ closingCash: "" as number | "", note: "" });
 
 const closeDifference = computed(() =>
-  sumAmounts([Number(closeForm.closingCash) || 0, -pos.shiftSummary.expectedCash]),
+  sumAmounts([
+    Number(closeForm.closingCash) || 0,
+    -pos.shiftSummary.expectedCash,
+  ]),
 );
 
 const openCloseShift = () => {
@@ -1770,7 +1912,9 @@ const modifierGroupsOf = (product: PosProduct): PosModifierGroup[] => {
   const ids = options?.productModifierGroups?.[product.id] ?? [];
   if (!ids.length) return [];
   const byId = new Map((options?.modifierGroups ?? []).map((g) => [g.id, g]));
-  return ids.map((id) => byId.get(id)).filter((g): g is PosModifierGroup => !!g);
+  return ids
+    .map((id) => byId.get(id))
+    .filter((g): g is PosModifierGroup => !!g);
 };
 const modifierTarget = ref<{
   product: PosProduct;
@@ -1798,7 +1942,11 @@ const add = (product: PosProduct): boolean => {
   // صنف له إضافات (المطاعم): تُختار أولاً ثم يُضاف بسعرها
   const groups = modifierGroupsOf(product);
   if (groups.length && !pos.quoteMode) {
-    modifierTarget.value = { product, groups, quantity: takePendingQty(product) };
+    modifierTarget.value = {
+      product,
+      groups,
+      quantity: takePendingQty(product),
+    };
     return true;
   }
   try {
@@ -1856,7 +2004,8 @@ const trackInput = (
   else inputs.delete(key);
 };
 const focusInput = (inputs: Map<number, InputHandle>) => {
-  const input = pos.selectedKey === null ? null : inputs.get(pos.selectedKey)?.$el;
+  const input =
+    pos.selectedKey === null ? null : inputs.get(pos.selectedKey)?.$el;
   input?.focus();
   input?.select?.();
 };
@@ -1958,7 +2107,13 @@ const promptPendingPrice = () => {
   if (line?.pricePending) priceLine.value = line;
 };
 
-const submitPrice = async ({ price, reason }: { price: number; reason: string | null }) => {
+const submitPrice = async ({
+  price,
+  reason,
+}: {
+  price: number;
+  reason: string | null;
+}) => {
   const line = priceLine.value;
   if (!line) return;
   try {
@@ -1996,7 +2151,9 @@ const pay = reactive({
 /** فئات نقدية قريبة أكبر من المطلوب، لضغطة واحدة */
 const quickCash = computed(() => {
   const total = pos.cartTotals.total;
-  return [5, 10, 20, 50, 100, 200, 500].filter((note) => note > total).slice(0, 3);
+  return [5, 10, 20, 50, 100, 200, 500]
+    .filter((note) => note > total)
+    .slice(0, 3);
 });
 
 const payState = computed(() => {
@@ -2029,7 +2186,9 @@ const priceOverrides = computed(() => [
   ...pos.cartIssues.belowMin,
   ...pos.cartIssues.reducedNoDiscount,
   ...(pos.cartIssues.discountOverLimit
-    ? [`الخصم ${pos.priced.manualPercent.toFixed(1)}% يتجاوز حدّك (${pos.discountLimit}%)`]
+    ? [
+        `الخصم ${pos.priced.manualPercent.toFixed(1)}% يتجاوز حدّك (${pos.discountLimit}%)`,
+      ]
     : []),
 ]);
 
@@ -2122,7 +2281,11 @@ const submitPay = async (quick = false) => {
       payments.push({ method: "card", amount: Number(pay.card) });
     }
 
-    const sale = await pos.checkout(payments, Number(pay.cash) || 0, approvedBy);
+    const sale = await pos.checkout(
+      payments,
+      Number(pay.cash) || 0,
+      approvedBy,
+    );
     sound("success");
     if (payments.some((p) => p.method === "cash")) void kickDrawer();
     showPay.value = false;
@@ -2303,7 +2466,10 @@ const submitQuote = async ({
         toast.error(priceOverrides.value[0]!);
         return;
       }
-      const granted = await authorize("always", priceOverrides.value.join(" · "));
+      const granted = await authorize(
+        "always",
+        priceOverrides.value.join(" · "),
+      );
       if (!granted.ok) return;
       approvedBy = granted.approvedBy;
     }
@@ -2311,7 +2477,9 @@ const submitQuote = async ({
     const quote = await pos.saveQuote(details, approvedBy);
     sound("success");
     showQuote.value = false;
-    toast.success(`حُفظ عرض السعر ${quote.number} — ${formatCurrency(quote.total)}`);
+    toast.success(
+      `حُفظ عرض السعر ${quote.number} — ${formatCurrency(quote.total)}`,
+    );
     await printQuote(quote, size);
     await nextTick();
     searchEl.value?.focus();
@@ -2350,9 +2518,9 @@ const finishSale = async () => {
 };
 
 // ─── الطباعة وإعادة الطباعة ───────────────────────────────────────────────────
-const printer = ref<{ print: (size: "a4" | "thermal") => Promise<void> } | null>(
-  null,
-);
+const printer = ref<{
+  print: (size: "a4" | "thermal") => Promise<void>;
+} | null>(null);
 const printTarget = ref<PrintableInvoice | null>(null);
 
 /** فاتورة الجهاز المحلية بالشكل الذي تطبعه نسخة الطباعة */
@@ -2389,7 +2557,9 @@ const toPrintable = (sale: LocalSale): PrintableInvoice => ({
         zoneName: sale.delivery.zoneName ?? null,
         agentName: sale.delivery.agentName ?? null,
         collect: sumAmounts(
-          sale.payments.filter((p) => p.method === "courier").map((p) => p.amount),
+          sale.payments
+            .filter((p) => p.method === "courier")
+            .map((p) => p.amount),
         ),
         note: sale.delivery.note ?? null,
       }
@@ -2422,11 +2592,29 @@ const printSale = async (sale: LocalSale) => {
  */
 const printTestReceipt = async () => {
   const samples = [
-    { productName: "صنف تجريبي 1", unitName: "قطعة", quantity: 2, unitPrice: 10 },
-    { productName: "صنف تجريبي باسم أطول ليُرى الالتفاف", unitName: "كيلوجرام", quantity: 1.5, unitPrice: 24 },
-    { productName: "صنف تجريبي 3", unitName: "كرتون", quantity: 1, unitPrice: 55 },
+    {
+      productName: "صنف تجريبي 1",
+      unitName: "قطعة",
+      quantity: 2,
+      unitPrice: 10,
+    },
+    {
+      productName: "صنف تجريبي باسم أطول ليُرى الالتفاف",
+      unitName: "كيلوجرام",
+      quantity: 1.5,
+      unitPrice: 24,
+    },
+    {
+      productName: "صنف تجريبي 3",
+      unitName: "كرتون",
+      quantity: 1,
+      unitPrice: 55,
+    },
   ];
-  const rate = pos.settings?.vatRegistered === false ? 0 : (pos.products[0]?.taxRate ?? 15);
+  const rate =
+    pos.settings?.vatRegistered === false
+      ? 0
+      : (pos.products[0]?.taxRate ?? 15);
   const lines = samples.map((sample, index) => ({
     id: `test-${index}`,
     ...sample,
@@ -2492,7 +2680,8 @@ const kickDrawer = async (manual = false) => {
 };
 
 const onReturned = (salesReturn: LocalReturn) => {
-  const cash = salesReturn.refundMethod === "cash" && salesReturn.refundAmount > 0;
+  const cash =
+    salesReturn.refundMethod === "cash" && salesReturn.refundAmount > 0;
   toast.success(
     salesReturn.refundAmount > 0
       ? `تم المرتجع — ردّ للعميل ${formatCurrency(salesReturn.refundAmount)} ${cash ? "نقداً" : "على البطاقة"}`
@@ -2502,9 +2691,9 @@ const onReturned = (salesReturn: LocalReturn) => {
 };
 
 // ─── تقرير الوردية (X / Z) ────────────────────────────────────────────────────
-const shiftReport = ref<{ print: (data: ShiftReportData) => Promise<void> } | null>(
-  null,
-);
+const shiftReport = ref<{
+  print: (data: ShiftReportData) => Promise<void>;
+} | null>(null);
 
 const buildShiftReport = (
   kind: ShiftReportData["kind"],
@@ -2565,9 +2754,9 @@ const printShiftReport = (kind: ShiftReportData["kind"]) => {
 const showTables = ref(false);
 const showKitchen = ref(false);
 const sendingKitchen = ref(false);
-const kitchenPrinter = ref<{ print: (ticket: LocalKitchenTicket) => Promise<void> } | null>(
-  null,
-);
+const kitchenPrinter = ref<{
+  print: (ticket: LocalKitchenTicket) => Promise<void>;
+} | null>(null);
 
 /** ملاحظات جاهزة للمطبخ (تُضاف بضغطة) */
 const NOTE_CHIPS = ["بدون بصل", "بدون صوص", "سبايسي", "زيادة", "خفيف", "سفري"];
@@ -2618,7 +2807,8 @@ const openTable = async (table: DiningTableInfo) => {
   try {
     const ticket = await pos.openTable(table);
     showTables.value = false;
-    if (hadTakeaway) toast.info("عُلّقت الفاتورة السفري الجارية — تجدها في «معلّقة»");
+    if (hadTakeaway)
+      toast.info("عُلّقت الفاتورة السفري الجارية — تجدها في «معلّقة»");
     if (ticket) await printKitchen(ticket);
     await nextTick();
     searchEl.value?.focus();
@@ -2674,7 +2864,10 @@ watch(
     sound("kitchenReady");
     toast.info(
       fresh
-        .map((o) => `طلب #${o.ticketNo} جاهز${o.tableName ? ` — ${o.tableName}` : o.label ? ` — ${o.label}` : ""}`)
+        .map(
+          (o) =>
+            `طلب #${o.ticketNo} جاهز${o.tableName ? ` — ${o.tableName}` : o.label ? ` — ${o.label}` : ""}`,
+        )
         .join(" · "),
     );
   },
@@ -2721,8 +2914,10 @@ const applyPendingToScanned = () => {
   const quantity = pendingQty.value;
   pendingQty.value = null;
   const line = selectedLine();
-  if (!quantity || !line || line.product.isWeighted || line.product.openPrice) return;
-  const extra = (line.product.allowsFractions ? quantity : Math.round(quantity)) - 1;
+  if (!quantity || !line || line.product.isWeighted || line.product.openPrice)
+    return;
+  const extra =
+    (line.product.allowsFractions ? quantity : Math.round(quantity)) - 1;
   if (extra > 0) line.quantity = (Number(line.quantity) || 0) + extra;
 };
 
@@ -2770,7 +2965,10 @@ const displayState = (): DisplayState => ({
   done: doneSale.value
     ? {
         total: doneSale.value.total,
-        paid: sumAmounts([doneSale.value.total, -(doneSale.value.creditAmount ?? 0)]),
+        paid: sumAmounts([
+          doneSale.value.total,
+          -(doneSale.value.creditAmount ?? 0),
+        ]),
         change: doneSale.value.change,
       }
     : null,
@@ -2785,7 +2983,8 @@ const openCustomerDisplay = () => {
     "stb-pos-display",
     "popup,width=900,height=600",
   );
-  if (!opened) toast.warning("اسمح بالنوافذ المنبثقة لهذا الموقع لفتح شاشة العميل");
+  if (!opened)
+    toast.warning("اسمح بالنوافذ المنبثقة لهذا الموقع لفتح شاشة العميل");
 };
 
 // ─── اختصارات لوحة المفاتيح ───────────────────────────────────────────────────
@@ -2881,14 +3080,21 @@ const onKeydown = (event: KeyboardEvent) => {
     case "F7":
       // المعلّقة القديمة تُسترجع ولو أُقفل التعليق بعدها
       return handle(
-        () => (pos.features.holdSales || pos.held.length) && (showHeld.value = true),
+        () =>
+          (pos.features.holdSales || pos.held.length) &&
+          (showHeld.value = true),
       );
     case "F8":
       return handle(
-        () => pos.cart.length && pos.features.invoiceDiscount && (showDiscount.value = true),
+        () =>
+          pos.cart.length &&
+          pos.features.invoiceDiscount &&
+          (showDiscount.value = true),
       );
     case "F9":
-      return handle(() => pos.features.cashMoves && (showCashMove.value = true));
+      return handle(
+        () => pos.features.cashMoves && (showCashMove.value = true),
+      );
     case "F10":
       return handle(() => pos.features.delivery && openDelivery());
   }
@@ -2914,7 +3120,11 @@ const onKeydown = (event: KeyboardEvent) => {
     case "*":
       return line && handle(() => focusInput(qtyInputs));
     case "/":
-      return line && pos.features.lineDiscount && handle(() => focusInput(discountInputs));
+      return (
+        line &&
+        pos.features.lineDiscount &&
+        handle(() => focusInput(discountInputs))
+      );
     case "=":
       return line && handle(() => editPrice(line));
     case "Delete":

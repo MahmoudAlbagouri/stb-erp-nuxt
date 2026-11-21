@@ -4,7 +4,9 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>ورديات الكاشير</h1>
-        <p>مبيعات كل وردية وما قُبض فيها، والفرق بين المفترض في الدرج والمعدود</p>
+        <p>
+          مبيعات كل وردية وما قُبض فيها، والفرق بين المفترض في الدرج والمعدود
+        </p>
       </div>
       <div class="page-header__actions">
         <NuxtLink to="/dashboard/pos/devices" class="btn btn--ghost">
@@ -27,7 +29,11 @@
     </div>
 
     <div class="card doc-filters doc-filters--even">
-      <select v-model="filters.deviceId" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filters.deviceId"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل الأجهزة</option>
         <option v-for="d in devices" :key="d.id" :value="d.id">
           {{ d.name }} ({{ d.code }})
@@ -69,20 +75,28 @@
               <tr v-for="s in list.rows.value" :key="s.id">
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-cell__main">{{ s.device?.name || "—" }}</span>
-                    <span class="doc-cell__sub">{{ s.cashierName || "—" }}</span>
+                    <span class="doc-cell__main">{{
+                      s.device?.name || "—"
+                    }}</span>
+                    <span class="doc-cell__sub">{{
+                      s.cashierName || "—"
+                    }}</span>
                   </div>
                 </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-num">{{ formatDateTime(s.openedAt) }}</span>
+                    <span class="doc-num">{{
+                      formatDateTime(s.openedAt)
+                    }}</span>
                     <span v-if="s.closedAt" class="doc-cell__sub doc-num">
                       {{ formatDateTime(s.closedAt) }}
                     </span>
                   </div>
                 </td>
                 <td>
-                  <span class="doc-num">{{ formatNumber(s.invoicesCount) }}</span>
+                  <span class="doc-num">{{
+                    formatNumber(s.invoicesCount)
+                  }}</span>
                 </td>
                 <td>
                   <span class="doc-money doc-money--strong">
@@ -91,14 +105,19 @@
                 </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-money">{{ formatCurrency(s.cashTotal) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(s.cashTotal)
+                    }}</span>
                     <span class="doc-cell__sub doc-money">
                       {{ formatCurrency(s.cardTotal) }}
                     </span>
                     <span v-if="s.creditTotal" class="doc-cell__sub">
                       آجل {{ formatMoney(s.creditTotal) }}
                     </span>
-                    <span v-if="s.returnsCount" class="doc-cell__sub text-danger">
+                    <span
+                      v-if="s.returnsCount"
+                      class="doc-cell__sub text-danger"
+                    >
                       مرتجعات {{ formatNumber(s.returnsCount) }} ·
                       {{ formatMoney(s.returnsTotal) }}
                     </span>
@@ -106,7 +125,9 @@
                 </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-money">{{ formatCurrency(s.expectedCash) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(s.expectedCash)
+                    }}</span>
                     <span class="doc-cell__sub">
                       عهدة {{ formatMoney(s.openingCash) }}
                     </span>
@@ -145,7 +166,8 @@
                       class="doc-cell__sub"
                       title="عمليات رُفعت بعد التقفيل (رُفضت أولاً ثم أُعيدت) — أُعيد حساب الوردية بها"
                     >
-                      أُعيد الحساب: {{ formatNumber(s.lateOperations) }} عملية بعد التقفيل
+                      أُعيد الحساب: {{ formatNumber(s.lateOperations) }} عملية
+                      بعد التقفيل
                     </span>
                   </div>
                   <span v-else>—</span>
@@ -154,7 +176,9 @@
                   <span
                     :class="[
                       'badge',
-                      s.status === 'open' ? 'doc-status--progress' : 'doc-status--done',
+                      s.status === 'open'
+                        ? 'doc-status--progress'
+                        : 'doc-status--done',
                     ]"
                   >
                     {{ s.status === "open" ? "مفتوحة" : "مقفّلة" }}
@@ -200,7 +224,8 @@ const STATUS_TABS: { value: ShiftStatus; label: string }[] = [
 const filters = reactive({
   status: "" as ShiftStatus,
   // قادماً من صفحة الأجهزة: ‎?deviceId=...
-  deviceId: typeof route.query.deviceId === "string" ? route.query.deviceId : "",
+  deviceId:
+    typeof route.query.deviceId === "string" ? route.query.deviceId : "",
 });
 
 const list = usePagedList(

@@ -108,7 +108,10 @@ export const useApi = () => {
    * fetch يميّز "لم نصل للسيرفر" عن "السيرفر رفض": الأول NetworkError برسالة
    * واضحة بدل "Failed to fetch"، ويُعلم شريط الاتصال. أي رد يعني أننا متصلون.
    */
-  const reach = async (url: string, options: RequestInit): Promise<Response> => {
+  const reach = async (
+    url: string,
+    options: RequestInit,
+  ): Promise<Response> => {
     let res: Response;
     try {
       res = await fetch(url, options);
@@ -185,9 +188,7 @@ export const useApi = () => {
     let tokens: { accessToken?: string; refreshToken?: string } | undefined;
     try {
       tokens = (
-        await handleResponse<{ accessToken: string; refreshToken: string }>(
-          res,
-        )
+        await handleResponse<{ accessToken: string; refreshToken: string }>(res)
       ).data;
     } catch {
       return { status: "unavailable" };
@@ -276,7 +277,8 @@ export const useApi = () => {
     path: string,
     options: RequestInit,
     auth: boolean,
-  ): Promise<ApiResponse<T>> => handleResponse<T>(await send(path, options, auth));
+  ): Promise<ApiResponse<T>> =>
+    handleResponse<T>(await send(path, options, auth));
 
   const requestBlob = async (path: string, auth = true): Promise<Blob> => {
     const res = await send(
@@ -306,7 +308,11 @@ export const useApi = () => {
     auth?: boolean,
     responseType?: "json",
   ): Promise<ApiResponse<T>>;
-  function get(path: string, auth: boolean, responseType: "blob"): Promise<Blob>;
+  function get(
+    path: string,
+    auth: boolean,
+    responseType: "blob",
+  ): Promise<Blob>;
   function get<T>(
     path: string,
     auth = true,
@@ -323,9 +329,15 @@ export const useApi = () => {
    */
   const readJson = async <T>(path: string, auth: boolean) => {
     const office =
-      import.meta.client && auth && isCachedRead(path) ? useOfficeStore() : null;
+      import.meta.client && auth && isCachedRead(path)
+        ? useOfficeStore()
+        : null;
     if (!office) {
-      return requestJson<T>(path, { method: "GET", headers: getHeaders(auth) }, auth);
+      return requestJson<T>(
+        path,
+        { method: "GET", headers: getHeaders(auth) },
+        auth,
+      );
     }
     try {
       const res = await requestJson<T>(
@@ -359,7 +371,10 @@ export const useApi = () => {
     auth: boolean,
   ): Promise<ApiResponse<T>> => {
     const office =
-      import.meta.client && auth && isQueuedWrite(path) && !(body instanceof FormData)
+      import.meta.client &&
+      auth &&
+      isQueuedWrite(path) &&
+      !(body instanceof FormData)
         ? useOfficeStore()
         : null;
     const plain = (headers: Record<string, string> = {}) =>
@@ -367,7 +382,10 @@ export const useApi = () => {
         path,
         {
           method,
-          headers: { ...getHeaders(auth, body instanceof FormData), ...headers },
+          headers: {
+            ...getHeaders(auth, body instanceof FormData),
+            ...headers,
+          },
           body:
             method === "DELETE"
               ? undefined
@@ -387,7 +405,8 @@ export const useApi = () => {
           {
             method,
             headers: { ...getHeaders(auth), "Idempotency-Key": op.id },
-            body: method === "DELETE" ? undefined : jsonBody(office.resolve(body)),
+            body:
+              method === "DELETE" ? undefined : jsonBody(office.resolve(body)),
           },
           auth,
         );
@@ -414,7 +433,8 @@ export const useApi = () => {
         {
           method: request.method,
           headers: { ...getHeaders(true), "Idempotency-Key": request.key },
-          body: request.method === "DELETE" ? undefined : jsonBody(request.body),
+          body:
+            request.method === "DELETE" ? undefined : jsonBody(request.body),
         },
         true,
       )

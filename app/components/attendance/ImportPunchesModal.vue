@@ -26,16 +26,20 @@
             <template v-if="result">
               <div class="result-grid">
                 <div class="result-tile">
-                  <span>{{ result.imported }}</span>بصمة جديدة
+                  <span>{{ result.imported }}</span
+                  >بصمة جديدة
                 </div>
                 <div class="result-tile">
-                  <span>{{ result.duplicates }}</span>موجودة من قبل
+                  <span>{{ result.duplicates }}</span
+                  >موجودة من قبل
                 </div>
                 <div class="result-tile result-tile--warn">
-                  <span>{{ result.unlinked }}</span>لأرقام غير مربوطة
+                  <span>{{ result.unlinked }}</span
+                  >لأرقام غير مربوطة
                 </div>
                 <div class="result-tile result-tile--danger">
-                  <span>{{ result.skipped }}</span>صف لم يُقرأ
+                  <span>{{ result.skipped }}</span
+                  >صف لم يُقرأ
                 </div>
               </div>
               <p v-if="result.unlinked" class="hint">
@@ -83,12 +87,18 @@
                   <table class="data-table">
                     <thead>
                       <tr>
-                        <th v-for="(h, i) in preview.headers" :key="i">{{ h }}</th>
+                        <th v-for="(h, i) in preview.headers" :key="i">
+                          {{ h }}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="(row, r) in preview.rows" :key="r">
-                        <td v-for="(_, i) in preview.headers" :key="i" dir="auto">
+                        <td
+                          v-for="(_, i) in preview.headers"
+                          :key="i"
+                          dir="auto"
+                        >
                           {{ row[i] }}
                         </td>
                       </tr>
@@ -102,9 +112,16 @@
                 <div class="grid-2">
                   <div class="form-group">
                     <label>رقم الموظف على الجهاز *</label>
-                    <select v-model.number="mapping.pinColumn" class="form-select">
+                    <select
+                      v-model.number="mapping.pinColumn"
+                      class="form-select"
+                    >
                       <option :value="-1" disabled>اختر العمود…</option>
-                      <option v-for="o in columnOptions" :key="o.value" :value="o.value">
+                      <option
+                        v-for="o in columnOptions"
+                        :key="o.value"
+                        :value="o.value"
+                      >
                         {{ o.label }}
                       </option>
                     </select>
@@ -118,9 +135,16 @@
                   </div>
                   <div v-if="timeMode === 'single'" class="form-group">
                     <label>التاريخ والوقت *</label>
-                    <select v-model.number="mapping.dateTimeColumn" class="form-select">
+                    <select
+                      v-model.number="mapping.dateTimeColumn"
+                      class="form-select"
+                    >
                       <option :value="-1" disabled>اختر العمود…</option>
-                      <option v-for="o in columnOptions" :key="o.value" :value="o.value">
+                      <option
+                        v-for="o in columnOptions"
+                        :key="o.value"
+                        :value="o.value"
+                      >
                         {{ o.label }}
                       </option>
                     </select>
@@ -128,18 +152,32 @@
                   <template v-else>
                     <div class="form-group">
                       <label>التاريخ *</label>
-                      <select v-model.number="mapping.dateColumn" class="form-select">
+                      <select
+                        v-model.number="mapping.dateColumn"
+                        class="form-select"
+                      >
                         <option :value="-1" disabled>اختر العمود…</option>
-                        <option v-for="o in columnOptions" :key="o.value" :value="o.value">
+                        <option
+                          v-for="o in columnOptions"
+                          :key="o.value"
+                          :value="o.value"
+                        >
                           {{ o.label }}
                         </option>
                       </select>
                     </div>
                     <div class="form-group">
                       <label>الوقت *</label>
-                      <select v-model.number="mapping.timeColumn" class="form-select">
+                      <select
+                        v-model.number="mapping.timeColumn"
+                        class="form-select"
+                      >
                         <option :value="-1" disabled>اختر العمود…</option>
-                        <option v-for="o in columnOptions" :key="o.value" :value="o.value">
+                        <option
+                          v-for="o in columnOptions"
+                          :key="o.value"
+                          :value="o.value"
+                        >
                           {{ o.label }}
                         </option>
                       </select>
@@ -147,9 +185,16 @@
                   </template>
                   <div class="form-group">
                     <label>نوع البصمة (اختياري)</label>
-                    <select v-model.number="mapping.typeColumn" class="form-select">
+                    <select
+                      v-model.number="mapping.typeColumn"
+                      class="form-select"
+                    >
                       <option :value="-1">لا يوجد</option>
-                      <option v-for="o in columnOptions" :key="o.value" :value="o.value">
+                      <option
+                        v-for="o in columnOptions"
+                        :key="o.value"
+                        :value="o.value"
+                      >
                         {{ o.label }}
                       </option>
                     </select>
@@ -166,8 +211,8 @@
               </template>
 
               <p class="hint">
-                صدّر البصمات من برنامج الجهاز (ZKTime، iVMS-4200، BioStar…) بصيغة
-                Excel أو CSV. ملفات .xls القديمة: افتحها واحفظها xlsx.
+                صدّر البصمات من برنامج الجهاز (ZKTime، iVMS-4200، BioStar…)
+                بصيغة Excel أو CSV. ملفات .xls القديمة: افتحها واحفظها xlsx.
               </p>
             </template>
           </div>
@@ -205,7 +250,10 @@ import type {
   ImportResult,
 } from "@/types";
 
-const props = defineProps<{ modelValue: boolean; devices: BiometricDevice[] }>();
+const props = defineProps<{
+  modelValue: boolean;
+  devices: BiometricDevice[];
+}>();
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   imported: [];
@@ -278,7 +326,8 @@ const onFile = async (event: Event) => {
     const data = await store.previewImport(picked);
     preview.value = data;
     const g = data.guess;
-    timeMode.value = g.dateTimeColumn === null && g.dateColumn !== null ? "split" : "single";
+    timeMode.value =
+      g.dateTimeColumn === null && g.dateColumn !== null ? "split" : "single";
     Object.assign(mapping, {
       pinColumn: g.pinColumn ?? -1,
       dateTimeColumn: g.dateTimeColumn ?? -1,

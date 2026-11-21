@@ -34,7 +34,11 @@
       </select>
       <select v-model="filters.type" class="form-select" @change="onTypeChange">
         <option value="">كل أنواع الحركات</option>
-        <option v-for="(label, type) in MOVEMENT_TYPE_LABELS" :key="type" :value="type">
+        <option
+          v-for="(label, type) in MOVEMENT_TYPE_LABELS"
+          :key="type"
+          :value="type"
+        >
           {{ label }}
         </option>
       </select>
@@ -94,11 +98,15 @@
             <tbody>
               <tr v-for="m in list.rows.value" :key="m.id">
                 <td>
-                  <span class="doc-num">{{ formatDateTime(m.occurredAt) }}</span>
+                  <span class="doc-num">{{
+                    formatDateTime(m.occurredAt)
+                  }}</span>
                 </td>
                 <td>
                   <div class="doc-cell">
-                    <span class="doc-cell__main">{{ m.product?.name || "—" }}</span>
+                    <span class="doc-cell__main">{{
+                      m.product?.name || "—"
+                    }}</span>
                     <span class="doc-cell__sub">{{ m.product?.sku }}</span>
                   </div>
                 </td>
@@ -122,13 +130,17 @@
                 <td>
                   <span
                     class="doc-num"
-                    :class="m.balanceAfter < 0 ? 'doc-num--out' : 'doc-num--strong'"
+                    :class="
+                      m.balanceAfter < 0 ? 'doc-num--out' : 'doc-num--strong'
+                    "
                   >
                     {{ formatNumber(m.balanceAfter) }}
                   </span>
                 </td>
                 <td>
-                  <span class="doc-money">{{ formatCurrency(m.unitCost) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(m.unitCost)
+                  }}</span>
                 </td>
                 <td>{{ m.note || "—" }}</td>
               </tr>
@@ -153,7 +165,10 @@ import { onMounted, reactive, ref, watch } from "vue";
 import { ArrowRight, History } from "lucide-vue-next";
 import { useInventoryStore } from "@/stores/inventory";
 import { usePagedList } from "@/composables/usePagedList";
-import type { StockAdjustmentReason, StockMovementType } from "@/types/inventory";
+import type {
+  StockAdjustmentReason,
+  StockMovementType,
+} from "@/types/inventory";
 
 definePageMeta({ middleware: "auth" });
 

@@ -4,21 +4,38 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>أوامر الإنتاج</h1>
-        <p>من التخطيط للإكمال: الخامات، الوقت، الاستلام بالدفعات، والتكلفة الفعلية</p>
+        <p>
+          من التخطيط للإكمال: الخامات، الوقت، الاستلام بالدفعات، والتكلفة
+          الفعلية
+        </p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'plan_production'" class="btn btn--primary" @click="openCreate">
+        <button
+          v-can="'plan_production'"
+          class="btn btn--primary"
+          @click="openCreate"
+        >
           <Plus :size="18" /> <span>أمر إنتاج</span>
         </button>
       </div>
     </div>
 
     <div v-if="summary" class="stats-grid">
-      <div class="stat-card"><span class="stat-card__label">مسودات</span><strong>{{ summary.draft }}</strong></div>
-      <div class="stat-card"><span class="stat-card__label">مُطلقة</span><strong>{{ summary.released }}</strong></div>
-      <div class="stat-card"><span class="stat-card__label">قيد التنفيذ</span><strong>{{ summary.inProgress }}</strong></div>
+      <div class="stat-card">
+        <span class="stat-card__label">مسودات</span
+        ><strong>{{ summary.draft }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">مُطلقة</span
+        ><strong>{{ summary.released }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">قيد التنفيذ</span
+        ><strong>{{ summary.inProgress }}</strong>
+      </div>
       <div class="stat-card" :class="{ 'is-warn': summary.late }">
-        <span class="stat-card__label">متأخرة عن التسليم</span><strong>{{ summary.late }}</strong>
+        <span class="stat-card__label">متأخرة عن التسليم</span
+        ><strong>{{ summary.late }}</strong>
       </div>
       <div class="stat-card">
         <span class="stat-card__label">مكتملة هذا الشهر</span>
@@ -45,11 +62,18 @@
     <div class="card doc-filters">
       <div class="search-bar">
         <Search :size="16" class="search-bar__icon" />
-        <input v-model="filters.search" class="form-input" placeholder="رقم الأمر أو المنتج أو المرجع..." @input="onSearch" />
+        <input
+          v-model="filters.search"
+          class="form-input"
+          placeholder="رقم الأمر أو المنتج أو المرجع..."
+          @input="onSearch"
+        />
       </div>
     </div>
 
-    <div v-if="!list.ready.value" class="empty-state"><div class="spinner spinner--lg" /></div>
+    <div v-if="!list.ready.value" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
     <div v-else-if="!list.rows.value.length" class="card">
       <div class="empty-state">
         <Factory :size="44" class="empty-state__icon" />
@@ -62,16 +86,31 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>الأمر</th><th>المنتج</th><th>الكمية</th><th>الإنجاز</th>
-              <th>البدء / التسليم</th><th>الحالة</th><th />
+              <th>الأمر</th>
+              <th>المنتج</th>
+              <th>الكمية</th>
+              <th>الإنجاز</th>
+              <th>البدء / التسليم</th>
+              <th>الحالة</th>
+              <th />
             </tr>
           </thead>
           <tbody>
-            <tr v-for="o in list.rows.value" :key="o.id" class="is-clickable" @click="open(o)">
+            <tr
+              v-for="o in list.rows.value"
+              :key="o.id"
+              class="is-clickable"
+              @click="open(o)"
+            >
               <td>
                 <div class="doc-cell">
                   <span class="doc-cell__main">{{ o.number }}</span>
-                  <span class="doc-cell__sub">أولوية {{ o.priority }}<template v-if="o.reference"> · {{ o.reference }}</template></span>
+                  <span class="doc-cell__sub"
+                    >أولوية {{ o.priority
+                    }}<template v-if="o.reference">
+                      · {{ o.reference }}</template
+                    ></span
+                  >
                 </div>
               </td>
               <td>
@@ -81,23 +120,35 @@
                 </div>
               </td>
               <td class="doc-num">
-                {{ formatNumber(o.producedQuantity) }} / {{ formatNumber(o.plannedQuantity) }}
+                {{ formatNumber(o.producedQuantity) }} /
+                {{ formatNumber(o.plannedQuantity) }}
                 {{ o.product?.baseUnit?.name }}
               </td>
               <td>
-                <div class="progress"><span :style="{ width: `${o.progress}%` }" /></div>
+                <div class="progress">
+                  <span :style="{ width: `${o.progress}%` }" />
+                </div>
                 <small class="doc-num">{{ formatNumber(o.progress) }}%</small>
               </td>
               <td>
                 <div class="doc-cell">
-                  <span class="doc-num">{{ o.plannedStartDate ? formatDate(o.plannedStartDate) : "—" }}</span>
-                  <span class="doc-cell__sub" :class="{ 'doc-num--out': o.late }">
-                    {{ o.plannedEndDate ? formatDate(o.plannedEndDate) : "—" }}<template v-if="o.late"> · متأخر</template>
+                  <span class="doc-num">{{
+                    o.plannedStartDate ? formatDate(o.plannedStartDate) : "—"
+                  }}</span>
+                  <span
+                    class="doc-cell__sub"
+                    :class="{ 'doc-num--out': o.late }"
+                  >
+                    {{ o.plannedEndDate ? formatDate(o.plannedEndDate) : "—"
+                    }}<template v-if="o.late"> · متأخر</template>
                   </span>
                 </div>
               </td>
               <td>
-                <span :class="['badge', `doc-status--${STATUS[o.status].tone}`]">{{ STATUS[o.status].label }}</span>
+                <span
+                  :class="['badge', `doc-status--${STATUS[o.status].tone}`]"
+                  >{{ STATUS[o.status].label }}</span
+                >
               </td>
               <td><ChevronLeft :size="16" /></td>
             </tr>
@@ -117,78 +168,161 @@
     <!-- ══ أمر جديد ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
+        <div
+          v-if="showCreate"
+          class="modal-overlay"
+          @click.self="showCreate = false"
+        >
           <div class="modal doc-modal">
             <div class="modal__header">
-              <h3><Factory :size="20" class="doc-modal__icon" /> أمر إنتاج جديد</h3>
-              <button class="btn btn--icon btn--ghost" @click="showCreate = false"><X :size="20" /></button>
+              <h3>
+                <Factory :size="20" class="doc-modal__icon" /> أمر إنتاج جديد
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                @click="showCreate = false"
+              >
+                <X :size="20" />
+              </button>
             </div>
             <form class="doc-form" @submit.prevent="create">
               <div class="doc-grid">
                 <div class="form-group doc-grid__full">
                   <label>المنتج *</label>
                   <div v-if="form.product" class="picked">
-                    <span>{{ form.product.name }} <small>{{ form.product.sku }}</small></span>
-                    <button type="button" class="btn btn--sm btn--ghost" @click="clearProduct">تغيير</button>
+                    <span
+                      >{{ form.product.name }}
+                      <small>{{ form.product.sku }}</small></span
+                    >
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--ghost"
+                      @click="clearProduct"
+                    >
+                      تغيير
+                    </button>
                   </div>
-                  <CatalogProductPicker v-else :types="['stocked']" placeholder="ابحث عن المنتج المصنّع..." @pick="pickProduct" />
+                  <CatalogProductPicker
+                    v-else
+                    :types="['stocked']"
+                    placeholder="ابحث عن المنتج المصنّع..."
+                    @pick="pickProduct"
+                  />
                 </div>
                 <div v-if="form.product" class="form-group doc-grid__full">
                   <label>قائمة المكوّنات *</label>
                   <select v-model="form.bomId" class="form-select" required>
-                    <option v-if="!boms.length" value="" disabled>لا قائمة تصنيع لهذا المنتج — أنشئها أولاً</option>
+                    <option v-if="!boms.length" value="" disabled>
+                      لا قائمة تصنيع لهذا المنتج — أنشئها أولاً
+                    </option>
                     <option v-for="b in boms" :key="b.id" :value="b.id">
-                      {{ b.name }} (إصدار {{ b.version }}){{ b.isDefault ? " — الافتراضية" : "" }}
+                      {{ b.name }} (إصدار {{ b.version }}){{
+                        b.isDefault ? " — الافتراضية" : ""
+                      }}
                     </option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>الكمية المطلوبة *</label>
-                  <StbNumberInput v-model.number="form.plannedQuantity" class="form-input" min="0.0001" step="any" required />
+                  <StbNumberInput
+                    v-model.number="form.plannedQuantity"
+                    class="form-input"
+                    min="0.0001"
+                    step="any"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>الأولوية</label>
                   <select v-model.number="form.priority" class="form-select">
-                    <option v-for="p in 5" :key="p" :value="p">{{ p }}{{ p === 1 ? " (عاجل)" : p === 5 ? " (منخفض)" : "" }}</option>
+                    <option v-for="p in 5" :key="p" :value="p">
+                      {{ p
+                      }}{{ p === 1 ? " (عاجل)" : p === 5 ? " (منخفض)" : "" }}
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>مخزن الناتج *</label>
-                  <select v-model="form.warehouseId" class="form-select" required>
-                    <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
+                  <select
+                    v-model="form.warehouseId"
+                    class="form-select"
+                    required
+                  >
+                    <option v-for="w in warehouses" :key="w.id" :value="w.id">
+                      {{ w.name }}
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>مخزن الخامات</label>
-                  <select v-model="form.materialsWarehouseId" class="form-select">
+                  <select
+                    v-model="form.materialsWarehouseId"
+                    class="form-select"
+                  >
                     <option value="">نفس مخزن الناتج</option>
-                    <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
+                    <option v-for="w in warehouses" :key="w.id" :value="w.id">
+                      {{ w.name }}
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>تاريخ البدء</label>
-                  <StbDateInput v-model="form.plannedStartDate" class="form-input" />
+                  <StbDateInput
+                    v-model="form.plannedStartDate"
+                    class="form-input"
+                  />
                 </div>
                 <div class="form-group">
                   <label>تاريخ التسليم</label>
-                  <StbDateInput v-model="form.plannedEndDate" class="form-input" :min="form.plannedStartDate" />
+                  <StbDateInput
+                    v-model="form.plannedEndDate"
+                    class="form-input"
+                    :min="form.plannedStartDate"
+                  />
                 </div>
                 <div class="form-group">
                   <label>رقم دفعة الناتج</label>
-                  <input v-model.trim="form.outputLotNumber" class="form-input" dir="ltr" maxlength="60" placeholder="فارغ = رقم الأمر" />
+                  <input
+                    v-model.trim="form.outputLotNumber"
+                    class="form-input"
+                    dir="ltr"
+                    maxlength="60"
+                    placeholder="فارغ = رقم الأمر"
+                  />
                 </div>
                 <div class="form-group">
                   <label>مرجع / عميل</label>
-                  <input v-model.trim="form.reference" class="form-input" maxlength="200" placeholder="اختياري" />
+                  <input
+                    v-model.trim="form.reference"
+                    class="form-input"
+                    maxlength="200"
+                    placeholder="اختياري"
+                  />
                 </div>
                 <div class="form-group doc-grid__full">
                   <label>ملاحظات</label>
-                  <textarea v-model="form.note" class="form-input" rows="2" maxlength="4000" />
+                  <textarea
+                    v-model="form.note"
+                    class="form-input"
+                    rows="2"
+                    maxlength="4000"
+                  />
                 </div>
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showCreate = false">إلغاء</button>
-                <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': submitting }" :disabled="submitting || !form.bomId">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showCreate = false"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn--primary"
+                  :class="{ 'btn--loading': submitting }"
+                  :disabled="submitting || !form.bomId"
+                >
                   إنشاء المسودة
                 </button>
               </div>
@@ -209,7 +343,12 @@ import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
 import { PRODUCTION_STATUS as STATUS } from "@/utils/manufacturing";
 import type { Product } from "@/types/catalog";
-import type { Bom, ProductionOrder, ProductionStatus, ProductionSummary } from "@/types/manufacturing";
+import type {
+  Bom,
+  ProductionOrder,
+  ProductionStatus,
+  ProductionSummary,
+} from "@/types/manufacturing";
 
 definePageMeta({ middleware: "auth" });
 
@@ -229,12 +368,19 @@ const toast = useToast();
 const router = useRouter();
 
 const summary = ref<ProductionSummary | null>(null);
-const filters = reactive({ status: "open" as ProductionStatus | "open" | "", search: "" });
+const filters = reactive({
+  status: "open" as ProductionStatus | "open" | "",
+  search: "",
+});
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 const list = usePagedList(
   (page) =>
-    store.fetchOrders({ status: filters.status, search: filters.search || undefined, page }),
+    store.fetchOrders({
+      status: filters.status,
+      search: filters.search || undefined,
+      page,
+    }),
   "تعذر تحميل الأوامر",
 );
 const setStatus = (status: ProductionStatus | "open" | "") => {
@@ -245,16 +391,22 @@ const onSearch = () => {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => list.load(1), 300);
 };
-const open = (order: ProductionOrder) => router.push(`/dashboard/manufacturing/orders/${order.id}`);
+const open = (order: ProductionOrder) =>
+  router.push(`/dashboard/manufacturing/orders/${order.id}`);
 
-const warehouses = computed(() => inventory.warehouses.filter((w) => w.isActive));
+const warehouses = computed(() =>
+  inventory.warehouses.filter((w) => w.isActive),
+);
 
 const emptyForm = () => ({
   product: null as Product | null,
   bomId: "",
   plannedQuantity: "" as number | "",
   priority: 3,
-  warehouseId: warehouses.value.find((w) => w.type === "main")?.id ?? warehouses.value[0]?.id ?? "",
+  warehouseId:
+    warehouses.value.find((w) => w.type === "main")?.id ??
+    warehouses.value[0]?.id ??
+    "",
   materialsWarehouseId: "",
   plannedStartDate: "",
   plannedEndDate: "",
@@ -281,9 +433,14 @@ const pickProduct = async (product: Product) => {
   form.product = product;
   try {
     boms.value = (
-      await store.fetchBoms({ kind: "production", productId: product.id, limit: 50 })
+      await store.fetchBoms({
+        kind: "production",
+        productId: product.id,
+        limit: 50,
+      })
     ).data.filter((b) => b.isActive);
-    form.bomId = boms.value.find((b) => b.isDefault)?.id ?? boms.value[0]?.id ?? "";
+    form.bomId =
+      boms.value.find((b) => b.isDefault)?.id ?? boms.value[0]?.id ?? "";
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل القوائم"));
   }

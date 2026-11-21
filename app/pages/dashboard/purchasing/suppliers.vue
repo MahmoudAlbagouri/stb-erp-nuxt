@@ -28,7 +28,11 @@
           @input="onSearchInput"
         />
       </div>
-      <select v-model="filters.isActive" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filters.isActive"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل الحالات</option>
         <option value="true">نشط</option>
         <option value="false">موقوف</option>
@@ -103,7 +107,9 @@
                   </div>
                 </td>
                 <td>
-                  <code v-if="s.taxNumber" class="doc-code">{{ s.taxNumber }}</code>
+                  <code v-if="s.taxNumber" class="doc-code">{{
+                    s.taxNumber
+                  }}</code>
                   <span v-else>—</span>
                 </td>
                 <td>
@@ -126,14 +132,20 @@
                 </td>
                 <td>
                   <span
-                    :class="['badge', s.isActive ? 'badge--active' : 'badge--inactive']"
+                    :class="[
+                      'badge',
+                      s.isActive ? 'badge--active' : 'badge--inactive',
+                    ]"
                   >
                     {{ s.isActive ? "نشط" : "موقوف" }}
                   </span>
                 </td>
                 <td>
                   <div class="doc-actions">
-                    <button class="btn btn--sm btn--ghost" @click="openStatement(s)">
+                    <button
+                      class="btn btn--sm btn--ghost"
+                      @click="openStatement(s)"
+                    >
                       <ScrollText :size="14" /> كشف حساب
                     </button>
                     <button
@@ -300,7 +312,11 @@
                 </div>
                 <div class="form-group doc-grid__full">
                   <label>ملاحظات</label>
-                  <input v-model.trim="form.notes" class="form-input" maxlength="500" />
+                  <input
+                    v-model.trim="form.notes"
+                    class="form-input"
+                    maxlength="500"
+                  />
                 </div>
               </div>
 
@@ -310,7 +326,11 @@
               </label>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button
@@ -355,11 +375,17 @@
               <div class="doc-grid">
                 <div class="form-group">
                   <label>من تاريخ</label>
-                  <StbDateInput v-model="statementRange.from" class="form-input" />
+                  <StbDateInput
+                    v-model="statementRange.from"
+                    class="form-input"
+                  />
                 </div>
                 <div class="form-group">
                   <label>إلى تاريخ</label>
-                  <StbDateInput v-model="statementRange.to" class="form-input" />
+                  <StbDateInput
+                    v-model="statementRange.to"
+                    class="form-input"
+                  />
                 </div>
               </div>
 
@@ -368,7 +394,10 @@
               </div>
 
               <template v-else>
-                <div class="doc-lines" :style="{ '--doc-cols': STATEMENT_COLS }">
+                <div
+                  class="doc-lines"
+                  :style="{ '--doc-cols': STATEMENT_COLS }"
+                >
                   <div class="doc-lines__head">
                     <span>البيان</span>
                     <span>التاريخ</span>
@@ -427,7 +456,10 @@
                       </span>
                     </div>
                   </div>
-                  <div v-if="!statement.entries.length" class="doc-lines__empty">
+                  <div
+                    v-if="!statement.entries.length"
+                    class="doc-lines__empty"
+                  >
                     لا توجد حركات في هذه الفترة
                   </div>
                 </div>

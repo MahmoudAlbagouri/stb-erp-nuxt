@@ -76,7 +76,8 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
     useAuthStore().setDeviceLocale(profile);
     state.returns.value = await posDb.all("returns");
     state.installationId.value = inst ?? newUuid();
-    if (!inst) await posDb.setMeta({ installationId: state.installationId.value });
+    if (!inst)
+      await posDb.setMeta({ installationId: state.installationId.value });
     state.bound.value = isBound === true;
     // false محفوظة = السيرفر رفض هذه الشاشة قبل إغلاقها؛ null = لم تُربط بعد
     if (isBound === false && d) {
@@ -102,27 +103,42 @@ export const createInit = (state: PosState, cartModule: PosCart) => {
     ]);
     await state.reloadOutbox();
 
-    const [levels, balances, promos, options, parked, moves, savedCart, delivery] =
-      await Promise.all([
-        posDb.getMeta<Record<string, number>>("stock"),
-        posDb.getMeta<Record<string, number>>("customerBalances"),
-        posDb.getMeta<PosPromotion[]>("promotions"),
-        posDb.getMeta<PosOptions>("posOptions"),
-        posDb.getMeta<HeldCart[]>("held"),
-        posDb.getMeta<CashMove[]>("cashMoves"),
-        posDb.getMeta<StoredCart>("cart"),
-        posDb.getMeta<PosDeliveryOptions | null>("deliveryOptions"),
-      ]);
-    const [stockComplete, dining, savedOrder, tables, tickets, savedQuotes, quoteSeq] =
-      await Promise.all([
-        posDb.getMeta<boolean>("stockComplete"),
-        posDb.getMeta<PosRestaurantOptions | null>("restaurant"),
-        posDb.getMeta<OrderContext>("order"),
-        posDb.getMeta<TableOrder[]>("tableOrders"),
-        posDb.getMeta<LocalKitchenTicket[]>("kitchenTickets"),
-        posDb.getMeta<LocalQuote[]>("quotes"),
-        posDb.getMeta<number>("quoteCounter"),
-      ]);
+    const [
+      levels,
+      balances,
+      promos,
+      options,
+      parked,
+      moves,
+      savedCart,
+      delivery,
+    ] = await Promise.all([
+      posDb.getMeta<Record<string, number>>("stock"),
+      posDb.getMeta<Record<string, number>>("customerBalances"),
+      posDb.getMeta<PosPromotion[]>("promotions"),
+      posDb.getMeta<PosOptions>("posOptions"),
+      posDb.getMeta<HeldCart[]>("held"),
+      posDb.getMeta<CashMove[]>("cashMoves"),
+      posDb.getMeta<StoredCart>("cart"),
+      posDb.getMeta<PosDeliveryOptions | null>("deliveryOptions"),
+    ]);
+    const [
+      stockComplete,
+      dining,
+      savedOrder,
+      tables,
+      tickets,
+      savedQuotes,
+      quoteSeq,
+    ] = await Promise.all([
+      posDb.getMeta<boolean>("stockComplete"),
+      posDb.getMeta<PosRestaurantOptions | null>("restaurant"),
+      posDb.getMeta<OrderContext>("order"),
+      posDb.getMeta<TableOrder[]>("tableOrders"),
+      posDb.getMeta<LocalKitchenTicket[]>("kitchenTickets"),
+      posDb.getMeta<LocalQuote[]>("quotes"),
+      posDb.getMeta<number>("quoteCounter"),
+    ]);
     state.stockLevels.value = levels ?? {};
     // نسخة كاملة من الأرصدة استُلمت من قبل؟ بدونها لا تُعرض ولا يُمنع بها بيع
     state.stockKnown.value = stockComplete === true;

@@ -57,7 +57,11 @@ export const useConnection = () => {
    */
   const probe = async (): Promise<boolean> => {
     try {
-      await fetch(apiBase, { method: "HEAD", mode: "no-cors", cache: "no-store" });
+      await fetch(apiBase, {
+        method: "HEAD",
+        mode: "no-cors",
+        cache: "no-store",
+      });
       markOnline();
       return true;
     } catch {

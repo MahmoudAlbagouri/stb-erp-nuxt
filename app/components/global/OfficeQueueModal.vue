@@ -9,7 +9,11 @@
         <div class="modal doc-modal">
           <div class="modal__header">
             <h3>عمليات المكتب على هذا الجهاز</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -23,7 +27,10 @@
               :disabled="office.syncing || !office.ops.length"
               @click="office.sync()"
             >
-              <RefreshCw :size="14" :class="{ 'is-spinning': office.syncing }" />
+              <RefreshCw
+                :size="14"
+                :class="{ 'is-spinning': office.syncing }"
+              />
               رفع الآن
             </button>
             <p v-if="!office.ops.length" class="office-ops__empty">
@@ -38,14 +45,19 @@
               >
                 <div class="office-ops__head">
                   <strong>{{ op.label }}</strong>
-                  <span class="office-ops__time">{{ formatDateTime(op.createdAt) }}</span>
+                  <span class="office-ops__time">{{
+                    formatDateTime(op.createdAt)
+                  }}</span>
                 </div>
                 <p v-if="op.error" class="office-ops__error">{{ op.error }}</p>
                 <div v-if="op.error" class="office-ops__actions">
                   <button class="btn btn--sm btn--ghost" @click="discard(op)">
                     إلغاؤها
                   </button>
-                  <button class="btn btn--sm btn--primary" @click="office.retry(op)">
+                  <button
+                    class="btn btn--sm btn--primary"
+                    @click="office.retry(op)"
+                  >
                     إعادة الرفع
                   </button>
                 </div>

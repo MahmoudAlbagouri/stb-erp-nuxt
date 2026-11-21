@@ -4,7 +4,10 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>القوائم المالية</h1>
-        <p>قائمة الدخل لفترة، والمركز المالي (الميزانية) في تاريخ — من القيود مباشرة</p>
+        <p>
+          قائمة الدخل لفترة، والمركز المالي (الميزانية) في تاريخ — من القيود
+          مباشرة
+        </p>
       </div>
       <div class="page-header__actions">
         <ReportExport
@@ -19,7 +22,9 @@
           :query="sheetQuery"
           :filename="`balance_sheet_${sheet.asOf}`"
         />
-        <button class="btn btn--ghost" @click="print"><Printer :size="16" /> طباعة</button>
+        <button class="btn btn--ghost" @click="print">
+          <Printer :size="16" /> طباعة
+        </button>
       </div>
     </div>
 
@@ -27,10 +32,18 @@
 
     <template v-else>
       <div class="doc-tabs">
-        <button class="doc-tab" :class="{ 'is-active': tab === 'income' }" @click="tab = 'income'">
+        <button
+          class="doc-tab"
+          :class="{ 'is-active': tab === 'income' }"
+          @click="tab = 'income'"
+        >
           قائمة الدخل
         </button>
-        <button class="doc-tab" :class="{ 'is-active': tab === 'balance' }" @click="tab = 'balance'">
+        <button
+          class="doc-tab"
+          :class="{ 'is-active': tab === 'balance' }"
+          @click="tab = 'balance'"
+        >
           الميزانية
         </button>
       </div>
@@ -43,70 +56,138 @@
         <StbDateInput v-else v-model="asOf" required />
         <select v-if="branches.hasMany" v-model="branchId" class="form-select">
           <option value="">كل الفروع</option>
-          <option v-for="b in branches.options" :key="b.id" :value="b.id">{{ b.name }}</option>
+          <option v-for="b in branches.options" :key="b.id" :value="b.id">
+            {{ b.name }}
+          </option>
         </select>
-        <label class="check"><input v-model="detailed" type="checkbox" /> كل الحسابات</label>
-        <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': loading }" :disabled="loading">
+        <label class="check"
+          ><input v-model="detailed" type="checkbox" /> كل الحسابات</label
+        >
+        <button
+          type="submit"
+          class="btn btn--primary"
+          :class="{ 'btn--loading': loading }"
+          :disabled="loading"
+        >
           عرض
         </button>
       </form>
 
       <!-- ══ قائمة الدخل ══ -->
-      <div v-if="tab === 'income' && income" ref="report" class="card statement printable">
-        <h2>قائمة الدخل <small>من {{ income.from }} إلى {{ income.to }}</small></h2>
-        <StatementSection title="الإيرادات" :rows="shown(income.revenue)" :total="income.totals.revenue" />
-        <StatementSection title="المصروفات" :rows="shown(income.expenses)" :total="income.totals.expenses" />
+      <div
+        v-if="tab === 'income' && income"
+        ref="report"
+        class="card statement printable"
+      >
+        <h2>
+          قائمة الدخل <small>من {{ income.from }} إلى {{ income.to }}</small>
+        </h2>
+        <StatementSection
+          title="الإيرادات"
+          :rows="shown(income.revenue)"
+          :total="income.totals.revenue"
+        />
+        <StatementSection
+          title="المصروفات"
+          :rows="shown(income.expenses)"
+          :total="income.totals.expenses"
+        />
         <div v-if="income.totals.grossProfit !== null" class="statement__line">
           <span>مجمل الربح (إيرادات النشاط − تكلفة المبيعات)</span>
-          <strong class="doc-num">{{ formatMoney(income.totals.grossProfit) }}</strong>
+          <strong class="doc-num">{{
+            formatMoney(income.totals.grossProfit)
+          }}</strong>
         </div>
-        <div class="statement__line statement__line--total" :class="income.totals.netProfit < 0 ? 'is-loss' : 'is-profit'">
-          <span>{{ income.totals.netProfit < 0 ? "صافي الخسارة" : "صافي الربح" }}</span>
-          <strong class="doc-num">{{ formatMoney(Math.abs(income.totals.netProfit)) }}</strong>
+        <div
+          class="statement__line statement__line--total"
+          :class="income.totals.netProfit < 0 ? 'is-loss' : 'is-profit'"
+        >
+          <span>{{
+            income.totals.netProfit < 0 ? "صافي الخسارة" : "صافي الربح"
+          }}</span>
+          <strong class="doc-num">{{
+            formatMoney(Math.abs(income.totals.netProfit))
+          }}</strong>
         </div>
       </div>
 
       <!-- ══ الميزانية ══ -->
-      <div v-else-if="tab === 'balance' && sheet" ref="report" class="card statement printable">
+      <div
+        v-else-if="tab === 'balance' && sheet"
+        ref="report"
+        class="card statement printable"
+      >
         <h2>
           المركز المالي في {{ sheet.asOf }}
-          <span v-if="sheet.totals.balanced" class="doc-money--in">متوازنة ✓</span>
+          <span v-if="sheet.totals.balanced" class="doc-money--in"
+            >متوازنة ✓</span
+          >
           <span v-else class="doc-money--out">غير متوازنة</span>
         </h2>
-        <StatementSection title="الأصول" :rows="shown(sheet.assets)" :total="sheet.totals.assets" />
-        <StatementSection title="الخصوم" :rows="shown(sheet.liabilities)" :total="sheet.totals.liabilities" />
+        <StatementSection
+          title="الأصول"
+          :rows="shown(sheet.assets)"
+          :total="sheet.totals.assets"
+        />
+        <StatementSection
+          title="الخصوم"
+          :rows="shown(sheet.liabilities)"
+          :total="sheet.totals.liabilities"
+        />
         <StatementSection title="حقوق الملكية" :rows="shown(sheet.equity)">
           <div class="statement__line">
             <span>أرباح (خسائر) سنوات سابقة لم تُقفل بعد</span>
-            <span class="doc-num">{{ formatMoney(sheet.earnings.retained) }}</span>
+            <span class="doc-num">{{
+              formatMoney(sheet.earnings.retained)
+            }}</span>
           </div>
           <div class="statement__line">
             <span>صافي ربح (خسارة) السنة حتى التاريخ</span>
-            <span class="doc-num">{{ formatMoney(sheet.earnings.currentYear) }}</span>
+            <span class="doc-num">{{
+              formatMoney(sheet.earnings.currentYear)
+            }}</span>
           </div>
           <div class="statement__line statement__line--sub">
             <span>إجمالي حقوق الملكية</span>
-            <strong class="doc-num">{{ formatMoney(sheet.totals.equity) }}</strong>
+            <strong class="doc-num">{{
+              formatMoney(sheet.totals.equity)
+            }}</strong>
           </div>
         </StatementSection>
         <div class="statement__line statement__line--total">
           <span>إجمالي الخصوم وحقوق الملكية</span>
-          <strong class="doc-num">{{ formatMoney(sheet.totals.liabilitiesAndEquity) }}</strong>
+          <strong class="doc-num">{{
+            formatMoney(sheet.totals.liabilitiesAndEquity)
+          }}</strong>
         </div>
       </div>
 
-      <div v-else-if="loading" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-else-if="loading" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineComponent, h, onMounted, reactive, ref, watch, type PropType } from "vue";
+import {
+  defineComponent,
+  h,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+  type PropType,
+} from "vue";
 import { Printer } from "lucide-vue-next";
 import { useAccountingStore } from "@/stores/accounting";
 import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
-import type { AmountRow, BalanceSheet, IncomeStatement } from "@/types/accounting";
+import type {
+  AmountRow,
+  BalanceSheet,
+  IncomeStatement,
+} from "@/types/accounting";
 
 definePageMeta({ middleware: "auth" });
 
@@ -130,7 +211,12 @@ const sheetQuery = ref<object>({});
 
 /** الملخص: المجموعات حتى المستوى الثالث بلا أصفار؛ "كل الحسابات" يعرض الفرعية */
 const shown = (rows: AmountRow[]) =>
-  rows.filter((r) => r.depth > 1 && r.amount !== 0 && (detailed.value || r.isGroup || r.depth <= 3));
+  rows.filter(
+    (r) =>
+      r.depth > 1 &&
+      r.amount !== 0 &&
+      (detailed.value || r.isGroup || r.depth <= 3),
+  );
 
 /** قسم في القائمة: عنوانه، أسطره مزاحة بمستواها، وإجماليه */
 const StatementSection = defineComponent({
@@ -151,7 +237,10 @@ const StatementSection = defineComponent({
               style: { paddingInlineStart: `${(row.depth - 2) * 18}px` },
             },
             [
-              h("span", [h("code", { class: "doc-code" }, row.code), ` ${row.name}`]),
+              h("span", [
+                h("code", { class: "doc-code" }, row.code),
+                ` ${row.name}`,
+              ]),
               h("span", { class: "doc-num" }, formatMoney(row.amount)),
             ],
           ),
@@ -179,7 +268,10 @@ const load = async () => {
       income.value = await store.incomeStatement(params);
       incomeQuery.value = params;
     } else {
-      const params = { asOf: asOf.value, branchId: branchId.value || undefined };
+      const params = {
+        asOf: asOf.value,
+        branchId: branchId.value || undefined,
+      };
       sheet.value = await store.balanceSheet(params);
       sheetQuery.value = params;
     }
@@ -191,7 +283,10 @@ const load = async () => {
 };
 
 watch(tab, () => {
-  if ((tab.value === "income" && !income.value) || (tab.value === "balance" && !sheet.value)) {
+  if (
+    (tab.value === "income" && !income.value) ||
+    (tab.value === "balance" && !sheet.value)
+  ) {
     void load();
   }
 });

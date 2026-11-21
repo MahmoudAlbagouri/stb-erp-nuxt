@@ -21,7 +21,9 @@ export const useRestaurantStore = defineStore("restaurant", () => {
 
   const groups = ref<ModifierGroup[]>([]);
   const fetchGroups = async () => {
-    groups.value = (await api.get<ModifierGroup[]>(`${BASE}/modifier-groups`)).data;
+    groups.value = (
+      await api.get<ModifierGroup[]>(`${BASE}/modifier-groups`)
+    ).data;
     return groups.value;
   };
   const saveGroup = async (payload: ModifierGroupPayload, id?: string) => {
@@ -36,12 +38,19 @@ export const useRestaurantStore = defineStore("restaurant", () => {
     await fetchGroups();
   };
   const productGroups = async (productId: string) =>
-    (await api.get<ModifierGroup[]>(`${BASE}/products/${productId}/modifier-groups`)).data;
+    (
+      await api.get<ModifierGroup[]>(
+        `${BASE}/products/${productId}/modifier-groups`,
+      )
+    ).data;
   const setProductGroups = async (productId: string, groupIds: string[]) =>
     (
-      await api.post<ModifierGroup[]>(`${BASE}/products/${productId}/modifier-groups`, {
-        groupIds,
-      })
+      await api.post<ModifierGroup[]>(
+        `${BASE}/products/${productId}/modifier-groups`,
+        {
+          groupIds,
+        },
+      )
     ).data;
 
   const stations = ref<KitchenStation[]>([]);
@@ -62,15 +71,25 @@ export const useRestaurantStore = defineStore("restaurant", () => {
   };
 
   const fetchReservations = async (date: string) =>
-    (await api.get<Reservation[]>(`${BASE}/reservations${toQueryString({ date })}`)).data;
-  const saveReservation = async (payload: Partial<ReservationPayload>, id?: string) =>
     (
-      id
-        ? await api.patch<Reservation>(`${BASE}/reservations/${id}`, payload)
-        : await api.post<Reservation>(`${BASE}/reservations`, payload)
+      await api.get<Reservation[]>(
+        `${BASE}/reservations${toQueryString({ date })}`,
+      )
+    ).data;
+  const saveReservation = async (
+    payload: Partial<ReservationPayload>,
+    id?: string,
+  ) =>
+    (id
+      ? await api.patch<Reservation>(`${BASE}/reservations/${id}`, payload)
+      : await api.post<Reservation>(`${BASE}/reservations`, payload)
     ).data;
   const setReservationStatus = async (id: string, status: ReservationStatus) =>
-    (await api.post<Reservation>(`${BASE}/reservations/${id}/status`, { status })).data;
+    (
+      await api.post<Reservation>(`${BASE}/reservations/${id}/status`, {
+        status,
+      })
+    ).data;
 
   const recordWaste = async (payload: {
     warehouseId: string;
@@ -92,7 +111,11 @@ export const useRestaurantStore = defineStore("restaurant", () => {
       )
     ).data;
   const service = async (from: string, to: string) =>
-    (await api.get<ServiceReport>(`${BASE}/reports/service${toQueryString({ from, to })}`)).data;
+    (
+      await api.get<ServiceReport>(
+        `${BASE}/reports/service${toQueryString({ from, to })}`,
+      )
+    ).data;
 
   const reset = () => {
     groups.value = [];

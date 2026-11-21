@@ -117,13 +117,17 @@ export const createShift = (state: PosState, connection: PosConnection) => {
       ? returns.value.filter((r) => r.shiftId === shift.value!.id)
       : [];
     const cashRefunds = sumAmounts(
-      ownReturns.filter((r) => r.refundMethod === "cash").map((r) => r.refundAmount),
+      ownReturns
+        .filter((r) => r.refundMethod === "cash")
+        .map((r) => r.refundAmount),
     );
     const moves = shift.value
       ? cashMoves.value.filter((move) => move.shiftId === shift.value!.id)
       : [];
     const moved = (type: CashMove["type"]) =>
-      sumAmounts(moves.filter((move) => move.type === type).map((move) => move.amount));
+      sumAmounts(
+        moves.filter((move) => move.type === type).map((move) => move.amount),
+      );
     const cashIn = moved("in");
     const cashOut = moved("out");
     return {
@@ -192,7 +196,11 @@ export const createShift = (state: PosState, connection: PosConnection) => {
    */
   const logAudit = async (
     action: AuditAction,
-    info: { amount?: number; details?: string; approvedBy?: string | null } = {},
+    info: {
+      amount?: number;
+      details?: string;
+      approvedBy?: string | null;
+    } = {},
   ) => {
     if (!device.value) return;
     const id = newUuid();
@@ -216,7 +224,9 @@ export const createShift = (state: PosState, connection: PosConnection) => {
   };
 
   // ─── موافقة المشرف ──────────────────────────────────────────────────────────
-  const supervisors = computed(() => cashiers.value.filter((c) => c.isSupervisor));
+  const supervisors = computed(() =>
+    cashiers.value.filter((c) => c.isSupervisor),
+  );
 
   /**
    * هل تحتاج العملية رقم مشرف السري؟ شركة لم تعرّف كاشيرات لا تستخدم الأرقام
@@ -307,7 +317,10 @@ export const createShift = (state: PosState, connection: PosConnection) => {
    * يفتح الدرج. `manual` = بلا بيع ولا مرتجع: يُعدّ على الوردية ويظهر
    * للمدير عند التقفيل.
    */
-  const openDrawer = async (manual = false, approvedBy: string | null = null) => {
+  const openDrawer = async (
+    manual = false,
+    approvedBy: string | null = null,
+  ) => {
     if (drawer.value.mode === "off") return;
     await kickDrawer(drawer.value);
     if (manual && shift.value) {

@@ -8,7 +8,11 @@
         <p>تحديد أوقات الدوام وفترات السماحية لكل وقت دوام</p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'create_shift'" class="btn btn--primary" @click="openCreateModal">
+        <button
+          v-can="'create_shift'"
+          class="btn btn--primary"
+          @click="openCreateModal"
+        >
           <Plus :size="18" />
           <span>إضافة وقد دوام جديد</span>
         </button>
@@ -25,7 +29,11 @@
       <div class="empty-state">
         <Clock :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد اوقات دوام مسجلة بعد</div>
-        <button v-can="'create_shift'" class="btn btn--primary mt-4" @click="openCreateModal">
+        <button
+          v-can="'create_shift'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal"
+        >
           <Plus :size="16" />
           إضافة وقت دوام جديد
         </button>
@@ -163,18 +171,28 @@
               <div class="form-group">
                 <label>أيام الراحة</label>
                 <select v-model="offDaysMode" class="form-select">
-                  <option value="company">أيام راحة الشركة (من إعدادات الحضور)</option>
+                  <option value="company">
+                    أيام راحة الشركة (من إعدادات الحضور)
+                  </option>
                   <option value="custom">أيام خاصة بهذه الوردية</option>
                 </select>
                 <div v-if="offDaysMode === 'custom'" class="days">
-                  <label v-for="d in WEEKDAYS" :key="d.value" class="checkbox-label day">
-                    <input v-model="form.offDays" type="checkbox" :value="d.value" />
+                  <label
+                    v-for="d in WEEKDAYS"
+                    :key="d.value"
+                    class="checkbox-label day"
+                  >
+                    <input
+                      v-model="form.offDays"
+                      type="checkbox"
+                      :value="d.value"
+                    />
                     {{ d.label }}
                   </label>
                 </div>
                 <small class="form-hint">
-                  لا يُحسب فيها غياب، والعمل فيها إضافي كله. بلا أي يوم = الوردية
-                  تعمل كل الأسبوع (حراسة مثلاً).
+                  لا يُحسب فيها غياب، والعمل فيها إضافي كله. بلا أي يوم =
+                  الوردية تعمل كل الأسبوع (حراسة مثلاً).
                 </small>
               </div>
 

@@ -114,7 +114,8 @@ export const createConnection = (
 
   /** ok ← warn (تنبيه) ← blocked (لا وردية جديدة حتى تتصل الشاشة) */
   const offlineState = computed<"ok" | "warn" | "blocked">(() => {
-    if (offlineHours.value >= offlinePolicy.value.blockAfterHours) return "blocked";
+    if (offlineHours.value >= offlinePolicy.value.blockAfterHours)
+      return "blocked";
     if (offlineHours.value >= offlinePolicy.value.warnAfterHours) return "warn";
     return "ok";
   });
@@ -164,7 +165,8 @@ export const createConnection = (
         await setBound(false);
       } else {
         online.value = true;
-        lastError.value = error instanceof Error ? error.message : "خطأ غير متوقع";
+        lastError.value =
+          error instanceof Error ? error.message : "خطأ غير متوقع";
         if (error instanceof PosRequestError && error.status === 409) {
           // الجهاز مربوط بشاشة أخرى (أو فُكّ ربطه): نعيد محاولة الربط في
           // الدورة التالية، والمبيعات تبقى محفوظة هنا حتى يُحسم الأمر
@@ -243,7 +245,9 @@ export const createConnection = (
       for (const row of data.stock) nextStock[row.productId] = row.quantity;
     }
     const nextBalances = data.customerBalances
-      ? Object.fromEntries(data.customerBalances.map((row) => [row.id, row.balance]))
+      ? Object.fromEntries(
+          data.customerBalances.map((row) => [row.id, row.balance]),
+        )
       : serverBalances.value;
     // العدّاد لا ينقص أبداً: الأعلى بين الجهاز والسيرفر (جهاز أُعيدت تهيئته)
     const nextCounter = Math.max(counter.value, data.device.lastCounter);
@@ -254,7 +258,11 @@ export const createConnection = (
 
     // وردية مفتوحة في السيرفر وليست على الجهاز (مُسحت بياناته): نستعيدها
     let nextShift = shift.value;
-    if (!nextShift && data.openShift && !hasQueued("shift.close", data.openShift.id)) {
+    if (
+      !nextShift &&
+      data.openShift &&
+      !hasQueued("shift.close", data.openShift.id)
+    ) {
       nextShift = {
         id: data.openShift.id,
         openedAt: data.openShift.openedAt,
@@ -355,13 +363,16 @@ export const createConnection = (
       if (batch.length === 0) return true;
 
       const response = await guarded(() =>
-        deviceApi().post<{ results: SyncResult[]; lastCounter: number }>("/sync", {
-          operations: batch.map((e) => ({
-            id: e.id,
-            type: e.type,
-            payload: e.payload,
-          })),
-        }),
+        deviceApi().post<{ results: SyncResult[]; lastCounter: number }>(
+          "/sync",
+          {
+            operations: batch.map((e) => ({
+              id: e.id,
+              type: e.type,
+              payload: e.payload,
+            })),
+          },
+        ),
       );
       if (!response) return false;
 
@@ -458,7 +469,9 @@ export const createConnection = (
   /** يربط هذا المتصفح بجهاز كاشير وينزّل بياناته (يحتاج إنترنت) */
   const bindDevice = async (target: PosDevice) => {
     if (outbox.value.length > 0) {
-      throw new Error("في الجهاز مبيعات لم تُرفع بعد — ارفعها قبل تغيير الجهاز");
+      throw new Error(
+        "في الجهاز مبيعات لم تُرفع بعد — ارفعها قبل تغيير الجهاز",
+      );
     }
     // الربط أولاً: جهاز مربوط بشاشة أخرى يُرفض هنا قبل مسح أي شيء
     const { deviceKey: key } = await api.post<BoundPosDevice>(

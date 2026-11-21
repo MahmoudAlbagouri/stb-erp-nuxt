@@ -45,8 +45,17 @@
           maxlength="100"
           placeholder="مثال: عيد الفطر"
         />
-        <StbDateInput v-model="holidayForm.startDate" type="date" class="form-input" required />
-        <StbDateInput v-model="holidayForm.endDate" type="date" class="form-input" />
+        <StbDateInput
+          v-model="holidayForm.startDate"
+          type="date"
+          class="form-input"
+          required
+        />
+        <StbDateInput
+          v-model="holidayForm.endDate"
+          type="date"
+          class="form-input"
+        />
         <button class="btn btn--primary" :disabled="addingHoliday">
           <span v-if="addingHoliday" class="spinner spinner--sm" />
           <Plus v-else :size="16" />
@@ -61,7 +70,8 @@
         <li v-for="h in holidays" :key="h.id">
           <span class="holidays__name">{{ h.name }}</span>
           <span class="holidays__dates" dir="ltr">
-            {{ h.startDate }}{{ h.endDate !== h.startDate ? ` → ${h.endDate}` : "" }}
+            {{ h.startDate
+            }}{{ h.endDate !== h.startDate ? ` → ${h.endDate}` : "" }}
           </span>
           <button
             v-if="canManage"
@@ -84,15 +94,27 @@
         بالبصمة). الإجازات المعتمدة والراحة والعطلات ليست غياباً.
       </p>
       <label class="checkbox-label">
-        <input v-model="form.deductAbsence" type="checkbox" :disabled="!canManage" />
+        <input
+          v-model="form.deductAbsence"
+          type="checkbox"
+          :disabled="!canManage"
+        />
         خصم أيام الغياب (أجر اليوم = الأساسي ÷ 30)
       </label>
       <label class="checkbox-label">
-        <input v-model="form.deductLateness" type="checkbox" :disabled="!canManage" />
+        <input
+          v-model="form.deductLateness"
+          type="checkbox"
+          :disabled="!canManage"
+        />
         خصم التأخير والانصراف المبكر بعد فترة السماح (بأجر الدقيقة)
       </label>
       <label class="checkbox-label">
-        <input v-model="form.payOvertime" type="checkbox" :disabled="!canManage" />
+        <input
+          v-model="form.payOvertime"
+          type="checkbox"
+          :disabled="!canManage"
+        />
         صرف أجر الساعات الإضافية
       </label>
       <div class="grid-2">
@@ -130,18 +152,26 @@
     <section class="card section">
       <h3><Fingerprint :size="18" /> نسخ البصمات بين أجهزة ZKTeco</h3>
       <label class="checkbox-label">
-        <input v-model="form.syncBiometrics" type="checkbox" :disabled="!canManage" />
+        <input
+          v-model="form.syncBiometrics"
+          type="checkbox"
+          :disabled="!canManage"
+        />
         الموظف يسجّل بصمته على جهاز واحد، فتصل لباقي أجهزة الشركة
       </label>
       <p class="hint">
-        يحفظ السيرفر قوالب البصمات (لا صورها) مشفّرة، لموظفين مربوطين فقط، ويرسلها
-        للأجهزة الأخرى. إيقافه يحذف كل القوالب من السيرفر فوراً. بصمات بين موديلات
-        مختلفة قد لا تتوافق — الجهاز يرفض ما لا يقبله دون ضرر.
+        يحفظ السيرفر قوالب البصمات (لا صورها) مشفّرة، لموظفين مربوطين فقط،
+        ويرسلها للأجهزة الأخرى. إيقافه يحذف كل القوالب من السيرفر فوراً. بصمات
+        بين موديلات مختلفة قد لا تتوافق — الجهاز يرفض ما لا يقبله دون ضرر.
       </p>
     </section>
 
     <div v-if="canManage" class="save-bar">
-      <button class="btn btn--primary" :disabled="saving || !dirty" @click="save">
+      <button
+        class="btn btn--primary"
+        :disabled="saving || !dirty"
+        @click="save"
+      >
         <span v-if="saving" class="spinner spinner--sm" />
         <span v-else>حفظ الإعدادات</span>
       </button>
@@ -210,9 +240,10 @@ const save = async () => {
   }
   saving.value = true;
   try {
-    const { tenantId: _ignored, ...payload } = form.value as AttendanceSettings & {
-      tenantId?: string;
-    };
+    const { tenantId: _ignored, ...payload } =
+      form.value as AttendanceSettings & {
+        tenantId?: string;
+      };
     const updated = await store.updateSettings(payload);
     saved.value = structuredClone(updated);
     form.value = structuredClone(updated);

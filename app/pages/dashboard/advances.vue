@@ -29,7 +29,11 @@
         </button>
 
         <!-- زر طلب سلفة شخصي -->
-        <button v-can="'request_advance_self'" class="btn btn--primary" @click="openCreateModal(false)">
+        <button
+          v-can="'request_advance_self'"
+          class="btn btn--primary"
+          @click="openCreateModal(false)"
+        >
           <Plus :size="18" /><span>طلب سلفة جديدة</span>
         </button>
 
@@ -57,7 +61,9 @@
       <div class="stat-card stat-approved">
         <div class="stat-card__icon"><Banknote :size="24" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ totalAmount }} {{ currencyLabel() }}</div>
+          <div class="stat-card__value">
+            {{ totalAmount }} {{ currencyLabel() }}
+          </div>
           <div class="stat-card__label">إجمالي المعتمدة</div>
         </div>
       </div>
@@ -81,7 +87,11 @@
         <HandCoins :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات سلف</div>
         <div class="empty-state__text">ابدأ بتقديم طلب سلفة جديد</div>
-        <button v-can="'request_advance_self'" class="btn btn--primary mt-4" @click="openCreateModal(false)">
+        <button
+          v-can="'request_advance_self'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal(false)"
+        >
           <Plus :size="16" /> طلب سلفة
         </button>
       </div>
@@ -166,10 +176,18 @@
                         v-if="activeExportMenu === adv.id"
                         class="dropdown-menu"
                       >
-                        <button v-can="'view_advances'" v-feature="'reports_export'" @click="downloadAdvance(adv.id, 'pdf')">
+                        <button
+                          v-can="'view_advances'"
+                          v-feature="'reports_export'"
+                          @click="downloadAdvance(adv.id, 'pdf')"
+                        >
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button v-can="'view_advances'" v-feature="'reports_export'" @click="downloadAdvance(adv.id, 'excel')">
+                        <button
+                          v-can="'view_advances'"
+                          v-feature="'reports_export'"
+                          @click="downloadAdvance(adv.id, 'excel')"
+                        >
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>
@@ -198,9 +216,7 @@
                   <!-- ✅ زر الصرف الاستثنائي المباشر: سلف معتمدة وغير مصروفة سلفاً -->
                   <button
                     v-can="'approve_advance'"
-                    v-if="
-                      adv.status === 'approved' && !adv.isDisbursed
-                    "
+                    v-if="adv.status === 'approved' && !adv.isDisbursed"
                     class="btn btn--warning-outline btn--sm"
                     @click="handleDisburse(adv.id)"
                     :disabled="disbursingId === adv.id"

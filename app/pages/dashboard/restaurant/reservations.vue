@@ -7,23 +7,49 @@
         <p>حجوزات اليوم بطاولاتها، وما حدث فعلاً: جلس، أنهى، ألغى، لم يحضر</p>
       </div>
       <div class="page-header__actions">
-        <StbDateInput v-model="date" class="form-input" @update:model-value="load" />
-        <button v-can="'manage_reservations'" class="btn btn--primary" @click="open()"><Plus :size="18" /> حجز</button>
+        <StbDateInput
+          v-model="date"
+          class="form-input"
+          @update:model-value="load"
+        />
+        <button
+          v-can="'manage_reservations'"
+          class="btn btn--primary"
+          @click="open()"
+        >
+          <Plus :size="18" /> حجز
+        </button>
       </div>
     </div>
 
-    <div v-if="loading" class="empty-state"><div class="spinner spinner--lg" /></div>
-    <div v-else-if="!rows.length" class="card"><div class="empty-state">
-      <CalendarCheck :size="44" class="empty-state__icon" />
-      <div class="empty-state__title">لا حجوزات في هذا اليوم</div>
-    </div></div>
+    <div v-if="loading" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
+    <div v-else-if="!rows.length" class="card">
+      <div class="empty-state">
+        <CalendarCheck :size="44" class="empty-state__icon" />
+        <div class="empty-state__title">لا حجوزات في هذا اليوم</div>
+      </div>
+    </div>
     <div v-else class="card doc-table-card">
       <div class="table-responsive">
         <table class="data-table">
-          <thead><tr><th>الوقت</th><th>الضيف</th><th>العدد</th><th>الطاولة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <thead>
+            <tr>
+              <th>الوقت</th>
+              <th>الضيف</th>
+              <th>العدد</th>
+              <th>الطاولة</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
           <tbody>
             <tr v-for="r in rows" :key="r.id">
-              <td class="doc-num">{{ formatTime(r.reservedAt) }} <small>({{ r.durationMinutes }} د)</small></td>
+              <td class="doc-num">
+                {{ formatTime(r.reservedAt) }}
+                <small>({{ r.durationMinutes }} د)</small>
+              </td>
               <td>
                 <div class="doc-cell">
                   <span class="doc-cell__main">{{ r.customerName }}</span>
@@ -32,16 +58,44 @@
               </td>
               <td class="doc-num">{{ r.guestCount }}</td>
               <td>{{ r.table?.name ?? "—" }}</td>
-              <td><span :class="['badge', `doc-status--${STATUS[r.status].tone}`]">{{ STATUS[r.status].label }}</span></td>
+              <td>
+                <span
+                  :class="['badge', `doc-status--${STATUS[r.status].tone}`]"
+                  >{{ STATUS[r.status].label }}</span
+                >
+              </td>
               <td>
                 <div v-can="'manage_reservations'" class="doc-actions">
                   <template v-if="r.status === 'booked'">
-                    <button class="btn btn--sm btn--primary" @click="setStatus(r, 'seated')">جلس</button>
-                    <button class="btn btn--sm btn--ghost" @click="open(r)"><Pencil :size="14" /></button>
-                    <button class="btn btn--sm btn--ghost" @click="setStatus(r, 'no_show')">لم يحضر</button>
-                    <button class="btn btn--sm btn--danger" @click="setStatus(r, 'cancelled')">إلغاء</button>
+                    <button
+                      class="btn btn--sm btn--primary"
+                      @click="setStatus(r, 'seated')"
+                    >
+                      جلس
+                    </button>
+                    <button class="btn btn--sm btn--ghost" @click="open(r)">
+                      <Pencil :size="14" />
+                    </button>
+                    <button
+                      class="btn btn--sm btn--ghost"
+                      @click="setStatus(r, 'no_show')"
+                    >
+                      لم يحضر
+                    </button>
+                    <button
+                      class="btn btn--sm btn--danger"
+                      @click="setStatus(r, 'cancelled')"
+                    >
+                      إلغاء
+                    </button>
                   </template>
-                  <button v-else-if="r.status === 'seated'" class="btn btn--sm btn--success" @click="setStatus(r, 'completed')">أنهى</button>
+                  <button
+                    v-else-if="r.status === 'seated'"
+                    class="btn btn--sm btn--success"
+                    @click="setStatus(r, 'completed')"
+                  >
+                    أنهى
+                  </button>
                 </div>
               </td>
             </tr>
@@ -55,21 +109,67 @@
         <div v-if="form" class="modal-overlay" @click.self="form = null">
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
-              <h3><CalendarCheck :size="20" class="doc-modal__icon" /> {{ form.id ? "تعديل حجز" : "حجز جديد" }}</h3>
-              <button class="btn btn--icon btn--ghost" @click="form = null"><X :size="20" /></button>
+              <h3>
+                <CalendarCheck :size="20" class="doc-modal__icon" />
+                {{ form.id ? "تعديل حجز" : "حجز جديد" }}
+              </h3>
+              <button class="btn btn--icon btn--ghost" @click="form = null">
+                <X :size="20" />
+              </button>
             </div>
             <form class="doc-form" @submit.prevent="save">
               <div class="doc-grid">
-                <div class="form-group"><label>الاسم *</label><input v-model.trim="form.customerName" class="form-input" required maxlength="150" /></div>
-                <div class="form-group"><label>الجوال</label><input v-model.trim="form.phone" class="form-input" dir="ltr" maxlength="30" /></div>
-                <div class="form-group"><label>عدد الضيوف *</label><StbNumberInput v-model.number="form.guestCount" class="form-input" min="1" required /></div>
-                <div class="form-group"><label>الوقت *</label><input v-model="form.time" type="time" class="form-input" required /></div>
-                <div class="form-group"><label>المدة (دقيقة)</label><StbNumberInput v-model.number="form.durationMinutes" class="form-input" min="15" /></div>
+                <div class="form-group">
+                  <label>الاسم *</label
+                  ><input
+                    v-model.trim="form.customerName"
+                    class="form-input"
+                    required
+                    maxlength="150"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>الجوال</label
+                  ><input
+                    v-model.trim="form.phone"
+                    class="form-input"
+                    dir="ltr"
+                    maxlength="30"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>عدد الضيوف *</label
+                  ><StbNumberInput
+                    v-model.number="form.guestCount"
+                    class="form-input"
+                    min="1"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>الوقت *</label
+                  ><input
+                    v-model="form.time"
+                    type="time"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>المدة (دقيقة)</label
+                  ><StbNumberInput
+                    v-model.number="form.durationMinutes"
+                    class="form-input"
+                    min="15"
+                  />
+                </div>
                 <div class="form-group">
                   <label>الطاولة</label>
                   <select v-model="form.tableId" class="form-select">
                     <option value="">بدون</option>
-                    <option v-for="t in tables" :key="t.id" :value="t.id">{{ t.name }} ({{ t.seats }})</option>
+                    <option v-for="t in tables" :key="t.id" :value="t.id">
+                      {{ t.name }} ({{ t.seats }})
+                    </option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -81,11 +181,26 @@
                     <option value="other">آخر</option>
                   </select>
                 </div>
-                <div class="form-group doc-grid__full"><label>ملاحظة</label><input v-model.trim="form.note" class="form-input" maxlength="500" /></div>
+                <div class="form-group doc-grid__full">
+                  <label>ملاحظة</label
+                  ><input
+                    v-model.trim="form.note"
+                    class="form-input"
+                    maxlength="500"
+                  />
+                </div>
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="form = null">إلغاء</button>
-                <button type="submit" class="btn btn--primary" :disabled="busy">حفظ</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="form = null"
+                >
+                  إلغاء
+                </button>
+                <button type="submit" class="btn btn--primary" :disabled="busy">
+                  حفظ
+                </button>
               </div>
             </form>
           </div>
@@ -123,7 +238,10 @@ const loading = ref(true);
 const busy = ref(false);
 
 const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleTimeString("ar", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 const load = async () => {
   loading.value = true;
@@ -201,7 +319,11 @@ const setStatus = async (r: Reservation, status: ReservationStatus) => {
 onMounted(async () => {
   load();
   try {
-    tables.value = (await api.get<{ id: string; name: string; seats: number }[]>("/pos/restaurant/tables")).data;
+    tables.value = (
+      await api.get<{ id: string; name: string; seats: number }[]>(
+        "/pos/restaurant/tables",
+      )
+    ).data;
   } catch {
     // بلا طاولات: الحجز بلا طاولة
   }

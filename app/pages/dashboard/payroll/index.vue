@@ -7,7 +7,11 @@
         <p>إدارة وإنشاء وتصدير كشوف الرواتب الشهرية</p>
       </div>
       <div class="page-header__actions">
-        <button v-can="'generate_payroll'" class="btn btn--primary" @click="showGenerateModal = true">
+        <button
+          v-can="'generate_payroll'"
+          class="btn btn--primary"
+          @click="showGenerateModal = true"
+        >
           <CalendarPlus :size="16" />
           إنشاء مسير جديد
         </button>

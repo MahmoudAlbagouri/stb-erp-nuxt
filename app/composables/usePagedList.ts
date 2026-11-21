@@ -46,5 +46,14 @@ export const usePagedList = <T>(
   const reloadAfterRemoval = () =>
     load(rows.value.length === 1 ? Math.max(page.value - 1, 1) : page.value);
 
-  return { rows, total, page, totalPages, loading, ready, load, reloadAfterRemoval };
+  return {
+    rows,
+    total,
+    page,
+    totalPages,
+    loading,
+    ready,
+    load,
+    reloadAfterRemoval,
+  };
 };

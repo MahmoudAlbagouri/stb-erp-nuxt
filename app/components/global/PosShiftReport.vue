@@ -10,14 +10,21 @@
       <h1>{{ report.company }}</h1>
       <p v-if="report.branch">{{ report.branch }}</p>
       <h2>
-        {{ report.kind === "Z" ? "تقرير تقفيل الوردية (Z)" : "ملخص الوردية (X)" }}
+        {{
+          report.kind === "Z" ? "تقرير تقفيل الوردية (Z)" : "ملخص الوردية (X)"
+        }}
       </h2>
 
       <div class="shift-report__rows">
-        <div><span>الجهاز</span><span>{{ report.device }}</span></div>
-        <div><span>الكاشير</span><span>{{ report.cashier || "—" }}</span></div>
         <div>
-          <span>فُتحت</span><span dir="ltr">{{ formatDateTime(report.openedAt) }}</span>
+          <span>الجهاز</span><span>{{ report.device }}</span>
+        </div>
+        <div>
+          <span>الكاشير</span><span>{{ report.cashier || "—" }}</span>
+        </div>
+        <div>
+          <span>فُتحت</span
+          ><span dir="ltr">{{ formatDateTime(report.openedAt) }}</span>
         </div>
         <div>
           <span>{{ report.kind === "Z" ? "قُفّلت" : "وقت التقرير" }}</span>
@@ -28,11 +35,16 @@
       <div class="shift-report__section">المبيعات</div>
       <div class="shift-report__rows">
         <div>
-          <span>عدد الفواتير</span><span>{{ formatNumber(report.invoicesCount) }}</span>
+          <span>عدد الفواتير</span
+          ><span>{{ formatNumber(report.invoicesCount) }}</span>
         </div>
-        <div><span>نقداً</span><span dir="ltr">{{ formatMoney(report.cash) }}</span></div>
         <div>
-          <span>شبكة / بطاقة</span><span dir="ltr">{{ formatMoney(report.card) }}</span>
+          <span>نقداً</span
+          ><span dir="ltr">{{ formatMoney(report.cash) }}</span>
+        </div>
+        <div>
+          <span>شبكة / بطاقة</span
+          ><span dir="ltr">{{ formatMoney(report.card) }}</span>
         </div>
         <div v-if="report.courier">
           <span>توصيل (يُحصَّل مع الطيار)</span>
@@ -63,17 +75,20 @@
           <span dir="ltr">{{ formatMoney(report.openingCash) }}</span>
         </div>
         <div>
-          <span>+ مبيعات نقدية</span><span dir="ltr">{{ formatMoney(report.cash) }}</span>
+          <span>+ مبيعات نقدية</span
+          ><span dir="ltr">{{ formatMoney(report.cash) }}</span>
         </div>
         <div v-if="report.cashRefunds">
           <span>− رُدّ نقداً</span>
           <span dir="ltr">{{ formatMoney(report.cashRefunds) }}</span>
         </div>
         <div v-if="report.cashIn">
-          <span>+ إيداعات</span><span dir="ltr">{{ formatMoney(report.cashIn) }}</span>
+          <span>+ إيداعات</span
+          ><span dir="ltr">{{ formatMoney(report.cashIn) }}</span>
         </div>
         <div v-if="report.cashOut">
-          <span>− مسحوبات</span><span dir="ltr">{{ formatMoney(report.cashOut) }}</span>
+          <span>− مسحوبات</span
+          ><span dir="ltr">{{ formatMoney(report.cashOut) }}</span>
         </div>
         <div class="is-strong">
           <span>المفترض في الدرج</span>
@@ -105,7 +120,9 @@
         </div>
       </template>
 
-      <p v-if="report.note" class="shift-report__rows">ملاحظة: {{ report.note }}</p>
+      <p v-if="report.note" class="shift-report__rows">
+        ملاحظة: {{ report.note }}
+      </p>
 
       <div v-if="report.kind === 'Z'" class="shift-report__sign">
         <span>الكاشير</span>
@@ -174,9 +191,9 @@ const print = async (data: ShiftReportData) => {
   await nextTick();
   // الشعار يُرسم قبل فتح الطباعة
   await Promise.all(
-    Array.from(document.querySelectorAll<HTMLImageElement>(".shift-report img")).map(
-      (img) => img.decode?.().catch(() => {}),
-    ),
+    Array.from(
+      document.querySelectorAll<HTMLImageElement>(".shift-report img"),
+    ).map((img) => img.decode?.().catch(() => {})),
   );
   window.print();
   style.remove();

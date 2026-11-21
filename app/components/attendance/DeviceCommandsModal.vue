@@ -20,7 +20,10 @@
             </button>
           </div>
 
-          <p v-if="device && !device.handshakeAt" class="commands-hint commands-hint--warn">
+          <p
+            v-if="device && !device.handshakeAt"
+            class="commands-hint commands-hint--warn"
+          >
             <Info :size="14" />
             الجهاز لم يعرّف نفسه منذ أُضيف، فلا تُعرف صيغة أوامره بعد: يُطلب منه
             ذلك تلقائياً ثم تُرسل أوامره. إن طال الانتظار أعد تشغيل الجهاز.
@@ -35,7 +38,9 @@
           </div>
 
           <div v-else-if="!commands.length" class="empty-state">
-            <div class="empty-state__title">لم يُرسل لهذا الجهاز أي أمر بعد</div>
+            <div class="empty-state__title">
+              لم يُرسل لهذا الجهاز أي أمر بعد
+            </div>
           </div>
 
           <div v-else class="table-responsive">
@@ -61,7 +66,8 @@
                     >
                       {{ STATUS[cmd.status].label }}
                       <template v-if="cmd.status === 'failed'">
-                        (<span dir="ltr">{{ cmd.returnCode }}</span>)
+                        (<span dir="ltr">{{ cmd.returnCode }}</span
+                        >)
                       </template>
                     </span>
                   </td>
@@ -145,7 +151,7 @@ const describe = (cmd: DeviceCommandView) => {
 };
 
 const errorHint = (code: number | null) =>
-  code != null && code < 0 ? ERROR_HINTS[code] ?? `رمز الخطأ ${code}` : "";
+  code != null && code < 0 ? (ERROR_HINTS[code] ?? `رمز الخطأ ${code}`) : "";
 
 const load = async () => {
   if (!props.device) return;

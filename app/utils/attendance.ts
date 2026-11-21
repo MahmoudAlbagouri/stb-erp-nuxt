@@ -33,7 +33,10 @@ export const ATTENDANCE_STATUS: Record<
   present: { label: "حاضر", badge: "badge--active" },
   late: { label: "متأخر", badge: "badge--pending" },
   early_leave: { label: "انصراف مبكر", badge: "badge--pending" },
-  late_and_early_leave: { label: "متأخر ومنصرف مبكراً", badge: "badge--pending" },
+  late_and_early_leave: {
+    label: "متأخر ومنصرف مبكراً",
+    badge: "badge--pending",
+  },
   incomplete: { label: "بصمة واحدة", badge: "badge--system" },
   absent: { label: "غائب", badge: "badge--terminated" },
   on_leave: { label: "إجازة", badge: "badge--trial" },

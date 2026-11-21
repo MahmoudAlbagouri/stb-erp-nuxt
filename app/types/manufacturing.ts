@@ -265,7 +265,12 @@ export interface ProductionOrder {
   }[];
   timeLogs?: ProductionTimeLog[];
   transactions?: ProductionTransaction[];
-  costToDate?: { material: number; labor: number; overhead: number; total: number };
+  costToDate?: {
+    material: number;
+    labor: number;
+    overhead: number;
+    total: number;
+  };
 }
 
 export interface ProductionOrderPayload {
@@ -324,7 +329,12 @@ export interface CapacityRow {
   load: number;
   utilization: number;
   overloadedDays: number;
-  days: { date: string; available: number; load: number; utilization: number }[];
+  days: {
+    date: string;
+    available: number;
+    load: number;
+    utilization: number;
+  }[];
 }
 
 export interface PerformanceReport {

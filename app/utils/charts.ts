@@ -85,8 +85,10 @@ export const compactNumber = (value: number): string => {
  * نسبة التغير عن الفترة السابقة. null حين لا أساس للمقارنة (السابقة صفر):
  * "زيادة ∞%" ليست معلومة.
  */
-export const changeRatio = (current: number, previous: number): number | null =>
-  previous > 0 ? (current - previous) / previous : null;
+export const changeRatio = (
+  current: number,
+  previous: number,
+): number | null => (previous > 0 ? (current - previous) / previous : null);
 
 const ARABIC_MONTHS = [
   "يناير",

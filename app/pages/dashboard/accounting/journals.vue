@@ -37,17 +37,30 @@
           placeholder="رقم القيد أو بيانه أو رقم مستنده…"
           @input="onSearch"
         />
-        <select v-model="filters.sourceType" class="form-select" @change="list.load(1)">
+        <select
+          v-model="filters.sourceType"
+          class="form-select"
+          @change="list.load(1)"
+        >
           <option value="">كل المصادر</option>
-          <option v-for="(label, key) in JOURNAL_SOURCE_LABEL" :key="key" :value="key">
+          <option
+            v-for="(label, key) in JOURNAL_SOURCE_LABEL"
+            :key="key"
+            :value="key"
+          >
             {{ label }}
           </option>
         </select>
-        <StbDateInput v-model="filters.from" @update:model-value="list.load(1)" />
+        <StbDateInput
+          v-model="filters.from"
+          @update:model-value="list.load(1)"
+        />
         <StbDateInput v-model="filters.to" @update:model-value="list.load(1)" />
       </div>
 
-      <div v-if="!list.ready.value" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="!list.ready.value" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
       <div v-else-if="!list.rows.value.length" class="card">
         <div class="empty-state">
           <BookOpen :size="44" class="empty-state__icon" />
@@ -68,23 +81,46 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="e in list.rows.value" :key="e.id" class="clickable" @click="viewing = e.id">
-                  <td><code class="doc-code">{{ e.number }}</code></td>
+                <tr
+                  v-for="e in list.rows.value"
+                  :key="e.id"
+                  class="clickable"
+                  @click="viewing = e.id"
+                >
+                  <td>
+                    <code class="doc-code">{{ e.number }}</code>
+                  </td>
                   <td>
                     <span class="doc-num">{{ e.date }}</span>
-                    <span v-if="e.documentDate" class="doc-cell__sub" :title="`تاريخ المستند ${e.documentDate}`">
+                    <span
+                      v-if="e.documentDate"
+                      class="doc-cell__sub"
+                      :title="`تاريخ المستند ${e.documentDate}`"
+                    >
                       ({{ e.documentDate }})
                     </span>
                   </td>
                   <td>
                     {{ e.description }}
-                    <span v-if="e.reversedById" class="badge doc-status--cancelled">معكوس</span>
+                    <span
+                      v-if="e.reversedById"
+                      class="badge doc-status--cancelled"
+                      >معكوس</span
+                    >
                   </td>
                   <td>
-                    <span class="doc-cell__sub">{{ JOURNAL_SOURCE_LABEL[e.sourceType] }}</span>
-                    <code v-if="e.sourceRef" class="doc-code">{{ e.sourceRef }}</code>
+                    <span class="doc-cell__sub">{{
+                      JOURNAL_SOURCE_LABEL[e.sourceType]
+                    }}</span>
+                    <code v-if="e.sourceRef" class="doc-code">{{
+                      e.sourceRef
+                    }}</code>
                   </td>
-                  <td><span class="doc-num doc-num--strong">{{ formatMoney(e.total) }}</span></td>
+                  <td>
+                    <span class="doc-num doc-num--strong">{{
+                      formatMoney(e.total)
+                    }}</span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -109,7 +145,11 @@
           <div class="modal doc-modal entry-modal">
             <div class="modal__header">
               <h3><BookOpen :size="20" class="doc-modal__icon" /> قيد يدوي</h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeForm">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="closeForm"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -122,15 +162,20 @@
                 </div>
                 <div class="form-group entry-modal__wide">
                   <label>البيان *</label>
-                  <input v-model.trim="form.description" class="form-input" maxlength="500" required />
+                  <input
+                    v-model.trim="form.description"
+                    class="form-input"
+                    maxlength="500"
+                    required
+                  />
                 </div>
               </div>
 
               <div class="doc-note">
                 <Info :size="16" />
                 <span>
-                  حركات العملاء والموردين تُسجَّل بمستنداتها (سند قبض، سداد، مرتجع)
-                  لا بقيد يدوي — فيبقى كشف حساب كل منهم مطابقاً للدفاتر.
+                  حركات العملاء والموردين تُسجَّل بمستنداتها (سند قبض، سداد،
+                  مرتجع) لا بقيد يدوي — فيبقى كشف حساب كل منهم مطابقاً للدفاتر.
                 </span>
               </div>
 
@@ -143,20 +188,56 @@
                   <span v-if="branches.hasMany">الفرع</span>
                   <span />
                 </div>
-                <div v-for="(line, index) in form.lines" :key="line.key" class="doc-lines__row">
-                  <AccountSelect v-model="line.accountId" :accounts="store.accounts" postable required />
+                <div
+                  v-for="(line, index) in form.lines"
+                  :key="line.key"
+                  class="doc-lines__row"
+                >
+                  <AccountSelect
+                    v-model="line.accountId"
+                    :accounts="store.accounts"
+                    postable
+                    required
+                  />
                   <div>
                     <span class="doc-lines__label">مدين</span>
-                    <StbNumberInput v-model.number="line.debit" class="form-input" min="0" :step="moneyStep()" @input="line.credit = ''" />
+                    <StbNumberInput
+                      v-model.number="line.debit"
+                      class="form-input"
+                      min="0"
+                      :step="moneyStep()"
+                      @input="line.credit = ''"
+                    />
                   </div>
                   <div>
                     <span class="doc-lines__label">دائن</span>
-                    <StbNumberInput v-model.number="line.credit" class="form-input" min="0" :step="moneyStep()" @input="line.debit = ''" />
+                    <StbNumberInput
+                      v-model.number="line.credit"
+                      class="form-input"
+                      min="0"
+                      :step="moneyStep()"
+                      @input="line.debit = ''"
+                    />
                   </div>
-                  <input v-model.trim="line.description" class="form-input" maxlength="300" placeholder="اختياري" />
-                  <select v-if="branches.hasMany" v-model="line.branchId" class="form-select">
+                  <input
+                    v-model.trim="line.description"
+                    class="form-input"
+                    maxlength="300"
+                    placeholder="اختياري"
+                  />
+                  <select
+                    v-if="branches.hasMany"
+                    v-model="line.branchId"
+                    class="form-select"
+                  >
                     <option value="">—</option>
-                    <option v-for="b in branches.activeOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
+                    <option
+                      v-for="b in branches.activeOptions"
+                      :key="b.id"
+                      :value="b.id"
+                    >
+                      {{ b.name }}
+                    </option>
                   </select>
                   <button
                     type="button"
@@ -169,21 +250,42 @@
                   </button>
                 </div>
               </div>
-              <button type="button" class="btn btn--dashed btn--sm btn--full" @click="addLine">
+              <button
+                type="button"
+                class="btn btn--dashed btn--sm btn--full"
+                @click="addLine"
+              >
                 <Plus :size="14" /> سطر
               </button>
 
               <div class="totals" :class="{ 'is-off': !balanced }">
-                <span>مدين: <strong class="doc-num">{{ formatMoney(totals.debit) }}</strong></span>
-                <span>دائن: <strong class="doc-num">{{ formatMoney(totals.credit) }}</strong></span>
+                <span
+                  >مدين:
+                  <strong class="doc-num">{{
+                    formatMoney(totals.debit)
+                  }}</strong></span
+                >
+                <span
+                  >دائن:
+                  <strong class="doc-num">{{
+                    formatMoney(totals.credit)
+                  }}</strong></span
+                >
                 <span v-if="!balanced">
-                  الفرق: <strong class="doc-num">{{ formatMoney(Math.abs(totals.debit - totals.credit)) }}</strong>
+                  الفرق:
+                  <strong class="doc-num">{{
+                    formatMoney(Math.abs(totals.debit - totals.credit))
+                  }}</strong>
                 </span>
-                <span v-else-if="totals.debit > 0" class="doc-money--in">متوازن ✓</span>
+                <span v-else-if="totals.debit > 0" class="doc-money--in"
+                  >متوازن ✓</span
+                >
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeForm">إلغاء</button>
+                <button type="button" class="btn btn--ghost" @click="closeForm">
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -265,7 +367,9 @@ interface FormLine {
 
 let lineKey = 0;
 const LINE_COLS = computed(() =>
-  branches.hasMany ? "2.4fr 1fr 1fr 1.6fr 1fr auto" : "2.4fr 1fr 1fr 1.6fr auto",
+  branches.hasMany
+    ? "2.4fr 1fr 1fr 1.6fr 1fr auto"
+    : "2.4fr 1fr 1fr 1.6fr auto",
 );
 const blankLine = (): FormLine => ({
   key: ++lineKey,

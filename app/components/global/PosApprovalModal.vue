@@ -9,8 +9,14 @@
       <div v-if="open" class="modal-overlay" @click.self="cancel">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><ShieldCheck :size="20" class="doc-modal__icon" /> موافقة مشرف</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="cancel">
+            <h3>
+              <ShieldCheck :size="20" class="doc-modal__icon" /> موافقة مشرف
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="cancel"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -19,8 +25,8 @@
             <p class="pos-note">{{ reason }}</p>
 
             <p v-if="!pos.supervisors.length" class="form-error">
-              لا يوجد مشرف معرّف — عيّن كاشيراً «مشرفاً» من صفحة الكاشيرات في لوحة
-              التحكم.
+              لا يوجد مشرف معرّف — عيّن كاشيراً «مشرفاً» من صفحة الكاشيرات في
+              لوحة التحكم.
             </p>
             <template v-else>
               <div class="form-group">
@@ -57,7 +63,9 @@
             </template>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="cancel">إلغاء</button>
+              <button type="button" class="btn btn--ghost" @click="cancel">
+                إلغاء
+              </button>
               <button
                 type="submit"
                 class="btn btn--primary"
@@ -144,7 +152,8 @@ const request = (why: string): Promise<string | null> => {
   settle?.(null);
   reason.value = why;
   pin.value = "";
-  supervisorId.value = pos.supervisors.length === 1 ? pos.supervisors[0]!.id : "";
+  supervisorId.value =
+    pos.supervisors.length === 1 ? pos.supervisors[0]!.id : "";
   open.value = true;
   // نغمة مميزة يسمعها المشرف من مكانه فيأتي
   playSound("attention", "pos");

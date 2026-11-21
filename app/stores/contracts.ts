@@ -25,9 +25,7 @@ export const useContractsStore = defineStore("contracts", () => {
     }
   };
 
-  const create = async (
-    payload: CreateContractPayload,
-  ) => {
+  const create = async (payload: CreateContractPayload) => {
     const res = await api.post<Contract>("/contracts", payload);
     await fetchAll();
     return res.data;

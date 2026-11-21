@@ -78,14 +78,20 @@
             </thead>
             <tbody>
               <tr v-for="r in list.rows.value" :key="r.id">
-                <td><code class="doc-code">{{ r.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ r.number }}</code>
+                </td>
                 <td>
                   <div class="doc-cell">
                     <span class="doc-cell__main">{{ r.supplier?.name }}</span>
-                    <span v-if="r.reason" class="doc-cell__sub">{{ r.reason }}</span>
+                    <span v-if="r.reason" class="doc-cell__sub">{{
+                      r.reason
+                    }}</span>
                   </div>
                 </td>
-                <td><code class="doc-code">{{ r.invoice?.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ r.invoice?.number }}</code>
+                </td>
                 <td>
                   <span class="doc-num">{{ formatDate(r.returnDate) }}</span>
                 </td>
@@ -170,11 +176,17 @@
               <div class="doc-info">
                 <div class="doc-cell">
                   <span class="doc-cell__sub">المورد</span>
-                  <span class="doc-cell__main">{{ details.supplier?.name }}</span>
+                  <span class="doc-cell__main">{{
+                    details.supplier?.name
+                  }}</span>
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">من فاتورة</span>
-                  <span><code class="doc-code">{{ details.invoice?.number }}</code></span>
+                  <span
+                    ><code class="doc-code">{{
+                      details.invoice?.number
+                    }}</code></span
+                  >
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">المخزن</span>
@@ -182,7 +194,9 @@
                 </div>
                 <div class="doc-cell">
                   <span class="doc-cell__sub">التاريخ</span>
-                  <span class="doc-num">{{ formatDate(details.returnDate) }}</span>
+                  <span class="doc-num">{{
+                    formatDate(details.returnDate)
+                  }}</span>
                 </div>
               </div>
               <p v-if="details.reason" class="doc-hint">
@@ -216,7 +230,9 @@
                   </div>
                   <div>
                     <span class="doc-lines__label">قبل الضريبة</span>
-                    <span class="doc-money">{{ formatCurrency(line.subtotal) }}</span>
+                    <span class="doc-money">{{
+                      formatCurrency(line.subtotal)
+                    }}</span>
                   </div>
                   <div>
                     <span class="doc-lines__label">الإجمالي</span>
@@ -230,20 +246,30 @@
               <div class="doc-totals doc-totals--box">
                 <div>
                   <span>قبل الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(details.subtotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.subtotal)
+                  }}</span>
                 </div>
                 <div>
                   <span>الضريبة</span>
-                  <span class="doc-money">{{ formatCurrency(details.taxTotal) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.taxTotal)
+                  }}</span>
                 </div>
                 <div class="is-grand">
                   <span>إجمالي المرتجع</span>
-                  <span class="doc-money">{{ formatCurrency(details.total) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(details.total)
+                  }}</span>
                 </div>
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="details = null">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="details = null"
+                >
                   إغلاق
                 </button>
               </div>
@@ -278,10 +304,7 @@ import {
 import { usePurchasingStore } from "@/stores/purchasing";
 import { usePagedList } from "@/composables/usePagedList";
 import { useToast } from "@/composables/useToast";
-import type {
-  PurchaseReturn,
-  PurchaseReturnStatus,
-} from "@/types/purchasing";
+import type { PurchaseReturn, PurchaseReturnStatus } from "@/types/purchasing";
 
 definePageMeta({ middleware: "auth" });
 

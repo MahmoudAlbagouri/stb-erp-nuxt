@@ -30,7 +30,11 @@
           <FileText v-else :size="18" /><span>PDF</span>
         </button>
 
-        <button v-can="'create_bonus'" class="btn btn--primary" @click="openModal()">
+        <button
+          v-can="'create_bonus'"
+          class="btn btn--primary"
+          @click="openModal()"
+        >
           <Plus :size="16" /> تسجيل مكافأة جديدة
         </button>
       </div>
@@ -72,7 +76,11 @@
         <div class="empty-state__text">
           ابدأ بتسجيل أول مكافأة تشجيعية لموظفيك
         </div>
-        <button v-can="'create_bonus'" class="btn btn--primary mt-4" @click="openModal()">
+        <button
+          v-can="'create_bonus'"
+          class="btn btn--primary mt-4"
+          @click="openModal()"
+        >
           <Plus :size="15" /> تسجيل مكافأة
         </button>
       </div>
@@ -141,10 +149,18 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === bonus.id" class="dropdown-menu">
-                <button v-can="'view_bonuses'" v-feature="'reports_export'" @click="downloadBonus(bonus.id, 'pdf')">
+                <button
+                  v-can="'view_bonuses'"
+                  v-feature="'reports_export'"
+                  @click="downloadBonus(bonus.id, 'pdf')"
+                >
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button v-can="'view_bonuses'" v-feature="'reports_export'" @click="downloadBonus(bonus.id, 'excel')">
+                <button
+                  v-can="'view_bonuses'"
+                  v-feature="'reports_export'"
+                  @click="downloadBonus(bonus.id, 'excel')"
+                >
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>
@@ -189,7 +205,11 @@
               صرف استثنائي
             </button>
 
-            <button v-can="'update_bonus'" class="btn btn--ghost btn--sm" @click="openModal(bonus)">
+            <button
+              v-can="'update_bonus'"
+              class="btn btn--ghost btn--sm"
+              @click="openModal(bonus)"
+            >
               <Edit :size="13" /> تعديل
             </button>
             <button
@@ -468,7 +488,6 @@ const handleDelete = async () => {
   }
 };
 const closeModal = () => (showModal.value = false);
-
 
 const truncateNotes = (notes: string) =>
   notes.length > 40 ? notes.slice(0, 40) + "..." : notes;

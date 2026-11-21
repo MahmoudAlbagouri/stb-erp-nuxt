@@ -20,7 +20,9 @@
     <!-- ══ الأرقام ══ -->
     <div class="doc-stats">
       <div class="stat-card">
-        <div class="stat-card__icon doc-tone--accent"><Building2 :size="22" /></div>
+        <div class="stat-card__icon doc-tone--accent">
+          <Building2 :size="22" />
+        </div>
         <div class="stat-card__info">
           <div class="stat-card__value">{{ formatNumber(tenants.length) }}</div>
           <div class="stat-card__label">إجمالي الشركات</div>
@@ -31,21 +33,29 @@
           <CircleCheck :size="22" />
         </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatNumber(countOf("active")) }}</div>
+          <div class="stat-card__value">
+            {{ formatNumber(countOf("active")) }}
+          </div>
           <div class="stat-card__label">شركات نشطة</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-card__icon doc-tone--warning"><Hourglass :size="22" /></div>
+        <div class="stat-card__icon doc-tone--warning">
+          <Hourglass :size="22" />
+        </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatNumber(countOf("trial")) }}</div>
+          <div class="stat-card__value">
+            {{ formatNumber(countOf("trial")) }}
+          </div>
           <div class="stat-card__label">في الفترة التجريبية</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-card__icon doc-tone--info"><Layers :size="22" /></div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatNumber(plansStore.plans.length) }}</div>
+          <div class="stat-card__value">
+            {{ formatNumber(plansStore.plans.length) }}
+          </div>
           <div class="stat-card__label">الخطط المتاحة</div>
         </div>
       </div>

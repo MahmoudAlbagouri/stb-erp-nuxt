@@ -181,7 +181,12 @@ export interface PosModifierGroup {
   minSelect: number;
   /** أقصى عدد (0 = بلا حد) */
   maxSelect: number;
-  options: { id: string; name: string; priceDelta: number; isDefault: boolean }[];
+  options: {
+    id: string;
+    name: string;
+    priceDelta: number;
+    isDefault: boolean;
+  }[];
 }
 
 /** إضافة مختارة على سطر: سعرها داخل سعر الوحدة */
@@ -268,7 +273,12 @@ export interface PosDeliveryOptions {
     defaultFee: number;
     codFeePercent: number;
   }[];
-  zones: { id: string; name: string; fee: number; estimatedMinutes: number | null }[];
+  zones: {
+    id: string;
+    name: string;
+    fee: number;
+    estimatedMinutes: number | null;
+  }[];
 }
 
 /** بيانات التوصيل على فاتورة الكاشير (الأسماء للإيصال فقط، لا تُرفع) */
@@ -827,7 +837,12 @@ export interface RestaurantSettingsRecord {
   sendOnPayment: boolean;
 }
 
-export type KitchenOrderStatus = "new" | "preparing" | "ready" | "served" | "cancelled";
+export type KitchenOrderStatus =
+  | "new"
+  | "preparing"
+  | "ready"
+  | "served"
+  | "cancelled";
 
 /** بون كما تعرضه شاشة المطبخ */
 export interface KitchenOrderRecord {

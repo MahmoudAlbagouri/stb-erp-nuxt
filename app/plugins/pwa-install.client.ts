@@ -11,7 +11,10 @@ export interface InstallPromptEvent extends Event {
 }
 
 export default defineNuxtPlugin(() => {
-  const prompt = useState<InstallPromptEvent | null>("pwa-install-prompt", () => null);
+  const prompt = useState<InstallPromptEvent | null>(
+    "pwa-install-prompt",
+    () => null,
+  );
   const installed = useState<boolean>("pwa-installed", () => false);
 
   window.addEventListener("beforeinstallprompt", (event) => {

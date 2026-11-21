@@ -29,7 +29,11 @@
         </button>
 
         <!-- زر طلب إجازة شخصي -->
-        <button v-can="'request_leave_self'" class="btn btn--primary" @click="openCreateModal(false)">
+        <button
+          v-can="'request_leave_self'"
+          class="btn btn--primary"
+          @click="openCreateModal(false)"
+        >
           <Plus :size="18" /><span>طلب إجازة جديد</span>
         </button>
 
@@ -83,7 +87,11 @@
         <CalendarDays :size="40" class="empty-icon" />
         <div class="empty-state__title">لا توجد طلبات إجازات</div>
         <div class="empty-state__text">ابدأ بتقديم طلب إجازة جديد</div>
-        <button v-can="'request_leave_self'" class="btn btn--primary mt-4" @click="openCreateModal(false)">
+        <button
+          v-can="'request_leave_self'"
+          class="btn btn--primary mt-4"
+          @click="openCreateModal(false)"
+        >
           <Plus :size="16" /> طلب إجازة
         </button>
       </div>
@@ -141,10 +149,18 @@
                         v-if="activeExportMenu === req.id"
                         class="dropdown-menu"
                       >
-                        <button v-can="'view_leaves'" v-feature="'reports_export'" @click="downloadLeave(req.id, 'pdf')">
+                        <button
+                          v-can="'view_leaves'"
+                          v-feature="'reports_export'"
+                          @click="downloadLeave(req.id, 'pdf')"
+                        >
                           <FileText :size="14" /> ملف PDF
                         </button>
-                        <button v-can="'view_leaves'" v-feature="'reports_export'" @click="downloadLeave(req.id, 'excel')">
+                        <button
+                          v-can="'view_leaves'"
+                          v-feature="'reports_export'"
+                          @click="downloadLeave(req.id, 'excel')"
+                        >
                           <FileSpreadsheet :size="14" /> ملف Excel
                         </button>
                       </div>

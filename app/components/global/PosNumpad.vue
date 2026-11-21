@@ -17,10 +17,16 @@
       dir="ltr"
       @pointerdown.prevent
     >
-      <div class="pos-numpad__head" title="اسحب لتحريكها" @pointerdown="startDrag">
+      <div
+        class="pos-numpad__head"
+        title="اسحب لتحريكها"
+        @pointerdown="startDrag"
+      >
         <GripHorizontal :size="16" class="pos-numpad__grip" />
         <span class="pos-numpad__display" dir="rtl">
-          <span v-if="multiplier" class="pos-numpad__times">× {{ formatNumber(multiplier) }}</span>
+          <span v-if="multiplier" class="pos-numpad__times"
+            >× {{ formatNumber(multiplier) }}</span
+          >
           <template v-if="target">{{ targetHint }}</template>
           <strong v-else>{{ buffer || "0" }}</strong>
         </span>
@@ -56,7 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { CornerDownLeft, Delete, GripHorizontal, X } from "lucide-vue-next";
 
 const props = defineProps<{
@@ -114,8 +127,14 @@ const pos = reactive({ x: 0, y: 0 });
 const clamp = () => {
   const width = panel.value?.offsetWidth ?? WIDTH;
   const height = panel.value?.offsetHeight ?? HEIGHT;
-  pos.x = Math.min(Math.max(pos.x, MARGIN), Math.max(window.innerWidth - width - MARGIN, MARGIN));
-  pos.y = Math.min(Math.max(pos.y, MARGIN), Math.max(window.innerHeight - height - MARGIN, MARGIN));
+  pos.x = Math.min(
+    Math.max(pos.x, MARGIN),
+    Math.max(window.innerWidth - width - MARGIN, MARGIN),
+  );
+  pos.y = Math.min(
+    Math.max(pos.y, MARGIN),
+    Math.max(window.innerHeight - height - MARGIN, MARGIN),
+  );
 };
 
 const loadPosition = () => {
@@ -148,7 +167,11 @@ let drag: { id: number; dx: number; dy: number } | null = null;
 
 const startDrag = (event: PointerEvent) => {
   event.preventDefault();
-  drag = { id: event.pointerId, dx: event.clientX - pos.x, dy: event.clientY - pos.y };
+  drag = {
+    id: event.pointerId,
+    dx: event.clientX - pos.x,
+    dy: event.clientY - pos.y,
+  };
   (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   window.addEventListener("pointermove", onDrag);
   window.addEventListener("pointerup", endDrag);
@@ -172,7 +195,11 @@ const endDrag = () => {
 const TEXT_TYPES = new Set(["text", "search", "tel", "number", "password", ""]);
 
 const editable = (element: Element | null) => {
-  if (element instanceof HTMLTextAreaElement && !element.readOnly && !element.disabled) {
+  if (
+    element instanceof HTMLTextAreaElement &&
+    !element.readOnly &&
+    !element.disabled
+  ) {
     return element;
   }
   if (
@@ -197,7 +224,10 @@ const targetHint = computed(() => {
 });
 
 /** يضع قيمة في الحقل كأنها كُتبت: v-model والمكوّنات تسمعها كإدخال عادي */
-const setValue = (input: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+const setValue = (
+  input: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+) => {
   const prototype =
     input instanceof HTMLTextAreaElement
       ? HTMLTextAreaElement.prototype
@@ -207,7 +237,10 @@ const setValue = (input: HTMLInputElement | HTMLTextAreaElement, value: string) 
 };
 
 /** يكتب مكان المؤشر (أو مكان النص المحدد: الكمية المحددة تُستبدل) */
-const insert = (input: HTMLInputElement | HTMLTextAreaElement, text: string) => {
+const insert = (
+  input: HTMLInputElement | HTMLTextAreaElement,
+  text: string,
+) => {
   let start = input.value.length;
   let end = start;
   try {
@@ -253,7 +286,11 @@ const submit = (input: HTMLInputElement | HTMLTextAreaElement) => {
     cancelable: true,
   });
   input.dispatchEvent(event);
-  if (!event.defaultPrevented && input instanceof HTMLInputElement && input.form) {
+  if (
+    !event.defaultPrevented &&
+    input instanceof HTMLInputElement &&
+    input.form
+  ) {
     input.form.requestSubmit();
   }
 };
@@ -265,7 +302,8 @@ const press = (key: string) => {
   if (key === "times") {
     const raw = input ? input.value : buffer.value;
     const value = Number(raw.trim());
-    if (Number.isFinite(value) && value > 0) emit("multiply", value, input as HTMLInputElement | null);
+    if (Number.isFinite(value) && value > 0)
+      emit("multiply", value, input as HTMLInputElement | null);
     if (!input) buffer.value = "";
     return;
   }

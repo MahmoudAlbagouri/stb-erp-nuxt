@@ -30,27 +30,45 @@
         <option value="last_quarter">الربع الماضي</option>
         <option value="custom">فترة محددة</option>
       </select>
-      <StbDateInput v-model="query.from" required @update:model-value="preset = 'custom'" />
-      <StbDateInput v-model="query.to" required @update:model-value="preset = 'custom'" />
-      <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': loading }" :disabled="loading">
+      <StbDateInput
+        v-model="query.from"
+        required
+        @update:model-value="preset = 'custom'"
+      />
+      <StbDateInput
+        v-model="query.to"
+        required
+        @update:model-value="preset = 'custom'"
+      />
+      <button
+        type="submit"
+        class="btn btn--primary"
+        :class="{ 'btn--loading': loading }"
+        :disabled="loading"
+      >
         عرض
       </button>
     </form>
 
-    <div v-if="loading && !result" class="empty-state"><div class="spinner spinner--lg" /></div>
+    <div v-if="loading && !result" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
 
     <div v-else-if="result" ref="report" class="card statement printable">
       <div class="report-title">
         <h2>إقرار ضريبة القيمة المضافة</h2>
         <span>من {{ result.from }} إلى {{ result.to }}</span>
-        <span v-if="result.taxNumber">الرقم الضريبي <span class="doc-num">{{ result.taxNumber }}</span></span>
+        <span v-if="result.taxNumber"
+          >الرقم الضريبي
+          <span class="doc-num">{{ result.taxNumber }}</span></span
+        >
       </div>
 
       <div v-if="!result.vatRegistered" class="doc-note">
         <Info :size="16" />
         <span>
-          المنشأة غير مسجّلة في ضريبة القيمة المضافة حالياً (إعدادات المبيعات): لا
-          تحصّل ضريبة ولا تسترد ضريبة مشترياتها.
+          المنشأة غير مسجّلة في ضريبة القيمة المضافة حالياً (إعدادات المبيعات):
+          لا تحصّل ضريبة ولا تسترد ضريبة مشترياتها.
         </span>
       </div>
 
@@ -67,10 +85,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in part.data.rows" :key="row.key" :class="{ 'is-muted': row.nonRecoverable }">
+              <tr
+                v-for="row in part.data.rows"
+                :key="row.key"
+                :class="{ 'is-muted': row.nonRecoverable }"
+              >
                 <td>
                   {{ row.label }}
-                  <span v-if="row.nonRecoverable" class="doc-cell__sub">(لا تُخصم)</span>
+                  <span v-if="row.nonRecoverable" class="doc-cell__sub"
+                    >(لا تُخصم)</span
+                  >
                 </td>
                 <td class="doc-num">{{ formatMoney(row.amount) }}</td>
                 <td class="doc-num">{{ formatMoney(row.adjustment) }}</td>
@@ -80,8 +104,12 @@
             <tfoot>
               <tr>
                 <th>{{ part.total }}</th>
-                <th class="doc-num">{{ formatMoney(part.data.totals.amount) }}</th>
-                <th class="doc-num">{{ formatMoney(part.data.totals.adjustment) }}</th>
+                <th class="doc-num">
+                  {{ formatMoney(part.data.totals.amount) }}
+                </th>
+                <th class="doc-num">
+                  {{ formatMoney(part.data.totals.adjustment) }}
+                </th>
                 <th class="doc-num">{{ formatMoney(part.data.totals.tax) }}</th>
               </tr>
             </tfoot>
@@ -92,17 +120,28 @@
       <section class="vat-section">
         <div class="statement__line">
           <span>ضريبة المخرجات (المبيعات)</span>
-          <span class="doc-num">{{ formatMoney(result.totals.outputTax) }}</span>
+          <span class="doc-num">{{
+            formatMoney(result.totals.outputTax)
+          }}</span>
         </div>
         <div class="statement__line">
           <span>ضريبة المدخلات القابلة للخصم</span>
           <span class="doc-num">{{ formatMoney(result.totals.inputTax) }}</span>
         </div>
-        <div class="statement__line statement__line--total" :class="{ 'is-credit': result.totals.netVat < 0 }">
+        <div
+          class="statement__line statement__line--total"
+          :class="{ 'is-credit': result.totals.netVat < 0 }"
+        >
           <span>
-            {{ result.totals.netVat < 0 ? "صافي الضريبة لصالح المنشأة (يُرحَّل أو يُسترد)" : "صافي الضريبة المستحقة للسداد" }}
+            {{
+              result.totals.netVat < 0
+                ? "صافي الضريبة لصالح المنشأة (يُرحَّل أو يُسترد)"
+                : "صافي الضريبة المستحقة للسداد"
+            }}
           </span>
-          <strong class="doc-num">{{ formatMoney(Math.abs(result.totals.netVat)) }}</strong>
+          <strong class="doc-num">{{
+            formatMoney(Math.abs(result.totals.netVat))
+          }}</strong>
         </div>
       </section>
 
@@ -123,7 +162,10 @@
                 <td>{{ row.label }}</td>
                 <td class="doc-num">{{ formatMoney(row.report) }}</td>
                 <td class="doc-num">{{ formatMoney(row.ledger) }}</td>
-                <td class="doc-num" :class="row.diff ? 'doc-money--out' : 'doc-money--in'">
+                <td
+                  class="doc-num"
+                  :class="row.diff ? 'doc-money--out' : 'doc-money--in'"
+                >
                   {{ row.diff ? formatMoney(row.diff) : "✓" }}
                 </td>
               </tr>
@@ -131,8 +173,8 @@
           </table>
         </div>
         <p v-if="reconciliation.some((r) => r.diff)" class="doc-cell__sub">
-          الفرق عادةً: مستندات قبل تفعيل المحاسبة، أو مستند في فترة مقفلة قُيِّد في أول
-          يوم مفتوح، أو قيد يدوي على حساب الضريبة.
+          الفرق عادةً: مستندات قبل تفعيل المحاسبة، أو مستند في فترة مقفلة قُيِّد
+          في أول يوم مفتوح، أو قيد يدوي على حساب الضريبة.
         </p>
       </section>
     </div>
@@ -168,14 +210,20 @@ const applyPreset = () => {
   let month = Number(today.slice(5, 7));
   switch (preset.value) {
     case "month":
-      Object.assign(query, { from: `${year}-${pad(month)}-01`, to: monthEnd(year, month) });
+      Object.assign(query, {
+        from: `${year}-${pad(month)}-01`,
+        to: monthEnd(year, month),
+      });
       break;
     case "last_month":
       if (--month === 0) {
         month = 12;
         year--;
       }
-      Object.assign(query, { from: `${year}-${pad(month)}-01`, to: monthEnd(year, month) });
+      Object.assign(query, {
+        from: `${year}-${pad(month)}-01`,
+        to: monthEnd(year, month),
+      });
       break;
     case "quarter":
     case "last_quarter": {

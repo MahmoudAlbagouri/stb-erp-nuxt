@@ -12,14 +12,24 @@
               <Settings2 :size="20" class="doc-modal__icon" />
               ما يصلني من إشعارات
             </h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
 
-          <div v-if="loading" class="prefs-loading"><span class="spinner" /></div>
+          <div v-if="loading" class="prefs-loading">
+            <span class="spinner" />
+          </div>
           <div v-else class="prefs-groups">
-            <section v-for="group in groups" :key="group.key" class="prefs-group">
+            <section
+              v-for="group in groups"
+              :key="group.key"
+              class="prefs-group"
+            >
               <h4>{{ group.label }}</h4>
               <label
                 v-for="type in group.types"
@@ -42,7 +52,11 @@
 
           <div class="modal__footer">
             <button class="btn btn--ghost" @click="close">إلغاء</button>
-            <button class="btn btn--primary" :disabled="saving || loading" @click="save">
+            <button
+              class="btn btn--primary"
+              :disabled="saving || loading"
+              @click="save"
+            >
               {{ saving ? "جارٍ الحفظ..." : "حفظ" }}
             </button>
           </div>

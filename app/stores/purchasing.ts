@@ -41,7 +41,10 @@ export const usePurchasingStore = defineStore("purchasing", () => {
 
   const fetchSupplierOptions = async (force = false) => {
     if (optionsLoaded.value && !force) return;
-    const res = await fetchSuppliers({ isActive: "true", limit: OPTIONS_LIMIT });
+    const res = await fetchSuppliers({
+      isActive: "true",
+      limit: OPTIONS_LIMIT,
+    });
     supplierOptions.value = res.data;
     optionsLoaded.value = true;
   };
@@ -55,7 +58,10 @@ export const usePurchasingStore = defineStore("purchasing", () => {
     return res.data;
   };
 
-  const updateSupplier = async (id: string, payload: Partial<SupplierPayload>) => {
+  const updateSupplier = async (
+    id: string,
+    payload: Partial<SupplierPayload>,
+  ) => {
     const res = await api.patch<Supplier>(`${BASE}/suppliers/${id}`, payload);
     optionsLoaded.value = false;
     return res.data;
@@ -93,7 +99,8 @@ export const usePurchasingStore = defineStore("purchasing", () => {
   const updateInvoice = async (
     id: string,
     payload: Partial<PurchaseInvoicePayload>,
-  ) => (await api.patch<PurchaseInvoice>(`${BASE}/invoices/${id}`, payload)).data;
+  ) =>
+    (await api.patch<PurchaseInvoice>(`${BASE}/invoices/${id}`, payload)).data;
 
   const postInvoice = async (id: string) =>
     (await api.post<PurchaseInvoice>(`${BASE}/invoices/${id}/post`, {})).data;

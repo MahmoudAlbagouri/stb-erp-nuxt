@@ -9,7 +9,9 @@
       <div class="kitchen-ticket__no">#{{ ticket.ticketNo }}</div>
       <div class="kitchen-ticket__type">
         {{ typeLabel }}
-        <template v-if="ticket.round > 1"> · إضافة ({{ ticket.round }})</template>
+        <template v-if="ticket.round > 1">
+          · إضافة ({{ ticket.round }})</template
+        >
       </div>
       <p v-if="ticket.label">{{ ticket.label }}</p>
       <p dir="ltr">{{ formatDateTime(ticket.sentAt) }}</p>
@@ -22,13 +24,18 @@
           :class="{ 'is-cancel': line.quantity < 0 }"
         >
           <div class="kitchen-ticket__line">
-            <strong dir="ltr">{{ formatNumber(Math.abs(line.quantity)) }} ×</strong>
+            <strong dir="ltr"
+              >{{ formatNumber(Math.abs(line.quantity)) }} ×</strong
+            >
             <span>
-              <template v-if="line.quantity < 0">إلغاء: </template>{{ line.name }}
+              <template v-if="line.quantity < 0">إلغاء: </template
+              >{{ line.name }}
               <small v-if="line.unitName"> ({{ line.unitName }})</small>
             </span>
           </div>
-          <div v-if="line.note" class="kitchen-ticket__note">← {{ line.note }}</div>
+          <div v-if="line.note" class="kitchen-ticket__note">
+            ← {{ line.note }}
+          </div>
         </div>
       </div>
     </div>

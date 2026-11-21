@@ -13,7 +13,11 @@
               <Tag :size="20" class="doc-modal__icon" />
               {{ open ? "سعر الصنف" : "تغيير السعر لهذه الفاتورة" }}
             </h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -27,7 +31,9 @@
             </p>
 
             <div class="form-group">
-              <label>{{ open ? "السعر" : "السعر الجديد" }} {{ basisLabel }}</label>
+              <label
+                >{{ open ? "السعر" : "السعر الجديد" }} {{ basisLabel }}</label
+              >
               <StbNumberInput
                 ref="priceEl"
                 v-model.number="form.price"
@@ -54,7 +60,9 @@
                   :key="reason"
                   type="button"
                   class="btn btn--sm"
-                  :class="form.reason === reason ? 'btn--primary' : 'btn--ghost'"
+                  :class="
+                    form.reason === reason ? 'btn--primary' : 'btn--ghost'
+                  "
                   @click="form.reason = reason"
                 >
                   {{ reason }}
@@ -69,9 +77,12 @@
               />
             </div>
 
-            <p v-if="!open && pos.discountLimit !== null && lowering" class="doc-hint">
-              التخفيض يُحسب من حدّ خصمك ({{ pos.discountLimit }}%) — ما زاد عنه، أو
-              نزل تحت أقل سعر للصنف، يحتاج موافقة مشرف عند الدفع.
+            <p
+              v-if="!open && pos.discountLimit !== null && lowering"
+              class="doc-hint"
+            >
+              التخفيض يُحسب من حدّ خصمك ({{ pos.discountLimit }}%) — ما زاد عنه،
+              أو نزل تحت أقل سعر للصنف، يحتاج موافقة مشرف عند الدفع.
             </p>
             <p v-if="!open && approvalNeeded && change" class="doc-hint">
               تغيير السعر يحتاج موافقة مشرف.
@@ -86,8 +97,14 @@
               >
                 إرجاع سعر القائمة
               </button>
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
-              <button type="submit" class="btn btn--primary" :disabled="!canSubmit">
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                class="btn btn--primary"
+                :disabled="!canSubmit"
+              >
                 تطبيق
               </button>
             </div>
@@ -129,17 +146,23 @@ const basisLabel = computed(() =>
       : "(شامل الضريبة)",
 );
 const repriced = computed(() => !!props.line && isRepriced(props.line));
-const listPrice = computed(() => (props.line ? pos.listPriceOf(props.line) : 0));
+const listPrice = computed(() =>
+  props.line ? pos.listPriceOf(props.line) : 0,
+);
 const approvalNeeded = computed(() => pos.needsPriceApproval());
 
 const price = computed(() => roundAmount(Number(form.price) || 0));
-const lowering = computed(() => !open.value && price.value > 0 && price.value < listPrice.value);
+const lowering = computed(
+  () => !open.value && price.value > 0 && price.value < listPrice.value,
+);
 
 /** الفرق عن سعر القائمة كما يراه الكاشير */
 const change = computed(() => {
-  if (open.value || !(price.value > 0) || price.value === listPrice.value) return null;
+  if (open.value || !(price.value > 0) || price.value === listPrice.value)
+    return null;
   const diff = sumAmounts([price.value, -listPrice.value]);
-  const percent = listPrice.value > 0 ? Math.abs(diff / listPrice.value) * 100 : 0;
+  const percent =
+    listPrice.value > 0 ? Math.abs(diff / listPrice.value) * 100 : 0;
   return diff < 0
     ? {
         tone: "text-danger",
@@ -169,7 +192,8 @@ watch(
     form.other = "";
     const saved = line.priceReason ?? "";
     if (saved) {
-      if ((PRICE_REASONS as readonly string[]).includes(saved)) form.reason = saved;
+      if ((PRICE_REASONS as readonly string[]).includes(saved))
+        form.reason = saved;
       else {
         form.reason = OTHER;
         form.other = saved;

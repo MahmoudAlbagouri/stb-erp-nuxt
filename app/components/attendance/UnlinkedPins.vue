@@ -29,7 +29,9 @@
           </thead>
           <tbody>
             <tr v-for="row in store.unlinkedPins" :key="row.pin">
-              <td><b dir="ltr">{{ row.pin }}</b></td>
+              <td>
+                <b dir="ltr">{{ row.pin }}</b>
+              </td>
               <td>{{ row.punches }}</td>
               <td>{{ formatDateTime(row.lastPunch) }}</td>
               <td>{{ row.devices.join("، ") || "ملف مستورد" }}</td>
@@ -37,7 +39,11 @@
                 <div class="link-row">
                   <select v-model="choice[row.pin]" class="form-select">
                     <option value="">اختر الموظف…</option>
-                    <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                    <option
+                      v-for="emp in employees"
+                      :key="emp.id"
+                      :value="emp.id"
+                    >
                       {{ emp.fullName }} ({{ emp.employeeCode }})
                     </option>
                   </select>
@@ -47,7 +53,10 @@
                     :disabled="!choice[row.pin] || linking === row.pin"
                     @click="link(row.pin)"
                   >
-                    <span v-if="linking === row.pin" class="spinner spinner--sm" />
+                    <span
+                      v-if="linking === row.pin"
+                      class="spinner spinner--sm"
+                    />
                     <span v-else>ربط</span>
                   </button>
                 </div>

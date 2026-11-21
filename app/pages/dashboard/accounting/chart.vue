@@ -34,12 +34,18 @@
           <input v-model="showInactive" type="checkbox" /> إظهار الموقوفة
         </label>
         <div class="doc-actions">
-          <button class="btn btn--sm btn--ghost" @click="expandAll">فتح الكل</button>
-          <button class="btn btn--sm btn--ghost" @click="collapseAll">طي الكل</button>
+          <button class="btn btn--sm btn--ghost" @click="expandAll">
+            فتح الكل
+          </button>
+          <button class="btn btn--sm btn--ghost" @click="collapseAll">
+            طي الكل
+          </button>
         </div>
       </div>
 
-      <div v-if="loading" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="loading" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
 
       <div v-else class="card doc-table-card">
         <div class="table-responsive">
@@ -55,26 +61,50 @@
               <tr
                 v-for="row in visibleRows"
                 :key="row.account.id"
-                :class="{ 'is-group': row.account.isGroup, 'is-inactive': !row.account.isActive }"
+                :class="{
+                  'is-group': row.account.isGroup,
+                  'is-inactive': !row.account.isActive,
+                }"
               >
                 <td>
-                  <div class="tree-cell" :style="{ paddingInlineStart: `${(row.depth - 1) * 22}px` }">
+                  <div
+                    class="tree-cell"
+                    :style="{ paddingInlineStart: `${(row.depth - 1) * 22}px` }"
+                  >
                     <button
                       v-if="row.hasChildren"
                       class="tree-toggle"
                       :aria-label="expanded.has(row.account.id) ? 'طي' : 'فتح'"
                       @click="toggle(row.account.id)"
                     >
-                      <ChevronDown v-if="expanded.has(row.account.id) || search" :size="16" />
+                      <ChevronDown
+                        v-if="expanded.has(row.account.id) || search"
+                        :size="16"
+                      />
                       <ChevronLeft v-else :size="16" />
                     </button>
                     <span v-else class="tree-toggle tree-toggle--leaf" />
                     <code class="doc-code">{{ row.account.code }}</code>
                     <span class="tree-name">{{ row.account.name }}</span>
-                    <span v-if="row.account.systemKey" class="badge doc-status--progress" title="يُرحَّل إليه تلقائياً">نظام</span>
-                    <span v-if="!row.account.isActive" class="badge doc-status--cancelled">موقوف</span>
+                    <span
+                      v-if="row.account.systemKey"
+                      class="badge doc-status--progress"
+                      title="يُرحَّل إليه تلقائياً"
+                      >نظام</span
+                    >
+                    <span
+                      v-if="!row.account.isActive"
+                      class="badge doc-status--cancelled"
+                      >موقوف</span
+                    >
                   </div>
-                  <div v-if="row.account.nameEn" class="tree-en" :style="{ paddingInlineStart: `${(row.depth - 1) * 22 + 30}px` }">
+                  <div
+                    v-if="row.account.nameEn"
+                    class="tree-en"
+                    :style="{
+                      paddingInlineStart: `${(row.depth - 1) * 22 + 30}px`,
+                    }"
+                  >
                     {{ row.account.nameEn }}
                   </div>
                 </td>
@@ -98,7 +128,11 @@
                     <button
                       class="btn btn--sm btn--ghost btn--icon"
                       title="كشف الحساب"
-                      @click="navigateTo(`/dashboard/accounting/ledger?accountId=${row.account.id}`)"
+                      @click="
+                        navigateTo(
+                          `/dashboard/accounting/ledger?accountId=${row.account.id}`,
+                        )
+                      "
                     >
                       <FileText :size="14" />
                     </button>
@@ -111,7 +145,11 @@
                       <Pencil :size="14" />
                     </button>
                     <button
-                      v-if="row.account.parentId && !row.account.systemKey && !row.hasChildren"
+                      v-if="
+                        row.account.parentId &&
+                        !row.account.systemKey &&
+                        !row.hasChildren
+                      "
                       v-can="'manage_chart_of_accounts'"
                       class="btn btn--sm btn--danger btn--icon"
                       title="حذف"
@@ -134,11 +172,21 @@
     <!-- ══ إضافة / تعديل ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
+        <div
+          v-if="showForm"
+          class="modal-overlay"
+          @click.self="showForm = false"
+        >
           <div class="modal">
             <div class="modal__header">
-              <h3>{{ form.id ? `تعديل ${form.code} ${form.name}` : "حساب جديد" }}</h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="showForm = false">
+              <h3>
+                {{ form.id ? `تعديل ${form.code} ${form.name}` : "حساب جديد" }}
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="showForm = false"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -150,7 +198,9 @@
                   :accounts="store.accounts"
                   groups-only
                   required
-                  :disabled="!!form.id && (!editing?.parentId || editingHasChildren)"
+                  :disabled="
+                    !!form.id && (!editing?.parentId || editingHasChildren)
+                  "
                 />
                 <small v-if="form.id && editingHasChildren" class="doc-hint">
                   حساب تحته حسابات: لا يُنقل ولا يتغير كوده
@@ -165,39 +215,72 @@
                     inputmode="numeric"
                     pattern="\d{1,20}"
                     :placeholder="form.id ? '' : 'تلقائي (التالي تحت الأب)'"
-                    :disabled="!!form.id && (!editing?.parentId || editingHasChildren)"
+                    :disabled="
+                      !!form.id && (!editing?.parentId || editingHasChildren)
+                    "
                   />
                 </div>
                 <div class="form-group">
                   <label>الاسم *</label>
-                  <input v-model.trim="form.name" class="form-input" maxlength="150" required />
+                  <input
+                    v-model.trim="form.name"
+                    class="form-input"
+                    maxlength="150"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>الاسم بالإنجليزية</label>
-                  <input v-model.trim="form.nameEn" class="form-input" maxlength="150" dir="ltr" />
+                  <input
+                    v-model.trim="form.nameEn"
+                    class="form-input"
+                    maxlength="150"
+                    dir="ltr"
+                  />
                 </div>
               </div>
               <div class="form-group">
                 <label>وصف</label>
-                <input v-model.trim="form.description" class="form-input" maxlength="300" />
+                <input
+                  v-model.trim="form.description"
+                  class="form-input"
+                  maxlength="300"
+                />
               </div>
               <div class="checks">
                 <label class="check">
                   <input
                     v-model="form.isGroup"
                     type="checkbox"
-                    :disabled="!!editing?.systemKey || (!!form.id && editingHasChildren)"
+                    :disabled="
+                      !!editing?.systemKey || (!!form.id && editingHasChildren)
+                    "
                   />
                   حساب تجميعي (أب لحسابات، لا يُرحَّل عليه)
                 </label>
                 <label v-if="form.id" class="check">
-                  <input v-model="form.isActive" type="checkbox" :disabled="!!editing?.systemKey" />
+                  <input
+                    v-model="form.isActive"
+                    type="checkbox"
+                    :disabled="!!editing?.systemKey"
+                  />
                   فعّال
                 </label>
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showForm = false">إلغاء</button>
-                <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': saving }" :disabled="saving">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showForm = false"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn--primary"
+                  :class="{ 'btn--loading': saving }"
+                  :disabled="saving"
+                >
                   حفظ
                 </button>
               </div>
@@ -252,7 +335,9 @@ interface Row {
 
 const rows = computed<Row[]>(() => {
   const byId = new Map(store.accounts.map((a) => [a.id, a]));
-  const parents = new Set(store.accounts.map((a) => a.parentId).filter(Boolean));
+  const parents = new Set(
+    store.accounts.map((a) => a.parentId).filter(Boolean),
+  );
   return store.accounts.map((account) => {
     const ancestors: string[] = [];
     let parent = account.parentId ? byId.get(account.parentId) : undefined;
@@ -271,7 +356,9 @@ const rows = computed<Row[]>(() => {
 
 const visibleRows = computed(() => {
   const term = search.value.toLowerCase();
-  const list = rows.value.filter((r) => showInactive.value || r.account.isActive);
+  const list = rows.value.filter(
+    (r) => showInactive.value || r.account.isActive,
+  );
   if (term) {
     // المطابق وآباؤه (ليظهر موضعه في الشجرة)
     const keep = new Set<string>();
@@ -297,7 +384,9 @@ const toggle = (id: string) => {
   expanded.value = next;
 };
 const expandAll = () => {
-  expanded.value = new Set(rows.value.filter((r) => r.hasChildren).map((r) => r.account.id));
+  expanded.value = new Set(
+    rows.value.filter((r) => r.hasChildren).map((r) => r.account.id),
+  );
 };
 const collapseAll = () => {
   expanded.value = new Set();
@@ -318,7 +407,9 @@ const form = reactive({
   isActive: true,
 });
 const editingHasChildren = computed(
-  () => !!editing.value && rows.value.some((r) => r.account.parentId === editing.value!.id),
+  () =>
+    !!editing.value &&
+    rows.value.some((r) => r.account.parentId === editing.value!.id),
 );
 
 const openCreate = (parent?: Account) => {
@@ -357,13 +448,19 @@ const save = async () => {
     if (form.id) {
       const original = editing.value!;
       await store.updateAccount(form.id, {
-        ...(form.parentId && form.parentId !== original.parentId ? { parentId: form.parentId } : {}),
-        ...(form.code && form.code !== original.code ? { code: form.code } : {}),
+        ...(form.parentId && form.parentId !== original.parentId
+          ? { parentId: form.parentId }
+          : {}),
+        ...(form.code && form.code !== original.code
+          ? { code: form.code }
+          : {}),
         name: form.name,
         nameEn: form.nameEn || null,
         description: form.description || null,
         ...(form.isGroup !== original.isGroup ? { isGroup: form.isGroup } : {}),
-        ...(form.isActive !== original.isActive ? { isActive: form.isActive } : {}),
+        ...(form.isActive !== original.isActive
+          ? { isActive: form.isActive }
+          : {}),
       });
       toast.success("حُفظ الحساب");
     } else {
@@ -414,7 +511,9 @@ onMounted(async () => {
     if (status.active) {
       await store.fetchAccounts(true);
       // الحسابات الرئيسية مفتوحة من البداية
-      expanded.value = new Set(rows.value.filter((r) => r.depth <= 1).map((r) => r.account.id));
+      expanded.value = new Set(
+        rows.value.filter((r) => r.depth <= 1).map((r) => r.account.id),
+      );
     }
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر تحميل الشجرة"));

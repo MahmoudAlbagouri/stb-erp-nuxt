@@ -8,8 +8,14 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal">
           <div class="modal__header">
-            <h3><FileText :size="20" class="doc-modal__icon" /> عروض الأسعار</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <FileText :size="20" class="doc-modal__icon" /> عروض الأسعار
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -78,8 +84,8 @@
               </div>
             </div>
             <p class="doc-hint">
-              العرض الساري يبقى بسعره. بعد انتهائه يتحول بالأسعار الحالية، والمخزون
-              يُفحص عند الدفع كأي بيع.
+              العرض الساري يبقى بسعره. بعد انتهائه يتحول بالأسعار الحالية،
+              والمخزون يُفحص عند الدفع كأي بيع.
             </p>
           </div>
         </div>

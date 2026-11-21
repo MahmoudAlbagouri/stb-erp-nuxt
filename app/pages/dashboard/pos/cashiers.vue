@@ -86,12 +86,19 @@
               </td>
               <td>
                 <span class="doc-num">
-                  {{ c.maxDiscountPercent === null ? "بلا حد" : `${c.maxDiscountPercent}%` }}
+                  {{
+                    c.maxDiscountPercent === null
+                      ? "بلا حد"
+                      : `${c.maxDiscountPercent}%`
+                  }}
                 </span>
               </td>
               <td>
                 <span
-                  :class="['badge', c.isActive ? 'badge--active' : 'badge--inactive']"
+                  :class="[
+                    'badge',
+                    c.isActive ? 'badge--active' : 'badge--inactive',
+                  ]"
                 >
                   {{ c.isActive ? "نشط" : "موقوف" }}
                 </span>
@@ -169,12 +176,16 @@
                     pattern="\d{4,6}"
                     maxlength="6"
                     :required="!editing"
-                    :placeholder="editing ? 'اتركه فارغاً لإبقاء الرقم الحالي' : '4 إلى 6 أرقام'"
+                    :placeholder="
+                      editing
+                        ? 'اتركه فارغاً لإبقاء الرقم الحالي'
+                        : '4 إلى 6 أرقام'
+                    "
                     @input="form.pin = form.pin.replace(/\D/g, '')"
                   />
                   <small class="doc-hint">
-                    من 4 إلى 6 أرقام. لا يُعرض بعد الحفظ — إن نسيه الكاشير
-                    عيّن له رقماً جديداً من هنا.
+                    من 4 إلى 6 أرقام. لا يُعرض بعد الحفظ — إن نسيه الكاشير عيّن
+                    له رقماً جديداً من هنا.
                   </small>
                 </div>
               </div>
@@ -202,8 +213,8 @@
               <label class="checkbox-label">
                 <input v-model="form.canChangePrice" type="checkbox" />
                 <span>
-                  يغيّر سعر صنف في الفاتورة بنفسه (في حدود خصمه) — بدونها يحتاج كل
-                  تغيير موافقة مشرف
+                  يغيّر سعر صنف في الفاتورة بنفسه (في حدود خصمه) — بدونها يحتاج
+                  كل تغيير موافقة مشرف
                 </span>
               </label>
               <label class="checkbox-label">
@@ -219,7 +230,11 @@
               </label>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button

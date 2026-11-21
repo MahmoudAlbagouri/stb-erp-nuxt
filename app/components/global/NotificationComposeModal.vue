@@ -12,7 +12,11 @@
               <Send :size="20" class="doc-modal__icon" />
               رسالة للموظفين
             </h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -51,13 +55,21 @@
                 <div v-if="selectedEmployees.length" class="chips">
                   <span v-for="e in selectedEmployees" :key="e.id" class="chip">
                     {{ e.fullName }}
-                    <button type="button" aria-label="إزالة" @click="toggle(e.id)">
+                    <button
+                      type="button"
+                      aria-label="إزالة"
+                      @click="toggle(e.id)"
+                    >
                       <X :size="12" />
                     </button>
                   </span>
                 </div>
                 <div class="picker-list" data-native-scroll>
-                  <label v-for="e in employeeMatches" :key="e.id" class="picker-row">
+                  <label
+                    v-for="e in employeeMatches"
+                    :key="e.id"
+                    class="picker-row"
+                  >
                     <input
                       type="checkbox"
                       :checked="form.ids.includes(e.id)"
@@ -66,12 +78,17 @@
                     <span>{{ e.fullName }}</span>
                     <small>{{ e.employeeCode }}</small>
                   </label>
-                  <p v-if="!employeeMatches.length" class="picker-empty">لا نتائج</p>
+                  <p v-if="!employeeMatches.length" class="picker-empty">
+                    لا نتائج
+                  </p>
                 </div>
               </template>
 
               <!-- فروع / أقسام -->
-              <div v-else-if="form.kind !== 'all'" class="picker-list picker-list--grid">
+              <div
+                v-else-if="form.kind !== 'all'"
+                class="picker-list picker-list--grid"
+              >
                 <label v-for="o in groupOptions" :key="o.id" class="picker-row">
                   <input
                     type="checkbox"
@@ -80,14 +97,20 @@
                   />
                   <span>{{ o.name }}</span>
                 </label>
-                <p v-if="!groupOptions.length" class="picker-empty">لا توجد خيارات</p>
+                <p v-if="!groupOptions.length" class="picker-empty">
+                  لا توجد خيارات
+                </p>
               </div>
 
               <p v-else class="doc-hint">
-                تصل لكل مستخدمي الشركة (ولموظفي فروعك فقط إن كنت مقيَّداً بفروع).
+                تصل لكل مستخدمي الشركة (ولموظفي فروعك فقط إن كنت مقيَّداً
+                بفروع).
               </p>
 
-              <div class="reach" :class="{ 'is-empty': reach && !reach.recipients }">
+              <div
+                class="reach"
+                :class="{ 'is-empty': reach && !reach.recipients }"
+              >
                 <span v-if="reachLoading" class="spinner spinner--sm" />
                 <template v-else-if="reach">
                   <Users :size="15" />
@@ -100,8 +123,16 @@
                 <AlertTriangle :size="15" />
                 <span>
                   {{ reach.withoutAccount.count }} موظف بلا حساب دخول لن تصلهم:
-                  {{ reach.withoutAccount.sample.map((e) => e.fullName).join("، ")
-                  }}{{ reach.withoutAccount.count > reach.withoutAccount.sample.length ? "…" : "" }}
+                  {{
+                    reach.withoutAccount.sample
+                      .map((e) => e.fullName)
+                      .join("، ")
+                  }}{{
+                    reach.withoutAccount.count >
+                    reach.withoutAccount.sample.length
+                      ? "…"
+                      : ""
+                  }}
                 </span>
               </div>
             </div>
@@ -148,12 +179,16 @@
               <input v-model="form.requiresAck" type="checkbox" />
               <span>
                 <strong>يتطلب تأكيد الاطلاع</strong>
-                <small>يضغط كل مستلم «تم الاطلاع»، وتعرف من أكّد ومن لم يؤكد</small>
+                <small
+                  >يضغط كل مستلم «تم الاطلاع»، وتعرف من أكّد ومن لم يؤكد</small
+                >
               </span>
             </label>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
               <button
                 type="submit"
                 class="btn btn--primary"
@@ -260,7 +295,9 @@ const groupOptions = computed(() =>
     : departments.departments.map((d) => ({ id: d.id, name: d.name })),
 );
 
-const audienceReady = computed(() => form.kind === "all" || form.ids.length > 0);
+const audienceReady = computed(
+  () => form.kind === "all" || form.ids.length > 0,
+);
 const canSubmit = computed(
   () =>
     audienceReady.value &&

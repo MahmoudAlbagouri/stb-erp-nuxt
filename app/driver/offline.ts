@@ -12,7 +12,12 @@ import type { DeliveryOrder } from "@/types/delivery";
 import { sumMoney } from "../utils/purchasing";
 
 export interface DriverBoard {
-  agent: { id: string; name: string; heldAmount: number; unsettledCount: number };
+  agent: {
+    id: string;
+    name: string;
+    heldAmount: number;
+    unsettledCount: number;
+  };
   company: string;
   /**
    * دولة الشركة وعملتها وتوقيتها (الطيار بلا توكن يحملها). غائبة في نسخة
@@ -60,14 +65,19 @@ const EMPTY: DriverSnapshot = { board: null, fetchedAt: null, outbox: [] };
 export const loadSnapshot = (agentId: string): DriverSnapshot => {
   try {
     const raw = localStorage.getItem(keyOf(agentId));
-    return raw ? { ...EMPTY, ...(JSON.parse(raw) as DriverSnapshot) } : { ...EMPTY };
+    return raw
+      ? { ...EMPTY, ...(JSON.parse(raw) as DriverSnapshot) }
+      : { ...EMPTY };
   } catch {
     return { ...EMPTY };
   }
 };
 
 /** يُكتب كاملاً في خطوة واحدة: لا أوردرات بلا طابورها ولو انطفأ الجوال */
-export const saveSnapshot = (agentId: string, snapshot: DriverSnapshot): void => {
+export const saveSnapshot = (
+  agentId: string,
+  snapshot: DriverSnapshot,
+): void => {
   try {
     localStorage.setItem(keyOf(agentId), JSON.stringify(snapshot));
   } catch {

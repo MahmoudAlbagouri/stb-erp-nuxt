@@ -123,7 +123,10 @@ const RAMP = 0.008;
 // ─── الإعدادات ────────────────────────────────────────────────────────────────
 const readStored = (): Partial<Record<SoundScope, Partial<SoundSettings>>> => {
   try {
-    const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(STORAGE_KEY);
+    const raw =
+      typeof localStorage === "undefined"
+        ? null
+        : localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};

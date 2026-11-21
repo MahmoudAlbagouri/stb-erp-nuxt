@@ -11,7 +11,11 @@
         <div class="modal doc-modal">
           <div class="modal__header">
             <h3><Truck :size="20" class="doc-modal__icon" /> بيع توصيل</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -55,9 +59,17 @@
               </div>
               <div class="form-group">
                 <label>المنطقة</label>
-                <select v-model="form.zoneId" class="form-select" @change="applyZone">
+                <select
+                  v-model="form.zoneId"
+                  class="form-select"
+                  @change="applyZone"
+                >
                   <option value="">بدون منطقة</option>
-                  <option v-for="z in options?.zones ?? []" :key="z.id" :value="z.id">
+                  <option
+                    v-for="z in options?.zones ?? []"
+                    :key="z.id"
+                    :value="z.id"
+                  >
                     {{ z.name }} — {{ formatMoney(z.fee) }}
                   </option>
                 </select>
@@ -76,8 +88,14 @@
                 <label>الطيار / شركة الشحن</label>
                 <select v-model="form.agentId" class="form-select">
                   <option value="">يُسند لاحقاً من لوحة التوصيل</option>
-                  <option v-for="a in options?.agents ?? []" :key="a.id" :value="a.id">
-                    {{ a.name }} ({{ a.type === "carrier" ? "شركة شحن" : "طيار" }})
+                  <option
+                    v-for="a in options?.agents ?? []"
+                    :key="a.id"
+                    :value="a.id"
+                  >
+                    {{ a.name }} ({{
+                      a.type === "carrier" ? "شركة شحن" : "طيار"
+                    }})
                   </option>
                 </select>
               </div>
@@ -86,13 +104,19 @@
                 <select v-model="form.payment" class="form-select">
                   <option value="cod">تحصيل عند الاستلام</option>
                   <option value="cash">مدفوع الآن نقداً</option>
-                  <option v-if="pos.features.cardPayments" value="card">مدفوع الآن شبكة</option>
+                  <option v-if="pos.features.cardPayments" value="card">
+                    مدفوع الآن شبكة
+                  </option>
                   <option value="bank_transfer">مدفوع بتحويل</option>
                 </select>
               </div>
               <div class="form-group doc-grid__full">
                 <label>ملاحظة للطيار</label>
-                <input v-model.trim="form.note" class="form-input" maxlength="500" />
+                <input
+                  v-model.trim="form.note"
+                  class="form-input"
+                  maxlength="500"
+                />
               </div>
             </div>
 
@@ -108,18 +132,28 @@
               </div>
               <div>
                 <span>رسوم التوصيل</span>
-                <span class="doc-money">{{ formatCurrency(Number(form.fee) || 0) }}</span>
+                <span class="doc-money">{{
+                  formatCurrency(Number(form.fee) || 0)
+                }}</span>
               </div>
               <div class="is-grand">
-                <span>{{ form.payment === "cod" ? "يُحصَّل من العميل" : "الإجمالي" }}</span>
+                <span>{{
+                  form.payment === "cod" ? "يُحصَّل من العميل" : "الإجمالي"
+                }}</span>
                 <span class="doc-money">
-                  {{ formatCurrency(sumAmounts([itemsTotal, Number(form.fee) || 0])) }}
+                  {{
+                    formatCurrency(
+                      sumAmounts([itemsTotal, Number(form.fee) || 0]),
+                    )
+                  }}
                 </span>
               </div>
             </div>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
               <button
                 type="submit"
                 class="btn btn--primary"

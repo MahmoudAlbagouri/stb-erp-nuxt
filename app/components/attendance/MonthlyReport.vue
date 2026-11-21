@@ -47,7 +47,10 @@
         </div>
       </div>
       <p class="hint">
-        الوردية: {{ report.shiftName || "بلا وردية (لا يُقاس تأخير ولا غياب في المسير)" }}
+        الوردية:
+        {{
+          report.shiftName || "بلا وردية (لا يُقاس تأخير ولا غياب في المسير)"
+        }}
         — {{ report.elapsedDays }} يوماً مرّت من الشهر.
       </p>
 
@@ -67,14 +70,22 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="d in report.dailyBreakdown" :key="d.date" :class="rowClass(d.status)">
+              <tr
+                v-for="d in report.dailyBreakdown"
+                :key="d.date"
+                :class="rowClass(d.status)"
+              >
                 <td>
                   {{ d.date }}
                   <span class="weekday">{{ weekdayOf(d.date) }}</span>
                 </td>
                 <td>{{ d.checkIn ? formatTime(d.checkIn) : "—" }}</td>
                 <td>
-                  {{ d.checkOut && d.checkOut !== d.checkIn ? formatTime(d.checkOut) : "—" }}
+                  {{
+                    d.checkOut && d.checkOut !== d.checkIn
+                      ? formatTime(d.checkOut)
+                      : "—"
+                  }}
                 </td>
                 <td>{{ minutesText(d.minutes) }}</td>
                 <td>{{ minutesText(d.lateMinutes) }}</td>
@@ -134,12 +145,17 @@ const tiles = computed(() => {
       value: minutesText(r.totalLateMinutes + r.totalEarlyLeaveMinutes),
       tone: "tile--warn",
     },
-    { label: "إضافي", value: minutesText(r.totalOvertimeMinutes), tone: "tile--ok" },
+    {
+      label: "إضافي",
+      value: minutesText(r.totalOvertimeMinutes),
+      tone: "tile--ok",
+    },
   ];
 });
 
 const weekdayOf = (day: string) =>
-  WEEKDAYS.find((w) => w.value === new Date(`${day}T00:00:00Z`).getUTCDay())?.label;
+  WEEKDAYS.find((w) => w.value === new Date(`${day}T00:00:00Z`).getUTCDay())
+    ?.label;
 
 const rowClass = (status: AttendanceStatus) => ({
   "row--muted": ["off_day", "holiday", "not_employed"].includes(status),

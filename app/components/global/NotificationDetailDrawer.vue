@@ -19,7 +19,9 @@
             </div>
             <div class="nd-head__meta">
               <span class="nd-type">{{ typeLabel }}</span>
-              <span v-if="groupLabel !== typeLabel" class="nd-group">{{ groupLabel }}</span>
+              <span v-if="groupLabel !== typeLabel" class="nd-group">{{
+                groupLabel
+              }}</span>
             </div>
             <button
               class="btn btn--icon btn--ghost"
@@ -40,13 +42,18 @@
               <span v-if="due" class="nd-chip nd-chip--due">
                 <Clock :size="12" /> {{ due }}
               </span>
-              <span class="nd-chip nd-chip--muted" :title="formatDateTime(target.item.createdAt)">
-                {{ timeAgo(target.item.createdAt) }} · {{ formatDateTime(target.item.createdAt) }}
+              <span
+                class="nd-chip nd-chip--muted"
+                :title="formatDateTime(target.item.createdAt)"
+              >
+                {{ timeAgo(target.item.createdAt) }} ·
+                {{ formatDateTime(target.item.createdAt) }}
               </span>
             </div>
 
             <p v-if="target.item.sender" class="nd-sender">
-              <UserRound :size="14" /> من: <strong>{{ target.item.sender.name }}</strong>
+              <UserRound :size="14" /> من:
+              <strong>{{ target.item.sender.name }}</strong>
             </p>
 
             <p class="nd-text">{{ target.item.body }}</p>
@@ -62,7 +69,10 @@
 
             <!-- تأكيد الاطلاع -->
             <template v-if="target.kind === 'inbox' && target.item.requiresAck">
-              <div v-if="target.item.acknowledgedAt" class="nd-ack nd-ack--done">
+              <div
+                v-if="target.item.acknowledgedAt"
+                class="nd-ack nd-ack--done"
+              >
                 <ShieldCheck :size="16" />
                 أكّدت الاطلاع {{ formatDateTime(target.item.acknowledgedAt) }}
               </div>
@@ -79,23 +89,40 @@
             <!-- لوحة المدير: من استلم ومن قرأ -->
             <section v-if="target.kind === 'admin'" class="nd-recipients">
               <div class="nd-reach">
-                <div><strong>{{ target.item.recipients }}</strong><span>استلموه</span></div>
-                <div><strong>{{ target.item.read }}</strong><span>قرأوه</span></div>
+                <div>
+                  <strong>{{ target.item.recipients }}</strong
+                  ><span>استلموه</span>
+                </div>
+                <div>
+                  <strong>{{ target.item.read }}</strong
+                  ><span>قرأوه</span>
+                </div>
                 <div v-if="target.item.requiresAck">
-                  <strong>{{ target.item.acknowledged }}</strong><span>أكّدوا</span>
+                  <strong>{{ target.item.acknowledged }}</strong
+                  ><span>أكّدوا</span>
                 </div>
               </div>
-              <div v-if="loadingRecipients" class="nd-loading"><span class="spinner spinner--sm" /></div>
+              <div v-if="loadingRecipients" class="nd-loading">
+                <span class="spinner spinner--sm" />
+              </div>
               <ul v-else class="nd-list">
                 <li v-for="r in recipients" :key="r.userId">
                   <span class="nd-list__name">
                     {{ r.name }}
                     <small v-if="r.employeeCode">({{ r.employeeCode }})</small>
                   </span>
-                  <span v-if="r.acknowledgedAt" class="nd-state nd-state--ack" :title="formatDateTime(r.acknowledgedAt)">
+                  <span
+                    v-if="r.acknowledgedAt"
+                    class="nd-state nd-state--ack"
+                    :title="formatDateTime(r.acknowledgedAt)"
+                  >
                     <ShieldCheck :size="13" /> أكّد
                   </span>
-                  <span v-else-if="r.readAt" class="nd-state nd-state--read" :title="formatDateTime(r.readAt)">
+                  <span
+                    v-else-if="r.readAt"
+                    class="nd-state nd-state--read"
+                    :title="formatDateTime(r.readAt)"
+                  >
                     <CheckCheck :size="13" /> قرأ
                   </span>
                   <span v-else class="nd-state">لم يقرأ</span>
@@ -219,7 +246,8 @@ const run = async (action: () => Promise<unknown>, done?: string) => {
 
 const acknowledge = () =>
   run(() => store.acknowledge(target.value!.item.id), "شكراً — سُجّل اطلاعك");
-const hide = () => run(() => store.hide(target.value!.item.id), "أُخفي الإشعار");
+const hide = () =>
+  run(() => store.hide(target.value!.item.id), "أُخفي الإشعار");
 const remove = () => {
   if (!confirm("حذف هذا الإشعار من عند كل مستلميه؟")) return;
   return run(() => store.adminRemove(target.value!.item.id), "حُذف الإشعار");

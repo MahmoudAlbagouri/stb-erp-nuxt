@@ -21,13 +21,16 @@
           الرقم الضريبي: <span dir="ltr">{{ settings.taxNumber }}</span>
         </p>
         <p v-if="settings?.commercialRegister">
-          السجل التجاري: <span dir="ltr">{{ settings.commercialRegister }}</span>
+          السجل التجاري:
+          <span dir="ltr">{{ settings.commercialRegister }}</span>
         </p>
         <h2>{{ title }}</h2>
         <p v-if="invoice.test" class="invoice-print__test">
           إيصال تجريبي لاختبار الطابعة — ليس فاتورة
         </p>
-        <p v-if="invoice.quote" class="invoice-print__test">ليس فاتورة ولا إثبات بيع</p>
+        <p v-if="invoice.quote" class="invoice-print__test">
+          ليس فاتورة ولا إثبات بيع
+        </p>
       </header>
 
       <section class="invoice-print__meta">
@@ -81,7 +84,9 @@
         <div>
           <span>العنوان</span>
           <strong>
-            <template v-if="invoice.delivery.zoneName">{{ invoice.delivery.zoneName }} — </template>{{ invoice.delivery.address }}
+            <template v-if="invoice.delivery.zoneName"
+              >{{ invoice.delivery.zoneName }} — </template
+            >{{ invoice.delivery.address }}
           </strong>
         </div>
         <div v-if="invoice.delivery.agentName">
@@ -107,7 +112,9 @@
           <tr v-for="line in invoice.lines" :key="line.id">
             <td>
               {{ line.productName }}
-              <small v-if="line.modifiers?.length"> + {{ line.modifiers.map((m) => m.name).join("، ") }}</small>
+              <small v-if="line.modifiers?.length">
+                + {{ line.modifiers.map((m) => m.name).join("، ") }}</small
+              >
               <small v-if="line.discount > 0">
                 (خصم {{ formatMoney(line.discount) }})
               </small>
@@ -123,9 +130,13 @@
       </table>
 
       <section class="invoice-print__count">
-        <span>عدد الأصناف: <strong dir="ltr">{{ formatNumber(itemsCount) }}</strong></span>
+        <span
+          >عدد الأصناف:
+          <strong dir="ltr">{{ formatNumber(itemsCount) }}</strong></span
+        >
         <span>
-          إجمالي الكميات: <strong dir="ltr">{{ formatNumber(totalQuantity) }}</strong>
+          إجمالي الكميات:
+          <strong dir="ltr">{{ formatNumber(totalQuantity) }}</strong>
         </span>
       </section>
 
@@ -150,7 +161,11 @@
         </div>
         <div v-if="invoice.delivery" class="is-collect">
           <span>
-            {{ invoice.delivery.collect > 0 ? "المطلوب تحصيله من العميل" : "مدفوع — لا يُحصَّل شيء" }}
+            {{
+              invoice.delivery.collect > 0
+                ? "المطلوب تحصيله من العميل"
+                : "مدفوع — لا يُحصَّل شيء"
+            }}
           </span>
           <span v-if="invoice.delivery.collect > 0" dir="ltr">
             {{ formatMoney(invoice.delivery.collect) }}
@@ -159,7 +174,9 @@
         <!-- إيصال الكاشير لعميل يُعرف رصيده: الإجمالي + السابق − التنزيل = المستحق -->
         <template v-if="account">
           <div>
-            <span>{{ account.previous < 0 ? "رصيد سابق له (يُخصم)" : "الرصيد السابق" }}</span>
+            <span>{{
+              account.previous < 0 ? "رصيد سابق له (يُخصم)" : "الرصيد السابق"
+            }}</span>
             <span dir="ltr">{{ formatMoney(Math.abs(account.previous)) }}</span>
           </div>
           <div v-if="account.paid > 0">
@@ -167,7 +184,9 @@
             <span dir="ltr">{{ formatMoney(account.paid) }}</span>
           </div>
           <div class="is-due">
-            <span>{{ account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق" }}</span>
+            <span>{{
+              account.balance < 0 ? "رصيد العميل لدينا" : "إجمالي المستحق"
+            }}</span>
             <span dir="ltr">{{ formatMoney(Math.abs(account.balance)) }}</span>
           </div>
         </template>
@@ -230,11 +249,14 @@ const logoSrc = computed(() =>
 const itemsCount = computed(() => props.invoice?.lines?.length ?? 0);
 const totalQuantity = computed(() =>
   (props.invoice?.lines ?? []).reduce(
-    (sum, line) => Math.round((sum + (Number(line.quantity) || 0)) * 10000) / 10000,
+    (sum, line) =>
+      Math.round((sum + (Number(line.quantity) || 0)) * 10000) / 10000,
     0,
   ),
 );
-const customerBalance = computed(() => Number(props.invoice?.customer?.balance) || 0);
+const customerBalance = computed(
+  () => Number(props.invoice?.customer?.balance) || 0,
+);
 
 /**
  * حساب العميل تحت الإجمالي (إيصال الكاشير — يعرف رصيده لحظة البيع): إجمالي الفاتورة
@@ -269,10 +291,10 @@ const title = computed(() =>
     ? "عرض سعر"
     : // مسودة أوردر توصيل (لم يخرج بعد): ليست فاتورة
       props.invoice && !props.invoice.number && props.invoice.delivery
-    ? "أمر توصيل — ليس فاتورة"
-    : taxInvoice.value && props.invoice
-    ? SALES_INVOICE_TYPE_LABELS[props.invoice.invoiceType]
-    : "فاتورة مبيعات",
+      ? "أمر توصيل — ليس فاتورة"
+      : taxInvoice.value && props.invoice
+        ? SALES_INVOICE_TYPE_LABELS[props.invoice.invoiceType]
+        : "فاتورة مبيعات",
 );
 
 // عنوان الفرع وهاتفه يُطبعان بدل عنوان الشركة؛ ما لم يُدخَل للفرع يبقى للشركة
@@ -321,9 +343,9 @@ const print = async (target: PrintSize = "a4") => {
   await nextTick();
   // الشعار ورمز QR يُرسمان قبل فتح الطباعة، وإلا قد يخرجان فارغين
   await Promise.all(
-    Array.from(document.querySelectorAll<HTMLImageElement>(".invoice-print img")).map(
-      (img) => img.decode?.().catch(() => {}),
-    ),
+    Array.from(
+      document.querySelectorAll<HTMLImageElement>(".invoice-print img"),
+    ).map((img) => img.decode?.().catch(() => {})),
   );
 
   window.print();

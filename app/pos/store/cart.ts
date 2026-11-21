@@ -57,7 +57,10 @@ export const createCart = (
 
   /** باركود ← الصنف ووحدته، للبحث الفوري عند المسح */
   const barcodeIndex = computed(() => {
-    const index = new Map<string, { product: PosProduct; unitId: string | null }>();
+    const index = new Map<
+      string,
+      { product: PosProduct; unitId: string | null }
+    >();
     for (const product of products.value) {
       for (const item of product.barcodes) {
         index.set(item.barcode, { product, unitId: item.unitId });
@@ -94,7 +97,8 @@ export const createCart = (
   const stockOf = (product: PosProduct): number | null => {
     if (!product.isStocked || !stockKnown.value) return null;
     return roundQuantity(
-      (stockLevels.value[product.id] ?? 0) - (pendingSold.value.get(product.id) ?? 0),
+      (stockLevels.value[product.id] ?? 0) -
+        (pendingSold.value.get(product.id) ?? 0),
     );
   };
 
@@ -110,7 +114,10 @@ export const createCart = (
   const inCart = (productId: string) =>
     cart.value
       .filter((line) => line.product.id === productId)
-      .reduce((sum, line) => sum + (Number(line.quantity) || 0) * line.factor, 0);
+      .reduce(
+        (sum, line) => sum + (Number(line.quantity) || 0) * line.factor,
+        0,
+      );
 
   /** ما في السلة أكثر من المتاح؟ عرض السعر لا يخضع للمخزون، لكن الكاشير يعرف */
   const isShort = (product: PosProduct): boolean => {
@@ -158,21 +165,23 @@ export const createCart = (
     const issues = priced.value.lines
       .map((line) => pricingIssue(line))
       .filter((issue): issue is NonNullable<typeof issue> => !!issue);
-    const blocked = issues.filter((issue) => issue.blocking).map((i) => i.message);
+    const blocked = issues
+      .filter((issue) => issue.blocking)
+      .map((i) => i.message);
 
     if (stockEnforced.value && !quoteMode.value) {
       for (const product of new Set(cart.value.map((line) => line.product))) {
         const available = stockOf(product);
         if (available !== null && inCart(product.id) > available + 1e-9) {
-          blocked.push(
-            `الرصيد المتاح من "${product.name}" ${available} فقط`,
-          );
+          blocked.push(`الرصيد المتاح من "${product.name}" ${available} فقط`);
         }
       }
     }
     return {
       blocked,
-      belowMin: issues.filter((issue) => issue.kind === "belowMin").map((i) => i.message),
+      belowMin: issues
+        .filter((issue) => issue.kind === "belowMin")
+        .map((i) => i.message),
       /** تخفيض سعر صنف لا يقبل الخصم: بموافقة مشرف */
       reducedNoDiscount: issues
         .filter((issue) => issue.kind === "reducedNoDiscount")
@@ -237,7 +246,12 @@ export const createCart = (
     cart.value = stored.lines.flatMap((line) => {
       const product = byId.get(line.productId);
       if (!product) return [];
-      const restored = buildLine(product, line.unitId, line.quantity, line.discount);
+      const restored = buildLine(
+        product,
+        line.unitId,
+        line.quantity,
+        line.discount,
+      );
       if (line.note) restored.note = line.note;
       if (line.unitPrice !== undefined) {
         restored.unitPrice = line.unitPrice;
@@ -266,7 +280,9 @@ export const createCart = (
       if (!ready.value) return;
       if (cartSaveTimer) clearTimeout(cartSaveTimer);
       cartSaveTimer = setTimeout(() => {
-        void posDb.setMeta({ cart: cart.value.length ? serializeCart() : null });
+        void posDb.setMeta({
+          cart: cart.value.length ? serializeCart() : null,
+        });
       }, CART_SAVE_DELAY_MS);
     },
     { deep: true },
@@ -314,7 +330,9 @@ export const createCart = (
             !line.modifiers?.length,
         );
     if (existing) {
-      existing.quantity = roundQuantity((Number(existing.quantity) || 0) + quantity);
+      existing.quantity = roundQuantity(
+        (Number(existing.quantity) || 0) + quantity,
+      );
       selectedKey.value = existing.key;
       return existing;
     }
@@ -338,7 +356,8 @@ export const createCart = (
     const line = buildLine(product, null, quantity);
     line.modifiers = modifiers;
     line.unitPrice = roundAmount(
-      line.unitPrice + modifiers.reduce((sum, m) => sum + m.priceDelta * m.quantity, 0),
+      line.unitPrice +
+        modifiers.reduce((sum, m) => sum + m.priceDelta * m.quantity, 0),
     );
     cart.value.push(line);
     selectedKey.value = line.key;
@@ -450,7 +469,8 @@ export const createCart = (
   const removeLine = async (key: number, approvedBy: string | null = null) => {
     const target = priced.value.lines.find((p) => p.line.key === key);
     cart.value = cart.value.filter((line) => line.key !== key);
-    if (selectedKey.value === key) selectedKey.value = cart.value.at(-1)?.key ?? null;
+    if (selectedKey.value === key)
+      selectedKey.value = cart.value.at(-1)?.key ?? null;
     if (target) {
       await logAudit("line_removed", {
         amount: target.total,

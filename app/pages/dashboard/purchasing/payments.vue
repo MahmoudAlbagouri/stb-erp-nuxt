@@ -75,15 +75,21 @@
             </thead>
             <tbody>
               <tr v-for="p in list.rows.value" :key="p.id">
-                <td><code class="doc-code">{{ p.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ p.number }}</code>
+                </td>
                 <td>
                   <div class="doc-cell">
                     <span class="doc-cell__main">{{ p.supplier?.name }}</span>
-                    <span v-if="p.note" class="doc-cell__sub">{{ p.note }}</span>
+                    <span v-if="p.note" class="doc-cell__sub">{{
+                      p.note
+                    }}</span>
                   </div>
                 </td>
                 <td>
-                  <code v-if="p.invoice" class="doc-code">{{ p.invoice.number }}</code>
+                  <code v-if="p.invoice" class="doc-code">{{
+                    p.invoice.number
+                  }}</code>
                   <span v-else class="doc-cell__sub">على الحساب</span>
                 </td>
                 <td>

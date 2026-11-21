@@ -13,7 +13,11 @@
               <FileText :size="20" class="file-viewer__icon" />
               {{ title || "عرض الملف" }}
             </h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -29,7 +33,11 @@
                 :class="{ 'file-viewer__image--compact': files.length > 1 }"
               />
               <div v-else class="file-viewer__placeholder">
-                <FileText v-if="isPdfFile(current)" :size="64" class="file-viewer__pdf" />
+                <FileText
+                  v-if="isPdfFile(current)"
+                  :size="64"
+                  class="file-viewer__pdf"
+                />
                 <File v-else :size="48" />
                 <p>
                   {{
@@ -42,10 +50,16 @@
               <!-- اتجاه الاسم من أول حرف فيه، والامتداد معزول: وإلا انقلب
                    "صفحة 2.jfif" إلى "jfif.2 صفحة" -->
               <span class="file-viewer__name" dir="auto"
-                >{{ nameParts.base }}<bdi dir="ltr">{{ nameParts.ext }}</bdi></span
+                >{{ nameParts.base
+                }}<bdi dir="ltr">{{ nameParts.ext }}</bdi></span
               >
               <div class="file-viewer__actions">
-                <a :href="current.url" target="_blank" rel="noopener" class="btn btn--primary">
+                <a
+                  :href="current.url"
+                  target="_blank"
+                  rel="noopener"
+                  class="btn btn--primary"
+                >
                   <ExternalLink :size="16" /> فتح في تبويب جديد
                 </a>
                 <a :href="downloadUrl(current)" class="btn btn--outline">
@@ -98,7 +112,9 @@ const props = defineProps<{
 const emit = defineEmits<{ "update:modelValue": [value: boolean] }>();
 
 const index = ref(0);
-const current = computed<FileRef | null>(() => props.files[index.value] ?? null);
+const current = computed<FileRef | null>(
+  () => props.files[index.value] ?? null,
+);
 const nameParts = computed(() => {
   const name = current.value?.name ?? "";
   const ext = /\.[^.\s]{1,8}$/.exec(name)?.[0] ?? "";

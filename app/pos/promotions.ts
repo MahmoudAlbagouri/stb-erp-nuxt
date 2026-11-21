@@ -9,7 +9,12 @@ import {
   taxRateOf,
   toSalePrice,
 } from "./calc";
-import type { CartLine, InvoiceDiscount, PosPromotion, QuotedTerms } from "./types";
+import type {
+  CartLine,
+  InvoiceDiscount,
+  PosPromotion,
+  QuotedTerms,
+} from "./types";
 import { currencyDecimals } from "../utils/format";
 
 export interface PricedLine {
@@ -82,14 +87,20 @@ export const isRepriced = (line: CartLine): boolean =>
  */
 export const quotedTerms = (line: CartLine): QuotedTerms | null => {
   const terms = line.quoted;
-  return terms && (Number(line.quantity) || 0) <= terms.quantity + 1e-9 ? terms : null;
+  return terms && (Number(line.quantity) || 0) <= terms.quantity + 1e-9
+    ? terms
+    : null;
 };
 
 const isLive = (promo: PosPromotion, now: number) =>
   (!promo.startsAt || Date.parse(promo.startsAt) <= now) &&
   (!promo.endsAt || Date.parse(promo.endsAt) > now);
 
-const applies = (promo: PosPromotion, line: CartLine, customerId: string | null) => {
+const applies = (
+  promo: PosPromotion,
+  line: CartLine,
+  customerId: string | null,
+) => {
   if (promo.customerId && promo.customerId !== customerId) return false;
   if (promo.productId) return promo.productId === line.product.id;
   if (promo.categoryId) return promo.categoryId === line.product.categoryId;
@@ -110,7 +121,11 @@ const benefitOf = (
     if (!baseUnit || promo.price === null) return null;
     const special = toSalePrice(line.product, promo.price);
     if (special >= list) return null;
-    return { saving: (list - special) * quantity, unitPrice: special, discount: 0 };
+    return {
+      saving: (list - special) * quantity,
+      unitPrice: special,
+      discount: 0,
+    };
   }
   if (promo.type === "percent_off") {
     if (!promo.percent) return null;
@@ -119,7 +134,8 @@ const benefitOf = (
   }
   if (!baseUnit || !promo.buyQuantity || !promo.getQuantity) return null;
   const free =
-    Math.floor(quantity / (promo.buyQuantity + promo.getQuantity)) * promo.getQuantity;
+    Math.floor(quantity / (promo.buyQuantity + promo.getQuantity)) *
+    promo.getQuantity;
   if (free <= 0) return null;
   const discount = roundAmount(free * list);
   return { saving: discount, unitPrice: list, discount };
@@ -127,16 +143,26 @@ const benefitOf = (
 
 /** أفضل عرض للسطر (لا تُجمع العروض): الأكثر توفيراً، وعرض العميل عند التساوي */
 const bestPromotion = (line: CartLine, context: PricingContext) => {
-  let best: { promo: PosPromotion; saving: number; unitPrice: number; discount: number } | null =
-    null;
+  let best: {
+    promo: PosPromotion;
+    saving: number;
+    unitPrice: number;
+    discount: number;
+  } | null = null;
   for (const promo of context.promotions) {
-    if (!isLive(promo, context.now) || !applies(promo, line, context.customerId)) continue;
+    if (
+      !isLive(promo, context.now) ||
+      !applies(promo, line, context.customerId)
+    )
+      continue;
     const benefit = benefitOf(promo, line);
     if (!benefit || benefit.saving <= 0) continue;
     const better =
       !best ||
       benefit.saving > best.saving ||
-      (benefit.saving === best.saving && !!promo.customerId && !best.promo.customerId);
+      (benefit.saving === best.saving &&
+        !!promo.customerId &&
+        !best.promo.customerId);
     if (better) best = { promo, ...benefit };
   }
   return best;
@@ -146,7 +172,10 @@ const bestPromotion = (line: CartLine, context: PricingContext) => {
  * يسعّر السلة كاملة: العرض لكل سطر، ثم خصم الكاشير، ثم توزيع خصم الفاتورة على
  * الأسطر بنسبة قيمتها (الضريبة تُحسب بعد الخصم، فلا بد أن ينزل على الأسطر).
  */
-export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart => {
+export const priceCart = (
+  cart: CartLine[],
+  context: PricingContext,
+): PricedCart => {
   const drafts = cart.map((line) => {
     const quantity = Number(line.quantity) || 0;
     // سعر كتبه الكاشير (معدّل أو مفتوح) هو السعر: لا عرض فوقه، فلا تخفيض مرتين
@@ -178,7 +207,9 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
       unitPrice,
       gross,
       promoDiscount,
-      promoName: quoted ? `عرض سعر ${quoted.number}` : (promo?.promo.name ?? null),
+      promoName: quoted
+        ? `عرض سعر ${quoted.number}`
+        : (promo?.promo.name ?? null),
       promotionId: promo?.promo.id ?? null,
       promotionSaving: promo ? roundAmount(promo.saving) : 0,
       manualDiscount,
@@ -218,7 +249,9 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
 
   const lines: PricedLine[] = drafts.map((draft) => {
     const invoiceDiscount = shares.get(draft.line) ?? 0;
-    const discount = roundAmount(draft.promoDiscount + draft.manualDiscount + invoiceDiscount);
+    const discount = roundAmount(
+      draft.promoDiscount + draft.manualDiscount + invoiceDiscount,
+    );
     return {
       line: draft.line,
       unitPrice: draft.unitPrice,
@@ -240,7 +273,9 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
     };
   });
 
-  const manualDiscount = sumAmounts(lines.map((l) => l.manualDiscount + l.invoiceDiscount));
+  const manualDiscount = sumAmounts(
+    lines.map((l) => l.manualDiscount + l.invoiceDiscount),
+  );
   const promoDiscount = sumAmounts(lines.map((l) => l.promoDiscount));
   const priceReduction = sumAmounts(lines.map((l) => l.priceReduction));
   // أساس النسبة: ما كان يمكن الخصم منه (بعد العروض، وبسعر القائمة لما خُفّض)
@@ -251,7 +286,9 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
   );
   // تخفيض صنف لا يقبل الخصم لا يدخل النسبة: يحتاج مشرفاً على أي حال (pricingIssue)
   const reducedDiscountable = sumAmounts(
-    lines.filter((l) => l.line.product.allowDiscount).map((l) => l.priceReduction),
+    lines
+      .filter((l) => l.line.product.allowDiscount)
+      .map((l) => l.priceReduction),
   );
 
   return {
@@ -267,7 +304,10 @@ export const priceCart = (cart: CartLine[], context: PricingContext): PricedCart
       discountable > 0
         ? ((manualDiscount + reducedDiscountable) / discountable) * 100
         : 0,
-    items: cart.reduce((count, line) => count + (Number(line.quantity) || 0), 0),
+    items: cart.reduce(
+      (count, line) => count + (Number(line.quantity) || 0),
+      0,
+    ),
   };
 };
 
@@ -302,12 +342,18 @@ export const pricingIssue = (priced: PricedLine): PricingIssue | null => {
       kind: "reducedNoDiscount",
     };
   }
-  if ((Number(line.discount) || 0) > priced.gross - priced.promoDiscount + 1e-9) {
+  if (
+    (Number(line.discount) || 0) >
+    priced.gross - priced.promoDiscount + 1e-9
+  ) {
     return { message: `خصم "${product.name}" أكبر من قيمته`, blocking: true };
   }
   const cashierDiscount = priced.manualDiscount + priced.invoiceDiscount;
   if (priced.manualDiscount > 0 && !product.allowDiscount) {
-    return { message: `"${product.name}" لا يُسمح بالخصم عليه`, blocking: true };
+    return {
+      message: `"${product.name}" لا يُسمح بالخصم عليه`,
+      blocking: true,
+    };
   }
   // عرض الإدارة قد ينزل تحت أقل سعر بقرارها؛ الحد يقيّد ما يفعله الكاشير فقط:
   // خصمه، وتخفيضه للسعر، والسعر المفتوح الذي يكتبه
@@ -315,7 +361,9 @@ export const pricingIssue = (priced: PricedLine): PricingIssue | null => {
     cashierDiscount > 0 || priced.priceReduction > 0 || !!product.openPrice;
   if (product.minSalePrice !== null && cashierPriced) {
     const effective =
-      (priced.gross - priced.promoDiscount - cashierDiscount) / quantity / line.factor;
+      (priced.gross - priced.promoDiscount - cashierDiscount) /
+      quantity /
+      line.factor;
     const minimum = toSalePrice(product, product.minSalePrice);
     // نصف أصغر جزء من العملة: فرق التقريب لا يُعدّ بيعاً تحت الحد
     if (effective + 0.5 / 10 ** currencyDecimals() < minimum) {

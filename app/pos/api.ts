@@ -142,9 +142,10 @@ export const usePosApi = () => {
     );
     if (!res.ok) throw new SessionExpiredError();
 
-    const tokens = await dataOf<{ accessToken?: string; refreshToken?: string }>(
-      res,
-    );
+    const tokens = await dataOf<{
+      accessToken?: string;
+      refreshToken?: string;
+    }>(res);
     if (!tokens?.accessToken || !tokens.refreshToken) {
       throw new SessionExpiredError();
     }

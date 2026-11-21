@@ -8,8 +8,14 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><Settings :size="20" class="doc-modal__icon" /> إعدادات الشاشة</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <Settings :size="20" class="doc-modal__icon" /> إعدادات الشاشة
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -22,7 +28,11 @@
               فاتورة ولا رقم ولا أثر على الوردية.
             </p>
             <div class="doc-actions">
-              <button type="button" class="btn btn--sm btn--primary" @click="emit('test-print')">
+              <button
+                type="button"
+                class="btn btn--sm btn--primary"
+                @click="emit('test-print')"
+              >
                 <Printer :size="14" /> طباعة إيصال تجريبي
               </button>
             </div>
@@ -54,15 +64,27 @@
               <div class="doc-grid">
                 <div class="form-group">
                   <label>سرعة المنفذ (Baud)</label>
-                  <select v-model.number="form.baudRate" class="form-select" @change="save">
-                    <option v-for="rate in BAUD_RATES" :key="rate" :value="rate">
+                  <select
+                    v-model.number="form.baudRate"
+                    class="form-select"
+                    @change="save"
+                  >
+                    <option
+                      v-for="rate in BAUD_RATES"
+                      :key="rate"
+                      :value="rate"
+                    >
                       {{ rate }}
                     </option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label>مخرج الدرج</label>
-                  <select v-model.number="form.pin" class="form-select" @change="save">
+                  <select
+                    v-model.number="form.pin"
+                    class="form-select"
+                    @change="save"
+                  >
                     <option :value="0">الأول (الشائع)</option>
                     <option :value="1">الثاني</option>
                   </select>
@@ -101,8 +123,8 @@
             <!-- ══ الأصوات ══ -->
             <h4 class="pos-settings__title"><Volume2 :size="16" /> الأصوات</h4>
             <p class="doc-hint">
-              تنبيه بالصوت للأحداث المهمة، فلا يحتاج الكاشير للنظر إلى الشاشة: مسح
-              الباركود، صنف غير معروف، تمام البيع، طلب موافقة مشرف، وانقطاع
+              تنبيه بالصوت للأحداث المهمة، فلا يحتاج الكاشير للنظر إلى الشاشة:
+              مسح الباركود، صنف غير معروف، تمام البيع، طلب موافقة مشرف، وانقطاع
               الاتصال وعودته. الإعداد لهذا الجهاز فقط.
             </p>
             <SoundSettingsPanel scope="pos" :sounds="POS_SOUNDS" />
@@ -121,7 +143,11 @@
                 نافذة كاملة بلا شريط المتصفح، وتعمل بلا إنترنت كما هي.
               </p>
               <div v-if="canInstall" class="doc-actions">
-                <button type="button" class="btn btn--primary btn--sm" @click="doInstall">
+                <button
+                  type="button"
+                  class="btn btn--primary btn--sm"
+                  @click="doInstall"
+                >
                   <MonitorDown :size="14" /> تثبيت الآن
                 </button>
               </div>
@@ -136,7 +162,9 @@
             </template>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--primary" @click="close">تم</button>
+              <button type="button" class="btn btn--primary" @click="close">
+                تم
+              </button>
             </div>
           </div>
         </div>
@@ -229,7 +257,9 @@ const test = async () => {
     await kickDrawer({ ...form });
     toast.success("أُرسل أمر الفتح للطابعة");
   } catch (e) {
-    toast.error(getErrorMessage(e, "تعذر فتح الدرج — تأكد أن الطابعة تعمل وموصولة"));
+    toast.error(
+      getErrorMessage(e, "تعذر فتح الدرج — تأكد أن الطابعة تعمل وموصولة"),
+    );
   } finally {
     busy.value = false;
   }

@@ -8,8 +8,14 @@
       <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div class="modal doc-modal doc-modal--sm">
           <div class="modal__header">
-            <h3><FileText :size="20" class="doc-modal__icon" /> حفظ عرض السعر</h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <h3>
+              <FileText :size="20" class="doc-modal__icon" /> حفظ عرض السعر
+            </h3>
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
@@ -58,12 +64,14 @@
               </div>
             </div>
             <p v-if="shortCount" class="doc-hint">
-              {{ formatNumber(shortCount) }} صنف أكثر من المتاح في المخزن — لا يظهر هذا
-              للعميل، ولا يُحجز شيء.
+              {{ formatNumber(shortCount) }} صنف أكثر من المتاح في المخزن — لا
+              يظهر هذا للعميل، ولا يُحجز شيء.
             </p>
 
             <div class="modal__footer">
-              <button type="button" class="btn btn--ghost" @click="close">إلغاء</button>
+              <button type="button" class="btn btn--ghost" @click="close">
+                إلغاء
+              </button>
               <button
                 type="button"
                 class="btn btn--ghost"

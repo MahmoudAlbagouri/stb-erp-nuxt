@@ -41,7 +41,9 @@ export const useInventoryStore = defineStore("inventory", () => {
     if (warehousesLoaded.value && !force) return;
     warehousesLoading.value = true;
     try {
-      warehouses.value = (await api.get<Warehouse[]>(`${BASE}/warehouses`)).data;
+      warehouses.value = (
+        await api.get<Warehouse[]>(`${BASE}/warehouses`)
+      ).data;
       warehousesLoaded.value = true;
     } finally {
       warehousesLoading.value = false;
@@ -128,7 +130,10 @@ export const useInventoryStore = defineStore("inventory", () => {
   const createTransfer = async (payload: TransferPayload) =>
     (await api.post<StockTransfer>(`${BASE}/transfers`, payload)).data;
 
-  const updateTransfer = async (id: string, payload: Partial<TransferPayload>) =>
+  const updateTransfer = async (
+    id: string,
+    payload: Partial<TransferPayload>,
+  ) =>
     (await api.patch<StockTransfer>(`${BASE}/transfers/${id}`, payload)).data;
 
   const sendTransfer = async (id: string) =>

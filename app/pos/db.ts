@@ -37,7 +37,8 @@ const open = (): Promise<IDBDatabase> => {
       const db = request.result;
       // جهاز يعمل بنسخة أقدم يحتفظ ببياناته: نضيف ما ينقصه فقط
       const ensure = (name: StoreName, options: IDBObjectStoreParameters) => {
-        if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, options);
+        if (!db.objectStoreNames.contains(name))
+          db.createObjectStore(name, options);
       };
       ensure("products", { keyPath: "id" });
       ensure("customers", { keyPath: "id" });
@@ -133,7 +134,10 @@ export const posDb = {
     return transact(["meta"], (get) => {
       for (const [key, value] of Object.entries(values)) {
         // الكائنات التفاعلية (Vue proxies) لا تُخزَّن كما هي
-        get("meta").put({ key, value: JSON.parse(JSON.stringify(value ?? null)) });
+        get("meta").put({
+          key,
+          value: JSON.parse(JSON.stringify(value ?? null)),
+        });
       }
     });
   },
@@ -172,7 +176,11 @@ export const posDb = {
    * يحفظ عملية بيع: الفاتورة + عملية رفعها + العدّاد الجديد في معاملة واحدة.
    * انقطاع الكهرباء في منتصفها لا يترك فاتورة بلا رفع أو رقماً مكرراً.
    */
-  saveSale(sale: LocalSale, entry: OutboxEntry, counter: number): Promise<void> {
+  saveSale(
+    sale: LocalSale,
+    entry: OutboxEntry,
+    counter: number,
+  ): Promise<void> {
     return transact(["sales", "outbox", "meta"], (get) => {
       get("sales").put(JSON.parse(JSON.stringify(sale)));
       get("outbox").add(JSON.parse(JSON.stringify(entry)));
@@ -191,7 +199,9 @@ export const posDb = {
   /** يعيد عملاء أُضيفوا هنا ولم يُرفعوا بعد (تنزيل كامل يمسح نسخة العملاء) */
   putCustomers(customers: PosCustomer[]): Promise<void> {
     return transact(["customers"], (get) => {
-      customers.forEach((c) => get("customers").put(JSON.parse(JSON.stringify(c))));
+      customers.forEach((c) =>
+        get("customers").put(JSON.parse(JSON.stringify(c))),
+      );
     });
   },
 
@@ -204,11 +214,17 @@ export const posDb = {
   },
 
   /** يضيف عملية للطابور مع تحديث حالة الجهاز (فتح/تقفيل وردية) */
-  enqueue(entry: OutboxEntry, meta: Record<string, unknown> = {}): Promise<void> {
+  enqueue(
+    entry: OutboxEntry,
+    meta: Record<string, unknown> = {},
+  ): Promise<void> {
     return transact(["outbox", "meta"], (get) => {
       get("outbox").add(JSON.parse(JSON.stringify(entry)));
       for (const [key, value] of Object.entries(meta)) {
-        get("meta").put({ key, value: JSON.parse(JSON.stringify(value ?? null)) });
+        get("meta").put({
+          key,
+          value: JSON.parse(JSON.stringify(value ?? null)),
+        });
       }
     });
   },
@@ -251,13 +267,32 @@ export const posDb = {
    */
   reset(keep: Record<string, unknown> = {}): Promise<void> {
     return transact(
-      ["products", "customers", "categories", "sales", "returns", "outbox", "meta"],
+      [
+        "products",
+        "customers",
+        "categories",
+        "sales",
+        "returns",
+        "outbox",
+        "meta",
+      ],
       (get) => {
         (
-          ["products", "customers", "categories", "sales", "returns", "outbox", "meta"] as const
+          [
+            "products",
+            "customers",
+            "categories",
+            "sales",
+            "returns",
+            "outbox",
+            "meta",
+          ] as const
         ).forEach((name) => get(name).clear());
         for (const [key, value] of Object.entries(keep)) {
-          get("meta").put({ key, value: JSON.parse(JSON.stringify(value ?? null)) });
+          get("meta").put({
+            key,
+            value: JSON.parse(JSON.stringify(value ?? null)),
+          });
         }
       },
     );

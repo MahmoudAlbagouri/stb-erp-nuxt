@@ -14,7 +14,11 @@
     <div v-if="!credentials" class="driver__empty">
       <Bike :size="56" />
       <h1>شاشة الطيار</h1>
-      <p>{{ authError || "افتح الرابط الذي أرسله لك المدير لتظهر أوردراتك هنا." }}</p>
+      <p>
+        {{
+          authError || "افتح الرابط الذي أرسله لك المدير لتظهر أوردراتك هنا."
+        }}
+      </p>
     </div>
 
     <template v-else>
@@ -88,11 +92,15 @@
 
       <div v-if="!board && loading" class="driver__state">جارٍ التحميل…</div>
       <div v-else-if="!board" class="driver__state">
-        لا أوردرات محفوظة على هذا الجوال بعد — افتح الشاشة وأنت متصل مرة،
-        وبعدها تعمل بلا إنترنت.
+        لا أوردرات محفوظة على هذا الجوال بعد — افتح الشاشة وأنت متصل مرة، وبعدها
+        تعمل بلا إنترنت.
       </div>
       <div v-else-if="!visible.length" class="driver__state">
-        {{ tab === "open" ? "لا أوردرات معك الآن 👌" : "لم تُنهِ أوردرات اليوم بعد" }}
+        {{
+          tab === "open"
+            ? "لا أوردرات معك الآن 👌"
+            : "لم تُنهِ أوردرات اليوم بعد"
+        }}
       </div>
 
       <article
@@ -110,15 +118,21 @@
         <p class="driver__address">
           <MapPin :size="16" />
           <span>
-            <template v-if="o.zone">{{ o.zone.name }} — </template>{{ o.address }}
+            <template v-if="o.zone">{{ o.zone.name }} — </template
+            >{{ o.address }}
           </span>
         </p>
         <p v-if="o.note" class="driver__note">📝 {{ o.note }}</p>
 
-        <div class="driver__money" :class="{ 'is-paid': o.paymentMode !== 'cod' }">
+        <div
+          class="driver__money"
+          :class="{ 'is-paid': o.paymentMode !== 'cod' }"
+        >
           <template v-if="o.paymentMode === 'cod' && o.status !== 'failed'">
             <span>حصّل من العميل</span>
-            <strong>{{ formatCurrency(o.codAmount || o.invoice.total) }}</strong>
+            <strong>{{
+              formatCurrency(o.codAmount || o.invoice.total)
+            }}</strong>
           </template>
           <template v-else-if="o.status === 'failed'">
             <span>لم يُسلَّم</span>
@@ -135,7 +149,9 @@
           <ul>
             <li v-for="line in itemsOf(o)" :key="line.id">
               <span>{{ line.productName }}</span>
-              <span>× {{ formatNumber(line.quantity) }} {{ line.unitName }}</span>
+              <span
+                >× {{ formatNumber(line.quantity) }} {{ line.unitName }}</span
+              >
             </li>
           </ul>
         </details>
@@ -155,7 +171,10 @@
             <Truck :size="20" /> استلمته وخرجت
           </button>
         </div>
-        <div v-else-if="o.status === 'out_for_delivery'" class="driver__actions">
+        <div
+          v-else-if="o.status === 'out_for_delivery'"
+          class="driver__actions"
+        >
           <button class="is-success" @click="confirmDeliver(o)">
             <PackageCheck :size="20" /> تم التسليم
           </button>
@@ -167,12 +186,20 @@
     </template>
 
     <!-- ══ تأكيد التسليم ══ -->
-    <div v-if="deliverTarget" class="driver__sheet" @click.self="deliverTarget = null">
+    <div
+      v-if="deliverTarget"
+      class="driver__sheet"
+      @click.self="deliverTarget = null"
+    >
       <div class="driver__sheet-body">
         <h3>تسليم {{ deliverTarget.number }}</h3>
         <p v-if="deliverTarget.paymentMode === 'cod'">
           تأكد أنك استلمت
-          <strong>{{ formatCurrency(deliverTarget.codAmount || deliverTarget.invoice.total) }}</strong>
+          <strong>{{
+            formatCurrency(
+              deliverTarget.codAmount || deliverTarget.invoice.total,
+            )
+          }}</strong>
           من {{ deliverTarget.recipientName }}
         </p>
         <p v-else>الأوردر مدفوع مقدماً — سلّمه فقط.</p>
@@ -184,7 +211,11 @@
     </div>
 
     <!-- ══ لم يُسلَّم ══ -->
-    <div v-if="failTarget" class="driver__sheet" @click.self="failTarget = null">
+    <div
+      v-if="failTarget"
+      class="driver__sheet"
+      @click.self="failTarget = null"
+    >
       <div class="driver__sheet-body">
         <h3>لم يُسلَّم {{ failTarget.number }}</h3>
         <div class="driver__reasons">
@@ -197,7 +228,12 @@
             {{ r }}
           </button>
         </div>
-        <input v-model.trim="failReason" class="form-input" maxlength="300" placeholder="أو اكتب السبب" />
+        <input
+          v-model.trim="failReason"
+          class="form-input"
+          maxlength="300"
+          placeholder="أو اكتب السبب"
+        />
         <p class="driver__hint">ارجع بالبضاعة للمحل — تعود للمخزن تلقائياً.</p>
         <div class="driver__actions">
           <button class="is-danger" :disabled="!failReason" @click="failNow">
@@ -313,7 +349,9 @@ const doneOrders = computed(() =>
     (o) => o.status === "delivered" || o.status === "failed",
   ),
 );
-const visible = computed(() => (tab.value === "open" ? openOrders.value : doneOrders.value));
+const visible = computed(() =>
+  tab.value === "open" ? openOrders.value : doneOrders.value,
+);
 const toCollect = computed(() =>
   sumMoney(openOrders.value.filter((o) => o.paymentMode === "cod").map(codOf)),
 );
@@ -343,11 +381,15 @@ const status = computed(() => {
   }
   if (waiting) return { tone: "pending", text: `جارٍ رفع ${waiting} عملية…` };
   if (online.value === null) return { tone: "pending", text: "جارٍ الاتصال…" };
-  return { tone: "online", text: ["متصل", updated].filter(Boolean).join(" · ") };
+  return {
+    tone: "online",
+    text: ["متصل", updated].filter(Boolean).join(" · "),
+  };
 });
 
 /** أصناف الأوردر بلا سطر رسوم التوصيل (خدمة لا تُسلَّم) */
-const itemsOf = (o: DeliveryOrder) => (o.invoice.lines ?? []).filter((l) => l.isStocked);
+const itemsOf = (o: DeliveryOrder) =>
+  (o.invoice.lines ?? []).filter((l) => l.isStocked);
 
 const whatsapp = (o: DeliveryOrder) => {
   const text = `مرحباً ${o.recipientName}، معك طيار ${board.value?.company ?? ""} بطلبك رقم ${o.number}`;
@@ -383,7 +425,11 @@ class RequestError extends Error {
   }
 }
 
-const call = async <T,>(method: "GET" | "POST", path: string, body?: object): Promise<T> => {
+const call = async <T,>(
+  method: "GET" | "POST",
+  path: string,
+  body?: object,
+): Promise<T> => {
   const creds = credentials.value!;
   let res: Response;
   try {
@@ -437,7 +483,11 @@ const handleError = (e: unknown) => {
   if (!(e instanceof OfflineError)) notice.value = (e as Error).message;
 };
 
-type SyncResult = { id: string; status: "ok" | "duplicate" | "error"; message?: string };
+type SyncResult = {
+  id: string;
+  status: "ok" | "duplicate" | "error";
+  message?: string;
+};
 
 /** ما قبله السيرفر يُحذف من الطابور، وما رفضه يبقى بسببه */
 const settle = (results: SyncResult[]) => {
@@ -445,7 +495,8 @@ const settle = (results: SyncResult[]) => {
   outbox.value = outbox.value.flatMap((op) => {
     const result = byId.get(op.id);
     if (!result) return [op];
-    if (result.status === "error") return [{ ...op, error: result.message || "رُفضت" }];
+    if (result.status === "error")
+      return [{ ...op, error: result.message || "رُفضت" }];
     return [];
   });
   persist();
@@ -462,19 +513,25 @@ const runSync = async () => {
       try {
         results = (
           await call<{ results: SyncResult[] }>("POST", "/sync", {
-            operations: batch.map(({ id, type, orderId, occurredAt, reason }) => ({
-              id,
-              type,
-              orderId,
-              occurredAt,
-              ...(reason ? { reason } : {}),
-            })),
+            operations: batch.map(
+              ({ id, type, orderId, occurredAt, reason }) => ({
+                id,
+                type,
+                orderId,
+                occurredAt,
+                ...(reason ? { reason } : {}),
+              }),
+            ),
           })
         ).results;
       } catch (e) {
         // الدفعة نفسها مرفوضة (400): تظهر بسببها بدل أن تسدّ الطابور للأبد
         if (e instanceof RequestError && e.status === 400) {
-          results = batch.map((op) => ({ id: op.id, status: "error", message: e.message }));
+          results = batch.map((op) => ({
+            id: op.id,
+            status: "error",
+            message: e.message,
+          }));
         } else {
           throw e;
         }
@@ -502,7 +559,12 @@ const sync = (): Promise<void> =>
 // ─── ما يفعله الطيار: يُسجَّل فوراً ويُرفع في الخلفية ───────────────────────────
 const SAVED_OFFLINE = " — محفوظ على الجوال ويُرفع عند عودة الإنترنت";
 
-const record = (o: DeliveryOrder, type: DriverOpType, done: string, reason?: string) => {
+const record = (
+  o: DeliveryOrder,
+  type: DriverOpType,
+  done: string,
+  reason?: string,
+) => {
   outbox.value = [
     ...outbox.value,
     {
@@ -519,7 +581,8 @@ const record = (o: DeliveryOrder, type: DriverOpType, done: string, reason?: str
   void sync();
 };
 
-const pickup = (o: DeliveryOrder) => record(o, "pickup", `خرجت بالأوردر ${o.number}`);
+const pickup = (o: DeliveryOrder) =>
+  record(o, "pickup", `خرجت بالأوردر ${o.number}`);
 
 const deliverTarget = ref<DeliveryOrder | null>(null);
 const confirmDeliver = (o: DeliveryOrder) => (deliverTarget.value = o);

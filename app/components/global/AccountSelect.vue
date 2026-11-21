@@ -17,7 +17,8 @@
       :value="item.account.id"
       :disabled="!item.selectable"
     >
-      {{ "  ".repeat(item.depth - 1) }}{{ item.account.code }} — {{ item.account.name }}{{ item.account.isActive ? "" : " (موقوف)" }}
+      {{ "  ".repeat(item.depth - 1) }}{{ item.account.code }} —
+      {{ item.account.name }}{{ item.account.isActive ? "" : " (موقوف)" }}
     </option>
   </select>
 </template>

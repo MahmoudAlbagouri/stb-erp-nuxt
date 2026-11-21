@@ -63,7 +63,9 @@
               <td>
                 <div class="doc-cell">
                   <span class="doc-cell__main">{{ d.name }}</span>
-                  <span><code class="doc-code">{{ d.code }}</code></span>
+                  <span
+                    ><code class="doc-code">{{ d.code }}</code></span
+                  >
                 </div>
               </td>
               <td>
@@ -90,7 +92,10 @@
                 <div class="doc-cell">
                   <span>
                     <span
-                      :class="['badge', d.isActive ? 'badge--active' : 'badge--inactive']"
+                      :class="[
+                        'badge',
+                        d.isActive ? 'badge--active' : 'badge--inactive',
+                      ]"
                     >
                       {{ d.isActive ? "نشط" : "موقوف" }}
                     </span>
@@ -98,14 +103,19 @@
                   <span class="doc-cell__sub">
                     {{ d.installationId ? "مربوط بشاشة" : "غير مربوط" }}
                   </span>
-                  <span v-if="d.hasOpenShift" class="doc-cell__sub">وردية مفتوحة</span>
+                  <span v-if="d.hasOpenShift" class="doc-cell__sub"
+                    >وردية مفتوحة</span
+                  >
                 </div>
               </td>
               <td>
                 <div class="doc-actions">
                   <NuxtLink
                     class="btn btn--sm btn--ghost"
-                    :to="{ path: '/dashboard/pos/shifts', query: { deviceId: d.id } }"
+                    :to="{
+                      path: '/dashboard/pos/shifts',
+                      query: { deviceId: d.id },
+                    }"
                   >
                     <ClipboardList :size="14" /> الورديات
                   </NuxtLink>
@@ -196,16 +206,29 @@
                 </div>
                 <div class="form-group">
                   <label>يبيع من مخزن *</label>
-                  <select v-model="form.warehouseId" class="form-select" required>
+                  <select
+                    v-model="form.warehouseId"
+                    class="form-select"
+                    required
+                  >
                     <option value="" disabled>اختر المخزن...</option>
-                    <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
+                    <option
+                      v-for="w in activeWarehouses"
+                      :key="w.id"
+                      :value="w.id"
+                    >
                       {{ w.branch ? `${w.name} — ${w.branch.name}` : w.name }}
                     </option>
                   </select>
                 </div>
               </div>
 
-              <div v-if="selectedWarehouse && !selectedWarehouse.allowNegativeStock" class="doc-note">
+              <div
+                v-if="
+                  selectedWarehouse && !selectedWarehouse.allowNegativeStock
+                "
+                class="doc-note"
+              >
                 <Info :size="16" />
                 <span>
                   هذا المخزن لا يسمح بالرصيد السالب: فاتورة تبيع أكثر من رصيده
@@ -219,7 +242,11 @@
               </label>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button

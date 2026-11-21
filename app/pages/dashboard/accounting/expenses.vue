@@ -37,21 +37,32 @@
           placeholder="رقم السند أو المستفيد أو المرجع أو البيان…"
           @input="onSearch"
         />
-        <select v-model="filters.status" class="form-select" @change="list.load(1)">
+        <select
+          v-model="filters.status"
+          class="form-select"
+          @change="list.load(1)"
+        >
           <option value="">كل الحالات</option>
           <option value="posted">مُقيَّد</option>
           <option value="cancelled">ملغي</option>
         </select>
-        <StbDateInput v-model="filters.from" @update:model-value="list.load(1)" />
+        <StbDateInput
+          v-model="filters.from"
+          @update:model-value="list.load(1)"
+        />
         <StbDateInput v-model="filters.to" @update:model-value="list.load(1)" />
       </div>
 
-      <div v-if="!list.ready.value" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="!list.ready.value" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
       <div v-else-if="!list.rows.value.length" class="card">
         <div class="empty-state">
           <Receipt :size="44" class="empty-state__icon" />
           <div class="empty-state__title">لا سندات صرف</div>
-          <div class="empty-state__text">سجّل أول مصروف (إيجار، كهرباء…) من زر «سند صرف».</div>
+          <div class="empty-state__text">
+            سجّل أول مصروف (إيجار، كهرباء…) من زر «سند صرف».
+          </div>
         </div>
       </div>
       <template v-else>
@@ -70,13 +81,28 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="v in list.rows.value" :key="v.id" class="clickable" @click="open(v.id)">
-                  <td><code class="doc-code">{{ v.number }}</code></td>
-                  <td><span class="doc-num">{{ v.date }}</span></td>
+                <tr
+                  v-for="v in list.rows.value"
+                  :key="v.id"
+                  class="clickable"
+                  @click="open(v.id)"
+                >
+                  <td>
+                    <code class="doc-code">{{ v.number }}</code>
+                  </td>
+                  <td>
+                    <span class="doc-num">{{ v.date }}</span>
+                  </td>
                   <td>
                     {{ v.payee }}
-                    <Paperclip v-if="v.receiptFileId" :size="12" aria-label="مع إيصال" />
-                    <span v-if="v.reference" class="doc-cell__sub">{{ v.reference }}</span>
+                    <Paperclip
+                      v-if="v.receiptFileId"
+                      :size="12"
+                      aria-label="مع إيصال"
+                    />
+                    <span v-if="v.reference" class="doc-cell__sub">{{
+                      v.reference
+                    }}</span>
                   </td>
                   <td>{{ v.description }}</td>
                   <td>
@@ -85,11 +111,19 @@
                     </span>
                   </td>
                   <td>
-                    <span class="doc-num doc-num--strong">{{ formatMoney(v.total) }}</span>
-                    <span v-if="v.taxTotal" class="doc-cell__sub">ضريبة {{ formatMoney(v.taxTotal) }}</span>
+                    <span class="doc-num doc-num--strong">{{
+                      formatMoney(v.total)
+                    }}</span>
+                    <span v-if="v.taxTotal" class="doc-cell__sub"
+                      >ضريبة {{ formatMoney(v.taxTotal) }}</span
+                    >
                   </td>
                   <td>
-                    <span v-if="v.status === 'cancelled'" class="badge doc-status--cancelled">ملغي</span>
+                    <span
+                      v-if="v.status === 'cancelled'"
+                      class="badge doc-status--cancelled"
+                      >ملغي</span
+                    >
                     <span v-else class="badge doc-status--done">مُقيَّد</span>
                   </td>
                 </tr>
@@ -110,26 +144,39 @@
     <!-- ══ عرض سند ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="viewingId" class="modal-overlay" @click.self="viewingId = null">
+        <div
+          v-if="viewingId"
+          class="modal-overlay"
+          @click.self="viewingId = null"
+        >
           <div class="modal doc-modal voucher-modal">
             <div class="modal__header">
               <h3>
                 <Receipt :size="20" class="doc-modal__icon" />
                 {{ viewing ? `سند صرف ${viewing.number}` : "سند صرف" }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="viewingId = null">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="viewingId = null"
+              >
                 <X :size="20" />
               </button>
             </div>
 
-            <div v-if="!viewing" class="empty-state"><div class="spinner" /></div>
+            <div v-if="!viewing" class="empty-state">
+              <div class="spinner" />
+            </div>
 
             <div v-else class="doc-form">
               <div ref="voucherEl" class="voucher printable">
                 <div class="report-title">
                   <h2>سند صرف {{ viewing.number }}</h2>
                   <span class="doc-num">{{ viewing.date }}</span>
-                  <span v-if="viewing.status === 'cancelled'" class="badge doc-status--cancelled">
+                  <span
+                    v-if="viewing.status === 'cancelled'"
+                    class="badge doc-status--cancelled"
+                  >
                     ملغي {{ viewing.cancelDate }}
                   </span>
                 </div>
@@ -151,7 +198,9 @@
                   </div>
                   <div class="doc-cell">
                     <span class="doc-cell__sub">المبلغ</span>
-                    <span class="doc-num doc-num--strong">{{ formatMoney(viewing.total) }}</span>
+                    <span class="doc-num doc-num--strong">{{
+                      formatMoney(viewing.total)
+                    }}</span>
                   </div>
                 </div>
                 <p class="voucher__description">{{ viewing.description }}</p>
@@ -178,12 +227,19 @@
                     </thead>
                     <tbody>
                       <tr v-for="line in viewing.lines" :key="line.id">
-                        <td><code class="doc-code">{{ line.accountCode }}</code> {{ line.accountName }}</td>
+                        <td>
+                          <code class="doc-code">{{ line.accountCode }}</code>
+                          {{ line.accountName }}
+                        </td>
                         <td>{{ line.description || "—" }}</td>
                         <td v-if="hasBranches">{{ line.branchName || "—" }}</td>
                         <td class="doc-num">{{ formatMoney(line.amount) }}</td>
                         <td class="doc-num">
-                          {{ line.taxAmount ? `${formatMoney(line.taxAmount)} (${line.taxRate}%)` : "—" }}
+                          {{
+                            line.taxAmount
+                              ? `${formatMoney(line.taxAmount)} (${line.taxRate}%)`
+                              : "—"
+                          }}
                         </td>
                         <td class="doc-num">{{ formatMoney(line.total) }}</td>
                       </tr>
@@ -191,15 +247,25 @@
                     <tfoot>
                       <tr>
                         <th :colspan="hasBranches ? 3 : 2">الإجمالي</th>
-                        <th class="doc-num">{{ formatMoney(viewing.subtotal) }}</th>
-                        <th class="doc-num">{{ formatMoney(viewing.taxTotal) }}</th>
-                        <th class="doc-num">{{ formatMoney(viewing.total) }}</th>
+                        <th class="doc-num">
+                          {{ formatMoney(viewing.subtotal) }}
+                        </th>
+                        <th class="doc-num">
+                          {{ formatMoney(viewing.taxTotal) }}
+                        </th>
+                        <th class="doc-num">
+                          {{ formatMoney(viewing.total) }}
+                        </th>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
-                <p v-if="viewing.taxTotal && !viewing.taxRecoverable" class="doc-cell__sub">
-                  المنشأة غير مسجّلة في الضريبة وقت الصرف: الضريبة جزء من المصروف.
+                <p
+                  v-if="viewing.taxTotal && !viewing.taxRecoverable"
+                  class="doc-cell__sub"
+                >
+                  المنشأة غير مسجّلة في الضريبة وقت الصرف: الضريبة جزء من
+                  المصروف.
                 </p>
                 <p v-if="viewing.status === 'cancelled'" class="doc-cell__sub">
                   سبب الإلغاء: {{ viewing.cancelReason }}
@@ -218,13 +284,27 @@
                 </div>
                 <div class="form-group voucher__wide">
                   <label>سبب الإلغاء *</label>
-                  <input v-model.trim="cancelForm.reason" class="form-input" maxlength="300" />
+                  <input
+                    v-model.trim="cancelForm.reason"
+                    class="form-input"
+                    maxlength="300"
+                  />
                 </div>
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="viewingId = null">إغلاق</button>
-                <button type="button" class="btn btn--ghost" @click="printVoucher">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="viewingId = null"
+                >
+                  إغلاق
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="printVoucher"
+                >
                   <Printer :size="16" /> طباعة
                 </button>
                 <button
@@ -271,8 +351,14 @@
         <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
           <div class="modal doc-modal voucher-form">
             <div class="modal__header">
-              <h3><Receipt :size="20" class="doc-modal__icon" /> سند صرف جديد</h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="closeForm">
+              <h3>
+                <Receipt :size="20" class="doc-modal__icon" /> سند صرف جديد
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="closeForm"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -295,15 +381,29 @@
                 </div>
                 <div class="form-group">
                   <label>المستفيد *</label>
-                  <input v-model.trim="form.payee" class="form-input" maxlength="150" required />
+                  <input
+                    v-model.trim="form.payee"
+                    class="form-input"
+                    maxlength="150"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>الرقم الضريبي للمستفيد</label>
-                  <input v-model.trim="form.payeeTaxNumber" class="form-input" maxlength="30" dir="ltr" />
+                  <input
+                    v-model.trim="form.payeeTaxNumber"
+                    class="form-input"
+                    maxlength="30"
+                    dir="ltr"
+                  />
                 </div>
                 <div class="form-group">
                   <label>رقم فاتورته / الإيصال</label>
-                  <input v-model.trim="form.reference" class="form-input" maxlength="80" />
+                  <input
+                    v-model.trim="form.reference"
+                    class="form-input"
+                    maxlength="80"
+                  />
                 </div>
                 <div class="form-group voucher__wide">
                   <label>البيان *</label>
@@ -332,9 +432,9 @@
               <div class="doc-note">
                 <Info :size="16" />
                 <span>
-                  الضريبة تُقيَّد ضريبةَ مدخلات (وتدخل الإقرار) إن كانت منشأتك مسجّلة في
-                  الضريبة، وإلا تُضاف لتكلفة المصروف. مشتريات البضاعة وسداد الموردين
-                  لها مستنداتها في المشتريات.
+                  الضريبة تُقيَّد ضريبةَ مدخلات (وتدخل الإقرار) إن كانت منشأتك
+                  مسجّلة في الضريبة، وإلا تُضاف لتكلفة المصروف. مشتريات البضاعة
+                  وسداد الموردين لها مستنداتها في المشتريات.
                 </span>
               </div>
 
@@ -347,20 +447,56 @@
                   <span v-if="branches.hasMany">الفرع</span>
                   <span />
                 </div>
-                <div v-for="(line, index) in form.lines" :key="line.key" class="doc-lines__row">
-                  <AccountSelect v-model="line.accountId" :accounts="lineAccounts" postable required />
+                <div
+                  v-for="(line, index) in form.lines"
+                  :key="line.key"
+                  class="doc-lines__row"
+                >
+                  <AccountSelect
+                    v-model="line.accountId"
+                    :accounts="lineAccounts"
+                    postable
+                    required
+                  />
                   <div>
                     <span class="doc-lines__label">المبلغ</span>
-                    <StbNumberInput v-model.number="line.amount" class="form-input" min="0" :step="moneyStep()" required />
+                    <StbNumberInput
+                      v-model.number="line.amount"
+                      class="form-input"
+                      min="0"
+                      :step="moneyStep()"
+                      required
+                    />
                   </div>
                   <div>
                     <span class="doc-lines__label">الضريبة %</span>
-                    <StbNumberInput v-model.number="line.taxRate" class="form-input" min="0" max="100" step="0.01" />
+                    <StbNumberInput
+                      v-model.number="line.taxRate"
+                      class="form-input"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                    />
                   </div>
-                  <input v-model.trim="line.description" class="form-input" maxlength="300" placeholder="اختياري" />
-                  <select v-if="branches.hasMany" v-model="line.branchId" class="form-select">
+                  <input
+                    v-model.trim="line.description"
+                    class="form-input"
+                    maxlength="300"
+                    placeholder="اختياري"
+                  />
+                  <select
+                    v-if="branches.hasMany"
+                    v-model="line.branchId"
+                    class="form-select"
+                  >
                     <option value="">—</option>
-                    <option v-for="b in branches.activeOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
+                    <option
+                      v-for="b in branches.activeOptions"
+                      :key="b.id"
+                      :value="b.id"
+                    >
+                      {{ b.name }}
+                    </option>
                   </select>
                   <button
                     type="button"
@@ -373,18 +509,39 @@
                   </button>
                 </div>
               </div>
-              <button type="button" class="btn btn--dashed btn--sm btn--full" @click="addLine">
+              <button
+                type="button"
+                class="btn btn--dashed btn--sm btn--full"
+                @click="addLine"
+              >
                 <Plus :size="14" /> بند
               </button>
 
               <div class="totals">
-                <span>قبل الضريبة: <strong class="doc-num">{{ formatMoney(totals.subtotal) }}</strong></span>
-                <span>الضريبة: <strong class="doc-num">{{ formatMoney(totals.tax) }}</strong></span>
-                <span>الإجمالي: <strong class="doc-num">{{ formatMoney(totals.total) }}</strong></span>
+                <span
+                  >قبل الضريبة:
+                  <strong class="doc-num">{{
+                    formatMoney(totals.subtotal)
+                  }}</strong></span
+                >
+                <span
+                  >الضريبة:
+                  <strong class="doc-num">{{
+                    formatMoney(totals.tax)
+                  }}</strong></span
+                >
+                <span
+                  >الإجمالي:
+                  <strong class="doc-num">{{
+                    formatMoney(totals.total)
+                  }}</strong></span
+                >
               </div>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeForm">إلغاء</button>
+                <button type="button" class="btn btn--ghost" @click="closeForm">
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -410,13 +567,26 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { Ban, BookOpen, Info, Paperclip, Plus, Printer, Receipt, Trash2, X } from "lucide-vue-next";
+import {
+  Ban,
+  BookOpen,
+  Info,
+  Paperclip,
+  Plus,
+  Printer,
+  Receipt,
+  Trash2,
+  X,
+} from "lucide-vue-next";
 import StbUploader from "@/components/global/StbUploader.vue";
 import FileViewerModal from "@/components/global/FileViewerModal.vue";
 import { useAccountingStore } from "@/stores/accounting";
 import { useBranchesStore } from "@/stores/branches";
 import { useToast } from "@/composables/useToast";
-import type { ExpenseVoucherStatus, ExpenseVoucherView } from "@/types/accounting";
+import type {
+  ExpenseVoucherStatus,
+  ExpenseVoucherView,
+} from "@/types/accounting";
 import type { FileRef } from "@/types";
 
 definePageMeta({ middleware: "auth" });
@@ -477,7 +647,9 @@ const entryId = ref<string | null>(null);
 const voucherEl = ref<HTMLElement | null>(null);
 const cancelling = ref(false);
 const cancelForm = reactive({ date: "", reason: "" });
-const hasBranches = computed(() => !!viewing.value?.lines.some((l) => l.branchName));
+const hasBranches = computed(
+  () => !!viewing.value?.lines.some((l) => l.branchName),
+);
 
 const open = (id: string) => {
   viewingId.value = id;
@@ -506,7 +678,11 @@ const cancel = async () => {
   if (!viewing.value) return;
   saving.value = true;
   try {
-    viewing.value = await store.cancelExpense(viewing.value.id, cancelForm.date, cancelForm.reason);
+    viewing.value = await store.cancelExpense(
+      viewing.value.id,
+      cancelForm.date,
+      cancelForm.reason,
+    );
     cancelling.value = false;
     toast.success(`أُلغي السند ${viewing.value.number} بقيد عكسي`);
     await list.load();
@@ -529,7 +705,9 @@ interface FormLine {
 
 let lineKey = 0;
 const LINE_COLS = computed(() =>
-  branches.hasMany ? "2.4fr 1.1fr 0.8fr 1.6fr 1fr auto" : "2.4fr 1.1fr 0.8fr 1.6fr auto",
+  branches.hasMany
+    ? "2.4fr 1.1fr 0.8fr 1.6fr 1fr auto"
+    : "2.4fr 1.1fr 0.8fr 1.6fr auto",
 );
 const blankLine = (taxRate: number | "" = ""): FormLine => ({
   key: ++lineKey,
@@ -542,7 +720,9 @@ const blankLine = (taxRate: number | "" = ""): FormLine => ({
 
 /** بنود السند: كل الحسابات الفرعية عدا ما له دفتر مساعد */
 const lineAccounts = computed(() =>
-  store.accounts.filter((a) => !a.systemKey || !SUBLEDGER_KEYS.has(a.systemKey)),
+  store.accounts.filter(
+    (a) => !a.systemKey || !SUBLEDGER_KEYS.has(a.systemKey),
+  ),
 );
 
 const showForm = ref(false);
@@ -587,7 +767,8 @@ const totals = computed(() => {
 });
 
 /** البند الجديد بنسبة ضريبة البند السابق */
-const addLine = () => form.lines.push(blankLine(form.lines.at(-1)?.taxRate ?? ""));
+const addLine = () =>
+  form.lines.push(blankLine(form.lines.at(-1)?.taxRate ?? ""));
 
 const openCreate = async () => {
   await store.fetchAccounts();

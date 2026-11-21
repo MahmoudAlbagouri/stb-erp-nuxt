@@ -128,7 +128,11 @@ export interface ChecksResult {
 
 // ─── رسائل الإدارة ─────────────────────────────────────────
 
-export type MessageAudienceKind = "all" | "employees" | "branches" | "departments";
+export type MessageAudienceKind =
+  | "all"
+  | "employees"
+  | "branches"
+  | "departments";
 
 export interface MessageAudience {
   kind: MessageAudienceKind;

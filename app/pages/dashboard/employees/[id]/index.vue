@@ -23,15 +23,28 @@
 
         <!-- ✅ زر التصدير في صفحة التفاصيل -->
         <div class="export-dropdown" ref="exportDropdownRef">
-          <button v-can="'export_employees'" v-feature="'reports_export'" class="btn btn--outline" @click="toggleExportMenu">
+          <button
+            v-can="'export_employees'"
+            v-feature="'reports_export'"
+            class="btn btn--outline"
+            @click="toggleExportMenu"
+          >
             <Download :size="16" /> تصدير الملف
           </button>
           <Transition name="fade">
             <div v-if="showExportMenu" class="dropdown-menu">
-              <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile('pdf')">
+              <button
+                v-can="'export_employees'"
+                v-feature="'reports_export'"
+                @click="downloadProfile('pdf')"
+              >
                 <FileText :size="14" /> ملف PDF
               </button>
-              <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile('excel')">
+              <button
+                v-can="'export_employees'"
+                v-feature="'reports_export'"
+                @click="downloadProfile('excel')"
+              >
                 <FileSpreadsheet :size="14" /> ملف Excel
               </button>
             </div>
@@ -548,9 +561,7 @@
               <tr v-for="eos in employee.endOfServices" :key="eos.id">
                 <td>{{ formatDate(eos.terminationDate) }}</td>
                 <td>{{ eos.reason || "—" }}</td>
-                <td>
-                  {{ Number(eos.serviceYears ?? 0).toFixed(2) }} سنة
-                </td>
+                <td>{{ Number(eos.serviceYears ?? 0).toFixed(2) }} سنة</td>
                 <td>{{ formatCurrency(eos.lastBasicSalary) }}</td>
                 <td>
                   <strong class="text-success">{{

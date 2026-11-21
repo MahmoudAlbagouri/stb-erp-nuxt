@@ -67,7 +67,9 @@
                     </tr>
                     <tr>
                       <th>Server Port</th>
-                      <td><code dir="ltr">{{ setup.zk.serverPort }}</code></td>
+                      <td>
+                        <code dir="ltr">{{ setup.zk.serverPort }}</code>
+                      </td>
                     </tr>
                     <tr>
                       <th>Enable Domain Name</th>
@@ -86,7 +88,8 @@
                 <ol class="steps" start="3">
                   <li>
                     تأكد أن الرقم التسلسلي في <b>System Info</b> هو
-                    <code dir="ltr">{{ setup.serialNumber }}</code> كما سُجّل هنا.
+                    <code dir="ltr">{{ setup.serialNumber }}</code> كما سُجّل
+                    هنا.
                   </li>
                   <li>
                     أعد تشغيل الجهاز: تظهر حالته "متصل" خلال دقيقة، وتصل كل بصمة
@@ -100,8 +103,8 @@
                 <ol class="steps">
                   <li>
                     افتح صفحة الجهاز من المتصفح (أو iVMS-4200) ←
-                    <b>Configuration</b> ← <b>Network</b> ←
-                    <b>Advanced</b> ← <b>HTTP Listening</b>.
+                    <b>Configuration</b> ← <b>Network</b> ← <b>Advanced</b> ←
+                    <b>HTTP Listening</b>.
                   </li>
                   <li>اكتب القيم التالية وفعّل إرسال أحداث التحكم بالدخول:</li>
                 </ol>
@@ -127,13 +130,17 @@
                     </tr>
                     <tr>
                       <th>Port</th>
-                      <td><code dir="ltr">{{ setup.hikvision.port }}</code></td>
+                      <td>
+                        <code dir="ltr">{{ setup.hikvision.port }}</code>
+                      </td>
                     </tr>
                     <tr>
                       <th>URL</th>
                       <td>
                         <div class="copy-row">
-                          <code dir="ltr" class="wrap">{{ hikvisionPath }}</code>
+                          <code dir="ltr" class="wrap">{{
+                            hikvisionPath
+                          }}</code>
                           <button
                             v-if="key"
                             class="btn btn--sm btn--ghost"
@@ -148,8 +155,8 @@
                 </table>
                 <ol class="steps" start="3">
                   <li>
-                    رقم الموظف في الجهاز (<b>Employee No.</b>) هو كوده في النظام،
-                    أو رقم البصمة المحدد في ملفه.
+                    رقم الموظف في الجهاز (<b>Employee No.</b>) هو كوده في
+                    النظام، أو رقم البصمة المحدد في ملفه.
                   </li>
                 </ol>
               </template>
@@ -165,7 +172,9 @@
                       <th>الرابط (POST)</th>
                       <td>
                         <div class="copy-row">
-                          <code dir="ltr" class="wrap">{{ setup.api.url }}</code>
+                          <code dir="ltr" class="wrap">{{
+                            setup.api.url
+                          }}</code>
                           <button
                             class="btn btn--sm btn--ghost"
                             @click="copy(setup.api.url)"
@@ -179,9 +188,13 @@
                       <th>الترويسات</th>
                       <td>
                         <div class="stack">
-                          <code dir="ltr" class="wrap">{{ setup.api.deviceIdHeader }}</code>
                           <code dir="ltr" class="wrap">{{
-                            key ? `X-Device-Key: ${key}` : setup.api.deviceKeyHeader
+                            setup.api.deviceIdHeader
+                          }}</code>
+                          <code dir="ltr" class="wrap">{{
+                            key
+                              ? `X-Device-Key: ${key}`
+                              : setup.api.deviceKeyHeader
                           }}</code>
                         </div>
                       </td>
@@ -190,8 +203,8 @@
                 </table>
                 <pre dir="ltr" class="sample">{{ apiSample }}</pre>
                 <p class="setup-hint">
-                  حتى 1000 بصمة في الطلب. الوقت بمنطقته، أو بلا منطقة فيُقرأ بتوقيت
-                  الجهاز. إعادة إرسال نفس البصمة لا تكررها.
+                  حتى 1000 بصمة في الطلب. الوقت بمنطقته، أو بلا منطقة فيُقرأ
+                  بتوقيت الجهاز. إعادة إرسال نفس البصمة لا تكررها.
                 </p>
               </template>
 
@@ -312,7 +325,8 @@ const copy = async (text: string) => {
 
 const regenerate = async () => {
   if (!props.device) return;
-  if (!confirm("المفتاح الحالي سيتوقف فوراً. هل تريد توليد مفتاح جديد؟")) return;
+  if (!confirm("المفتاح الحالي سيتوقف فوراً. هل تريد توليد مفتاح جديد؟"))
+    return;
   regenerating.value = true;
   try {
     freshKey.value = (await store.regenerateKey(props.device.id)).pushKey;

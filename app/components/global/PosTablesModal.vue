@@ -13,14 +13,22 @@
               <Armchair :size="20" class="doc-modal__icon" />
               {{ moving ? `نقل طلب ${pos.order.tableName} إلى…` : "الطاولات" }}
             </h3>
-            <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="close">
+            <button
+              class="btn btn--icon btn--ghost"
+              aria-label="إغلاق"
+              @click="close"
+            >
               <X :size="20" />
             </button>
           </div>
 
           <div class="doc-form">
             <div v-if="areas.length > 1" class="doc-tabs">
-              <button class="doc-tab" :class="{ 'is-active': !area }" @click="area = ''">
+              <button
+                class="doc-tab"
+                :class="{ 'is-active': !area }"
+                @click="area = ''"
+              >
                 الكل
               </button>
               <button
@@ -35,7 +43,8 @@
             </div>
 
             <p v-if="!pos.tables.length" class="pos-rows__empty">
-              لا طاولات معرّفة لهذا الفرع — تُضاف من لوحة التحكم (الكاشير ← المطعم)
+              لا طاولات معرّفة لهذا الفرع — تُضاف من لوحة التحكم (الكاشير ←
+              المطعم)
             </p>
 
             <div class="pos-tables__grid">
@@ -54,12 +63,18 @@
               >
                 <span class="pos-tables__name">{{ table.name }}</span>
                 <template v-if="statusOf(table.id)">
-                  <strong class="doc-money">{{ formatCurrency(statusOf(table.id)!.total) }}</strong>
+                  <strong class="doc-money">{{
+                    formatCurrency(statusOf(table.id)!.total)
+                  }}</strong>
                   <span class="pos-tables__meta">
-                    <Clock :size="12" /> {{ minutesSince(statusOf(table.id)!.openedAt) }} د
-                    · {{ formatNumber(statusOf(table.id)!.items) }} صنف
+                    <Clock :size="12" />
+                    {{ minutesSince(statusOf(table.id)!.openedAt) }} د ·
+                    {{ formatNumber(statusOf(table.id)!.items) }} صنف
                   </span>
-                  <span v-if="statusOf(table.id)!.ready" class="badge doc-status--done">
+                  <span
+                    v-if="statusOf(table.id)!.ready"
+                    class="badge doc-status--done"
+                  >
                     جاهز في المطبخ
                   </span>
                 </template>
@@ -78,9 +93,14 @@
               :class="{ 'is-on': moving }"
               @click="moving = !moving"
             >
-              <ArrowLeftRight :size="16" /> {{ moving ? "إلغاء النقل" : "نقل الطلب" }}
+              <ArrowLeftRight :size="16" />
+              {{ moving ? "إلغاء النقل" : "نقل الطلب" }}
             </button>
-            <button type="button" class="btn btn--primary" @click="emit('takeaway')">
+            <button
+              type="button"
+              class="btn btn--primary"
+              @click="emit('takeaway')"
+            >
               <ShoppingBag :size="16" /> سفري (بلا طاولة)
             </button>
           </div>
@@ -92,7 +112,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { ArrowLeftRight, Armchair, Clock, ShoppingBag, Users, X } from "lucide-vue-next";
+import {
+  ArrowLeftRight,
+  Armchair,
+  Clock,
+  ShoppingBag,
+  Users,
+  X,
+} from "lucide-vue-next";
 import type { DiningTableInfo } from "@/pos/types";
 import { usePosStore } from "@/stores/pos";
 
@@ -166,7 +193,9 @@ const pick = (table: DiningTableInfo) => {
   border: 2px dashed $stb-border-light;
   border-radius: $radius-lg;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.1s;
+  transition:
+    border-color 0.15s,
+    transform 0.1s;
 
   &:hover:not(:disabled) {
     border-color: $stb-primary-light;

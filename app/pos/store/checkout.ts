@@ -98,7 +98,8 @@ export const createCheckout = (
       if (!customer) throw new Error("البيع الآجل لعميل مسجّل — اختر العميل");
       const limit = customer.creditLimit ?? null;
       creditOverLimit =
-        limit !== null && customerBalance(customer.id) + creditAmount > limit + 1e-9;
+        limit !== null &&
+        customerBalance(customer.id) + creditAmount > limit + 1e-9;
     }
 
     // ما يتجاوز صلاحية الكاشير: بموافقة مشرف، أو يُمنع إن لم يوجد من يوافق
@@ -108,7 +109,9 @@ export const createCheckout = (
       ...(issues.discountOverLimit
         ? [`الخصم يتجاوز حدّ الكاشير (${discountLimit.value}%)`]
         : []),
-      ...(creditOverLimit ? [`تجاوز حد ائتمان العميل "${customer!.name}"`] : []),
+      ...(creditOverLimit
+        ? [`تجاوز حد ائتمان العميل "${customer!.name}"`]
+        : []),
     ];
     const selfApproved = !!shiftCashier.value?.isSupervisor;
     if (overrides.length && !approvedBy && !selfApproved) {
@@ -150,22 +153,27 @@ export const createCheckout = (
       cashReceived,
       change: Math.max(sumAmounts([cashReceived, -cashPaid]), 0),
       creditAmount,
-      discountTotal: sumAmounts([current.promoDiscount, current.manualDiscount]),
+      discountTotal: sumAmounts([
+        current.promoDiscount,
+        current.manualDiscount,
+      ]),
       // رمز هيئة الزكاة والضريبة للمنشأة المسجّلة فقط — كالسيرفر
       qrCode:
         settings.value?.vatRegistered !== false && settings.value?.taxNumber
-        ? buildZatcaQr({
-            sellerName: settings.value.sellerName ?? "",
-            taxNumber: settings.value.taxNumber,
-            issuedAt,
-            total,
-            taxTotal,
-          })
-        : null,
+          ? buildZatcaQr({
+              sellerName: settings.value.sellerName ?? "",
+              taxNumber: settings.value.taxNumber,
+              issuedAt,
+              total,
+              taxTotal,
+            })
+          : null,
       delivery,
       // طلب طاولة: اسمها على الإيصال
       tableName:
-        state.order.value.type === "dine_in" ? state.order.value.tableName : null,
+        state.order.value.type === "dine_in"
+          ? state.order.value.tableName
+          : null,
     };
 
     await posDb.saveSale(
@@ -191,7 +199,8 @@ export const createCheckout = (
             ? {
                 order: {
                   orderType: delivery ? "delivery" : state.order.value.type,
-                  ...(state.order.value.type === "dine_in" && state.order.value.tableId
+                  ...(state.order.value.type === "dine_in" &&
+                  state.order.value.tableId
                     ? {
                         tableId: state.order.value.tableId,
                         tableName: state.order.value.tableName ?? undefined,
@@ -210,7 +219,10 @@ export const createCheckout = (
                   phone: delivery.phone,
                   address: delivery.address,
                   ...(delivery.latitude != null && delivery.longitude != null
-                    ? { latitude: delivery.latitude, longitude: delivery.longitude }
+                    ? {
+                        latitude: delivery.latitude,
+                        longitude: delivery.longitude,
+                      }
                     : {}),
                   zoneId: delivery.zoneId ?? undefined,
                   deliveryFee: delivery.deliveryFee,
@@ -242,7 +254,9 @@ export const createCheckout = (
     for (const p of current.lines.filter((priced) => isRepriced(priced.line))) {
       const { line } = p;
       await logAudit("price_changed", {
-        amount: roundAmount((line.unitPrice - line.listPrice!) * (Number(line.quantity) || 0)),
+        amount: roundAmount(
+          (line.unitPrice - line.listPrice!) * (Number(line.quantity) || 0),
+        ),
         details: `${sale.number} — ${line.product.name} (${line.unitName}): ${line.listPrice} ← ${line.unitPrice}${line.priceReason ? ` · ${line.priceReason}` : ""}`,
         approvedBy: line.priceApprovedBy ?? null,
       });
@@ -281,15 +295,25 @@ export const createCheckout = (
   ): ReturnableInvoice => {
     const returned = new Map<number, number>();
     for (const line of done.flatMap((r) => r.lines)) {
-      returned.set(line.lineIndex, (returned.get(line.lineIndex) ?? 0) + line.quantity);
+      returned.set(
+        line.lineIndex,
+        (returned.get(line.lineIndex) ?? 0) + line.quantity,
+      );
     }
     return {
       ...invoice,
-      returnedAmount: sumAmounts([invoice.returnedAmount, ...done.map((r) => r.total)]),
-      paidAmount: sumAmounts([invoice.paidAmount, ...done.map((r) => -r.refundAmount)]),
+      returnedAmount: sumAmounts([
+        invoice.returnedAmount,
+        ...done.map((r) => r.total),
+      ]),
+      paidAmount: sumAmounts([
+        invoice.paidAmount,
+        ...done.map((r) => -r.refundAmount),
+      ]),
       lines: invoice.lines.map((line) => ({
         ...line,
-        returnedQuantity: line.returnedQuantity + (returned.get(line.lineIndex) ?? 0),
+        returnedQuantity:
+          line.returnedQuantity + (returned.get(line.lineIndex) ?? 0),
       })),
     };
   };
@@ -298,7 +322,9 @@ export const createCheckout = (
    * يجلب فاتورة برقمها لاختيار ما يُرجَع منها: من السيرفر (أي فاتورة للشركة)،
    * وبلا إنترنت من نسخة الجهاز (فواتير هذه الشاشة فقط).
    */
-  const lookupInvoice = async (rawNumber: string): Promise<ReturnableInvoice> => {
+  const lookupInvoice = async (
+    rawNumber: string,
+  ): Promise<ReturnableInvoice> => {
     const number = rawNumber.trim();
     if (!number) throw new Error("أدخل رقم الفاتورة");
 
@@ -309,14 +335,18 @@ export const createCheckout = (
       online.value = true;
       markContact();
       // السيرفر لم يرَ بعد ما ينتظر الرفع من هذه الشاشة
-      return withReturns({ ...remote, local: false }, pendingReturnsOf(remote.number));
+      return withReturns(
+        { ...remote, local: false },
+        pendingReturnsOf(remote.number),
+      );
     } catch (error) {
       const waiting = sales.value.find(
         (sale) => sale.number.toLowerCase() === number.toLowerCase(),
       );
       // فاتورة بيعت هنا ولم تُرفع بعد: السيرفر لا يعرفها، ونسخة الجهاز تكفي
       const notUploaded =
-        waiting && outbox.value.some((entry) => entry.id === `sale-${waiting.uuid}`);
+        waiting &&
+        outbox.value.some((entry) => entry.id === `sale-${waiting.uuid}`);
       if (!(error instanceof OfflineError) && !notUploaded) throw error;
       if (error instanceof OfflineError) online.value = false;
       if (!waiting) {
@@ -356,7 +386,10 @@ export const createCheckout = (
     quantities: Record<number, number>,
   ) => {
     const lines = invoice.lines
-      .map((line) => ({ line, quantity: Number(quantities[line.lineIndex]) || 0 }))
+      .map((line) => ({
+        line,
+        quantity: Number(quantities[line.lineIndex]) || 0,
+      }))
       .filter((item) => item.quantity > 0);
     const total = sumAmounts(
       lines.map((item) => returnShare(item.line, item.quantity).total),
@@ -382,7 +415,8 @@ export const createCheckout = (
     if (!shift.value) throw new Error("افتح وردية أولاً");
     if (!canReturn.value) throw new Error("لا تملك صلاحية عمل مرتجع");
     const preview = refundPreview(invoice, quantities);
-    if (preview.lines.length === 0) throw new Error("حدّد كمية صنف واحد على الأقل");
+    if (preview.lines.length === 0)
+      throw new Error("حدّد كمية صنف واحد على الأقل");
     for (const { line, quantity } of preview.lines) {
       if (quantity > line.quantity - line.returnedQuantity + 1e-9) {
         throw new Error(`كمية "${line.productName}" أكبر من المتاح للإرجاع`);
@@ -417,7 +451,10 @@ export const createCheckout = (
         invoiceNumber: salesReturn.invoiceNumber,
         issuedAt,
         shiftId: salesReturn.shiftId,
-        lines: salesReturn.lines.map(({ lineIndex, quantity }) => ({ lineIndex, quantity })),
+        lines: salesReturn.lines.map(({ lineIndex, quantity }) => ({
+          lineIndex,
+          quantity,
+        })),
         refundMethod: method,
         refundAmount: salesReturn.refundAmount,
         reason: reason || undefined,

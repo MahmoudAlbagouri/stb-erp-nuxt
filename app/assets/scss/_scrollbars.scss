@@ -42,7 +42,13 @@ body > .os-scrollbar-vertical {
     left: 0;
 
     &::before {
-      right: calc((var(--os-padding-perpendicular) + var(--os-handle-interactive-area-offset)) * -1);
+      right: calc(
+        (
+            var(--os-padding-perpendicular) +
+              var(--os-handle-interactive-area-offset)
+          ) *
+          -1
+      );
       left: calc(var(--os-padding-perpendicular) * -1);
     }
   }

@@ -61,7 +61,13 @@
     <!-- ══ Tab Content: Devices ═════════════════════════════════════════════ -->
     <div v-if="activeTab === 'devices'" class="tab-content">
       <div class="action-bar">
-        <button v-can="'create_biometric_device'" v-feature="'biometric_integration'" v-quota="'max_biometric_devices'" class="btn btn--primary" @click="openDeviceModal">
+        <button
+          v-can="'create_biometric_device'"
+          v-feature="'biometric_integration'"
+          v-quota="'max_biometric_devices'"
+          class="btn btn--primary"
+          @click="openDeviceModal"
+        >
           <Plus :size="18" />
           إضافة جهاز جديد
         </button>
@@ -75,7 +81,13 @@
         <div class="empty-state">
           <WifiOff :size="40" class="empty-icon" />
           <div class="empty-state__title">لا توجد أجهزة مسجلة</div>
-          <button v-can="'create_biometric_device'" v-feature="'biometric_integration'" v-quota="'max_biometric_devices'" class="btn btn--primary mt-4" @click="openDeviceModal">
+          <button
+            v-can="'create_biometric_device'"
+            v-feature="'biometric_integration'"
+            v-quota="'max_biometric_devices'"
+            class="btn btn--primary mt-4"
+            @click="openDeviceModal"
+          >
             <Plus :size="16" />
             إضافة جهاز
           </button>
@@ -119,7 +131,9 @@
             <p class="device-meta">
               <Clock :size="12" class="inline-icon" />
               آخر اتصال:
-              {{ dev.lastSeenAt ? formatDateTime(dev.lastSeenAt) : "لم يتصل بعد" }}
+              {{
+                dev.lastSeenAt ? formatDateTime(dev.lastSeenAt) : "لم يتصل بعد"
+              }}
             </p>
             <p v-if="dev.protocol === 'zk_adms'" class="device-meta">
               <Cpu :size="12" class="inline-icon" />
@@ -151,7 +165,9 @@
               </template>
               <template v-else>
                 غير مقفول على عنوان
-                <span v-if="dev.ipAddress" dir="ltr">(آخر: {{ dev.ipAddress }})</span>
+                <span v-if="dev.ipAddress" dir="ltr"
+                  >(آخر: {{ dev.ipAddress }})</span
+                >
               </template>
             </p>
           </div>
@@ -231,7 +247,11 @@
         <div class="filters-grid">
           <div class="form-group">
             <label>من تاريخ</label>
-            <StbDateInput v-model="filters.from" type="date" class="form-input" />
+            <StbDateInput
+              v-model="filters.from"
+              type="date"
+              class="form-input"
+            />
           </div>
           <div class="form-group">
             <label>إلى تاريخ</label>
@@ -298,7 +318,11 @@
             <FileUp :size="16" />
             استيراد من ملف
           </button>
-          <button v-can="'create_attendance_log'" class="btn btn--primary" @click="openManualLogModal">
+          <button
+            v-can="'create_attendance_log'"
+            class="btn btn--primary"
+            @click="openManualLogModal"
+          >
             <Plus :size="16" />
             تسجيل بصمة يدوية
           </button>
@@ -357,7 +381,10 @@
                   >
                     {{ PUNCH_ROLES[log.dayRole].label }}
                   </span>
-                  <span v-else :class="`badge ${punchBadgeClass(log.punchType)}`">
+                  <span
+                    v-else
+                    :class="`badge ${punchBadgeClass(log.punchType)}`"
+                  >
                     {{ punchTypeLabel(log.punchType) }}
                   </span>
                   <div
@@ -367,7 +394,13 @@
                     {{ log.leaveReason }}
                   </div>
                 </td>
-                <td :title="log.workHours != null ? 'ساعات اليوم: من أول بصمة لآخرها' : ''">
+                <td
+                  :title="
+                    log.workHours != null
+                      ? 'ساعات اليوم: من أول بصمة لآخرها'
+                      : ''
+                  "
+                >
                   {{ log.workHours != null ? `${log.workHours} س` : "—" }}
                 </td>
                 <td>
@@ -481,7 +514,10 @@
                   dir="ltr"
                   placeholder="مثال: JHG3255001088"
                 />
-                <small v-if="deviceForm.protocol === 'zk_adms'" class="form-hint">
+                <small
+                  v-if="deviceForm.protocol === 'zk_adms'"
+                  class="form-hint"
+                >
                   من قائمة الجهاز: System Info — به يتعرف السيرفر على الجهاز.
                 </small>
               </div>
@@ -552,8 +588,9 @@
                   placeholder="41.33.10.25 أو 41.33.10.0/24"
                 />
                 <small class="form-hint">
-                  عنوان إنترنت مكان الجهاز (أو أكثر مفصولة بفواصل): لا يُقبل اتصال
-                  باسم الجهاز من غيره. فارغ = أي عنوان، مع تنبيه حين يتغير.
+                  عنوان إنترنت مكان الجهاز (أو أكثر مفصولة بفواصل): لا يُقبل
+                  اتصال باسم الجهاز من غيره. فارغ = أي عنوان، مع تنبيه حين
+                  يتغير.
                   <template v-if="editingDevice?.ipAddress">
                     آخر عنوان اتصل منه:
                     <b dir="ltr">{{ editingDevice.ipAddress }}</b>
@@ -628,13 +665,15 @@
                     :key="emp.id"
                     :value="emp.id"
                   >
-                    {{ emp.fullName }} ({{ emp.attendancePin || emp.employeeCode }})
+                    {{ emp.fullName }} ({{
+                      emp.attendancePin || emp.employeeCode
+                    }})
                   </option>
                 </select>
                 <small class="form-hint">
-                  يُسجَّل على الجهاز باسمه ورقم البصمة في ملفه (أو كوده)، ثم يسجّل
-                  بصمته على الجهاز. مع تفعيل نسخ البصمات تصل بصمته المسجلة على
-                  جهاز آخر تلقائياً.
+                  يُسجَّل على الجهاز باسمه ورقم البصمة في ملفه (أو كوده)، ثم
+                  يسجّل بصمته على الجهاز. مع تفعيل نسخ البصمات تصل بصمته المسجلة
+                  على جهاز آخر تلقائياً.
                 </small>
               </div>
 

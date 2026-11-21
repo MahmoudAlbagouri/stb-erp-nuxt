@@ -5,18 +5,30 @@
       <div class="page-header__title">
         <h1>الطاولات والمطبخ</h1>
         <p>
-          طاولات الصالة تنزل لشاشات الكاشير (كل فرع طاولاته)، والطلب يُرسل للمطبخ
-          ببون مطبوع ويظهر على شاشة المطبخ بحالته
+          طاولات الصالة تنزل لشاشات الكاشير (كل فرع طاولاته)، والطلب يُرسل
+          للمطبخ ببون مطبوع ويظهر على شاشة المطبخ بحالته
         </p>
       </div>
       <div class="page-header__actions">
-        <NuxtLink v-can="'use_kitchen_display'" to="/kitchen" class="btn btn--ghost">
+        <NuxtLink
+          v-can="'use_kitchen_display'"
+          to="/kitchen"
+          class="btn btn--ghost"
+        >
           <ChefHat :size="16" /> <span>شاشة المطبخ</span>
         </NuxtLink>
-        <button v-can="'manage_restaurant'" class="btn btn--ghost" @click="openBulk">
+        <button
+          v-can="'manage_restaurant'"
+          class="btn btn--ghost"
+          @click="openBulk"
+        >
           <Rows3 :size="16" /> <span>طاولات متتالية</span>
         </button>
-        <button v-can="'manage_restaurant'" class="btn btn--primary" @click="openCreate">
+        <button
+          v-can="'manage_restaurant'"
+          class="btn btn--primary"
+          @click="openCreate"
+        >
           <Plus :size="18" /> <span>إضافة طاولة</span>
         </button>
       </div>
@@ -86,10 +98,14 @@
         <Armchair :size="44" class="empty-state__icon" />
         <div class="empty-state__title">لا طاولات بعد</div>
         <div class="empty-state__text">
-          أضف طاولات الصالة دفعة واحدة («طاولة 1» إلى «طاولة 20»)، أو واحدة واحدة
-          بقسمها (صالة، تراس، عائلات)
+          أضف طاولات الصالة دفعة واحدة («طاولة 1» إلى «طاولة 20»)، أو واحدة
+          واحدة بقسمها (صالة، تراس، عائلات)
         </div>
-        <button v-can="'manage_restaurant'" class="btn btn--primary" @click="openBulk">
+        <button
+          v-can="'manage_restaurant'"
+          class="btn btn--primary"
+          @click="openBulk"
+        >
           <Rows3 :size="16" /> طاولات متتالية
         </button>
       </div>
@@ -110,12 +126,21 @@
           </thead>
           <tbody>
             <tr v-for="t in tables" :key="t.id">
-              <td><strong>{{ t.name }}</strong></td>
+              <td>
+                <strong>{{ t.name }}</strong>
+              </td>
               <td>{{ t.area || "—" }}</td>
               <td class="doc-num">{{ t.seats }}</td>
-              <td v-if="branches.hasMany">{{ t.branchId ? branches.nameOf(t.branchId) : "كل الفروع" }}</td>
+              <td v-if="branches.hasMany">
+                {{ t.branchId ? branches.nameOf(t.branchId) : "كل الفروع" }}
+              </td>
               <td>
-                <span :class="['badge', t.isActive ? 'badge--active' : 'badge--inactive']">
+                <span
+                  :class="[
+                    'badge',
+                    t.isActive ? 'badge--active' : 'badge--inactive',
+                  ]"
+                >
                   {{ t.isActive ? "نشطة" : "موقوفة" }}
                 </span>
               </td>
@@ -148,14 +173,22 @@
     <!-- ══ طاولة واحدة ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
+        <div
+          v-if="showForm"
+          class="modal-overlay"
+          @click.self="showForm = false"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
               <h3>
                 <Armchair :size="20" class="doc-modal__icon" />
                 {{ editing ? "تعديل طاولة" : "طاولة جديدة" }}
               </h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="showForm = false">
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="showForm = false"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -163,7 +196,12 @@
               <div class="doc-grid">
                 <div class="form-group">
                   <label>الاسم *</label>
-                  <input v-model.trim="form.name" class="form-input" maxlength="60" required />
+                  <input
+                    v-model.trim="form.name"
+                    class="form-input"
+                    maxlength="60"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>القسم</label>
@@ -177,23 +215,39 @@
                 </div>
                 <div class="form-group">
                   <label>الكراسي</label>
-                  <StbNumberInput v-model.number="form.seats" class="form-input" min="1" max="100" />
+                  <StbNumberInput
+                    v-model.number="form.seats"
+                    class="form-input"
+                    min="1"
+                    max="100"
+                  />
                 </div>
                 <div v-if="branches.hasMany" class="form-group">
                   <label>الفرع</label>
                   <select v-model="form.branchId" class="form-select">
                     <option value="">كل الفروع</option>
-                    <option v-for="b in branches.activeOptions" :key="b.id" :value="b.id">
+                    <option
+                      v-for="b in branches.activeOptions"
+                      :key="b.id"
+                      :value="b.id"
+                    >
                       {{ b.name }}
                     </option>
                   </select>
                 </div>
                 <label v-if="editing" class="check">
-                  <input v-model="form.isActive" type="checkbox" /> نشطة (تظهر على شاشة الكاشير)
+                  <input v-model="form.isActive" type="checkbox" /> نشطة (تظهر
+                  على شاشة الكاشير)
                 </label>
               </div>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showForm = false">إلغاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showForm = false"
+                >
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -212,11 +266,21 @@
     <!-- ══ طاولات متتالية ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showBulk" class="modal-overlay" @click.self="showBulk = false">
+        <div
+          v-if="showBulk"
+          class="modal-overlay"
+          @click.self="showBulk = false"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
-              <h3><Rows3 :size="20" class="doc-modal__icon" /> طاولات متتالية</h3>
-              <button class="btn btn--icon btn--ghost" aria-label="إغلاق" @click="showBulk = false">
+              <h3>
+                <Rows3 :size="20" class="doc-modal__icon" /> طاولات متتالية
+              </h3>
+              <button
+                class="btn btn--icon btn--ghost"
+                aria-label="إغلاق"
+                @click="showBulk = false"
+              >
                 <X :size="20" />
               </button>
             </div>
@@ -224,7 +288,11 @@
               <div class="doc-grid">
                 <div class="form-group">
                   <label>قبل الرقم</label>
-                  <input v-model.trim="bulk.prefix" class="form-input" maxlength="40" />
+                  <input
+                    v-model.trim="bulk.prefix"
+                    class="form-input"
+                    maxlength="40"
+                  />
                 </div>
                 <div class="form-group">
                   <label>القسم</label>
@@ -238,32 +306,60 @@
                 </div>
                 <div class="form-group">
                   <label>من *</label>
-                  <StbNumberInput v-model.number="bulk.from" class="form-input" min="1" max="9999" required />
+                  <StbNumberInput
+                    v-model.number="bulk.from"
+                    class="form-input"
+                    min="1"
+                    max="9999"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>إلى *</label>
-                  <StbNumberInput v-model.number="bulk.to" class="form-input" min="1" max="9999" required />
+                  <StbNumberInput
+                    v-model.number="bulk.to"
+                    class="form-input"
+                    min="1"
+                    max="9999"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>الكراسي</label>
-                  <StbNumberInput v-model.number="bulk.seats" class="form-input" min="1" max="100" />
+                  <StbNumberInput
+                    v-model.number="bulk.seats"
+                    class="form-input"
+                    min="1"
+                    max="100"
+                  />
                 </div>
                 <div v-if="branches.hasMany" class="form-group">
                   <label>الفرع</label>
                   <select v-model="bulk.branchId" class="form-select">
                     <option value="">كل الفروع</option>
-                    <option v-for="b in branches.activeOptions" :key="b.id" :value="b.id">
+                    <option
+                      v-for="b in branches.activeOptions"
+                      :key="b.id"
+                      :value="b.id"
+                    >
                       {{ b.name }}
                     </option>
                   </select>
                 </div>
               </div>
               <p class="doc-hint">
-                مثال: «{{ bulk.prefix || "طاولة" }} {{ bulk.from || 1 }}» إلى «{{ bulk.prefix || "طاولة" }}
-                {{ bulk.to || 1 }}». الموجود باسمه يُتخطّى.
+                مثال: «{{ bulk.prefix || "طاولة" }} {{ bulk.from || 1 }}» إلى
+                «{{ bulk.prefix || "طاولة" }} {{ bulk.to || 1 }}». الموجود باسمه
+                يُتخطّى.
               </p>
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="showBulk = false">إلغاء</button>
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="showBulk = false"
+                >
+                  إلغاء
+                </button>
                 <button
                   type="submit"
                   class="btn btn--primary"
@@ -296,7 +392,15 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { Armchair, ChefHat, Pencil, Plus, Rows3, Trash2, X } from "lucide-vue-next";
+import {
+  Armchair,
+  ChefHat,
+  Pencil,
+  Plus,
+  Rows3,
+  Trash2,
+  X,
+} from "lucide-vue-next";
 import { useToast } from "@/composables/useToast";
 import type { DiningTableRecord, RestaurantSettingsRecord } from "@/pos/types";
 import { useBranchesStore } from "@/stores/branches";
@@ -349,7 +453,9 @@ const saveSettings = async () => {
       printKitchenTicket: settings.value.printKitchenTicket,
       sendOnPayment: settings.value.sendOnPayment,
     });
-    toast.success("حُفظت إعدادات المطبخ — تصل شاشات الكاشير مع مزامنتها التالية");
+    toast.success(
+      "حُفظت إعدادات المطبخ — تصل شاشات الكاشير مع مزامنتها التالية",
+    );
   } catch (e) {
     toast.error(getErrorMessage(e, "تعذر حفظ الإعدادات"));
   } finally {
@@ -371,7 +477,13 @@ const form = reactive({
 
 const openCreate = () => {
   editing.value = null;
-  Object.assign(form, { name: "", area: areas.value[0] ?? "", seats: 4, branchId: "", isActive: true });
+  Object.assign(form, {
+    name: "",
+    area: areas.value[0] ?? "",
+    seats: 4,
+    branchId: "",
+    isActive: true,
+  });
   showForm.value = true;
 };
 
@@ -397,7 +509,10 @@ const saveTable = async () => {
   };
   try {
     if (editing.value) {
-      await store.updateTable(editing.value.id, { ...payload, isActive: form.isActive });
+      await store.updateTable(editing.value.id, {
+        ...payload,
+        isActive: form.isActive,
+      });
       toast.success("حُفظت الطاولة");
     } else {
       await store.createTable(payload);
@@ -425,7 +540,11 @@ const bulk = reactive({
 
 const openBulk = () => {
   const last = tables.value.length;
-  Object.assign(bulk, { from: last + 1, to: last + 10, area: areas.value[0] ?? "" });
+  Object.assign(bulk, {
+    from: last + 1,
+    to: last + 10,
+    area: areas.value[0] ?? "",
+  });
   showBulk.value = true;
 };
 

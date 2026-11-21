@@ -30,7 +30,12 @@
           <FileText v-else :size="18" />
           <span>PDF</span>
         </button>
-        <button v-can="'onboard_employee'" v-quota="'max_employees'" class="btn btn--primary" @click="showOnboarding = true">
+        <button
+          v-can="'onboard_employee'"
+          v-quota="'max_employees'"
+          class="btn btn--primary"
+          @click="showOnboarding = true"
+        >
           <UserPlus :size="18" />
           <span>إضافة موظف</span>
         </button>
@@ -404,10 +409,18 @@
             </button>
             <Transition name="fade">
               <div v-if="activeExportMenu === emp.id" class="dropdown-menu">
-                <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile(emp.id, 'pdf')">
+                <button
+                  v-can="'export_employees'"
+                  v-feature="'reports_export'"
+                  @click="downloadProfile(emp.id, 'pdf')"
+                >
                   <FileText :size="14" /> ملف PDF
                 </button>
-                <button v-can="'export_employees'" v-feature="'reports_export'" @click="downloadProfile(emp.id, 'excel')">
+                <button
+                  v-can="'export_employees'"
+                  v-feature="'reports_export'"
+                  @click="downloadProfile(emp.id, 'excel')"
+                >
                   <FileSpreadsheet :size="14" /> ملف Excel
                 </button>
               </div>
@@ -415,10 +428,18 @@
           </div>
 
           <div class="footer-actions">
-            <button v-can="'update_employee'" class="btn btn--ghost btn--sm" @click="openEdit(emp)">
+            <button
+              v-can="'update_employee'"
+              class="btn btn--ghost btn--sm"
+              @click="openEdit(emp)"
+            >
               <Pencil :size="14" /> تعديل
             </button>
-            <button v-can="'delete_employee'" class="btn btn--danger btn--sm" @click="confirmDelete(emp)">
+            <button
+              v-can="'delete_employee'"
+              class="btn btn--danger btn--sm"
+              @click="confirmDelete(emp)"
+            >
               <Trash2 :size="14" /> حذف
             </button>
           </div>
@@ -549,13 +570,13 @@
                     برقم آخر — وتُنسب له بصماته السابقة بهذا الرقم.
                   </small>
                 </div>
-                <div
-                  v-if="hasFeature('mobile_attendance')"
-                  class="form-group"
-                >
+                <div v-if="hasFeature('mobile_attendance')" class="form-group">
                   <label>البصمة من الجوال</label>
                   <label class="checkbox-label">
-                    <input v-model="editForm.mobilePunchEnabled" type="checkbox" />
+                    <input
+                      v-model="editForm.mobilePunchEnabled"
+                      type="checkbox"
+                    />
                     <span>يبصم من تطبيق الجوال داخل نطاق فرعه</span>
                   </label>
                   <small
@@ -1043,9 +1064,7 @@ const editForm = reactive<EditFormType>({
 
 /** الفروع النشطة، مع فرع الموظف الحالي حتى لو أُوقف */
 const editBranchChoices = computed(() =>
-  branchesStore.options.filter(
-    (b) => b.isActive || b.id === editForm.branchId,
-  ),
+  branchesStore.options.filter((b) => b.isActive || b.id === editForm.branchId),
 );
 
 const availableUsers = computed(() => {

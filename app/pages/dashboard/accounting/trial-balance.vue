@@ -4,7 +4,10 @@
     <div class="page-header">
       <div class="page-header__title">
         <h1>ميزان المراجعة</h1>
-        <p>رصيد كل حساب أول الفترة وحركته فيها ورصيده الختامي — مجموع المدين يساوي مجموع الدائن</p>
+        <p>
+          رصيد كل حساب أول الفترة وحركته فيها ورصيده الختامي — مجموع المدين
+          يساوي مجموع الدائن
+        </p>
       </div>
       <div class="page-header__actions">
         <ReportExport
@@ -27,21 +30,42 @@
         <StbDateInput v-model="query.to" required />
         <select v-model.number="query.level" class="form-select">
           <option :value="0">كل المستويات</option>
-          <option v-for="n in 4" :key="n" :value="n">حتى المستوى {{ n }}</option>
+          <option v-for="n in 4" :key="n" :value="n">
+            حتى المستوى {{ n }}
+          </option>
         </select>
-        <select v-if="branches.hasMany" v-model="query.branchId" class="form-select">
+        <select
+          v-if="branches.hasMany"
+          v-model="query.branchId"
+          class="form-select"
+        >
           <option value="">كل الفروع</option>
-          <option v-for="b in branches.options" :key="b.id" :value="b.id">{{ b.name }}</option>
+          <option v-for="b in branches.options" :key="b.id" :value="b.id">
+            {{ b.name }}
+          </option>
         </select>
-        <label class="check"><input v-model="hideZero" type="checkbox" /> إخفاء الأصفار</label>
-        <button type="submit" class="btn btn--primary" :class="{ 'btn--loading': loading }" :disabled="loading">
+        <label class="check"
+          ><input v-model="hideZero" type="checkbox" /> إخفاء الأصفار</label
+        >
+        <button
+          type="submit"
+          class="btn btn--primary"
+          :class="{ 'btn--loading': loading }"
+          :disabled="loading"
+        >
           عرض
         </button>
       </form>
 
-      <div v-if="loading && !result" class="empty-state"><div class="spinner spinner--lg" /></div>
+      <div v-if="loading && !result" class="empty-state">
+        <div class="spinner spinner--lg" />
+      </div>
 
-      <div v-else-if="result" ref="report" class="card doc-table-card printable">
+      <div
+        v-else-if="result"
+        ref="report"
+        class="card doc-table-card printable"
+      >
         <div class="report-title">
           <h2>ميزان المراجعة</h2>
           <span>من {{ result.from }} إلى {{ result.to }}</span>
@@ -58,18 +82,35 @@
                 <th colspan="2">الرصيد الختامي</th>
               </tr>
               <tr>
-                <th>مدين</th><th>دائن</th><th>مدين</th><th>دائن</th><th>مدين</th><th>دائن</th>
+                <th>مدين</th>
+                <th>دائن</th>
+                <th>مدين</th>
+                <th>دائن</th>
+                <th>مدين</th>
+                <th>دائن</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in rows" :key="row.id" :class="{ 'is-group': row.isGroup }">
-                <td :style="{ paddingInlineStart: `${(row.depth - 1) * 18 + 12}px` }">
+              <tr
+                v-for="row in rows"
+                :key="row.id"
+                :class="{ 'is-group': row.isGroup }"
+              >
+                <td
+                  :style="{
+                    paddingInlineStart: `${(row.depth - 1) * 18 + 12}px`,
+                  }"
+                >
                   <code class="doc-code">{{ row.code }}</code> {{ row.name }}
                 </td>
                 <td class="doc-num">{{ side(row.opening, "d") }}</td>
                 <td class="doc-num">{{ side(row.opening, "c") }}</td>
-                <td class="doc-num">{{ row.debit ? formatMoney(row.debit) : "" }}</td>
-                <td class="doc-num">{{ row.credit ? formatMoney(row.credit) : "" }}</td>
+                <td class="doc-num">
+                  {{ row.debit ? formatMoney(row.debit) : "" }}
+                </td>
+                <td class="doc-num">
+                  {{ row.credit ? formatMoney(row.credit) : "" }}
+                </td>
                 <td class="doc-num">{{ side(row.closing, "d") }}</td>
                 <td class="doc-num">{{ side(row.closing, "c") }}</td>
               </tr>
@@ -77,12 +118,20 @@
             <tfoot>
               <tr>
                 <th>الإجمالي</th>
-                <th class="doc-num">{{ formatMoney(rootSum("opening", "d")) }}</th>
-                <th class="doc-num">{{ formatMoney(rootSum("opening", "c")) }}</th>
+                <th class="doc-num">
+                  {{ formatMoney(rootSum("opening", "d")) }}
+                </th>
+                <th class="doc-num">
+                  {{ formatMoney(rootSum("opening", "c")) }}
+                </th>
                 <th class="doc-num">{{ formatMoney(result.totals.debit) }}</th>
                 <th class="doc-num">{{ formatMoney(result.totals.credit) }}</th>
-                <th class="doc-num">{{ formatMoney(rootSum("closing", "d")) }}</th>
-                <th class="doc-num">{{ formatMoney(rootSum("closing", "c")) }}</th>
+                <th class="doc-num">
+                  {{ formatMoney(rootSum("closing", "d")) }}
+                </th>
+                <th class="doc-num">
+                  {{ formatMoney(rootSum("closing", "c")) }}
+                </th>
               </tr>
             </tfoot>
           </table>
@@ -133,7 +182,13 @@ const balanced = computed(
 
 /** الرصيد في عموده: مدين (موجب) أو دائن (سالب) */
 const side = (value: number, column: "d" | "c") =>
-  column === "d" ? (value > 0 ? formatMoney(value) : "") : value < 0 ? formatMoney(-value) : "";
+  column === "d"
+    ? value > 0
+      ? formatMoney(value)
+      : ""
+    : value < 0
+      ? formatMoney(-value)
+      : "";
 
 /** مجموع عمود من الحسابات الرئيسية (لا ازدواج مع ما تحتها) */
 const rootSum = (field: "opening" | "closing", column: "d" | "c") =>

@@ -80,10 +80,14 @@
             </thead>
             <tbody>
               <tr v-for="s in list.rows.value" :key="s.id">
-                <td><code class="doc-code">{{ s.number }}</code></td>
+                <td>
+                  <code class="doc-code">{{ s.number }}</code>
+                </td>
                 <td>{{ s.warehouse?.name || "—" }}</td>
                 <td>
-                  <span class="doc-num">{{ formatNumber(s.linesCount ?? 0) }}</span>
+                  <span class="doc-num">{{
+                    formatNumber(s.linesCount ?? 0)
+                  }}</span>
                 </td>
                 <td>
                   <span class="doc-num">
@@ -92,7 +96,10 @@
                 </td>
                 <td>
                   <span
-                    :class="['badge', `doc-status--${STOCKTAKE_STATUS[s.status].tone}`]"
+                    :class="[
+                      'badge',
+                      `doc-status--${STOCKTAKE_STATUS[s.status].tone}`,
+                    ]"
                   >
                     {{ STOCKTAKE_STATUS[s.status].label }}
                   </span>
@@ -179,7 +186,11 @@
                     :disabled="readOnly || form.lines.length > 0"
                   >
                     <option value="" disabled>اختر المخزن...</option>
-                    <option v-for="w in warehouseOptions" :key="w.id" :value="w.id">
+                    <option
+                      v-for="w in warehouseOptions"
+                      :key="w.id"
+                      :value="w.id"
+                    >
                       {{ w.name }}
                     </option>
                   </select>
@@ -215,7 +226,9 @@
                     @click="addAllWarehouseItems"
                   >
                     <ListPlus :size="14" />
-                    {{ loadingAll ? "جارٍ التحميل..." : "إضافة كل أصناف المخزن" }}
+                    {{
+                      loadingAll ? "جارٍ التحميل..." : "إضافة كل أصناف المخزن"
+                    }}
                   </button>
                 </template>
 
@@ -243,7 +256,9 @@
                     </div>
                     <div>
                       <span class="doc-lines__label">رصيد النظام</span>
-                      <span class="doc-num">{{ formatNumber(line.system) }}</span>
+                      <span class="doc-num">{{
+                        formatNumber(line.system)
+                      }}</span>
                     </div>
                     <div>
                       <span class="doc-lines__label">المعدود</span>
@@ -269,7 +284,11 @@
                           'doc-num--out': difference(line) < 0,
                         }"
                       >
-                        {{ difference(line) ? formatSigned(difference(line)) : "0" }}
+                        {{
+                          difference(line)
+                            ? formatSigned(difference(line))
+                            : "0"
+                        }}
                       </span>
                       <span v-else>—</span>
                     </div>

@@ -4,7 +4,10 @@ import { useState } from "nuxt/app";
 import type { InstallPromptEvent } from "@/plugins/pwa-install.client";
 
 export const usePwaInstall = () => {
-  const prompt = useState<InstallPromptEvent | null>("pwa-install-prompt", () => null);
+  const prompt = useState<InstallPromptEvent | null>(
+    "pwa-install-prompt",
+    () => null,
+  );
   const installed = useState<boolean>("pwa-installed", () => false);
 
   /** الشاشة مفتوحة الآن كتطبيق مثبّت (نافذة مستقلة بلا شريط المتصفح) */
@@ -12,7 +15,8 @@ export const usePwaInstall = () => {
     () =>
       import.meta.client &&
       (window.matchMedia("(display-mode: standalone)").matches ||
-        (navigator as Navigator & { standalone?: boolean }).standalone === true),
+        (navigator as Navigator & { standalone?: boolean }).standalone ===
+          true),
   );
 
   /** iPhone / iPad: لا عرض تثبيت تلقائي، التثبيت من قائمة المشاركة */

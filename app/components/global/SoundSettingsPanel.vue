@@ -72,8 +72,7 @@ const props = withDefaults(
 const settings = computed(() => soundSettings[props.scope]);
 
 /** صوت يُسمع عند التشغيل وعند تغيير المستوى: ليعرف المستخدم كيف سيكون */
-const preview = () =>
-  playSound(props.sounds[0] ?? "notification", props.scope);
+const preview = () => playSound(props.sounds[0] ?? "notification", props.scope);
 
 const toggle = (enabled: boolean) => {
   setSoundSettings(props.scope, { enabled });

@@ -34,8 +34,10 @@ export const useDeliveryStore = defineStore("delivery", () => {
   const createAgent = async (payload: DeliveryAgentPayload) =>
     (await api.post<DeliveryAgent>(`${BASE}/agents`, payload)).data;
 
-  const updateAgent = async (id: string, payload: Partial<DeliveryAgentPayload>) =>
-    (await api.patch<DeliveryAgent>(`${BASE}/agents/${id}`, payload)).data;
+  const updateAgent = async (
+    id: string,
+    payload: Partial<DeliveryAgentPayload>,
+  ) => (await api.patch<DeliveryAgent>(`${BASE}/agents/${id}`, payload)).data;
 
   const removeAgent = async (id: string) => {
     await api.del(`${BASE}/agents/${id}`);
@@ -62,8 +64,10 @@ export const useDeliveryStore = defineStore("delivery", () => {
   const createZone = async (payload: DeliveryZonePayload) =>
     (await api.post<DeliveryZone>(`${BASE}/zones`, payload)).data;
 
-  const updateZone = async (id: string, payload: Partial<DeliveryZonePayload>) =>
-    (await api.patch<DeliveryZone>(`${BASE}/zones/${id}`, payload)).data;
+  const updateZone = async (
+    id: string,
+    payload: Partial<DeliveryZonePayload>,
+  ) => (await api.patch<DeliveryZone>(`${BASE}/zones/${id}`, payload)).data;
 
   const removeZone = async (id: string) => {
     await api.del(`${BASE}/zones/${id}`);
@@ -88,18 +92,25 @@ export const useDeliveryStore = defineStore("delivery", () => {
 
   const assignOrder = async (
     id: string,
-    payload: { agentId: string; agentFee?: number; trackingNumber?: string | null },
+    payload: {
+      agentId: string;
+      agentFee?: number;
+      trackingNumber?: string | null;
+    },
   ) =>
-    (await api.post<DeliveryOrder>(`${BASE}/orders/${id}/assign`, payload)).data;
+    (await api.post<DeliveryOrder>(`${BASE}/orders/${id}/assign`, payload))
+      .data;
 
   /** dispatch | deliver | cancel */
   const moveOrder = async (
     id: string,
     action: "dispatch" | "deliver" | "cancel",
-  ) => (await api.post<DeliveryOrder>(`${BASE}/orders/${id}/${action}`, {})).data;
+  ) =>
+    (await api.post<DeliveryOrder>(`${BASE}/orders/${id}/${action}`, {})).data;
 
   const failOrder = async (id: string, reason: string) =>
-    (await api.post<DeliveryOrder>(`${BASE}/orders/${id}/fail`, { reason })).data;
+    (await api.post<DeliveryOrder>(`${BASE}/orders/${id}/fail`, { reason }))
+      .data;
 
   // ─── التسويات ───
   const fetchSettlements = async (

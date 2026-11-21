@@ -9,8 +9,8 @@
       <div class="page-header__title">
         <h1>إعدادات شاشة الكاشير</h1>
         <p>
-          شغّل ما يحتاجه نشاطك وأقفل الباقي: ما يُقفل يختفي زره واختصاره من الشاشة،
-          فتبقى بسيطة وسريعة للكاشير
+          شغّل ما يحتاجه نشاطك وأقفل الباقي: ما يُقفل يختفي زره واختصاره من
+          الشاشة، فتبقى بسيطة وسريعة للكاشير
         </p>
       </div>
       <div class="page-header__actions">
@@ -26,7 +26,9 @@
       </div>
     </div>
 
-    <div v-if="!settings" class="empty-state"><div class="spinner spinner--lg" /></div>
+    <div v-if="!settings" class="empty-state">
+      <div class="spinner spinner--lg" />
+    </div>
 
     <template v-else>
       <!-- ══ القوالب ══ -->
@@ -34,8 +36,8 @@
         <div class="section__head">
           <h3><LayoutTemplate :size="18" /> نوع النشاط</h3>
           <p>
-            قالب جاهز يشغّل المميزات المناسبة لنشاطك بضغطة — نقطة بداية: عدّل بعده أي
-            ميزة كما تريد.
+            قالب جاهز يشغّل المميزات المناسبة لنشاطك بضغطة — نقطة بداية: عدّل
+            بعده أي ميزة كما تريد.
           </p>
         </div>
         <div class="templates">
@@ -59,7 +61,11 @@
       </div>
 
       <!-- ══ المميزات ══ -->
-      <div v-for="group in settings.groups" :key="group.title" class="card section">
+      <div
+        v-for="group in settings.groups"
+        :key="group.title"
+        class="card section"
+      >
         <div class="section__head">
           <h3>{{ group.title }}</h3>
         </div>
@@ -68,7 +74,10 @@
             v-for="feature in group.features"
             :key="feature.key"
             class="features__item"
-            :class="{ 'is-off': !form[feature.key], 'is-locked': lockReason(feature.key) }"
+            :class="{
+              'is-off': !form[feature.key],
+              'is-locked': lockReason(feature.key),
+            }"
           >
             <input
               v-model="form[feature.key]"
@@ -79,7 +88,10 @@
             <span class="features__text">
               <strong>
                 {{ feature.label }}
-                <span v-if="lockReason(feature.key)" class="badge badge--inactive">
+                <span
+                  v-if="lockReason(feature.key)"
+                  class="badge badge--inactive"
+                >
                   {{ lockReason(feature.key) }}
                 </span>
               </strong>
@@ -110,9 +122,9 @@
       </div>
 
       <p class="doc-hint">
-        تصل التغييرات لشاشات الكاشير مع مزامنتها التالية (خلال دقائق)، أو فوراً بالضغط
-        على حالة الاتصال أعلى الشاشة. البيع الآجل المقفل يرفضه السيرفر أيضاً، إلا ما
-        بيع على جهاز بلا إنترنت قبل إقفاله.
+        تصل التغييرات لشاشات الكاشير مع مزامنتها التالية (خلال دقائق)، أو فوراً
+        بالضغط على حالة الاتصال أعلى الشاشة. البيع الآجل المقفل يرفضه السيرفر
+        أيضاً، إلا ما بيع على جهاز بلا إنترنت قبل إقفاله.
       </p>
     </template>
   </div>
@@ -175,7 +187,9 @@ const validDays = computed(() => {
 const dirty = computed(
   () =>
     !!settings.value &&
-    (POS_FEATURE_KEYS.some((key) => form[key] !== settings.value!.features[key]) ||
+    (POS_FEATURE_KEYS.some(
+      (key) => form[key] !== settings.value!.features[key],
+    ) ||
       Number(quoteValidityDays.value) !== settings.value.quoteValidityDays),
 );
 
@@ -203,7 +217,9 @@ const lockReason = (key: PosFeatureKey): string => {
 
 // ميزة تحتاج أخرى أُقفلت (الآجل بلا اختيار عميل): تُقفل معها كما يفعل السيرفر
 watch(form, () => {
-  for (const [key, required] of Object.entries(settings.value?.requires ?? {})) {
+  for (const [key, required] of Object.entries(
+    settings.value?.requires ?? {},
+  )) {
     if (required && !form[required] && form[key as PosFeatureKey]) {
       form[key as PosFeatureKey] = false;
     }

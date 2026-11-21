@@ -45,7 +45,10 @@ export const useAccountingStore = defineStore("accounting", () => {
 
   const activate = async (country?: string) => {
     status.value = (
-      await api.post<AccountingStatus>(`${BASE}/activate`, country ? { country } : {})
+      await api.post<AccountingStatus>(
+        `${BASE}/activate`,
+        country ? { country } : {},
+      )
     ).data;
     accounts.value = [];
     return status.value;
@@ -82,7 +85,9 @@ export const useAccountingStore = defineStore("accounting", () => {
   };
 
   const updateAccount = async (id: string, payload: AccountPayload) => {
-    const updated = (await api.patch<Account>(`${BASE}/accounts/${id}`, payload)).data;
+    const updated = (
+      await api.patch<Account>(`${BASE}/accounts/${id}`, payload)
+    ).data;
     await fetchAccounts(true);
     return updated;
   };
@@ -108,7 +113,9 @@ export const useAccountingStore = defineStore("accounting", () => {
 
   const reverseJournal = async (id: string, date: string) =>
     (
-      await api.post<JournalEntryView>(`${BASE}/journals/${id}/reverse`, { date })
+      await api.post<JournalEntryView>(`${BASE}/journals/${id}/reverse`, {
+        date,
+      })
     ).data;
 
   // ─── التقارير ───────────────────────────────────────────────────────────────
@@ -126,7 +133,8 @@ export const useAccountingStore = defineStore("accounting", () => {
       partyId?: string;
     },
   ) =>
-    (await api.get<Ledger>(`${BASE}/reports/ledger${toQueryString(query)}`)).data;
+    (await api.get<Ledger>(`${BASE}/reports/ledger${toQueryString(query)}`))
+      .data;
 
   const incomeStatement = async (query: PeriodQuery) =>
     (
@@ -144,7 +152,9 @@ export const useAccountingStore = defineStore("accounting", () => {
 
   const vatReturn = async (query: { from: string; to: string }) =>
     (
-      await api.get<VatReturn>(`${BASE}/reports/vat-return${toQueryString(query)}`)
+      await api.get<VatReturn>(
+        `${BASE}/reports/vat-return${toQueryString(query)}`,
+      )
     ).data;
 
   // ─── سندات الصرف ────────────────────────────────────────────────────────────

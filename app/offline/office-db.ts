@@ -91,7 +91,9 @@ const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export const officeDb = {
   async response(key: string): Promise<CachedResponse | null> {
-    return (await done((await store("responses", "readonly")).get(key))) ?? null;
+    return (
+      (await done((await store("responses", "readonly")).get(key))) ?? null
+    );
   },
 
   /** أحدث رد محفوظ لنفس المسار بأي فلاتر (حين لم تُفتح هذه الفلاتر من قبل) */
@@ -110,7 +112,9 @@ export const officeDb = {
   },
 
   async ops(): Promise<OfficeOp[]> {
-    return done((await store("ops", "readonly")).getAll()) as Promise<OfficeOp[]>;
+    return done((await store("ops", "readonly")).getAll()) as Promise<
+      OfficeOp[]
+    >;
   },
 
   async addOp(op: OfficeOp): Promise<void> {
@@ -126,9 +130,10 @@ export const officeDb = {
   },
 
   async ids(): Promise<Map<string, string>> {
-    const rows = (await done(
-      (await store("ids", "readonly")).getAll(),
-    )) as { temp: string; real: string }[];
+    const rows = (await done((await store("ids", "readonly")).getAll())) as {
+      temp: string;
+      real: string;
+    }[];
     return new Map(rows.map((row) => [row.temp, row.real]));
   },
 

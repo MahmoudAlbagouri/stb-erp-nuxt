@@ -13,7 +13,11 @@
     <button
       class="topbar-icon-btn"
       :class="{ 'is-ringing': ringing }"
-      :aria-label="store.unreadCount ? `الإشعارات: ${store.unreadCount} غير مقروء` : 'الإشعارات'"
+      :aria-label="
+        store.unreadCount
+          ? `الإشعارات: ${store.unreadCount} غير مقروء`
+          : 'الإشعارات'
+      "
       @click="togglePopover"
     >
       <Bell :size="20" />
@@ -30,7 +34,11 @@
             <span
               class="live-dot"
               :class="{ 'is-live': store.connected }"
-              :title="store.connected ? 'متصل — تصل الإشعارات فوراً' : 'يعيد الاتصال...'"
+              :title="
+                store.connected
+                  ? 'متصل — تصل الإشعارات فوراً'
+                  : 'يعيد الاتصال...'
+              "
             />
           </h4>
           <button
@@ -62,7 +70,10 @@
               <div class="notif-message">{{ notif.body }}</div>
               <div class="notif-time">
                 {{ timeAgo(notif.createdAt) }}
-                <span v-if="notif.requiresAck && !notif.acknowledgedAt" class="notif-ack">
+                <span
+                  v-if="notif.requiresAck && !notif.acknowledgedAt"
+                  class="notif-ack"
+                >
                   · يتطلب تأكيد الاطلاع
                 </span>
               </div>

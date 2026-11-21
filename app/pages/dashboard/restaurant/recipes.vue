@@ -4,5 +4,7 @@
 </template>
 
 <script setup lang="ts">
+import BomManager from "~/components/manufacturing/BomManager.vue";
+
 definePageMeta({ middleware: "auth" });
 </script>

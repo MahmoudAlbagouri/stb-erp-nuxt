@@ -35,7 +35,9 @@ export const useManufacturingStore = defineStore("manufacturing", () => {
   // ─── مراكز العمل (قائمة صغيرة) ─────────────────────────────────────────────
   const workCenters = ref<WorkCenter[]>([]);
   const fetchWorkCenters = async () => {
-    workCenters.value = (await api.get<WorkCenter[]>(`${BASE}/work-centers`)).data;
+    workCenters.value = (
+      await api.get<WorkCenter[]>(`${BASE}/work-centers`)
+    ).data;
     return workCenters.value;
   };
   const saveWorkCenter = async (payload: WorkCenterPayload, id?: string) => {
@@ -52,17 +54,24 @@ export const useManufacturingStore = defineStore("manufacturing", () => {
 
   // ─── القوائم والوصفات ──────────────────────────────────────────────────────
   const fetchBoms = async (
-    filters: { kind?: BomKind; search?: string; productId?: string; page?: number; limit?: number } = {},
+    filters: {
+      kind?: BomKind;
+      search?: string;
+      productId?: string;
+      page?: number;
+      limit?: number;
+    } = {},
   ) =>
-    (await api.get<Paginated<Bom>>(`${BASE}/boms${toQueryString(filters)}`)).data;
-  const getBom = async (id: string) => (await api.get<Bom>(`${BASE}/boms/${id}`)).data;
+    (await api.get<Paginated<Bom>>(`${BASE}/boms${toQueryString(filters)}`))
+      .data;
+  const getBom = async (id: string) =>
+    (await api.get<Bom>(`${BASE}/boms/${id}`)).data;
   const bomCost = async (id: string) =>
     (await api.get<BomCost>(`${BASE}/boms/${id}/cost`)).data;
   const saveBom = async (payload: Partial<BomPayload>, id?: string) =>
-    (
-      id
-        ? await api.patch<Bom>(`${BASE}/boms/${id}`, payload)
-        : await api.post<Bom>(`${BASE}/boms`, payload)
+    (id
+      ? await api.patch<Bom>(`${BASE}/boms/${id}`, payload)
+      : await api.post<Bom>(`${BASE}/boms`, payload)
     ).data;
   const duplicateBom = async (id: string) =>
     (await api.post<Bom>(`${BASE}/boms/${id}/duplicate`, {})).data;
@@ -87,14 +96,17 @@ export const useManufacturingStore = defineStore("manufacturing", () => {
     (await api.get<ProductionSummary>(`${BASE}/orders/summary`)).data;
   const getOrder = async (id: string) =>
     (await api.get<ProductionOrder>(`${BASE}/orders/${id}`)).data;
-  const saveOrder = async (payload: Partial<ProductionOrderPayload>, id?: string) =>
-    (
-      id
-        ? await api.patch<ProductionOrder>(`${BASE}/orders/${id}`, payload)
-        : await api.post<ProductionOrder>(`${BASE}/orders`, payload)
+  const saveOrder = async (
+    payload: Partial<ProductionOrderPayload>,
+    id?: string,
+  ) =>
+    (id
+      ? await api.patch<ProductionOrder>(`${BASE}/orders/${id}`, payload)
+      : await api.post<ProductionOrder>(`${BASE}/orders`, payload)
     ).data;
   const action = async <T extends object>(id: string, path: string, body: T) =>
-    (await api.post<ProductionOrder>(`${BASE}/orders/${id}/${path}`, body)).data;
+    (await api.post<ProductionOrder>(`${BASE}/orders/${id}/${path}`, body))
+      .data;
 
   const release = (id: string) => action(id, "release", {});
   const issue = (
@@ -159,8 +171,11 @@ export const useManufacturingStore = defineStore("manufacturing", () => {
   const cancel = (id: string, note?: string) => action(id, "cancel", { note });
 
   // ─── التخطيط ───────────────────────────────────────────────────────────────
-  const mrp = async (filters: { warehouseId?: string; includeReorder?: string } = {}) =>
-    (await api.get<MrpRow[]>(`${BASE}/planning/mrp${toQueryString(filters)}`)).data;
+  const mrp = async (
+    filters: { warehouseId?: string; includeReorder?: string } = {},
+  ) =>
+    (await api.get<MrpRow[]>(`${BASE}/planning/mrp${toQueryString(filters)}`))
+      .data;
   const mrpPurchaseDrafts = async (payload: {
     warehouseId: string;
     lines: { productId: string; quantity: number; supplierId: string }[];
@@ -196,9 +211,17 @@ export const useManufacturingStore = defineStore("manufacturing", () => {
       limit?: number;
     } = {},
   ) =>
-    (await api.get<Paginated<LotRow>>(`/inventory/lots${toQueryString(filters)}`)).data;
+    (
+      await api.get<Paginated<LotRow>>(
+        `/inventory/lots${toQueryString(filters)}`,
+      )
+    ).data;
   const lotSummary = async (days?: number) =>
-    (await api.get<LotSummary>(`/inventory/lots/summary${toQueryString({ days })}`)).data;
+    (
+      await api.get<LotSummary>(
+        `/inventory/lots/summary${toQueryString({ days })}`,
+      )
+    ).data;
   const lotTrace = async (id: string) =>
     (await api.get<LotTrace>(`/inventory/lots/${id}`)).data;
   const availableLots = async (productId: string, warehouseId: string) =>
@@ -218,7 +241,11 @@ export const useManufacturingStore = defineStore("manufacturing", () => {
   }) => (await api.post<LotRow>(`/inventory/lots/assign`, payload)).data;
   const updateLot = async (
     id: string,
-    payload: { expiryDate?: string | null; manufactureDate?: string | null; note?: string | null },
+    payload: {
+      expiryDate?: string | null;
+      manufactureDate?: string | null;
+      note?: string | null;
+    },
   ) => (await api.patch<LotRow>(`/inventory/lots/${id}`, payload)).data;
 
   const reset = () => {

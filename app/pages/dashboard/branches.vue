@@ -67,7 +67,10 @@
               <td>{{ b.usersCount }}</td>
               <td>
                 <span
-                  :class="['badge', b.isActive ? 'badge--active' : 'badge--inactive']"
+                  :class="[
+                    'badge',
+                    b.isActive ? 'badge--active' : 'badge--inactive',
+                  ]"
                 >
                   {{ b.isActive ? "نشط" : "موقوف" }}
                 </span>
@@ -207,7 +210,11 @@
               </small>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeModal">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeModal"
+                >
                   إلغاء
                 </button>
                 <button

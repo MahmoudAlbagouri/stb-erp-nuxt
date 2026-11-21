@@ -29,9 +29,13 @@
     <!-- ══ الأرقام ══ -->
     <div class="doc-stats">
       <div class="stat-card">
-        <div class="stat-card__icon doc-tone--accent"><Banknote :size="22" /></div>
+        <div class="stat-card__icon doc-tone--accent">
+          <Banknote :size="22" />
+        </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatCurrency(summary.value) }}</div>
+          <div class="stat-card__value">
+            {{ formatCurrency(summary.value) }}
+          </div>
           <div class="stat-card__label">قيمة المخزون</div>
         </div>
       </div>
@@ -57,7 +61,9 @@
           <TrendingDown :size="22" />
         </div>
         <div class="stat-card__info">
-          <div class="stat-card__value">{{ formatNumber(summary.negative) }}</div>
+          <div class="stat-card__value">
+            {{ formatNumber(summary.negative) }}
+          </div>
           <div class="stat-card__label">رصيد سالب</div>
         </div>
       </button>
@@ -93,7 +99,11 @@
           {{ w.name }}
         </option>
       </select>
-      <select v-model="filters.alert" class="form-select" @change="list.load(1)">
+      <select
+        v-model="filters.alert"
+        class="form-select"
+        @change="list.load(1)"
+      >
         <option value="">كل الأرصدة</option>
         <option value="low">تحت حد الطلب</option>
         <option value="negative">رصيد سالب</option>
@@ -177,7 +187,9 @@
                   <span v-else>—</span>
                 </td>
                 <td>
-                  <span class="doc-money">{{ formatCurrency(row.avgCost) }}</span>
+                  <span class="doc-money">{{
+                    formatCurrency(row.avgCost)
+                  }}</span>
                 </td>
                 <td>
                   <span class="doc-money doc-money--strong">
@@ -263,7 +275,11 @@
                     :disabled="adjust.lines.length > 0"
                   >
                     <option value="" disabled>اختر المخزن...</option>
-                    <option v-for="w in activeWarehouses" :key="w.id" :value="w.id">
+                    <option
+                      v-for="w in activeWarehouses"
+                      :key="w.id"
+                      :value="w.id"
+                    >
                       {{ w.name }}
                     </option>
                   </select>
@@ -275,7 +291,11 @@
                   <label>سبب التسوية *</label>
                   <select v-model="adjust.reason" class="form-select" required>
                     <option value="" disabled>اختر السبب...</option>
-                    <option v-for="r in ADJUSTMENT_REASONS" :key="r.value" :value="r.value">
+                    <option
+                      v-for="r in ADJUSTMENT_REASONS"
+                      :key="r.value"
+                      :value="r.value"
+                    >
                       {{ r.label }}
                     </option>
                   </select>
@@ -286,7 +306,9 @@
                     v-model.trim="adjust.note"
                     class="form-input"
                     maxlength="500"
-                    :placeholder="isOpening ? 'اختياري' : 'اختياري: كرتونة سقطت، دفعة 12...'"
+                    :placeholder="
+                      isOpening ? 'اختياري' : 'اختياري: كرتونة سقطت، دفعة 12...'
+                    "
                   />
                 </div>
               </div>
@@ -350,7 +372,9 @@
                     </div>
                     <div>
                       <span class="doc-lines__label">الرصيد الحالي</span>
-                      <span class="doc-num">{{ formatNumber(line.current) }}</span>
+                      <span class="doc-num">{{
+                        formatNumber(line.current)
+                      }}</span>
                     </div>
                     <div>
                       <span class="doc-lines__label">الكمية</span>
@@ -379,7 +403,9 @@
                       <span
                         class="doc-num"
                         :class="
-                          balanceAfter(line) < 0 ? 'doc-num--out' : 'doc-num--strong'
+                          balanceAfter(line) < 0
+                            ? 'doc-num--out'
+                            : 'doc-num--strong'
                         "
                       >
                         {{ formatNumber(balanceAfter(line)) }}
@@ -398,7 +424,11 @@
               </section>
 
               <div class="modal__footer">
-                <button type="button" class="btn btn--ghost" @click="closeAdjust">
+                <button
+                  type="button"
+                  class="btn btn--ghost"
+                  @click="closeAdjust"
+                >
                   إلغاء
                 </button>
                 <button
@@ -419,7 +449,11 @@
     <!-- ══ حد إعادة الطلب ══ -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="minTarget" class="modal-overlay" @click.self="minTarget = null">
+        <div
+          v-if="minTarget"
+          class="modal-overlay"
+          @click.self="minTarget = null"
+        >
           <div class="modal doc-modal doc-modal--sm">
             <div class="modal__header">
               <h3>
@@ -667,7 +701,9 @@ const submitAdjust = async () => {
           : {}),
       })),
     });
-    toast.success(isOpening.value ? "تم تسجيل الرصيد الافتتاحي" : "تمت التسوية");
+    toast.success(
+      isOpening.value ? "تم تسجيل الرصيد الافتتاحي" : "تمت التسوية",
+    );
     showAdjust.value = false;
     await refresh();
   } catch (e) {

@@ -9,7 +9,11 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { HttpError, NetworkError } from "../composables/useConnection";
-import { officeDb, type CachedResponse, type OfficeOp } from "../offline/office-db";
+import {
+  officeDb,
+  type CachedResponse,
+  type OfficeOp,
+} from "../offline/office-db";
 import {
   isCreate,
   labelOf,
@@ -51,7 +55,9 @@ export const useOfficeStore = defineStore("office", () => {
   const failed = computed(() => mine.value.filter((op) => !!op.error));
 
   const load = async () => {
-    ops.value = (await officeDb.ops()).sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
+    ops.value = (await officeDb.ops()).sort(
+      (a, b) => (a.seq ?? 0) - (b.seq ?? 0),
+    );
     ids = await officeDb.ids();
   };
 
@@ -101,7 +107,13 @@ export const useOfficeStore = defineStore("office", () => {
       (op) => op.tempId && pathOf(url) === `${op.path}/${op.tempId}`,
     );
     return created
-      ? { key: url, owner: user, path: url, body: optimistic(created, null), savedAt: Date.now() }
+      ? {
+          key: url,
+          owner: user,
+          path: url,
+          body: optimistic(created, null),
+          savedAt: Date.now(),
+        }
       : null;
   };
 
@@ -135,7 +147,8 @@ export const useOfficeStore = defineStore("office", () => {
     // ما ستراه الصفحة: الكائن الذي حفظته، بمعرّف مؤقت وحالة "بانتظار الرفع"
     const known = op.tempId
       ? null
-      : ((await recall(op.path.split("/").slice(0, 4).join("/")))?.body ?? null);
+      : ((await recall(op.path.split("/").slice(0, 4).join("/")))?.body ??
+        null);
     return optimistic(op, known);
   };
 

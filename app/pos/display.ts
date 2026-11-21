@@ -24,7 +24,9 @@ export interface DisplayState {
 }
 
 /** نافذة العرض تطلب الحالة عند فتحها (فُتحت بعد أن بدأ البيع) */
-type DisplayMessage = { kind: "state"; state: DisplayState } | { kind: "hello" };
+type DisplayMessage =
+  | { kind: "state"; state: DisplayState }
+  | { kind: "hello" };
 
 const supported = () => typeof BroadcastChannel !== "undefined";
 
@@ -33,7 +35,10 @@ export const createDisplayPublisher = (current: () => DisplayState) => {
   if (!supported()) return { publish: () => {}, close: () => {} };
   const channel = new BroadcastChannel(CHANNEL);
   const publish = () =>
-    channel.postMessage({ kind: "state", state: current() } satisfies DisplayMessage);
+    channel.postMessage({
+      kind: "state",
+      state: current(),
+    } satisfies DisplayMessage);
   channel.onmessage = (event: MessageEvent<DisplayMessage>) => {
     if (event.data.kind === "hello") publish();
   };

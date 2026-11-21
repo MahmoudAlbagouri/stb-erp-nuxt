@@ -50,7 +50,8 @@ export const currencyDecimals = (): number => {
 };
 
 /** خطوة حقول إدخال المبالغ: "0.01" أو "0.001" حسب العملة */
-export const moneyStep = (): string => (1 / 10 ** currencyDecimals()).toFixed(currencyDecimals());
+export const moneyStep = (): string =>
+  (1 / 10 ** currencyDecimals()).toFixed(currencyDecimals());
 
 /** مبلغ مقرَّب لخانات عملة الشركة — نفس قاعدة السيرفر (money.util) */
 export const roundMoney = (value: number): number => {
@@ -78,8 +79,7 @@ export const formatMoney = (value: Numeric): string =>
 export const formatCurrency = (
   value: Numeric,
   fractionDigits = currencyDecimals(),
-): string =>
-  `${formatNumber(value, fractionDigits)} ${currencyLabel()}`;
+): string => `${formatNumber(value, fractionDigits)} ${currencyLabel()}`;
 
 /** سعر خطة/اشتراك بعملة المنصة: "مجاناً" عند غياب السعر */
 export const formatPrice = (value: Numeric): string =>

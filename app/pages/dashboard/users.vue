@@ -6,7 +6,12 @@
         <h1>المستخدمون</h1>
         <p>إدارة مستخدمي النظام وصلاحياتهم</p>
       </div>
-      <button v-can="'create_user'" v-quota="'max_users'" class="btn btn--primary" @click="openCreate">
+      <button
+        v-can="'create_user'"
+        v-quota="'max_users'"
+        class="btn btn--primary"
+        @click="openCreate"
+      >
         <Plus :size="18" />
         <span>إضافة مستخدم</span>
       </button>
@@ -206,7 +211,11 @@
                     :key="b.id"
                     class="checkbox-label"
                   >
-                    <input v-model="form.branchIds" type="checkbox" :value="b.id" />
+                    <input
+                      v-model="form.branchIds"
+                      type="checkbox"
+                      :value="b.id"
+                    />
                     <span>{{ b.name }}</span>
                   </label>
                 </div>

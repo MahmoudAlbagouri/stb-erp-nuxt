@@ -108,7 +108,9 @@ const withTransaction = async (
   try {
     return (await open()).transaction(stores, mode);
   } catch (error) {
-    if (!(error instanceof DOMException && error.name === "InvalidStateError")) {
+    if (
+      !(error instanceof DOMException && error.name === "InvalidStateError")
+    ) {
       throw error;
     }
     connection = null;
@@ -144,8 +146,9 @@ const get = async <N extends StoreName>(
 ): Promise<StoreMap[N] | null> => {
   const tx = await withTransaction(name, "readonly");
   return (
-    (await done(tx.objectStore(name).get(key) as IDBRequest<StoreMap[N] | undefined>)) ??
-    null
+    (await done(
+      tx.objectStore(name).get(key) as IDBRequest<StoreMap[N] | undefined>,
+    )) ?? null
   );
 };
 
@@ -162,9 +165,10 @@ export const countDb = {
   async pendingOf(stocktakeId: string): Promise<PendingCount[]> {
     const tx = await withTransaction("pending", "readonly");
     return done(
-      tx.objectStore("pending").index("stocktakeId").getAll(stocktakeId) as IDBRequest<
-        PendingCount[]
-      >,
+      tx
+        .objectStore("pending")
+        .index("stocktakeId")
+        .getAll(stocktakeId) as IDBRequest<PendingCount[]>,
     );
   },
 
@@ -179,5 +183,7 @@ export const countDb = {
     }),
 
   removePending: (keys: string[]) =>
-    write(["pending"], (store) => keys.forEach((key) => store("pending").delete(key))),
+    write(["pending"], (store) =>
+      keys.forEach((key) => store("pending").delete(key)),
+    ),
 };
