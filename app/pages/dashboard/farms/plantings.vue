@@ -111,19 +111,46 @@
             </div>
             <form class="doc-form" @submit.prevent="submitCreate">
               <div class="doc-grid">
-                <div class="form-group doc-grid__full">
-                  <label>الوحدة *</label>
-                  <select v-model="form.unitId" class="form-select" required>
-                    <option value="" disabled>اختر</option>
-                    <option v-for="o in scope.unitOptions.value" :key="o.id" :value="o.id">{{ o.label }}</option>
+                <div class="form-group">
+                  <label>المزرعة *</label>
+                  <select v-model="scope.farmId.value" class="form-select" required @change="form.unitId = ''">
+                    <option v-for="f in scope.store.farms" :key="f.id" :value="f.id">{{ f.name }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>المحصول *</label>
-                  <select v-model="form.cropId" class="form-select" required @change="onCrop">
-                    <option value="" disabled>اختر</option>
-                    <option v-for="c in store.crops.filter((c) => c.isActive)" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  <label>الوحدة *</label>
+                  <select v-model="form.unitId" class="form-select" required :disabled="!scope.unitOptions.value.length">
+                    <option value="" disabled>
+                      {{ scope.loadingUnits.value ? "جارٍ التحميل…" : scope.unitOptions.value.length ? "اختر" : "لا وحدات بعد" }}
+                    </option>
+                    <option v-for="o in scope.unitOptions.value" :key="o.id" :value="o.id">{{ o.label }}</option>
                   </select>
+                </div>
+                <!-- المزرعة لم تُقسَّم: الوحدات تُضاف من صفحتها -->
+                <div
+                  v-if="!scope.loadingUnits.value && !scope.unitOptions.value.length"
+                  class="setup-hint doc-grid__full"
+                >
+                  <Layers :size="18" />
+                  <span>
+                    مزرعة «{{ scope.farm.value?.name }}» لم تُقسَّم بعد. الزراعة تكون على وحدة
+                    منها: قطاع، حوش، صف، حقل، أو صوبة.
+                  </span>
+                  <NuxtLink :to="`/dashboard/farms/${scope.farmId.value}?tab=units`" class="btn btn--sm btn--primary">
+                    قسّم المزرعة
+                  </NuxtLink>
+                </div>
+                <div class="form-group">
+                  <label>المحصول *</label>
+                  <select v-model="form.cropId" class="form-select" required :disabled="!activeCrops.length" @change="onCrop">
+                    <option value="" disabled>{{ activeCrops.length ? "اختر" : "لا محاصيل بعد" }}</option>
+                    <option v-for="c in activeCrops" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </select>
+                </div>
+                <div v-if="!activeCrops.length" class="setup-hint doc-grid__full">
+                  <Leaf :size="18" />
+                  <span>عرّف المحصول أولاً (نخيل، زيتون، قمح…) بأصنافه ومنتج حصاده.</span>
+                  <NuxtLink to="/dashboard/farms/crops" class="btn btn--sm btn--primary">المحاصيل</NuxtLink>
                 </div>
                 <div class="form-group">
                   <label>الصنف</label>
@@ -300,6 +327,8 @@ import { computed, onMounted, reactive, ref } from "vue";
 import {
   CalendarPlus,
   ClipboardList,
+  Layers,
+  Leaf,
   Plus,
   Search,
   Sprout,
@@ -380,6 +409,7 @@ const emptyForm = () => ({
 });
 const form = reactive(emptyForm());
 const showCreate = ref(false);
+const activeCrops = computed(() => store.crops.filter((c) => c.isActive));
 const varieties = computed(
   () => store.crops.find((c) => c.id === form.cropId)?.varieties?.filter((v) => v.isActive) ?? [],
 );
@@ -537,6 +567,21 @@ onMounted(async () => {
 
 .bulk-sex {
   width: auto;
+}
+
+.setup-hint {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3;
+  border: 1px dashed $stb-warning;
+  border-radius: $radius-md;
+  color: $stb-text-secondary;
+  font-size: $font-size-sm;
+
+  span {
+    flex: 1;
+  }
 }
 
 .close-reason {

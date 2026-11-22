@@ -242,6 +242,8 @@ export const useFarmsStore = defineStore("farms", () => {
   const fetchHarvests = async (query: Query = {}) =>
     (await api.get<Paginated<FarmHarvest>>(`/farm-harvests${toQueryString(query)}`))
       .data;
+  const getHarvest = async (id: string) =>
+    (await api.get<FarmHarvest>(`/farm-harvests/${id}`)).data;
   const createHarvest = async (payload: HarvestPayload) =>
     (await api.post<FarmHarvest>("/farm-harvests", payload)).data;
   const voidHarvest = async (id: string, reason: string) =>
@@ -329,6 +331,7 @@ export const useFarmsStore = defineStore("farms", () => {
     cancelOperation,
     generateFarmPlan,
     fetchHarvests,
+    getHarvest,
     createHarvest,
     voidHarvest,
     fetchInspections,

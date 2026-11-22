@@ -79,8 +79,18 @@
               <td class="doc-money">{{ formatCurrency(h.value) }}</td>
               <td><span class="doc-code" dir="ltr">{{ h.lotNumber }}</span></td>
               <td>
-                <button v-if="h.status === 'recorded'" v-can="'record_farm_work'" class="btn btn--sm btn--ghost" @click="askVoid(h)">إلغاء</button>
-                <span v-else class="badge badge--inactive">ملغى</span>
+                <div class="doc-actions">
+                  <button
+                    v-if="h.status === 'recorded'"
+                    class="btn btn--sm btn--ghost"
+                    title="ملصق QR للصناديق: يفتح الحصاد ودفعته"
+                    @click="printLabel(h)"
+                  >
+                    <QrCode :size="14" /> ملصق
+                  </button>
+                  <button v-if="h.status === 'recorded'" v-can="'record_farm_work'" class="btn btn--sm btn--ghost" @click="askVoid(h)">إلغاء</button>
+                  <span v-else class="badge badge--inactive">ملغى</span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -188,6 +198,8 @@
       </Transition>
     </Teleport>
 
+    <FarmLabelsPrint ref="printer" />
+
     <ConfirmDialog
       v-model="showVoid"
       title="إلغاء الحصاد"
@@ -203,7 +215,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { Plus, Wheat, X } from "lucide-vue-next";
+import { Plus, QrCode, Wheat, X } from "lucide-vue-next";
+import FarmLabelsPrint from "~/components/farms/FarmLabelsPrint.vue";
+import { harvestCode } from "@/utils/farm-codes";
 import { useFarmsStore } from "@/stores/farms";
 import { useFarmScope } from "@/composables/useFarmScope";
 import { usePagedList } from "@/composables/usePagedList";
@@ -328,6 +342,26 @@ const submit = async () => {
 const showVoid = ref(false);
 const voidTarget = ref<FarmHarvest | null>(null);
 const voidReason = ref("");
+// ─── ملصق الصناديق ───
+const printer = ref<InstanceType<typeof FarmLabelsPrint> | null>(null);
+/** ملصق كبير على الصندوق: الرمز يفتح الحصاد، ورقم الدفعة مكتوب للمخزن */
+const printLabel = (h: FarmHarvest) =>
+  printer.value?.print(
+    [
+      {
+        code: harvestCode(h.id),
+        title: h.number,
+        lines: [
+          `${h.product?.name ?? ""} — ${formatNumber(h.quantity)} ${h.product?.baseUnit?.name ?? ""}`,
+          `الدفعة ${h.lotNumber}`,
+          formatDateTime(h.harvestedAt),
+          [h.farm?.name, h.plant?.tag ?? h.unit?.name].filter(Boolean).join(" · "),
+        ],
+      },
+    ],
+    "plate",
+  );
+
 const askVoid = (h: FarmHarvest) => {
   voidTarget.value = h;
   voidReason.value = "";

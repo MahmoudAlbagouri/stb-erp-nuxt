@@ -98,8 +98,11 @@
           </div>
         </div>
         <div class="farm-card__actions">
-          <NuxtLink :to="`/dashboard/farms/${f.id}`" class="btn btn--primary btn--sm">
-            <MapIcon :size="14" /> الخريطة والتقسيم
+          <NuxtLink
+            :to="f.unitCount ? `/dashboard/farms/${f.id}` : `/dashboard/farms/${f.id}?tab=units`"
+            class="btn btn--primary btn--sm"
+          >
+            <MapIcon :size="14" /> {{ f.unitCount ? "الخريطة والتقسيم" : "قسّم المزرعة" }}
           </NuxtLink>
           <button v-can="'manage_farms'" class="btn btn--ghost btn--sm" @click="openForm(f)">
             <Pencil :size="14" /> تعديل

@@ -573,7 +573,11 @@ const route = useRoute();
 const store = useFarmsStore();
 const toast = useToast();
 const farmId = computed(() => String(route.params.id));
-const tab = ref<(typeof TABS)[number]["id"]>("map");
+type FarmTab = (typeof TABS)[number]["id"];
+/** ?tab=units يفتح التقسيم مباشرة (من نوافذ تحتاج وحدات) */
+const tab = ref<FarmTab>(
+  TABS.find((t) => t.id === route.query.tab)?.id ?? "map",
+);
 const loading = ref(true);
 const saving = ref(false);
 

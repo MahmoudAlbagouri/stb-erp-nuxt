@@ -188,7 +188,7 @@ service worker، وبياناته في IndexedDB (`app/pos/db.ts`). يعمل ب�
 | `/pos` · `/pos/display` · `/kitchen` (شاشة المطبخ، بمحطة أو بالكل) · `/dashboard/pos/devices` · `/cashiers` · `/shifts` · `/promotions` · `/settings` (مميزات الشاشة) · `/restaurant` (الطاولات والمطبخ) · `/audit` | pos | `pos` · `posAdmin` |
 | `/dashboard/manufacturing` · `/manufacturing/orders/[id]` · `/boms` · `/work-centers` · `/planning` | manufacturing | `manufacturing` |
 | `/dashboard/restaurant/recipes` · `/menu` (الإضافات) · `/stations` · `/reservations` · `/reports` | pos · manufacturing (الوصفات) | `restaurant` · `manufacturing` |
-| `/dashboard/farms` · `/farms/[id]` (الخريطة والتقسيم والمياه والطقس) · `/plantings` · `/plants` (سجل النخيل) · `/operations` · `/harvests` · `/inspections` · `/crops` · `/reports` · `/field` (الشاشة الميدانية، بلا إنترنت) | farms | `farms` (+ `useFarmScope`، `components/farms/FarmMap.vue` — Leaflet) |
+| `/dashboard/farms` · `/farms/[id]` (الخريطة والتقسيم والمياه والطقس) · `/plantings` · `/plants` (سجل النخيل) · `/operations` · `/harvests` · `/inspections` · `/crops` · `/reports` · `/field` (الشاشة الميدانية، بلا إنترنت) | farms | `farms` (+ `useFarmScope`، `components/farms/FarmMap.vue` — Leaflet، `QrScanner.vue` — مسح بالكاميرا، `FarmLabelsPrint.vue` — لوحات QR، `utils/farm-codes.ts` — عقد الرموز) |
 | `/dashboard/delivery` · `/agents` · `/settlements` · `/driver` (شاشة الطيار على جواله، برابطه بلا تسجيل دخول) | delivery | `delivery` |
 | `/dashboard/accounting` · `/chart` · `/journals` · `/expenses` · `/ledger` · `/trial-balance` · `/statements` · `/vat-return` | accounting | `accounting` |
 | `/dashboard/quotations` | quotation | `quotations` |

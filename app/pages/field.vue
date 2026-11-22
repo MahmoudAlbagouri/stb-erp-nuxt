@@ -16,10 +16,69 @@
           <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
         </select>
       </div>
-      <NuxtLink to="/dashboard/farms" class="field__icon-btn" aria-label="لوحة المزارع">
-        <ArrowRight :size="20" />
-      </NuxtLink>
+      <div class="field__header-actions">
+        <button
+          v-if="boot"
+          type="button"
+          class="field__icon-btn field__icon-btn--primary"
+          aria-label="مسح لوحة نخلة"
+          @click="scanner = 'single'"
+        >
+          <QrCode :size="22" />
+        </button>
+        <NuxtLink to="/dashboard/farms" class="field__icon-btn" aria-label="لوحة المزارع">
+          <ArrowRight :size="20" />
+        </NuxtLink>
+      </div>
     </header>
+
+    <!-- ══ الماسح: نخلة واحدة، أو نخيل متتالية لعملية ══ -->
+    <QrScanner
+      v-if="scanner"
+      :continuous="scanner === 'multi'"
+      :title="scanner === 'multi' ? `نخيل العملية (${tagList.length})` : 'مسح لوحة نخلة أو ملصق حصاد'"
+      @code="onScan"
+      @close="scanner = null"
+    />
+
+    <!-- ══ النخلة الممسوحة: ماذا تسجّل لها ══ -->
+    <section v-if="scannedPlant" class="field__card field__scanned">
+      <div class="field__scanned-head">
+        <div>
+          <strong dir="ltr">{{ scannedPlant.tag }}</strong>
+          <small>
+            {{ unitLabel(scannedPlant.unitId) }} · {{ plantingOf(scannedPlant.plantingId) }}
+            <template v-if="scannedPlant.sex === 'male'"> · فحل</template>
+          </small>
+        </div>
+        <span class="field__status-chip" :class="`is-${scannedPlant.status}`">
+          {{ PLANT_STATUS[scannedPlant.status as PlantStatus]?.label ?? scannedPlant.status }}
+        </span>
+      </div>
+      <div class="field__quick">
+        <button type="button" @click="actOnPlant('harvest')"><Wheat :size="18" /> جني منها</button>
+        <button type="button" @click="actOnPlant('pest')"><Bug :size="18" /> فحص آفة</button>
+        <button type="button" @click="actOnPlant('plant')"><TreePalm :size="18" /> حالتها</button>
+        <button type="button" @click="actOnPlant('operation')"><ClipboardList :size="18" /> لعملية</button>
+      </div>
+      <button type="button" class="field__btn field__btn--ghost field__btn--sm" @click="scannedPlant = null">إغلاق</button>
+    </section>
+
+    <!-- ══ ملصق حصاد ممسوح ══ -->
+    <section v-if="scannedHarvest" class="field__card field__scanned">
+      <div class="field__scanned-head">
+        <div>
+          <strong>{{ scannedHarvest.number }}</strong>
+          <small>{{ scannedHarvest.product?.name }} — {{ scannedHarvest.quantity }} {{ scannedHarvest.product?.baseUnit?.name }}</small>
+          <small dir="ltr">الدفعة {{ scannedHarvest.lotNumber }}</small>
+          <small>{{ new Date(scannedHarvest.harvestedAt).toLocaleString("ar") }} · {{ scannedHarvest.plant?.tag ?? scannedHarvest.unit?.name ?? "" }}</small>
+        </div>
+        <span class="field__status-chip" :class="scannedHarvest.status === 'voided' ? 'is-dead' : 'is-healthy'">
+          {{ scannedHarvest.status === "voided" ? "ملغى" : "مسجّل" }}
+        </span>
+      </div>
+      <button type="button" class="field__btn field__btn--ghost field__btn--sm" @click="scannedHarvest = null">إغلاق</button>
+    </section>
 
     <button type="button" class="field__status" :class="`is-${status.tone}`" @click="syncNow">
       <WifiOff v-if="status.tone === 'offline'" :size="16" />
@@ -145,8 +204,13 @@
             <input v-model.trim="op.quantityUnit" class="field__input" placeholder="عذق، فسيلة..." />
           </div>
         </div>
-        <label>نخيل بعينها (وسوم مفصولة بفاصلة)</label>
-        <input v-model.trim="op.tags" class="field__input" dir="ltr" placeholder="A-B1-R3-07, A-B1-R3-08" />
+        <label>نخيل بعينها ({{ tagList.length }})</label>
+        <div class="field__tags">
+          <input v-model.trim="op.tags" class="field__input" dir="ltr" placeholder="A-B1-R3-07, A-B1-R3-08" />
+          <button type="button" class="field__btn field__btn--sm" @click="scanner = 'multi'">
+            <QrCode :size="18" /> مسح
+          </button>
+        </div>
         <label>ملاحظات</label>
         <input v-model.trim="op.notes" class="field__input" />
         <div class="field__actions">
@@ -338,6 +402,7 @@ import {
   CalendarCheck,
   ClipboardList,
   CloudUpload,
+  QrCode,
   RefreshCw,
   TreePalm,
   Tractor,
@@ -346,6 +411,8 @@ import {
   WifiOff,
   X,
 } from "lucide-vue-next";
+import QrScanner from "~/components/farms/QrScanner.vue";
+import { parseFarmCode, type FarmCode } from "@/utils/farm-codes";
 import { NetworkError } from "@/composables/useConnection";
 import { useToast } from "@/composables/useToast";
 import { useAuthStore } from "@/stores/auth";
@@ -362,6 +429,7 @@ import {
   UNIT_KIND,
 } from "@/utils/farms";
 import type {
+  FarmHarvest,
   FarmOperationType,
   FarmUnitKind,
   HarvestGrade,
@@ -694,6 +762,120 @@ const setTab = (t: Tab) => {
   if (t !== "operation") completing.value = null;
 };
 
+// ─── المسح (لوحات النخيل وملصقات الحصاد) ───
+type BootPlant = FieldBoot["data"]["plants"][number];
+const route = useRoute();
+const router = useRouter();
+const scanner = ref<null | "single" | "multi">(null);
+const scannedPlant = ref<BootPlant | null>(null);
+const scannedHarvest = ref<FarmHarvest | null>(null);
+const tagList = computed(() => op.tags.split(/[,،\s]+/).map((t) => t.trim()).filter(Boolean));
+const plantingOf = (id: string) => {
+  const p = boot.value?.data.plantings.find((x) => x.id === id);
+  return p ? `${p.cropName}${p.varietyName ? ` — ${p.varietyName}` : ""}` : "";
+};
+const plantOfCode = (code: FarmCode): BootPlant | null =>
+  code.kind === "plant"
+    ? (boot.value?.data.plants.find((p) => p.id === code.id) ?? null)
+    : code.kind === "tag"
+      ? plantByTag(code.tag)
+      : null;
+const addTag = (tag: string) => {
+  if (!tagList.value.includes(tag)) op.tags = [...tagList.value, tag].join(", ");
+};
+
+/** ما قرأه الماسح: في المسح المتتالي يُضاف للعملية، وإلا تُفتح النخلة أو الحصاد */
+const onScan = async (text: string) => {
+  const code = parseFarmCode(text);
+  if (!code) {
+    toast.error("رمز لا يخص المزارع");
+    return;
+  }
+  if (scanner.value === "multi") {
+    const plant = plantOfCode(code);
+    if (!plant) {
+      toast.warning("نخلة ليست في بيانات هذه المزرعة على الجوال");
+      return;
+    }
+    addTag(plant.tag);
+    return;
+  }
+  scanner.value = null;
+  await openCode(code);
+};
+
+const openCode = async (code: FarmCode) => {
+  scannedPlant.value = null;
+  scannedHarvest.value = null;
+  if (code.kind === "harvest") {
+    try {
+      scannedHarvest.value = await store.getHarvest(code.id);
+      online.value = true;
+    } catch (error) {
+      if (error instanceof NetworkError) {
+        online.value = false;
+        toast.info("ملصق حصاد — تفاصيله تحتاج اتصالاً");
+      } else toast.error(getErrorMessage(error, "الحصاد غير موجود"));
+    }
+    return;
+  }
+  let plant = plantOfCode(code);
+  // نخلة مزرعة أخرى: متصلاً نعرف مزرعتها وننزّلها
+  if (!plant && code.kind === "plant" && online.value !== false) {
+    try {
+      const remote = await store.getPlant(code.id);
+      if (remote.farmId !== farmId.value) {
+        farmId.value = remote.farmId;
+        await openFarm();
+        plant = plantOfCode(code);
+      }
+    } catch (error) {
+      if (error instanceof NetworkError) online.value = false;
+    }
+  }
+  if (!plant) {
+    toast.error(
+      code.kind === "tag"
+        ? `لا نخلة بالوسم ${code.tag} في هذه المزرعة`
+        : "النخلة ليست في بيانات هذا الجوال — حدّث بيانات المزرعة وأنت متصل",
+    );
+    return;
+  }
+  scannedPlant.value = plant;
+};
+
+/** من بطاقة النخلة إلى النموذج المناسب معبّأً بها */
+const actOnPlant = (target: "harvest" | "pest" | "plant" | "operation") => {
+  const plant = scannedPlant.value;
+  if (!plant) return;
+  if (target === "harvest") {
+    Object.assign(hv, emptyHarvest(), { plantingId: plant.plantingId, tag: plant.tag });
+  } else if (target === "pest") {
+    Object.assign(ins, emptyInspection(), { tag: plant.tag });
+  } else if (target === "plant") {
+    Object.assign(ps, { tag: plant.tag, status: plant.status as PlantStatus, removalReason: "", reason: "" });
+  } else {
+    completing.value = null;
+    addTag(plant.tag);
+  }
+  tab.value = target;
+  scannedPlant.value = null;
+};
+
+/** فُتحت الشاشة من رابط لوحة (كاميرا الجوال): ?plant= أو ?harvest= */
+const openFromLink = async () => {
+  const code = parseFarmCode(
+    typeof route.query.plant === "string"
+      ? `${window.location.origin}/field?plant=${route.query.plant}`
+      : typeof route.query.harvest === "string"
+        ? `${window.location.origin}/field?harvest=${route.query.harvest}`
+        : "",
+  );
+  if (!code) return;
+  await router.replace({ query: {} });
+  await openCode(code);
+};
+
 // ─── الرفع والتنزيل ───
 const runSync = async () => {
   const batch = queue.value.filter((q) => !q.error).slice(0, SYNC_BATCH);
@@ -802,6 +984,7 @@ onMounted(async () => {
   await refresh(false);
   await sync();
   loading.value = false;
+  await openFromLink();
   poller = setInterval(() => {
     if (document.visibilityState === "visible") void sync();
   }, POLL_MS);
@@ -1138,6 +1321,100 @@ const drop = async (q: FieldQueued) => {
 
   &__error {
     color: var(--stb-danger) !important;
+  }
+
+  &__header-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__icon-btn--primary {
+    border-color: var(--stb-primary);
+    background: var(--stb-primary);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  &__scanned {
+    border-color: var(--stb-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__scanned-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    strong {
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 1.3rem;
+    }
+    small {
+      color: var(--stb-text-secondary);
+    }
+  }
+
+  &__status-chip {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--stb-success);
+    background: color-mix(in srgb, var(--stb-success) 15%, transparent);
+
+    &.is-infested,
+    &.is-diseased,
+    &.is-dead,
+    &.is-removed {
+      color: var(--stb-danger);
+      background: color-mix(in srgb, var(--stb-danger) 15%, transparent);
+    }
+    &.is-weak {
+      color: var(--stb-warning);
+      background: color-mix(in srgb, var(--stb-warning) 15%, transparent);
+    }
+  }
+
+  &__quick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 52px;
+      border: 1px solid var(--stb-border);
+      border-radius: 12px;
+      background: var(--stb-dark);
+      color: var(--stb-text-primary);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
+
+  &__tags {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    .field__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
   }
 
   &__refresh {
