@@ -696,6 +696,10 @@ a:hover {
     font-size: $font-size-sm;
     margin-bottom: $space-6;
   }
+  &__extra {
+    margin: -#{$space-3} 0 $space-5;
+    text-align: start;
+  }
   &__actions {
     @include flex(row, center, center, $space-3);
   }
@@ -829,6 +833,7 @@ a:hover {
 
 // --- Responsive layer (يجب أن تبقى آخر شيء) ---
 @include meta.load-css("documents");
+@include meta.load-css("farms");
 @include meta.load-css("pos");
 @include meta.load-css("responsive");
 @include meta.load-css("scrollbars");

@@ -44,6 +44,8 @@ export default defineNuxtConfig({
     "/driver": { ssr: false },
     // شاشة العدّ: جرد بالباركود داخل المخزن، يعمل بلا إنترنت (IndexedDB)
     "/stocktake/**": { ssr: false },
+    // الشاشة الميدانية للمزارع: المزرعة وطابور ما سُجّل في IndexedDB (stb-field)
+    "/field": { ssr: false },
     // المكتب أونلاين وأوفلاين (stores/office): هيكل واحد يخزّنه الـ service
     // worker لكل صفحاته، وبياناته من آخر نسخة محفوظة وطابور الحفظ
     "/dashboard/sales": { ssr: false },

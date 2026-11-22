@@ -15,7 +15,7 @@
 const CACHE = "stb-pos-shell-v1";
 
 /** الشاشات التي تفتح بلا إنترنت: مسارها هو مفتاح هيكلها في المخزن */
-const SHELLS = ["/pos", "/driver", "/stocktake"];
+const SHELLS = ["/pos", "/driver", "/stocktake", "/field"];
 
 /**
  * صفحات المكتب تُرسم في المتصفح (ssr: false في nuxt.config)، فهيكلها واحد:

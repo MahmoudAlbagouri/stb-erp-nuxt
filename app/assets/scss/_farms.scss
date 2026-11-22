@@ -1,0 +1,138 @@
+// ============================================
+// STB ERP — صفحات المزارع: بطاقات الأرقام، اللوحات الجانبية، الشرائح، والخريطة
+// داخل النماذج. تُحمَّل من main.scss، والأسماء تبدأ بـ farm- حتى لا تتعارض.
+// ============================================
+
+@use "variables" as *;
+@use "mixins" as *;
+
+.farm-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: $space-3;
+  margin-bottom: $space-4;
+}
+
+.farm-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  padding: $space-3 $space-4;
+  background: $stb-surface;
+  border: 1px solid $stb-border;
+  border-radius: $radius-md;
+
+  strong {
+    font-size: $font-size-xl;
+    font-variant-numeric: tabular-nums;
+  }
+
+  small,
+  span {
+    color: $stb-text-muted;
+    font-size: $font-size-xs;
+  }
+
+  &.is-warn strong {
+    color: $stb-danger;
+  }
+}
+
+.farm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.farm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid $stb-border;
+  background: $stb-surface-2;
+  font-size: $font-size-xs;
+  white-space: nowrap;
+
+  &--danger {
+    border-color: $stb-danger;
+    color: $stb-danger;
+  }
+
+  &--warn {
+    border-color: $stb-warning;
+    color: $stb-warning;
+  }
+}
+
+.farm-form-map {
+  height: 360px;
+}
+
+.farm-split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: $space-4;
+  align-items: start;
+
+  @include respond-to("lg") {
+    grid-template-columns: 1fr;
+  }
+}
+
+.farm-panel {
+  padding: $space-4;
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-lg;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: $space-1 $space-3;
+    margin: 0;
+    font-size: $font-size-sm;
+  }
+
+  dt {
+    color: $stb-text-secondary;
+  }
+
+  dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.farm-lines {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  &__row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(90px, 1fr) minmax(90px, 1fr) auto;
+    gap: $space-2;
+    align-items: center;
+
+    @include respond-to("sm") {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+.farm-tree-name {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.is-clickable {
+  cursor: pointer;
+}

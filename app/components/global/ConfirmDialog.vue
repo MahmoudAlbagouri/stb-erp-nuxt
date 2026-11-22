@@ -10,6 +10,8 @@
           <div class="confirm-dialog__icon">⚠️</div>
           <h3 class="confirm-dialog__title">{{ title }}</h3>
           <p class="confirm-dialog__text">{{ message }}</p>
+          <!-- حقول إضافية (سبب الإلغاء...) -->
+          <div v-if="$slots.default" class="confirm-dialog__extra"><slot /></div>
           <div class="confirm-dialog__actions">
             <button
               class="btn btn--ghost"
