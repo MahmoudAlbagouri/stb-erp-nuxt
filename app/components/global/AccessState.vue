@@ -96,7 +96,7 @@ const canViewSubscription = computed(() => can(P.SUBSCRIPTION_VIEW_OWN));
   h2 {
     margin: $space-4 0 $space-3;
     font-size: 1.35rem;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-primary;
     line-height: 1.6;
   }
@@ -129,7 +129,6 @@ const canViewSubscription = computed(() => can(P.SUBSCRIPTION_VIEW_OWN));
   color: $stb-warning;
   background: rgba($stb-warning, 0.1);
   border-color: rgba($stb-warning, 0.3);
-  box-shadow: 0 0 28px rgba($stb-warning, 0.15);
 }
 
 .access-state__badge {
@@ -140,7 +139,7 @@ const canViewSubscription = computed(() => can(P.SUBSCRIPTION_VIEW_OWN));
   padding: $space-1 $space-3;
   border-radius: 999px;
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-warning;
   background: rgba($stb-warning, 0.12);
   border: 1px solid rgba($stb-warning, 0.3);

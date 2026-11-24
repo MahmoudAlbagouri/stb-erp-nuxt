@@ -203,7 +203,7 @@ const handleRegister = async () => {
 .auth-form__section {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-accent;
   text-transform: uppercase;
   letter-spacing: 0.08em;

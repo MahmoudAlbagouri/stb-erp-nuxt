@@ -708,7 +708,7 @@ onBeforeUnmount(() => {
     border-radius: 10px;
     font: inherit;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
     text-align: start;
     cursor: pointer;
 
@@ -814,7 +814,7 @@ onBeforeUnmount(() => {
 
   &__flash-total {
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 600;
   }
 
   &__title {
@@ -879,7 +879,7 @@ onBeforeUnmount(() => {
 
   &__row-qty {
     font-size: 1.2rem;
-    font-weight: 800;
+    font-weight: 600;
   }
 
   &__stepper {
@@ -945,7 +945,7 @@ onBeforeUnmount(() => {
       border: 1px solid var(--stb-border);
       border-radius: 10px;
       font: inherit;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--stb-on-accent);
       background: var(--stb-accent);
 
@@ -976,7 +976,7 @@ onBeforeUnmount(() => {
     padding: 12px;
     border: 1px solid var(--stb-border);
     border-radius: 14px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--stb-text-primary);
     text-decoration: none;
     background: var(--stb-surface);
@@ -1024,7 +1024,7 @@ onBeforeUnmount(() => {
     border-radius: 14px;
     font: inherit;
     font-size: 1.6rem;
-    font-weight: 800;
+    font-weight: 600;
     text-align: center;
     color: var(--stb-text-primary);
     background: var(--stb-dark);
@@ -1047,7 +1047,7 @@ onBeforeUnmount(() => {
       border: 1px solid transparent;
       border-radius: 14px;
       font: inherit;
-      font-weight: 800;
+      font-weight: 600;
       color: #fff;
 
       &.is-primary {

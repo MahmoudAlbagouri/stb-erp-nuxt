@@ -1050,7 +1050,7 @@ const drop = async (q: FieldQueued) => {
     padding: 4px 8px;
     font: inherit;
     font-size: 1.2rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--stb-text-primary);
     background: transparent;
     border: 0;
@@ -1078,7 +1078,7 @@ const drop = async (q: FieldQueued) => {
     border-radius: 10px;
     font: inherit;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
     text-align: start;
     cursor: pointer;
 
@@ -1147,8 +1147,8 @@ const drop = async (q: FieldQueued) => {
         min-width: 18px;
         padding: 0 4px;
         border-radius: 9px;
-        background: var(--stb-warning);
-        color: #000;
+        background: var(--stb-warning-soft);
+        color: var(--stb-warning);
         font-size: 0.7rem;
       }
     }
@@ -1176,7 +1176,7 @@ const drop = async (q: FieldQueued) => {
     &--big {
       min-height: 56px;
       font-size: 1.3rem;
-      font-weight: 700;
+      font-weight: 600;
     }
   }
 
@@ -1258,7 +1258,7 @@ const drop = async (q: FieldQueued) => {
     color: #fff;
     font: inherit;
     font-size: 1.05rem;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
 
     &:disabled {
@@ -1366,7 +1366,7 @@ const drop = async (q: FieldQueued) => {
     padding: 2px 10px;
     border-radius: 999px;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
     color: var(--stb-success);
     background: color-mix(in srgb, var(--stb-success) 15%, transparent);
@@ -1400,7 +1400,7 @@ const drop = async (q: FieldQueued) => {
       background: var(--stb-dark);
       color: var(--stb-text-primary);
       font: inherit;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
     }
   }

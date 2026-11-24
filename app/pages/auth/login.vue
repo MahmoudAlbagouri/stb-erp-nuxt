@@ -95,39 +95,36 @@ const handleLogin = async () => {
 .auth-card {
   @include glass-card;
   width: 100%;
-  max-width: 440px;
-  padding: $space-10 $space-8;
+  max-width: 420px;
+  padding: $space-8;
   position: relative;
   z-index: 1;
-  animation: modalIn 0.4s ease;
+  box-shadow: $shadow-md;
+  animation: modalIn 0.18s $ease-standard;
 
   &__logo {
     @include flex(row, center, center);
     margin-bottom: $space-6;
 
     img {
-      width: 70px; /* حجم مناسب للوجو */
+      width: 56px;
       height: auto;
-      filter: drop-shadow(0 0 12px rgba($stb-accent, 0.3));
     }
   }
 
   &__title {
-    font-size: $font-size-3xl;
-    font-weight: 900;
+    font-size: $font-size-2xl;
+    font-weight: 600;
     text-align: center;
-    background: $gradient-accent;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: $stb-text-primary;
   }
 
   &__subtitle {
     text-align: center;
-    color: $stb-text-muted;
+    color: $stb-text-secondary;
     font-size: $font-size-sm;
-    margin-top: $space-2;
-    margin-bottom: $space-8;
+    margin-top: $space-1;
+    margin-bottom: $space-6;
   }
 
   &__footer {
@@ -162,8 +159,7 @@ const handleLogin = async () => {
 }
 
 .auth-error {
-  background: rgba($stb-danger, 0.1);
-  border: 1px solid rgba($stb-danger, 0.3);
+  background: $stb-danger-soft;
   color: $stb-danger;
   padding: $space-3 $space-4;
   border-radius: $radius-md;

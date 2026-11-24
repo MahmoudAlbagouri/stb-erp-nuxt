@@ -445,7 +445,7 @@ const close = () => emit("update:modelValue", false);
   color: $stb-text-secondary;
   span {
     font-size: $font-size-xl;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-text-primary;
   }
   &--warn {

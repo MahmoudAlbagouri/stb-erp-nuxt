@@ -558,7 +558,7 @@ onMounted(() => {
   color: $stb-text-secondary;
   strong {
     color: $stb-text-primary;
-    font-weight: 700;
+    font-weight: 600;
   }
   &--danger {
     border-color: rgba($stb-danger, 0.3);
@@ -593,7 +593,7 @@ onMounted(() => {
   }
   &__title {
     font-size: $font-size-lg;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-secondary;
   }
   &__text {
@@ -629,31 +629,21 @@ onMounted(() => {
     transition: opacity $transition-base;
   }
   &:hover {
-    transform: translateY(-3px);
     border-color: rgba($stb-danger, 0.35);
-    box-shadow:
-      0 0 16px rgba($stb-danger, 0.12),
-      0 8px 24px rgba(0, 0, 0, 0.5);
     &::before {
-      opacity: 1;
     }
   }
   &__header {
     @include flex(row, center, flex-start, $space-3);
     padding: $space-5 $space-5 $space-4;
     border-bottom: 1px solid rgba($stb-border, 0.6);
-    background: linear-gradient(
-      180deg,
-      rgba($stb-surface-2, 0.8) 0%,
-      transparent 100%
-    );
   }
   &__meta {
     flex: 1;
     min-width: 0;
     h3 {
       font-size: $font-size-base;
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-text-primary;
       margin-bottom: 2px;
     }
@@ -684,11 +674,9 @@ onMounted(() => {
 }
 
 .deduction-icon {
-  width: 46px;
-  height: 46px;
+  width: auto;
+  height: auto;
   border-radius: $radius-lg;
-  background: rgba($stb-danger, 0.1);
-  border: 1px solid rgba($stb-danger, 0.2);
   color: $stb-danger;
   @include flex(row, center, center);
   flex-shrink: 0;
@@ -725,7 +713,7 @@ onMounted(() => {
   .total {
     display: block;
     font-size: $font-size-lg;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-danger;
   }
   .monthly {
@@ -746,7 +734,7 @@ onMounted(() => {
     color: $stb-text-muted;
   }
   .progress-text {
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-primary;
   }
   .progress-track {

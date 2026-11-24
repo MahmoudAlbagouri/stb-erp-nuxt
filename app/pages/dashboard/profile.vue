@@ -604,7 +604,7 @@ onMounted(() => {
   background: $gradient-primary;
   @include flex(row, center, center);
   font-size: $font-size-3xl;
-  font-weight: 800;
+  font-weight: 600;
   color: #fff;
   box-shadow: $shadow-glow;
 }
@@ -642,7 +642,7 @@ onMounted(() => {
 
 .status-indicator {
   @include flex(row, center, flex-start, $space-2);
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: $space-3;
 }
 .dot {
@@ -690,12 +690,12 @@ onMounted(() => {
     border-bottom: 1px dashed rgba($stb-accent, 0.2);
 
     .label {
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-text-secondary;
     }
     .amount.highlight {
       font-size: $font-size-lg;
-      font-weight: 800;
+      font-weight: 600;
       color: $stb-accent;
     }
   }
@@ -740,7 +740,7 @@ onMounted(() => {
     }
     .amount.danger {
       font-size: $font-size-base;
-      font-weight: 800;
+      font-weight: 600;
       color: $stb-danger;
     }
   }
@@ -757,7 +757,7 @@ onMounted(() => {
     }
     .ratio-value {
       font-size: $font-size-sm;
-      font-weight: 700;
+      font-weight: 600;
     }
   }
 }
@@ -786,7 +786,7 @@ onMounted(() => {
 .percentage {
   fill: $stb-text-primary;
   font-family: $font-family;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.5em;
   text-anchor: middle;
 }

@@ -85,7 +85,6 @@ const handleAccept = async () => {
     img {
       width: 70px;
       height: auto;
-      filter: drop-shadow(0 0 12px rgba($stb-accent, 0.3));
     }
   }
 
@@ -103,7 +102,7 @@ const handleAccept = async () => {
 
   &__title {
     font-size: $font-size-3xl;
-    font-weight: 900;
+    font-weight: 600;
     text-align: center;
     background: $gradient-accent;
     -webkit-background-clip: text;

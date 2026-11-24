@@ -117,11 +117,49 @@ public/sw.js              الـ service worker لشاشة الكاشير
 
 رسوم الصفحة الرئيسية في `components/dashboard` (`ChartBox` `ChartCard`
 `DonutChart` `StatTile`) على Apache ECharts، وألوانها من `utils/charts.ts`.
+ECharts **لا يدخل حزمة الصفحة**: `ChartBox` يحمّل `utils/echarts-setup.ts`
+بـ `import()` عندما يقترب الرسم من الشاشة، ومكانه محجوز بارتفاعه. رسم جديد
+بنوع آخر (scatter، gauge...) يُسجَّل هناك لا في المكوّن.
 
 ## التصميم
 
-- الألوان والمسافات من متغيرات CSS في `assets/scss` — ثيمان: داكن وفاتح
-  (`useTheme`). لا ألوان ثابتة داخل المكوّنات.
+**المرجع**: Design System «STB ERP» في Claude
+(https://claude.ai/artifact/KaUosqH4uSi4sNxgQ9TMVT): التوكنز والمكوّنات بمعاينات
+حية وقواعد الاستخدام. الهوية **أداة عمل هادئة**: لون فعل واحد (أزرق STB)،
+الفصل بخطوط 1px لا بظلال، بلا تدرجات ولا توهج ولا `backdrop-filter`، ولا
+شيء يرتفع عند المرور.
+
+- الألوان من متغيرات CSS في `_themes.scss` — **الفاتح افتراضي** والداكن اختيار
+  (`useTheme`، cookie `stb_theme`). الأسماء القديمة باقية لأن الصفحات تستخدمها:
+  `$stb-surface` = الغائر (رؤوس الجداول)، `$stb-surface-2` = اللوحات والحقول،
+  `$stb-dark` = خلفية الصفحة. جديدة: `$stb-brand-soft` (المختار/النشط)،
+  `$stb-line-strong` (حدود الحقول 3:1)، `$stb-focus-ring`، و`$stb-*-soft`
+  لخلفيات الحالات. `$gradient-*` صارت ألواناً مصمتة. لا ألوان ثابتة داخل
+  المكوّنات (`#hex` أو `rgba(...)` صريح).
+- **الخط**: IBM Plex Sans Arabic (400/500/600) وIBM Plex Mono للأكواد (`.mono`)،
+  مستضافان في `public/fonts` (`_fonts.scss`) — لا طلب لـ Google Fonts، ويعملان
+  بلا إنترنت. أقصى وزن 600. الأرقام في الجداول بعرض ثابت (`tabular-nums`).
+- **الخلفية المتحركة** (`StbBackdrop` + `utils/backdrop.ts`): خطوط بيانات رفيعة
+  تنساب، في الرئيسية وشاشات الدخول فقط (`backdropAllowedOn` في
+  `useBackdrop`). كل خط يُرسم مرة واحدة على canvas، والحركة CSS `transform`
+  على الـ GPU (لا JavaScript في أي إطار). تحترم `prefers-reduced-motion`، وثابتة
+  على الأجهزة الضعيفة وتوفير البيانات، وللمستخدم مفتاح في الشريط العلوي (cookie
+  `stb_motion`). لا تضفها لشاشات العمل (الكاشير، الجرد، الطيار، الحقل).
+- **المؤشرات**: `stat-card` داخل `.doc-stats` و`StatTile` داخل `.home-kpis` تُعرض
+  لوحة واحدة مقسومة بخطوط رفيعة، العنوان فوق الرقم، والأيقونة إشارة خافتة لا
+  مربع ملون. تبويبات `doc-tab` نص بخط سفلي للنشط.
+- **تبديل الوضع** (`useTheme().setTheme`): View Transitions — المتصفح يمزج صورتي
+  الصفحة قبل وبعد على الـ GPU في 180ms (المدة في `_themes.scss`)، وبلا دعم
+  للـ API أو مع تقليل الحركة: تبديل فوري. **لا تضف `transition` على كل العناصر
+  عند التبديل**: آلاف العناصر تتحرك ألوانها على المعالج = لاج (قيس قبل الإصلاح:
+  تعليق 1.8 ثانية على معالج أبطأ 4x، وبعده 0.19). `ThemeToggle` زر أيقونة واحد.
+- **أزرار الصفوف**: `btn--icon` مع `btn--danger|success|warning` بلا إطار ولا خلفية
+  حتى المرور. `btn--outline` = شكل `secondary` المحايد. أرقام المستندات والأكواد
+  `doc-code` نص mono بلا كبسولة. `doc-section` مساحة غائرة بلا إطار.
+- **نص فوق تعبئة ملونة** (accent/success/warning/danger): `$stb-on-accent` لا `#fff`
+  — هذه الألوان فاتحة في الداكن فيضيع الأبيض فوقها.
+- **الحقول المعرّفة داخل صفحة**: حدّها `$stb-line-strong` (3:1) لا `$stb-border`،
+  وتركيزها `border-color: $stb-focus-ring` + `box-shadow: 0 0 0 1px $stb-focus-ring`.
 - أصناف جاهزة: `page-container`، `page-header`، `card`، `data-table`،
   `table-responsive`، `btn btn--primary`، `form-group`، `form-input`،
   `form-select`، `badge`، `modal`، وأصناف المستندات `doc-*` (`_documents.scss`).

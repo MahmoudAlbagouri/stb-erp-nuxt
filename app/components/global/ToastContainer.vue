@@ -74,7 +74,7 @@ const icons = { success: "✓", error: "✕", info: "ℹ", warning: "⚠" };
   }
 
   &__icon {
-    font-weight: 700;
+    font-weight: 600;
     flex-shrink: 0;
   }
   &__msg {

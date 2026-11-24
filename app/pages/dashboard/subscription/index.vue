@@ -185,7 +185,6 @@ onMounted(() => store.fetchMySubscription());
     width: 80px;
     height: 80px;
     margin: 0 auto $space-4;
-    background: rgba($stb-accent, 0.1);
     color: $stb-accent;
     border-radius: 50%;
     @include flex(row, center, center);
@@ -278,9 +277,8 @@ onMounted(() => store.fetchMySubscription());
     @include flex(row, flex-start, flex-start, $space-4);
     margin-bottom: $space-5;
     .plan-icon {
-      width: 50px;
-      height: 50px;
-      background: rgba($stb-accent, 0.1);
+      width: auto;
+      height: auto;
       color: $stb-accent;
       border-radius: $radius-lg;
       @include flex(row, center, center);
@@ -292,7 +290,7 @@ onMounted(() => store.fetchMySubscription());
   }
   .price-tag {
     font-size: $font-size-2xl;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-text-primary;
     margin-bottom: $space-5;
     .cycle {
@@ -342,7 +340,7 @@ onMounted(() => store.fetchMySubscription());
       color: $stb-text-secondary;
     }
     .q-count {
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-accent;
     }
   }

@@ -645,7 +645,7 @@ onMounted(() => {
   color: $stb-text-muted;
 }
 .amount-cell {
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-accent;
   font-size: $font-size-sm;
 }

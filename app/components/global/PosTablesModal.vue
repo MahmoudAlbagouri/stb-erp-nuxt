@@ -222,7 +222,7 @@ const pick = (table: DiningTableInfo) => {
 }
 .pos-tables__name {
   font-size: $font-size-lg;
-  font-weight: 800;
+  font-weight: 600;
 }
 .pos-tables__meta {
   display: inline-flex;

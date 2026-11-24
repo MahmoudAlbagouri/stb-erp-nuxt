@@ -676,7 +676,7 @@ onMounted(() => {
   border-radius: $radius-md;
   background: $gradient-primary;
   @include flex(row, center, center);
-  font-weight: 700;
+  font-weight: 600;
   font-size: $font-size-sm;
   color: #fff;
   flex-shrink: 0;
@@ -706,11 +706,11 @@ onMounted(() => {
   background: rgba($stb-warning, 0.1);
   color: $stb-warning;
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   border: 1px solid rgba($stb-warning, 0.25);
 }
 .total-cell {
-  font-weight: 800;
+  font-weight: 600;
   color: $stb-success;
   font-size: $font-size-base;
 }
@@ -857,7 +857,7 @@ onMounted(() => {
   background: $gradient-primary;
   @include flex(row, center, center);
   font-size: $font-size-xl;
-  font-weight: 900;
+  font-weight: 600;
   color: #fff;
   flex-shrink: 0;
   box-shadow: $shadow-glow;
@@ -871,7 +871,7 @@ onMounted(() => {
 }
 .ep-name {
   font-size: $font-size-base;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-primary;
 }
 .ep-meta {
@@ -885,7 +885,7 @@ onMounted(() => {
   border: 1px solid rgba($stb-accent, 0.2);
   border-radius: $radius-full;
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-accent;
   flex-shrink: 0;
 }
@@ -916,14 +916,13 @@ onMounted(() => {
 }
 .calc-value {
   font-size: $font-size-sm;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-primary;
 }
 .calc-total {
   font-size: $font-size-xl;
-  font-weight: 800;
+  font-weight: 600;
   color: $stb-success;
-  text-shadow: 0 0 20px rgba($stb-success, 0.3);
 }
 .text-accent {
   color: $stb-accent !important;

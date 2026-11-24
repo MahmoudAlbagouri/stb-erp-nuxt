@@ -468,7 +468,7 @@ onMounted(() => {
   background: $gradient-primary;
   @include flex(row, center, center);
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
   flex-shrink: 0;
 }

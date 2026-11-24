@@ -126,7 +126,7 @@ const option = computed<EChartsOption>(() => ({
     strong {
       max-width: 96px;
       font-size: $font-size-lg;
-      font-weight: 800;
+      font-weight: 600;
       line-height: 1.2;
       color: $stb-text-primary;
       overflow-wrap: anywhere;
@@ -173,7 +173,7 @@ const option = computed<EChartsOption>(() => ({
   }
 
   &__value {
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-primary;
     font-variant-numeric: tabular-nums;
   }

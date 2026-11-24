@@ -838,7 +838,7 @@ const openEditModal = () => console.log("Edit:", employee.value?.id);
   display: flex;
   align-items: center;
   gap: $space-2;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-primary;
   svg {
     color: $stb-accent;
@@ -949,7 +949,7 @@ const openEditModal = () => console.log("Edit:", employee.value?.id);
     border-top: 1px dashed $stb-border;
     display: flex;
     justify-content: space-between;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-accent;
     font-size: $font-size-base;
   }
@@ -968,7 +968,7 @@ const openEditModal = () => console.log("Edit:", employee.value?.id);
   .leave-stat__value {
     display: block;
     font-size: $font-size-2xl;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-accent;
   }
 }

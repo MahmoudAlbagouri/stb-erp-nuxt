@@ -608,7 +608,7 @@ onMounted(() => {
   color: $stb-text-muted;
 }
 .total-cell {
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-success;
   font-size: $font-size-base;
 }
@@ -733,7 +733,7 @@ onMounted(() => {
   color: $stb-text-secondary;
 }
 .summary-value {
-  font-weight: 800;
+  font-weight: 600;
   color: $stb-success;
   font-size: $font-size-xl;
 }

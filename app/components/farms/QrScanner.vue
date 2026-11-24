@@ -250,7 +250,7 @@ onBeforeUnmount(stop);
     align-items: center;
     justify-content: space-between;
     padding: 14px 16px;
-    font-weight: 700;
+    font-weight: 600;
     background: linear-gradient(rgba(0, 0, 0, 0.6), transparent);
   }
 
@@ -289,7 +289,7 @@ onBeforeUnmount(stop);
 
   &__count {
     color: #86efac;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   &__row {
@@ -314,7 +314,7 @@ onBeforeUnmount(stop);
     &--primary {
       background: #2563eb;
       border-color: #2563eb;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     &:disabled {

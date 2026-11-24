@@ -203,6 +203,6 @@ const confirm = () => {
 
 .total {
   margin-inline-end: auto;
-  font-weight: 700;
+  font-weight: 600;
 }
 </style>

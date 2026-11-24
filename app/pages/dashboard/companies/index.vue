@@ -484,7 +484,7 @@ onMounted(() => {
 
   strong {
     color: $stb-text-primary;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   &--success {
@@ -557,22 +557,13 @@ onMounted(() => {
   position: relative;
 
   &:hover {
-    transform: translateY(-3px);
     border-color: rgba($stb-accent, 0.35);
-    box-shadow:
-      0 0 16px rgba($stb-accent, 0.12),
-      0 8px 24px rgba(0, 0, 0, 0.5);
   }
 
   &__header {
     @include flex(row, flex-start, flex-start, $space-3);
     padding: $space-5;
     border-bottom: 1px solid rgba($stb-border, 0.6);
-    background: linear-gradient(
-      180deg,
-      rgba($stb-surface-2, 0.8) 0%,
-      transparent 100%
-    );
   }
 
   &__body {
@@ -623,7 +614,7 @@ onMounted(() => {
 
 .tenant-name {
   font-size: $font-size-base;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-primary;
   margin-bottom: 2px;
   @include truncate;

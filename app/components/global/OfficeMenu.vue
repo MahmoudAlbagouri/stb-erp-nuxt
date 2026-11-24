@@ -224,7 +224,7 @@ const vClickOutside: Directive<ClickOutsideEl, () => void> = {
   }
   &__count {
     font-size: $font-size-xs;
-    font-weight: 700;
+    font-weight: 600;
   }
   &__popover {
     position: absolute;

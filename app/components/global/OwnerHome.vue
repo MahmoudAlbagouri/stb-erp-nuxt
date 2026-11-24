@@ -300,7 +300,7 @@ onMounted(() => {
   &__title {
     margin-bottom: $space-3;
     font-size: $font-size-base;
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 

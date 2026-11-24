@@ -911,12 +911,11 @@ onMounted(async () => {
   }
 }
 
+// الكود والباركود: نص mono عادي مثل .doc-code، لا كبسولة ملونة
 .sku {
-  padding: 2px $space-2;
-  font-size: $font-size-xs;
-  color: $stb-accent;
-  background: rgba($stb-accent, 0.08);
-  border-radius: $radius-sm;
+  font-family: $font-mono;
+  font-size: 12.5px;
+  color: $stb-text-secondary;
   direction: ltr;
   unicode-bidi: isolate;
 }
@@ -997,7 +996,7 @@ onMounted(async () => {
 
   &__title {
     font-size: $font-size-sm;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-accent;
   }
 }

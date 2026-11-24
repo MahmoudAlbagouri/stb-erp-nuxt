@@ -437,7 +437,7 @@ code {
 
   &__title {
     @include flex(row, center, flex-start, $space-2);
-    font-weight: 700;
+    font-weight: 600;
     font-size: $font-size-sm;
     color: $stb-warning;
   }

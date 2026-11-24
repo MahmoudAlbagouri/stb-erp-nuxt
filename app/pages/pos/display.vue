@@ -118,7 +118,7 @@ onBeforeUnmount(() => unsubscribe());
     }
   }
   &__name {
-    font-weight: 700;
+    font-weight: 600;
   }
   &__qty {
     color: $stb-text-secondary;

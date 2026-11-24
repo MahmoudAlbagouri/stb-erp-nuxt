@@ -254,7 +254,7 @@ onMounted(async () => {
     text-align: center;
   }
   tr.is-group td {
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 .check {

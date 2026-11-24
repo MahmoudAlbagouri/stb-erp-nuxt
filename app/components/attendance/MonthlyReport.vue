@@ -233,7 +233,7 @@ watch([employeeId, month, year], load);
 
   &__value {
     font-size: $font-size-xl;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-text-primary;
   }
   &__label {

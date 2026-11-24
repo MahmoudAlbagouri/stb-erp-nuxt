@@ -106,10 +106,8 @@ const isActive = (to: string) =>
     align-items: stretch;
     height: calc(var(--tabbar-height) + var(--safe-bottom));
     padding: 0 $space-1 var(--safe-bottom);
-    background: rgba($stb-surface, 0.92);
+    background: $stb-surface-2;
     border-top: 1px solid $stb-border;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
   }
 
   .mobile-tabbar__item {
@@ -140,7 +138,7 @@ const isActive = (to: string) =>
       width: 0;
       height: 3px;
       border-radius: 0 0 $radius-sm $radius-sm;
-      background: $gradient-accent;
+      background: $stb-primary;
       transform: translateX(-50%);
       transition: width $transition-base;
     }
@@ -191,7 +189,7 @@ const isActive = (to: string) =>
     max-width: 100%;
     overflow: hidden;
     font-size: 0.66rem;
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
     text-overflow: ellipsis;
   }

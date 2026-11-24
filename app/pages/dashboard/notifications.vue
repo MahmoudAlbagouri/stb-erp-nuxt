@@ -576,14 +576,14 @@ $severities: (
   &.active {
     color: $stb-text-primary;
     border-bottom-color: $stb-primary;
-    font-weight: 700;
+    font-weight: 600;
   }
   &__count {
     min-width: 20px;
     padding: 0 6px;
     border-radius: $radius-full;
     background: $stb-danger;
-    color: #fff;
+    color: $stb-on-accent;
     font-size: 11px;
     line-height: 18px;
   }
@@ -625,7 +625,7 @@ $severities: (
     padding: 0 5px;
     border-radius: $radius-full;
     background: $stb-danger;
-    color: #fff;
+    color: $stb-on-accent;
     font-size: 10px;
     line-height: 16px;
   }
@@ -674,7 +674,7 @@ $severities: (
   width: 100%;
   padding: $space-4;
   border: 1px solid transparent;
-  border-inline-start: 3px solid transparent;
+
   text-align: start;
   font: inherit;
   color: inherit;
@@ -688,12 +688,8 @@ $severities: (
     }
   }
   &.is-unread {
-    border-inline-start-color: $stb-accent;
-    background: linear-gradient(
-      270deg,
-      rgba($stb-accent, 0.04) 0%,
-      $stb-surface-2 100%
-    );
+    // غير المقروء: خلفية "المختار" مسطحة، بلا خط ملون جانبي
+    background: $stb-brand-soft;
   }
   &__icon {
     position: relative;
@@ -732,7 +728,7 @@ $severities: (
     h4 {
       margin: 0;
       font-size: $font-size-base;
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-text-primary;
     }
     time {

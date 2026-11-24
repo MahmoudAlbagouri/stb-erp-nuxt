@@ -278,7 +278,6 @@ $severities: (
   position: fixed;
   inset: 0;
   background: $stb-scrim;
-  backdrop-filter: blur(3px);
   z-index: $z-modal;
 }
 
@@ -321,7 +320,7 @@ $severities: (
 }
 
 .nd-type {
-  font-weight: 700;
+  font-weight: 600;
   font-size: $font-size-sm;
   color: $stb-text-primary;
 }
@@ -339,7 +338,7 @@ $severities: (
 
 .nd-title {
   font-size: $font-size-lg;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.5;
   margin: 0;
 }

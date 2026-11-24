@@ -319,9 +319,9 @@ $severities: (
   padding: 0 4px;
   @include flex(row, center, center);
   background: $stb-danger;
-  color: #fff;
+  color: $stb-on-accent;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   border-radius: $radius-full;
   border: 2px solid $stb-surface;
@@ -354,7 +354,7 @@ $severities: (
   h4 {
     @include flex(row, center, flex-start, $space-2);
     font-size: $font-size-sm;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0;
   }
 }

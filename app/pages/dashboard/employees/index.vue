@@ -1282,7 +1282,7 @@ onMounted(() => {
   color: $stb-text-secondary;
   strong {
     color: $stb-text-primary;
-    font-weight: 700;
+    font-weight: 600;
   }
   &--active {
     border-color: rgba($stb-success, 0.3);
@@ -1355,13 +1355,13 @@ onMounted(() => {
     padding-left: $space-3;
     height: 42px;
     border-radius: $radius-md;
-    border: 1px solid $stb-border;
+    border: 1px solid $stb-line-strong;
     background: $stb-surface-2;
     transition: all 0.2s;
 
     &:focus {
-      border-color: $stb-accent;
-      box-shadow: 0 0 0 3px rgba($stb-accent, 0.1);
+      border-color: $stb-focus-ring;
+      box-shadow: 0 0 0 1px $stb-focus-ring;
       outline: none;
     }
   }
@@ -1390,7 +1390,7 @@ onMounted(() => {
   width: 160px;
   height: 42px;
   border-radius: $radius-md;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   background: $stb-surface-2;
   padding: 0 $space-3;
   cursor: pointer;
@@ -1480,7 +1480,7 @@ onMounted(() => {
     width: 100%;
     height: 40px;
     border-radius: $radius-md;
-    border: 1px solid $stb-border;
+    border: 1px solid $stb-line-strong;
     background: $stb-surface-2;
     padding: 0 $space-3;
     font-size: $font-size-sm;
@@ -1493,8 +1493,8 @@ onMounted(() => {
     background-size: 16px;
 
     &:focus {
-      border-color: $stb-accent;
-      box-shadow: 0 0 0 3px rgba($stb-accent, 0.1);
+      border-color: $stb-focus-ring;
+      box-shadow: 0 0 0 1px $stb-focus-ring;
       outline: none;
     }
   }
@@ -1620,7 +1620,7 @@ onMounted(() => {
   }
   &__title {
     font-size: $font-size-lg;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-secondary;
   }
   &__text {
@@ -1650,20 +1650,13 @@ onMounted(() => {
   border: 1px solid transparent;
 
   &:hover {
-    transform: translateY(-2px);
     border-color: $stb-accent;
-    box-shadow: $shadow-md;
   }
 
   // ✅ تلوين الكارت بناءً على حالة انتهاء الإقامة/العقد
   &[data-expiry="warning"] {
-    border-color: rgba($stb-warning, 0.5);
-    background: linear-gradient(
-      180deg,
-      rgba($stb-warning, 0.06),
-      transparent 40%
-    );
-    box-shadow: 0 0 0 1px rgba($stb-warning, 0.15);
+    // الحد بلون الحالة يكفي إشارةً (والشارة داخل الكارت تقول السبب)
+    border-color: rgba($stb-warning, 0.6);
 
     &:hover {
       border-color: $stb-warning;
@@ -1671,13 +1664,7 @@ onMounted(() => {
   }
 
   &[data-expiry="expired"] {
-    border-color: rgba($stb-danger, 0.5);
-    background: linear-gradient(
-      180deg,
-      rgba($stb-danger, 0.06),
-      transparent 40%
-    );
-    box-shadow: 0 0 0 1px rgba($stb-danger, 0.15);
+    border-color: rgba($stb-danger, 0.6);
 
     &:hover {
       border-color: $stb-danger;
@@ -1695,7 +1682,7 @@ onMounted(() => {
     background: $gradient-primary;
     @include flex(row, center, center);
     font-size: $font-size-xl;
-    font-weight: 900;
+    font-weight: 600;
     color: #fff;
     flex-shrink: 0;
     box-shadow: $shadow-glow;
@@ -1726,7 +1713,7 @@ onMounted(() => {
     min-width: 0;
     h3 {
       font-size: $font-size-base;
-      font-weight: 700;
+      font-weight: 600;
       @include truncate;
       margin: 0 0 2px;
     }
@@ -1849,8 +1836,6 @@ onMounted(() => {
     border: 1px solid transparent;
     transition: all 0.2s;
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
   }
 
@@ -1888,7 +1873,6 @@ onMounted(() => {
     transition: all 0.2s;
     &:hover {
       background: rgba($stb-warning, 0.2);
-      transform: translateY(-1px);
     }
   }
 }
@@ -2000,7 +1984,7 @@ onMounted(() => {
       strong {
         display: block;
         font-size: $font-size-sm;
-        font-weight: 700;
+        font-weight: 600;
       }
       p {
         font-size: $font-size-xs;
@@ -2075,7 +2059,7 @@ onMounted(() => {
     border-bottom: 1px solid $stb-border;
     .edu-index {
       font-size: $font-size-sm;
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-accent;
     }
   }

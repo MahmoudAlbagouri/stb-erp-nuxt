@@ -778,7 +778,7 @@ onBeforeUnmount(() => {
       border: 1px solid var(--stb-border);
       border-radius: 12px;
       font: inherit;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--stb-text-secondary);
       background: transparent;
 
@@ -832,7 +832,7 @@ onBeforeUnmount(() => {
     padding: 2px 10px;
     border-radius: 99px;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--stb-accent);
     background: color-mix(in srgb, var(--stb-accent) 14%, transparent);
   }
@@ -875,7 +875,7 @@ onBeforeUnmount(() => {
 
     summary {
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 600;
     }
     ul {
       margin: 6px 0 0;
@@ -904,7 +904,7 @@ onBeforeUnmount(() => {
       padding: 10px 4px;
       border: 1px solid var(--stb-border);
       border-radius: 12px;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--stb-text-primary);
       text-decoration: none;
     }
@@ -925,7 +925,7 @@ onBeforeUnmount(() => {
       border-radius: 14px;
       font: inherit;
       font-size: 1.05rem;
-      font-weight: 800;
+      font-weight: 600;
       color: #fff;
 
       &:disabled {
@@ -1009,7 +1009,7 @@ onBeforeUnmount(() => {
     border-radius: 10px;
     font: inherit;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
     text-align: start;
     cursor: pointer;
 
@@ -1068,7 +1068,7 @@ onBeforeUnmount(() => {
       border: 1px solid var(--stb-border);
       border-radius: 10px;
       font: inherit;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--stb-on-accent);
       background: var(--stb-accent);
 

@@ -346,7 +346,7 @@ onMounted(applyPreset);
   border: 0;
   border-radius: $radius-md;
   font-size: $font-size-base;
-  font-weight: 800;
+  font-weight: 600;
   background: rgba($stb-danger, 0.08);
 
   &.is-credit {

@@ -3257,7 +3257,7 @@ onBeforeUnmount(() => {
   padding: $space-1 $space-3;
   font: inherit;
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   border: 1px solid currentColor;
   border-radius: $radius-full;
@@ -3462,7 +3462,7 @@ onBeforeUnmount(() => {
     overflow: hidden;
   }
   &__price {
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-accent;
     direction: ltr;
     text-align: end;
@@ -3670,7 +3670,7 @@ onBeforeUnmount(() => {
   &__stock {
     padding: 0 $space-2;
     font-size: $font-size-xs;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-secondary;
     background: $stb-surface-3;
     border-radius: $radius-sm;
@@ -3710,7 +3710,7 @@ onBeforeUnmount(() => {
       border-color: $stb-border-light;
     }
     &.is-pending {
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-danger;
       border-color: $stb-danger;
     }
@@ -3738,7 +3738,7 @@ onBeforeUnmount(() => {
 
 .pos-over {
   color: $stb-danger;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .pos-held-btn .pos-status__count {
@@ -3761,7 +3761,7 @@ onBeforeUnmount(() => {
   gap: 4px;
   padding: 2px $space-3;
   font-family: inherit;
-  font-weight: 800;
+  font-weight: 600;
   color: $stb-on-accent;
   background: $stb-accent;
   border: 0;

@@ -493,24 +493,20 @@ const getMonthName = (m: number) =>
   @include flex(row, center, flex-start, $space-3);
 }
 .stat-icon {
-  width: 40px;
-  height: 40px;
+  width: auto;
+  height: auto;
   border-radius: $radius-md;
   @include flex(row, center, center);
   &--blue {
-    background: rgba($stb-primary, 0.15);
     color: $stb-accent;
   }
   &--green {
-    background: rgba($stb-success, 0.15);
     color: $stb-success;
   }
   &--amber {
-    background: rgba($stb-warning, 0.15);
     color: $stb-warning;
   }
   &--red {
-    background: rgba($stb-danger, 0.15);
     color: $stb-danger;
   }
 }
@@ -524,7 +520,7 @@ const getMonthName = (m: number) =>
 }
 .stat-value {
   font-size: $font-size-lg;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-primary;
 }
 .info-card {
@@ -560,7 +556,7 @@ const getMonthName = (m: number) =>
   border-bottom: 1px solid $stb-border;
   h3 {
     font-size: $font-size-base;
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 .search-box {
@@ -578,13 +574,13 @@ const getMonthName = (m: number) =>
   width: 100%;
   padding: 8px 32px 8px 12px;
   background: $stb-surface-2;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   border-radius: $radius-md;
   color: $stb-text-primary;
   font-size: $font-size-sm;
   &:focus {
     outline: none;
-    border-color: $stb-accent;
+    border-color: $stb-focus-ring;
   }
 }
 .table-wrapper {
@@ -629,9 +625,9 @@ const getMonthName = (m: number) =>
   width: 100%;
   height: 100%;
   background: $gradient-accent;
-  color: white;
+  color: $stb-on-accent;
   @include flex(row, center, center);
-  font-weight: 700;
+  font-weight: 600;
   font-size: $font-size-xs;
 }
 .emp-info {
@@ -702,7 +698,7 @@ const getMonthName = (m: number) =>
 
   strong {
     color: $stb-success;
-    font-weight: 700;
+    font-weight: 600;
   }
   .text-muted {
     color: $stb-text-muted;
@@ -713,7 +709,7 @@ const getMonthName = (m: number) =>
 // ✅ إشارة المبلغ المصروف سلفاً
 .prepaid-hint {
   color: $stb-warning;
-  font-weight: 700;
+  font-weight: 600;
   cursor: help;
   margin-right: 2px;
 }

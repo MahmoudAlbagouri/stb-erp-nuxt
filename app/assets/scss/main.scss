@@ -6,6 +6,7 @@
 @use "variables" as *;
 @use "mixins" as *;
 @use "themes";
+@use "fonts";
 
 // --- Reset & Base ---
 *,
@@ -26,6 +27,7 @@ body {
   font-family: $font-family;
   background: $stb-dark;
   color: $stb-text-primary;
+  font-size: $font-size-sm;
   line-height: 1.6;
   min-height: 100vh;
   @include scrollbar;
@@ -40,9 +42,21 @@ h4,
 h5,
 h6 {
   font-family: $font-family;
-  font-weight: 700;
-  line-height: 1.3;
+  font-weight: 600;
+  line-height: 1.35;
   color: $stb-text-primary;
+  text-wrap: balance;
+}
+
+// الأرقام تصطف في الجداول والمؤشرات
+table,
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+// أرقام المستندات والأكواد
+.mono {
+  font-family: $font-mono;
 }
 
 a {
@@ -52,6 +66,12 @@ a {
 }
 a:hover {
   color: $stb-accent-glow;
+}
+
+// حلقة التركيز الموحدة: 2px صلبة بمسافة 2px
+:focus-visible {
+  outline: 2px solid $stb-focus-ring;
+  outline-offset: 2px;
 }
 
 // --- Scrollbar Global ---
@@ -69,14 +89,12 @@ a:hover {
 /// زر "مصمت خفيف": خلفية شفافة من اللون تتحول لمصمتة عند المرور
 @mixin btn-tone($color) {
   color: $color;
-  background: rgba($color, 0.12);
+  background: rgba($color, 0.1);
   border-color: rgba($color, 0.35);
 
   &:hover:not(:disabled) {
-    color: #fff;
-    background: $color;
+    background: rgba($color, 0.18);
     border-color: $color;
-    box-shadow: 0 4px 14px rgba($color, 0.35);
   }
 }
 
@@ -94,7 +112,7 @@ a:hover {
 
 .btn {
   @include btn-base;
-  min-height: 38px;
+  min-height: 36px;
   border: 1px solid transparent;
   line-height: 1.4;
   user-select: none;
@@ -104,64 +122,52 @@ a:hover {
   }
 
   &:focus-visible {
-    outline: 2px solid rgba($stb-accent, 0.7);
+    outline: 2px solid $stb-focus-ring;
     outline-offset: 2px;
   }
 
-  &:active:not(:disabled) {
-    transform: translateY(0) scale(0.98);
-  }
-
   // ── الأساسية ──────────────────────────────────────────────
-  &--primary {
-    background: $gradient-primary;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba($stb-primary, 0.4);
-
-    &:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba($stb-primary, 0.55);
-      filter: brightness(1.1);
-    }
-  }
-
+  // لون الفعل الوحيد: زر primary واحد في الشاشة. accent مرادف له
+  &--primary,
   &--accent {
-    background: $gradient-accent;
-    color: $stb-on-accent;
-    font-weight: 700;
-    box-shadow: 0 4px 14px rgba($stb-accent, 0.35);
+    background: $stb-primary;
+    color: #fff;
 
     &:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: $shadow-glow;
+      background: $stb-primary-light;
     }
   }
 
   &--secondary {
     color: $stb-text-primary;
     background: $stb-surface-2;
-    border-color: $stb-border-light;
+    border-color: $stb-line-strong;
 
     &:hover:not(:disabled) {
       background: $stb-surface-3;
-      border-color: $stb-accent;
     }
   }
 
   &--ghost {
     background: transparent;
     color: $stb-text-secondary;
-    border-color: $stb-border;
 
     &:hover:not(:disabled) {
       background: $stb-surface-3;
       color: $stb-text-primary;
-      border-color: $stb-border-light;
     }
   }
 
-  &--outline {
-    @include btn-outline($stb-accent);
+  // outline بلون الفعل كان يشد العين مثل primary: صار شكل secondary المحايد
+  &--outline,
+  &--accent-outline {
+    color: $stb-text-primary;
+    background: $stb-surface-2;
+    border-color: $stb-line-strong;
+
+    &:hover:not(:disabled) {
+      background: $stb-surface-3;
+    }
   }
 
   // ── الدلالية ──────────────────────────────────────────────
@@ -175,9 +181,6 @@ a:hover {
     @include btn-tone($stb-warning);
   }
 
-  &--accent-outline {
-    @include btn-outline($stb-accent);
-  }
   &--success-outline {
     @include btn-outline($stb-success);
   }
@@ -186,6 +189,15 @@ a:hover {
   }
   &--warning-outline {
     @include btn-outline($stb-warning);
+  }
+
+  // أيقونة إجراء في صف (حذف، إلغاء، اعتماد): بلا إطار ولا خلفية حتى المرور —
+  // عمود كامل من المربعات الملونة في جدول ضجيج يسرق العين من البيانات
+  &--icon.btn--danger,
+  &--icon.btn--success,
+  &--icon.btn--warning {
+    background: transparent;
+    border-color: transparent;
   }
 
   &--dashed {
@@ -204,8 +216,7 @@ a:hover {
   &--sm {
     min-height: 30px;
     padding: $space-1 $space-3;
-    font-size: $font-size-xs;
-    border-radius: $radius-sm + 2px;
+    font-size: 13px;
   }
   &--lg {
     min-height: 46px;
@@ -268,7 +279,6 @@ a:hover {
     background: $stb-warning
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230d1117' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E")
       center / 10px no-repeat;
-    box-shadow: 0 2px 6px rgba($stb-warning, 0.5);
     pointer-events: none;
   }
 
@@ -287,11 +297,11 @@ a:hover {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: $space-2;
+  gap: 6px;
 
   label {
-    font-size: $font-size-sm;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     color: $stb-text-secondary;
   }
 }
@@ -304,7 +314,7 @@ a:hover {
   @include input-base;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a9cc4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23708299' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: left $space-3 center;
   padding-left: $space-8;
@@ -318,7 +328,7 @@ a:hover {
 // --- Cards ---
 .card {
   @include glass-card;
-  padding: $space-6;
+  padding: $space-5;
 
   &__header {
     @include flex(row, center, space-between);
@@ -328,8 +338,8 @@ a:hover {
   }
 
   &__title {
-    font-size: $font-size-xl;
-    font-weight: 700;
+    font-size: $font-size-base;
+    font-weight: 600;
     color: $stb-text-primary;
   }
 }
@@ -342,11 +352,9 @@ a:hover {
   th {
     padding: $space-3 $space-4;
     text-align: right;
-    font-size: $font-size-xs;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 500;
     color: $stb-text-muted;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     background: $stb-surface;
     border-bottom: 1px solid $stb-border;
     white-space: nowrap;
@@ -356,14 +364,14 @@ a:hover {
     padding: $space-3 $space-4;
     font-size: $font-size-sm;
     color: $stb-text-secondary;
-    border-bottom: 1px solid rgba($stb-border, 0.5);
+    border-bottom: 1px solid $stb-border;
     vertical-align: middle;
   }
 
   tr {
     transition: background $transition-fast;
     &:hover td {
-      background: rgba($stb-primary, 0.05);
+      background: $stb-surface-3;
     }
     &:last-child td {
       border-bottom: none;
@@ -433,7 +441,6 @@ a:hover {
   position: fixed;
   inset: 0;
   background: $stb-scrim;
-  backdrop-filter: blur(4px);
   z-index: $z-modal;
   @include flex(row, center, center);
   animation: fadeIn 0.2s ease;
@@ -445,7 +452,8 @@ a:hover {
   max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modalIn 0.25s ease;
+  box-shadow: $shadow-lg;
+  animation: modalIn 0.18s $ease-standard;
   @include scrollbar;
 
   &__header {
@@ -455,8 +463,8 @@ a:hover {
     border-bottom: 1px solid $stb-border;
 
     h3 {
-      font-size: $font-size-xl;
-      font-weight: 700;
+      font-size: $font-size-base;
+      font-weight: 600;
     }
   }
 
@@ -479,7 +487,7 @@ a:hover {
 @keyframes modalIn {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.98) translateY(-4px);
   }
   to {
     opacity: 1;
@@ -501,31 +509,33 @@ a:hover {
   padding: $space-3 $space-5;
   @include flex(row, center, flex-start, $space-3);
   min-width: 280px;
-  animation: toastIn 0.3s ease;
+  border-radius: $radius-md;
+  box-shadow: $shadow-md;
+  animation: toastIn 0.18s $ease-standard;
   font-size: $font-size-sm;
-
-  &--success {
-    border-right: 3px solid $stb-success;
+  // الحالة في لون الأيقونة، لا خط ملون على جانب الإشعار
+  &--success svg {
+    color: $stb-success;
   }
-  &--error {
-    border-right: 3px solid $stb-danger;
+  &--error svg {
+    color: $stb-danger;
   }
-  &--info {
-    border-right: 3px solid $stb-accent;
+  &--info svg {
+    color: $stb-accent;
   }
-  &--warning {
-    border-right: 3px solid $stb-warning;
+  &--warning svg {
+    color: $stb-warning;
   }
 }
 
 @keyframes toastIn {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
@@ -548,7 +558,7 @@ a:hover {
   &__title {
     h1 {
       font-size: $font-size-xl;
-      font-weight: 800;
+      font-weight: 600;
     }
     p {
       color: $stb-text-secondary;
@@ -563,38 +573,42 @@ a:hover {
   @include glass-card;
   padding: $space-5;
   @include flex(row, center, flex-start, $space-4);
-  transition: all $transition-base;
+  transition: border-color $transition-fast;
 
   &:hover {
-    transform: translateY(-2px);
-    @include glow-border($stb-accent);
+    border-color: $stb-border-light;
   }
 
   &__icon {
-    width: 48px;
-    height: 48px;
-    border-radius: $radius-lg;
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-md;
     @include flex(row, center, center);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
   }
 
+  // العنوان فوق الرقم (الترتيب في القالب: الرقم ثم العنوان)
   &__info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: $space-1;
   }
 
   &__value {
     font-size: $font-size-2xl;
-    font-weight: 800;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
     color: $stb-text-primary;
     line-height: 1;
   }
 
   &__label {
-    font-size: $font-size-xs;
-    color: $stb-text-secondary;
-    margin-top: $space-1;
+    font-size: 13px;
+    font-weight: 500;
+    color: $stb-text-muted;
   }
 }
 
@@ -680,15 +694,16 @@ a:hover {
   width: 90%;
   max-width: 400px;
   text-align: center;
-  animation: modalIn 0.25s ease;
+  box-shadow: $shadow-lg;
+  animation: modalIn 0.18s $ease-standard;
 
   &__icon {
     font-size: 3rem;
     margin-bottom: $space-4;
   }
   &__title {
-    font-size: $font-size-xl;
-    font-weight: 700;
+    font-size: $font-size-lg;
+    font-weight: 600;
     margin-bottom: $space-2;
   }
   &__text {
@@ -722,10 +737,9 @@ a:hover {
     font-size: $font-size-sm;
 
     &.active {
-      background: $gradient-primary;
+      background: $stb-primary;
       border-color: $stb-primary;
       color: #fff;
-      box-shadow: 0 0 12px rgba($stb-primary, 0.4);
     }
 
     &:hover:not(.active):not(:disabled) {
@@ -782,7 +796,7 @@ a:hover {
   font-size: $font-size-xs !important;
 }
 .font-bold {
-  font-weight: 700 !important;
+  font-weight: 600 !important;
 }
 .mt-auto {
   margin-top: auto !important;

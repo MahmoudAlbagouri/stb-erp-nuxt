@@ -9,11 +9,12 @@ import { useCookie, useHead } from "nuxt/app";
 export type Theme = "dark" | "light";
 
 const THEME_COOKIE = "stb_theme";
-const DEFAULT_THEME: Theme = "dark";
-// لون شريط المتصفح في الموبايل (يطابق خلفية الصفحة في كل وضع)
+// الفاتح هو الافتراضي: يوم عمل كامل في المكتب. الداكن اختيار يُحفظ في الـ cookie
+const DEFAULT_THEME: Theme = "light";
+// لون شريط المتصفح في الموبايل (يطابق خلفية الصفحة ‎--stb-dark‎ في كل وضع)
 const BROWSER_BAR_COLOR: Record<Theme, string> = {
-  dark: "#0d1117",
-  light: "#eef2f8",
+  dark: "#0b0d10",
+  light: "#f6f8fb",
 };
 
 export const useTheme = () => {
@@ -29,14 +30,30 @@ export const useTheme = () => {
   );
   const isDark = computed(() => theme.value === "dark");
 
+  /**
+   * التبديل: المتصفح يلتقط صورة للصفحة قبل وبعد، ويمزج بينهما على الـ GPU
+   * (View Transitions، المدة في main.scss) — لا transition على كل عنصر، فلا
+   * لاج مهما كبرت الصفحة. الوضع يُطبَّق على <html> فوراً داخل الالتقاط، وما
+   * يتأخر رسمه (الرسوم البيانية) يظهر في الصورة الجديدة لأنها حية.
+   * بلا دعم للـ API أو مع تقليل الحركة: تبديل فوري.
+   */
   const setTheme = (next: Theme) => {
-    if (import.meta.client) {
-      // انتقال ناعم للألوان أثناء التبديل فقط (انظر _themes.scss)
-      const root = document.documentElement;
-      root.classList.add("theme-switching");
-      window.setTimeout(() => root.classList.remove("theme-switching"), 400);
-    }
-    cookie.value = next;
+    const apply = () => {
+      if (import.meta.client) document.documentElement.dataset.theme = next;
+      cookie.value = next;
+    };
+
+    const doc = import.meta.client
+      ? (document as Document & {
+          startViewTransition?: (update: () => void) => unknown;
+        })
+      : null;
+    const reduceMotion =
+      import.meta.client &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (!doc?.startViewTransition || reduceMotion) return apply();
+    doc.startViewTransition(apply);
   };
 
   const toggleTheme = () => setTheme(isDark.value ? "light" : "dark");

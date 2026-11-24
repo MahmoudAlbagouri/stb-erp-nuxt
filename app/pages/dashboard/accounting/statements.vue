@@ -350,14 +350,14 @@ onMounted(async () => {
     font-size: $font-size-sm;
 
     &.is-group {
-      font-weight: 700;
+      font-weight: 600;
     }
     code {
       color: $stb-text-muted;
     }
   }
   :deep(.statement__line--sub) {
-    font-weight: 700;
+    font-weight: 600;
     border-bottom-style: solid;
   }
   :deep(.statement__line--total) {
@@ -366,7 +366,7 @@ onMounted(async () => {
     border: 0;
     border-radius: $radius-md;
     font-size: $font-size-base;
-    font-weight: 800;
+    font-weight: 600;
     background: rgba($stb-success, 0.1);
 
     &.is-loss {

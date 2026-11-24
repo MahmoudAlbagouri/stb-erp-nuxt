@@ -1421,7 +1421,6 @@ onMounted(() => {
   transition: all $transition-base;
 
   &:hover {
-    transform: translateY(-2px);
     @include glow-border;
   }
 
@@ -1435,10 +1434,9 @@ onMounted(() => {
   }
 
   &__icon {
-    width: 48px;
-    height: 48px;
+    width: auto;
+    height: auto;
     border-radius: $radius-lg;
-    background: rgba($stb-accent, 0.12);
     color: $stb-accent;
     @include flex(row, center, center);
     flex-shrink: 0;
@@ -1493,9 +1491,9 @@ onMounted(() => {
   padding: 0 $space-1;
   border-radius: 999px;
   background: $stb-warning;
-  color: #fff;
+  color: $stb-on-accent;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 18px;
   text-align: center;
 }
@@ -1574,7 +1572,7 @@ onMounted(() => {
 
 .overtime-value {
   color: $stb-warning;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .status-badges {
@@ -1587,7 +1585,7 @@ onMounted(() => {
   font-size: 10px;
   padding: 2px 7px;
   border-radius: $radius-sm;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 
   &--manual {
@@ -1646,7 +1644,7 @@ onMounted(() => {
 .form-textarea {
   width: 100%;
   background: $stb-surface-3;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   border-radius: $radius-md;
   padding: $space-3;
   color: $stb-text-primary;

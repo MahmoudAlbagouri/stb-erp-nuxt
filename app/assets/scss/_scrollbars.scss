@@ -9,7 +9,7 @@
 
 .os-theme-stb {
   box-sizing: border-box;
-  --os-size: 16px;
+  --os-size: 12px;
   --os-padding-perpendicular: 3px;
   --os-padding-axis: 3px;
   --os-track-border-radius: #{$radius-full};
@@ -17,13 +17,13 @@
   --os-track-bg-active: color-mix(in srgb, #{$stb-text-muted} 15%, transparent);
   --os-handle-border-radius: #{$radius-full};
   --os-handle-min-size: 40px;
-  --os-handle-perpendicular-size: 60%;
+  --os-handle-perpendicular-size: 50%;
   --os-handle-perpendicular-size-hover: 100%;
   --os-handle-perpendicular-size-active: 100%;
   --os-handle-interactive-area-offset: 4px;
-  --os-handle-bg: #{$stb-text-muted};
-  --os-handle-bg-hover: #{$stb-primary-light};
-  --os-handle-bg-active: #{$stb-accent};
+  --os-handle-bg: #{$stb-border-light};
+  --os-handle-bg-hover: #{$stb-text-muted};
+  --os-handle-bg-active: #{$stb-text-secondary};
 }
 
 // شريط الصفحة: المكتبة تثبّته يمين الشاشة فوق كل شيء. نضعه يساراً كباقي

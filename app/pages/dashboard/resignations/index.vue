@@ -561,7 +561,7 @@ onMounted(() => {
   border-radius: $radius-md;
   background: $gradient-primary;
   @include flex(row, center, center);
-  font-weight: 700;
+  font-weight: 600;
   font-size: $font-size-sm;
   color: #fff;
   flex-shrink: 0;
@@ -591,7 +591,7 @@ onMounted(() => {
   background: rgba($stb-accent, 0.1);
   color: $stb-accent;
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   border: 1px solid rgba($stb-accent, 0.25);
 }
 
@@ -703,7 +703,7 @@ onMounted(() => {
     padding: $space-3 $space-4;
     padding-left: $space-10;
     background: $stb-surface;
-    border: 1px solid $stb-border;
+    border: 1px solid $stb-line-strong;
     border-radius: $radius-md;
     color: $stb-text-primary;
     font-family: $font-family;
@@ -713,8 +713,8 @@ onMounted(() => {
     direction: rtl;
     text-align: right;
     &:focus {
-      border-color: $stb-accent;
-      box-shadow: 0 0 0 3px rgba($stb-accent, 0.1);
+      border-color: $stb-focus-ring;
+      box-shadow: 0 0 0 1px $stb-focus-ring;
     }
     &::-webkit-calendar-picker-indicator {
       opacity: 0;

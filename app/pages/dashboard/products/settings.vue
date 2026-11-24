@@ -620,7 +620,7 @@ onMounted(async () => {
   margin-inline-start: $space-2;
   padding: 1px $space-2;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-accent;
   background: rgba($stb-accent, 0.1);
   border-radius: $radius-full;
@@ -664,7 +664,7 @@ onMounted(async () => {
   height: 38px;
   padding: 2px;
   background: $stb-surface;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   border-radius: $radius-md;
   cursor: pointer;
 }

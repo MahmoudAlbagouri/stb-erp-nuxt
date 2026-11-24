@@ -526,7 +526,7 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .tree-table {
   tr.is-group td {
-    font-weight: 700;
+    font-weight: 600;
   }
   tr.is-inactive td {
     opacity: 0.6;

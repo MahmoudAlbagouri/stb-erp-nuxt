@@ -418,8 +418,6 @@ onMounted(() => {
   border: 1px solid $stb-border;
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     border-color: $stb-accent;
   }
 
@@ -443,7 +441,7 @@ onMounted(() => {
     }
     .plan-price {
       font-size: $font-size-xl;
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-accent;
       margin-top: $space-3;
       small {

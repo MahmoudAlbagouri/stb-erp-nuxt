@@ -84,7 +84,8 @@ watch(
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: $stb-dark;
+  // شفاف: لون الصفحة من body، فتظهر الخلفية المتحركة (StbBackdrop) حيث تعمل
+  background: transparent;
   direction: rtl;
 
   // حالة الطي خاصة باللاب فقط — في الشاشات الأصغر القائمة درج كامل العرض
@@ -144,7 +145,6 @@ watch(
   inset: 0;
   z-index: $z-sidebar - 1;
   background: $stb-scrim;
-  backdrop-filter: blur(3px);
 }
 
 // ─── آيباد/فون: القائمة الجانبية درج ينزلق من اليمين ───────────────────────

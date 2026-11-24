@@ -1,47 +1,61 @@
 <!--
   رسم ECharts واحد. يُرسم في المتصفح فقط (canvas)، ويتبع حجم حاويته.
-  المكتبة تُحمَّل بما تحتاجه الصفحة الرئيسية فقط (خط، عمود، دائرة) لا كلها.
+  المكتبة لا تدخل حزمة الصفحة: تُحمَّل (utils/echarts-setup.ts) عندما يقترب
+  الرسم من الشاشة، والمكان محجوز بارتفاعه من أول رسم فلا تتحرك الصفحة.
 -->
 <template>
-  <ClientOnly>
-    <VChart
-      class="chart-box"
-      :style="{ height: `${height}px` }"
+  <div ref="host" class="chart-box" :style="{ height: `${height}px` }">
+    <component
+      :is="chart"
+      v-if="chart"
+      class="chart-box__canvas"
       :option="option"
       :update-options="{ notMerge: true }"
       autoresize
     />
-    <template #fallback>
-      <div class="chart-box" :style="{ height: `${height}px` }" />
-    </template>
-  </ClientOnly>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { BarChart, LineChart, PieChart } from "echarts/charts";
 import {
-  AriaComponent,
-  GridComponent,
-  TooltipComponent,
-} from "echarts/components";
-import { use } from "echarts/core";
-import { CanvasRenderer } from "echarts/renderers";
-import VChart from "vue-echarts";
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  type Component,
+} from "vue";
 import type { EChartsOption } from "echarts";
-
-use([
-  CanvasRenderer,
-  LineChart,
-  BarChart,
-  PieChart,
-  GridComponent,
-  TooltipComponent,
-  AriaComponent,
-]);
 
 withDefaults(defineProps<{ option: EChartsOption; height?: number }>(), {
   height: 260,
 });
+
+// تحميل واحد مشترك لكل الرسوم في التطبيق
+let loading: Promise<Component> | null = null;
+const loadChart = () =>
+  (loading ??= import("@/utils/echarts-setup").then((m) => m.VChart));
+
+const host = ref<HTMLElement | null>(null);
+const chart = shallowRef<Component | null>(null);
+let observer: IntersectionObserver | null = null;
+
+const show = async () => {
+  observer?.disconnect();
+  observer = null;
+  chart.value = await loadChart();
+};
+
+onMounted(() => {
+  if (!host.value || !("IntersectionObserver" in window)) return void show();
+  // قبل ظهوره بقليل: يكون جاهزاً عندما يصل إليه التمرير
+  observer = new IntersectionObserver(
+    (entries) => entries.some((e) => e.isIntersecting) && show(),
+    { rootMargin: "200px" },
+  );
+  observer.observe(host.value);
+});
+
+onBeforeUnmount(() => observer?.disconnect());
 </script>
 
 <style lang="scss" scoped>
@@ -49,5 +63,10 @@ withDefaults(defineProps<{ option: EChartsOption; height?: number }>(), {
   width: 100%;
   // المحاور والأرقام لاتينية من اليسار لليمين حتى في واجهة عربية
   direction: ltr;
+}
+
+.chart-box__canvas {
+  width: 100%;
+  height: 100%;
 }
 </style>

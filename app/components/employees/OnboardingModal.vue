@@ -2593,8 +2593,7 @@ const calculateContractDates = () => {
 .ob-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: $stb-scrim;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -2602,16 +2601,16 @@ const calculateContractDates = () => {
   padding: $space-4;
 }
 .ob-panel {
-  background: $stb-surface;
+  background: $stb-surface-2;
   border: 1px solid $stb-border;
-  border-radius: $radius-xl;
+  border-radius: $radius-lg;
   width: 100%;
   max-width: 780px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  box-shadow: $shadow-lg;
 }
 .ob-header {
   @include flex(row, center, space-between);
@@ -2622,7 +2621,7 @@ const calculateContractDates = () => {
     @include flex(row, center, flex-start, $space-4);
     h2 {
       font-size: $font-size-lg;
-      font-weight: 700;
+      font-weight: 600;
       margin: 0;
     }
     p {
@@ -2719,7 +2718,7 @@ const calculateContractDates = () => {
 .section-title {
   @include flex(row, center, flex-start, $space-2);
   font-size: $font-size-sm;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-secondary;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2784,7 +2783,7 @@ const calculateContractDates = () => {
     strong {
       display: block;
       font-size: $font-size-sm;
-      font-weight: 700;
+      font-weight: 600;
     }
     p {
       font-size: $font-size-xs;
@@ -2832,7 +2831,7 @@ const calculateContractDates = () => {
     background: $stb-accent;
     border-color: $stb-accent;
     &::before {
-      background: #fff;
+      background: $stb-on-accent;
       right: calc(100% - 20px);
     }
   }
@@ -2903,7 +2902,7 @@ const calculateContractDates = () => {
   @include flex(row, center, flex-start, $space-2);
   padding: $space-2 $space-3;
   background: $stb-surface-3;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   border-radius: $radius-md;
   margin-bottom: $space-3;
   color: $stb-text-muted;
@@ -2994,7 +2993,7 @@ const calculateContractDates = () => {
     }
     &:hover {
       background: $stb-accent;
-      color: #fff;
+      color: $stb-on-accent;
       border-color: $stb-accent;
     }
   }
@@ -3011,7 +3010,7 @@ const calculateContractDates = () => {
   top: 50%;
   transform: translateY(-50%);
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-muted;
   pointer-events: none;
 }
@@ -3028,7 +3027,7 @@ const calculateContractDates = () => {
   width: 38px;
   height: 38px;
   flex-shrink: 0;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   border-radius: $radius-md;
   background: $stb-surface-2;
   color: $stb-text-muted;
@@ -3049,7 +3048,7 @@ const calculateContractDates = () => {
     padding: $space-3 $space-4;
     background: $stb-surface-2;
     font-size: $font-size-sm;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-secondary;
     border-bottom: 1px solid $stb-border;
   }
@@ -3066,7 +3065,7 @@ const calculateContractDates = () => {
     border-top: 1px solid $stb-border;
     margin-top: $space-2;
     padding-top: $space-3;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-primary;
     font-size: $font-size-base;
     strong {
@@ -3123,7 +3122,7 @@ const calculateContractDates = () => {
     background: $stb-surface-2;
     border-bottom: 1px solid $stb-border;
     font-size: $font-size-sm;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-secondary;
     svg {
       color: $stb-accent;
@@ -3244,7 +3243,7 @@ const calculateContractDates = () => {
 .form-textarea {
   width: 100%;
   background: $stb-surface-3;
-  border: 1px solid $stb-border;
+  border: 1px solid $stb-line-strong;
   border-radius: $radius-md;
   padding: $space-3;
   color: $stb-text-primary;
@@ -3254,7 +3253,7 @@ const calculateContractDates = () => {
   transition: border-color $transition-fast;
   &:focus {
     outline: none;
-    border-color: $stb-accent;
+    border-color: $stb-focus-ring;
   }
 }
 .education-toggle-section {
@@ -3269,7 +3268,7 @@ const calculateContractDates = () => {
       strong {
         display: block;
         font-size: $font-size-sm;
-        font-weight: 700;
+        font-weight: 600;
       }
       p {
         font-size: $font-size-xs;
@@ -3317,7 +3316,7 @@ const calculateContractDates = () => {
       background: $stb-accent;
       border-color: $stb-accent;
       &::before {
-        background: #fff;
+        background: $stb-on-accent;
         right: calc(100% - 20px);
       }
     }
@@ -3342,7 +3341,7 @@ const calculateContractDates = () => {
     border-bottom: 1px solid $stb-border;
     .edu-index {
       font-size: $font-size-sm;
-      font-weight: 700;
+      font-weight: 600;
       color: $stb-accent;
     }
   }

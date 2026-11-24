@@ -430,7 +430,7 @@ onBeforeUnmount(() => {
 }
 .kds__clock {
   font-size: $font-size-lg;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-secondary;
 }
 .kds__actions {
@@ -578,11 +578,11 @@ onBeforeUnmount(() => {
 .kds__type {
   flex: 1;
   font-size: $font-size-lg;
-  font-weight: 800;
+  font-weight: 600;
 }
 .kds__timer {
   font-size: $font-size-lg;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-secondary;
 }
 .kds__meta {
@@ -621,17 +621,17 @@ onBeforeUnmount(() => {
     display: block;
     font-size: $font-size-sm;
     font-style: normal;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-warning;
   }
   .is-cancel {
     color: $stb-danger;
-    font-weight: 800;
+    font-weight: 600;
   }
 }
 .kds__note {
   margin: 0;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-warning;
 }
 .kds__buttons {

@@ -73,15 +73,14 @@ export default defineNuxtConfig({
       },
       bodyAttrs: { "data-overlayscrollbars-initialize": "" },
       link: [
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        // الخط مستضاف محلياً (assets/scss/_fonts.scss): لا طلب لخادم خارجي يؤخر
+        // أول رسم، ويعمل بلا إنترنت. نحمّل مسبقاً الوزن الأكثر استخداماً فقط
         {
-          rel: "preconnect",
-          href: "https://fonts.gstatic.com",
+          rel: "preload",
+          href: "/fonts/plex-arabic-arabic-400.woff2",
+          as: "font",
+          type: "font/woff2",
           crossorigin: "",
-        },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap",
         },
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       ],

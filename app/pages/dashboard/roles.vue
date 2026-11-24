@@ -319,7 +319,6 @@ onMounted(() => {
   transition: all $transition-base;
 
   &:hover {
-    transform: translateY(-2px);
     @include glow-border;
   }
 
@@ -328,17 +327,16 @@ onMounted(() => {
   }
 
   &__icon {
-    width: 44px;
-    height: 44px;
+    width: auto;
+    height: auto;
     border-radius: $radius-lg;
-    background: rgba($stb-primary, 0.15);
     @include flex(row, center, center);
     font-size: 1.25rem;
   }
 
   &__info h3 {
     font-size: $font-size-base;
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: $space-1;
   }
 

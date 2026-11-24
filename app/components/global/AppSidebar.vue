@@ -176,14 +176,14 @@ const handleLogout = () => {
 .sidebar-logo {
   @include flex(row, center, flex-start, $space-3);
   padding: $space-5 $space-4;
-  border-bottom: 1px solid rgba($stb-border, 0.5);
+  border-bottom: 1px solid $stb-border;
   flex-shrink: 0;
 
   .sidabar-logo-image {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 60px;
+    width: 36px;
     img {
       width: 100%;
     }
@@ -195,14 +195,10 @@ const handleLogout = () => {
 
   &__name {
     display: block;
-    font-size: $font-size-lg;
-    font-weight: 900;
+    font-size: 15px;
+    font-weight: 600;
     color: $stb-text-primary;
-    letter-spacing: 0.05em;
-    background: $gradient-accent;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: 0.01em;
   }
 
   &__sub {
@@ -230,10 +226,8 @@ const handleLogout = () => {
 
   &__title {
     font-size: $font-size-xs;
-    font-weight: 700;
+    font-weight: 500;
     color: $stb-text-muted;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
     padding: 0 $space-3 $space-1;
   }
 
@@ -265,7 +259,7 @@ const handleLogout = () => {
   flex-direction: column;
   gap: $space-1;
   padding-right: $space-2;
-  border-right: 1px solid rgba($stb-border, 0.3);
+  border-right: 1px solid $stb-border;
   margin-right: $space-3;
 }
 
@@ -275,45 +269,28 @@ const handleLogout = () => {
   border-radius: $radius-md;
   color: $stb-text-secondary;
   font-size: $font-size-sm;
-  font-weight: 500;
+  font-weight: 400;
   text-decoration: none;
-  transition: all $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
   position: relative;
 
   &:hover {
-    background: rgba($stb-primary, 0.2);
+    background: $stb-surface-3;
     color: $stb-text-primary;
   }
 
+  // النشط: خلفية brand-soft ونص brand، بلا خط جانبي ولا توهج
   &.is-active {
-    background: rgba($stb-accent, 0.1);
+    background: $stb-brand-soft;
     color: $stb-accent;
-    font-weight: 700;
-
-    &::before {
-      content: "";
-      position: absolute;
-      right: 0;
-      top: 20%;
-      height: 60%;
-      width: 3px;
-      background: $stb-accent;
-      border-radius: $radius-full 0 0 $radius-full;
-      box-shadow: 0 0 8px rgba($stb-accent, 0.5);
-    }
+    font-weight: 500;
   }
 
   &--sub {
-    font-size: $font-size-xs;
-    padding: $space-1 $space-3;
-
-    &.is-active {
-      background: rgba($stb-accent, 0.05);
-      &::before {
-        width: 2px;
-        background: $stb-accent-glow;
-      }
-    }
+    font-size: 13px;
+    padding: 6px $space-3;
   }
 }
 
@@ -321,7 +298,7 @@ const handleLogout = () => {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  stroke-width: 2px;
+  stroke-width: 1.75px;
   transition: color $transition-fast;
 }
 
@@ -331,25 +308,25 @@ const handleLogout = () => {
   transition: background $transition-fast;
 
   &:hover {
-    background: rgba($stb-primary, 0.15);
+    background: $stb-surface-3;
   }
 }
 
 .sidebar-footer {
   @include flex(row, center, flex-start, $space-3);
   padding: $space-4;
-  border-top: 1px solid rgba($stb-border, 0.5);
+  border-top: 1px solid $stb-border;
   flex-shrink: 0;
 
   &__avatar {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: $gradient-primary;
+    background: $stb-brand-soft;
     @include flex(row, center, center);
-    font-weight: 700;
+    font-weight: 600;
     font-size: $font-size-sm;
-    color: #fff;
+    color: $stb-accent;
     flex-shrink: 0;
   }
 
@@ -369,8 +346,8 @@ const handleLogout = () => {
 
   &__role {
     font-size: $font-size-xs;
-    color: $stb-accent;
-    font-weight: 600;
+    color: $stb-text-muted;
+    font-weight: 400;
     margin-top: 2px;
   }
 }
@@ -383,14 +360,16 @@ const handleLogout = () => {
   height: 28px;
   border-radius: $radius-sm;
   background: transparent;
-  border: 1px solid rgba($stb-border, 0.5);
+  border: 1px solid $stb-border;
   color: $stb-text-muted;
   cursor: pointer;
   @include flex(row, center, center);
-  transition: all $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover {
-    background: rgba($stb-danger, 0.15);
+    background: $stb-danger-soft;
     border-color: $stb-danger;
     color: $stb-danger;
   }

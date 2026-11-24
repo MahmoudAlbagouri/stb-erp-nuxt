@@ -23,24 +23,25 @@ export interface ChartPalette {
 }
 
 const PALETTES: Record<Theme, ChartPalette> = {
+  // المحايدات تطابق أسطح _themes.scss؛ ألوان السلاسل والحالة كما فُحصت
   dark: {
-    surface: "#1a2332",
-    text: "#e8f1ff",
-    textSecondary: "#7a9cc4",
-    textMuted: "#5d7c9e",
-    grid: "#243040",
-    axis: "#2a4a72",
+    surface: "#121519",
+    text: "#eef1f5",
+    textSecondary: "#a7afbb",
+    textMuted: "#858e9c",
+    grid: "#1d2127",
+    axis: "#343a44",
     series: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300"],
     neutral: "#4a6a8a",
     status: { good: "#0ca30c", warning: "#fab219", critical: "#d03b3b" },
   },
   light: {
     surface: "#ffffff",
-    text: "#0f1f33",
-    textSecondary: "#48607c",
-    textMuted: "#66788f",
-    grid: "#e6edf6",
-    axis: "#b6c5d8",
+    text: "#0c1d33",
+    textSecondary: "#46596f",
+    textMuted: "#5a6c84",
+    grid: "#edf1f6",
+    axis: "#cdd7e3",
     series: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"],
     neutral: "#9aa9bc",
     status: { good: "#0ca30c", warning: "#fab219", critical: "#d03b3b" },

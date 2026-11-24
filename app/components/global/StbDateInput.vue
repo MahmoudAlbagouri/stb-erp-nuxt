@@ -127,7 +127,7 @@ const openPicker = () => {
   }
 
   &:focus-within {
-    border-color: $stb-accent;
+    border-color: $stb-focus-ring;
   }
 
   &--empty &__text {

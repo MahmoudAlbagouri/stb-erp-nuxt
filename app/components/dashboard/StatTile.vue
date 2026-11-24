@@ -10,10 +10,11 @@
     :class="{ 'stat-tile--link': to, 'stat-tile--spark': !!sparkPath }"
   >
     <div class="stat-tile__head">
-      <span class="stat-tile__icon" :class="`stat-tile__icon--${tone}`">
-        <component :is="icon" :size="18" />
-      </span>
       <span class="stat-tile__label">{{ label }}</span>
+      <!-- إشارة صغيرة: بلون الحالة للتنبيه والخطر فقط -->
+      <span class="stat-tile__icon" :class="`stat-tile__icon--${tone}`">
+        <component :is="icon" :size="16" />
+      </span>
     </div>
 
     <div class="stat-tile__value">{{ value }}</div>
@@ -121,15 +122,11 @@ const sparkPath = computed(() => {
   min-width: 0;
   padding: $space-4 $space-5;
   overflow: hidden;
+  // البطاقات خانات في لوحة واحدة (.home-kpis يرسم الفواصل)، لا كروت منفصلة
   background: $stb-surface-2;
-  border: 1px solid $stb-border;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-card;
   color: inherit;
   text-decoration: none;
-  transition:
-    transform $transition-fast,
-    border-color $transition-fast;
+  transition: background-color $transition-fast;
 
   // مساحة خاصة لخط الاتجاه: لا يمرّ فوق نسبة التغير
   &--spark {
@@ -137,8 +134,7 @@ const sparkPath = computed(() => {
   }
 
   &--link:hover {
-    transform: translateY(-2px);
-    border-color: $stb-accent;
+    background: $stb-surface-3;
   }
 
   &__head {
@@ -147,40 +143,31 @@ const sparkPath = computed(() => {
 
   &__icon {
     @include flex(row, center, center);
-    width: 32px;
-    height: 32px;
     flex-shrink: 0;
-    border-radius: $radius-md;
+    margin-inline-start: auto;
+    color: $stb-text-muted;
 
-    &--accent {
-      background: rgba($stb-accent, 0.12);
-      color: $stb-accent;
-    }
-    &--good {
-      background: rgba($stb-success, 0.12);
-      color: $stb-success;
-    }
     &--warning {
-      background: rgba($stb-warning, 0.14);
       color: $stb-warning;
     }
     &--critical {
-      background: rgba($stb-danger, 0.12);
       color: $stb-danger;
     }
   }
 
   &__label {
-    font-size: $font-size-sm;
-    color: $stb-text-secondary;
+    font-size: 13px;
+    font-weight: 500;
+    color: $stb-text-muted;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   &__value {
-    font-size: $font-size-2xl;
-    font-weight: 800;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
     line-height: 1.2;
     color: $stb-text-primary;
     // أرقام كبيرة منفردة: عرض الأرقام الطبيعي لا المتساوي
@@ -197,20 +184,16 @@ const sparkPath = computed(() => {
 
   &__delta {
     @include flex(row, center, center, 2px);
-    padding: 1px 6px;
-    border-radius: 999px;
-    font-weight: 700;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
 
     &--good {
-      background: rgba($stb-success, 0.12);
       color: $stb-success;
     }
     &--bad {
-      background: rgba($stb-danger, 0.12);
       color: $stb-danger;
     }
     &--flat {
-      background: $stb-surface-3;
       color: $stb-text-secondary;
     }
   }
@@ -236,7 +219,7 @@ const sparkPath = computed(() => {
       stroke-linecap: round;
       stroke-linejoin: round;
       vector-effect: non-scaling-stroke;
-      opacity: 0.45;
+      opacity: 0.7;
     }
   }
 }

@@ -12,25 +12,15 @@
     <div class="page-header">
       <div class="page-header__title home-welcome">
         <div v-if="profileReady" class="welcome-box">
+          <p class="welcome-date">
+            {{ currentDate }} · <span dir="ltr">{{ localTime }}</span>
+          </p>
           <h1 class="welcome-title">
-            <template v-if="auth.isSuperAdmin">
-              مرحباً شريكنا {{ username }}<br />
-              <span class="text-accent">أهلاً بك في STB ERP</span><br />
-              نتمنى لك يومًا مثمرًا وإدارة ناجحة لمؤسستك.
-            </template>
-            <template v-else>
-              مرحباً، {{ profileStore.fullName || username }} 👋<br />
-              <span class="text-accent">أهلاً بك في نظام STB ERP</span><br />
-              نتمنى لك يوماً سعيداً ومثمراً.
-            </template>
+            {{ greeting }}،
+            {{
+              auth.isSuperAdmin ? username : profileStore.fullName || username
+            }}
           </h1>
-          <div class="date-time-wrapper">
-            <p class="welcome-date">{{ currentDate }}</p>
-            <span class="time-badge">
-              <Clock :size="14" />
-              <span dir="ltr">{{ localTime }}</span>
-            </span>
-          </div>
         </div>
         <div v-else class="welcome-skeleton">
           <div class="skeleton-line w-60"></div>
@@ -561,7 +551,6 @@ import {
   CalendarRange,
   CircleCheck,
   ClipboardList,
-  Clock,
   CloudOff,
   FileClock,
   Gift,
@@ -726,6 +715,8 @@ const username = computed(
 
 const localTime = ref("");
 const currentDate = ref("");
+/** صباح الخير / مساء الخير بساعة دولة الشركة */
+const greeting = ref("مرحباً");
 let timeInterval: ReturnType<typeof setInterval> | null = null;
 
 const updateLocalTime = () => {
@@ -736,8 +727,15 @@ const updateLocalTime = () => {
     hour12: true,
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
   });
+  const hour = Number(
+    now.toLocaleString("en-US", {
+      timeZone: auth.timezone,
+      hour: "numeric",
+      hourCycle: "h23",
+    }),
+  );
+  greeting.value = hour >= 4 && hour < 12 ? "صباح الخير" : "مساء الخير";
   // أسماء اليوم/الشهر بالعربية، والأرقام لاتينية بالتقويم الميلادي
   currentDate.value = now.toLocaleDateString("ar-u-nu-latn-ca-gregory", {
     timeZone: auth.timezone,
@@ -1509,46 +1507,25 @@ onUnmounted(() => {
   width: 100%;
 }
 
+// سطر تاريخ خافت ثم تحية واحدة: لا نص ملون ولا شعارات
 .welcome-box {
   display: flex;
-  justify-content: space-between;
-  gap: $space-4;
-  animation: home-slide-up 0.6s ease-out forwards;
+  flex-direction: column;
+  gap: $space-1;
 }
 
 .welcome-title {
-  margin-bottom: $space-2;
-  font-size: $font-size-2xl;
-  font-weight: 800;
-  line-height: 1.4;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 36px;
+  letter-spacing: -0.01em;
   color: $stb-text-primary;
-
-  .text-accent {
-    color: $stb-accent;
-    text-shadow: 0 0 15px rgba($stb-accent, 0.3);
-  }
-}
-
-.date-time-wrapper {
-  @include flex(column, center, flex-start, $space-3);
-  flex-shrink: 0;
 }
 
 .welcome-date {
-  font-size: $font-size-sm;
-  color: $stb-text-secondary;
-}
-
-.time-badge {
-  @include flex(row, center, center, 4px);
-  padding: 2px 8px;
-  border: 1px solid rgba($stb-accent, 0.2);
-  border-radius: $radius-md;
-  background: rgba($stb-accent, 0.1);
-  color: $stb-accent;
-  font-family: monospace;
-  font-size: $font-size-xs;
-  font-weight: 600;
+  font-size: 13px;
+  color: $stb-text-muted;
+  font-variant-numeric: tabular-nums;
 }
 
 .welcome-skeleton {
@@ -1675,7 +1652,7 @@ onUnmounted(() => {
     padding-bottom: $space-2;
     border-bottom: 1px solid $stb-border;
     font-size: $font-size-lg;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-text-primary;
 
     svg {
@@ -1693,17 +1670,26 @@ onUnmounted(() => {
   }
 }
 
+// لوحة واحدة مقسومة بخطوط 1px: كل خانة ترسم خطها الأيسر والسفلي، والحواف
+// الخارجية يقصّها overflow — فيبقى الشكل سليماً مهما نقص الصف الأخير
 .home-kpis {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
-  gap: $space-4;
+  background: $stb-surface-2;
+  border: 1px solid $stb-border;
+  border-radius: $radius-lg;
+  overflow: hidden;
+
+  > * {
+    box-shadow:
+      -1px 0 0 $stb-border,
+      0 1px 0 $stb-border;
+  }
 }
 
 .home-skeleton {
   height: 118px;
-  border-radius: $radius-lg;
   background: $stb-surface-2;
-  border: 1px solid $stb-border;
   animation: home-pulse 1.4s ease-in-out infinite;
 }
 
@@ -1872,7 +1858,6 @@ onUnmounted(() => {
     width: 30px;
     height: 30px;
     border-radius: $radius-md;
-    background: rgba($stb-accent, 0.12);
     color: $stb-accent;
   }
 
@@ -1884,7 +1869,7 @@ onUnmounted(() => {
   &__count {
     min-width: 28px;
     text-align: end;
-    font-weight: 800;
+    font-weight: 600;
     color: $stb-text-primary;
     font-variant-numeric: tabular-nums;
   }
@@ -1905,16 +1890,11 @@ onUnmounted(() => {
 
   .welcome-title {
     font-size: $font-size-xl;
-  }
-
-  .date-time-wrapper {
-    flex-direction: row;
-    justify-content: flex-start;
+    line-height: 1.4;
   }
 
   .home-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: $space-3;
   }
 }
 </style>

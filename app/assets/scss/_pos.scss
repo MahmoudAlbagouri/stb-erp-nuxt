@@ -61,7 +61,7 @@
     @include flex(row, center, center, $space-2);
     padding: $space-3;
     font: inherit;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-secondary;
     background: transparent;
     border: 1px solid $stb-border;
@@ -113,7 +113,7 @@
   padding: 2px $space-2;
   font-family: inherit;
   font-size: $font-size-xs;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
   color: $stb-text-primary;
   background: $stb-surface-3;
@@ -168,7 +168,7 @@
       padding: 2px 0;
     }
     .is-strong {
-      font-weight: 800;
+      font-weight: 600;
       border-top: 1px solid #000;
       margin-top: 3px;
       padding-top: 4px;
@@ -176,7 +176,7 @@
   }
   &__section {
     margin-top: 8px;
-    font-weight: 800;
+    font-weight: 600;
     border-bottom: 1px solid #000;
   }
   &__sign {
@@ -210,7 +210,7 @@
   }
   &__no {
     font-size: 34px;
-    font-weight: 900;
+    font-weight: 600;
     line-height: 1.1;
     text-align: center;
   }
@@ -218,7 +218,7 @@
     margin: 4px 0;
     padding: 3px 0;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 600;
     text-align: center;
     border-block: 1px dashed #000;
   }
@@ -241,7 +241,7 @@
     display: flex;
     gap: 8px;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
 
     small {
       font-weight: 400;
@@ -250,6 +250,6 @@
   &__note {
     padding-inline-start: 24px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
   }
 }

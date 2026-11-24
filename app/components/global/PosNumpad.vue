@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
 .pos-numpad__times {
   margin-inline-end: $space-2;
   padding: 0 $space-2;
-  font-weight: 800;
+  font-weight: 600;
   color: $stb-on-accent;
   background: $stb-accent;
   border-radius: $radius-full;
@@ -433,7 +433,7 @@ onBeforeUnmount(() => {
   height: 52px;
   font-family: inherit;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-primary;
   background: $stb-surface-3;
   border: 1px solid $stb-border-light;

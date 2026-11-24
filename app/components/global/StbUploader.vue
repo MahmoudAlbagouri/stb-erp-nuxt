@@ -546,8 +546,6 @@ const formatSize = (bytes: number | null): string => {
 
   .stb-uploader__dropzone:hover & {
     background: rgba($stb-accent, 0.14);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba($stb-accent, 0.15);
   }
 }
 
@@ -634,7 +632,6 @@ const formatSize = (bytes: number | null): string => {
   @include flex(row, center, center);
   cursor: pointer;
   transition: all $transition-fast;
-  backdrop-filter: blur(4px);
 
   &:hover {
     background: $stb-danger;

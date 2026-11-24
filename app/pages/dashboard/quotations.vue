@@ -475,7 +475,7 @@ onMounted(() => {
     color: #fff;
     padding: 12px 16px;
     text-align: right;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   td {
@@ -504,26 +504,29 @@ onMounted(() => {
 }
 
 .badge {
-  padding: 4px 10px;
-  border-radius: $radius-full;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 $space-2;
+  border-radius: $radius-sm;
   font-size: $font-size-xs;
-  font-weight: 600;
+  font-weight: 500;
 
   &--draft {
-    background: #fef3c7;
-    color: #92400e;
+    background: $stb-surface;
+    color: $stb-text-secondary;
   }
   &--sent {
-    background: #dbeafe;
-    color: #1e40af;
+    background: $stb-brand-soft;
+    color: $stb-accent;
   }
   &--approved {
-    background: #dcfce7;
-    color: #166534;
+    background: $stb-success-soft;
+    color: $stb-success;
   }
   &--rejected {
-    background: #fee2e2;
-    color: #991b1b;
+    background: $stb-danger-soft;
+    color: $stb-danger;
   }
 }
 

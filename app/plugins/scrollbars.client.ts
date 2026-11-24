@@ -28,6 +28,16 @@ const NATIVE = "[data-native-scroll], textarea, select, .print-area, .dp__menu";
 
 const SCROLLING = ["auto", "scroll"];
 
+/**
+ * عناصر لا تكون منطقة تمرير في المشروع: نتخطاها بلا getComputedStyle. جدول
+ * بألف صف = آلاف الخانات، وكل قراءة تنسيق لها ثمن
+ */
+const NEVER_SCROLLS = new Set([
+  "TD", "TH", "TR", "THEAD", "TBODY", "TFOOT", "COL", "COLGROUP",
+  "SPAN", "A", "B", "I", "EM", "STRONG", "SMALL", "LABEL", "BUTTON",
+  "INPUT", "IMG", "OPTION", "BR", "HR", "CANVAS", "VIDEO",
+]);
+
 const isScrollContainer = (el: HTMLElement): boolean => {
   const style = getComputedStyle(el);
   if (
@@ -46,15 +56,15 @@ export default defineNuxtPlugin(() => {
   const pending = new Set<Element>();
   let scheduled = false;
 
-  const scan = (root: Element) => {
-    [root, ...Array.from(root.querySelectorAll("*"))].forEach((el) => {
+  /** قراءة فقط: يجمع مناطق التمرير الجديدة تحت root دون أي كتابة في الـ DOM */
+  const collect = (root: Element, found: Set<HTMLElement>) => {
+    const visit = (el: Element) => {
       if (!(el instanceof HTMLElement) || el === document.body) return;
-      if (instances.has(el) || !isScrollContainer(el)) return;
-      instances.set(
-        el,
-        OverlayScrollbars({ target: el, elements: { viewport: el } }, OPTIONS),
-      );
-    });
+      if (NEVER_SCROLLS.has(el.tagName) || instances.has(el)) return;
+      if (isScrollContainer(el)) found.add(el);
+    };
+    visit(root);
+    root.querySelectorAll("*").forEach(visit);
   };
 
   const flush = () => {
@@ -65,10 +75,19 @@ export default defineNuxtPlugin(() => {
       instance.destroy();
       instances.delete(el);
     });
+    // كل القراءات أولاً (يُحسب التنسيق مرة واحدة)، ثم كل الكتابات: تركيب
+    // الشريط يغيّر الـ DOM، فلو تبادلت القراءة والكتابة أُعيد حساب التنسيق كل مرة
+    const found = new Set<HTMLElement>();
     pending.forEach((root) => {
-      if (root.isConnected) scan(root);
+      if (root.isConnected) collect(root, found);
     });
     pending.clear();
+    found.forEach((el) => {
+      instances.set(
+        el,
+        OverlayScrollbars({ target: el, elements: { viewport: el } }, OPTIONS),
+      );
+    });
   };
 
   // دفعة واحدة لكل إطار مهما كثرت تغييرات الـ DOM

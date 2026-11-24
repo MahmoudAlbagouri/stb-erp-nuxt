@@ -67,11 +67,10 @@ const handleForgot = async () => {
 <style lang="scss">
 @use "~/assets/scss/variables" as *;
 .auth-success {
-  background: rgba(#10b981, 0.1);
-  border: 1px solid rgba(#10b981, 0.3);
-  color: #10b981;
+  background: $stb-success-soft;
+  color: $stb-success;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: $radius-md;
   font-size: 0.875rem;
   text-align: center;
   margin-bottom: 1rem;

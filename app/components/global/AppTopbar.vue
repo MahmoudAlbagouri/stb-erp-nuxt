@@ -17,6 +17,19 @@
     </div>
     <div class="topbar-actions">
       <!-- ✅ إضافة جرس الإشعارات هنا -->
+      <!-- حركة الخلفية: يظهر حيث توجد الخلفية فقط (الرئيسية) -->
+      <button
+        v-if="backdropHere"
+        type="button"
+        class="topbar-toggle"
+        :class="{ 'is-off': !motion.enabled.value }"
+        :title="motion.enabled.value ? 'إيقاف حركة الخلفية' : 'تشغيل حركة الخلفية'"
+        :aria-label="motion.enabled.value ? 'إيقاف حركة الخلفية' : 'تشغيل حركة الخلفية'"
+        :aria-pressed="motion.enabled.value"
+        @click="motion.toggle"
+      >
+        <Waves :size="18" />
+      </button>
       <ThemeToggle />
       <OfficeMenu />
       <NotificationBell />
@@ -43,8 +56,9 @@ import { useAuthStore } from "@/stores/auth";
 import { useRoute } from "nuxt/app";
 import { computed } from "vue";
 // ✅ استيراد الأيقونات
-import { Menu, Home } from "lucide-vue-next";
+import { Menu, Home, Waves } from "lucide-vue-next";
 import { findNavItem } from "@/utils/navigation";
+import { backdropAllowedOn, useBackdrop } from "@/composables/useBackdrop";
 
 const ui = useUiStore();
 const auth = useAuthStore();
@@ -52,6 +66,9 @@ const route = useRoute();
 
 // العنوان من خريطة التنقل (المصدر الوحيد لأسماء الصفحات)
 const pageTitle = computed(() => findNavItem(route.path)?.label ?? "الصفحة");
+
+const motion = useBackdrop();
+const backdropHere = computed(() => backdropAllowedOn(route.path));
 </script>
 
 <style lang="scss">
@@ -60,9 +77,8 @@ const pageTitle = computed(() => findNavItem(route.path)?.label ?? "الصفحة
 
 .app-topbar {
   height: $topbar-height;
-  background: rgba($stb-surface, 0.9);
+  background: $stb-surface-2;
   border-bottom: 1px solid $stb-border;
-  backdrop-filter: blur(10px);
   @include flex(row, center, flex-start, $space-4);
   padding: 0 $space-6;
   position: sticky;
@@ -80,11 +96,18 @@ const pageTitle = computed(() => findNavItem(route.path)?.label ?? "الصفحة
   @include flex(row, center, center);
   border-radius: $radius-md;
   color: $stb-text-secondary;
-  transition: all $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover {
     background: $stb-surface-3;
     color: $stb-text-primary;
+  }
+
+  &.is-off {
+    color: $stb-text-muted;
+    opacity: 0.6;
   }
 }
 
@@ -131,7 +154,7 @@ const pageTitle = computed(() => findNavItem(route.path)?.label ?? "الصفحة
     &__current {
       overflow: hidden;
       font-size: $font-size-base;
-      font-weight: 700;
+      font-weight: 600;
       white-space: nowrap;
       text-overflow: ellipsis;
     }

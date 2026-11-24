@@ -103,7 +103,7 @@ const showTable = ref(false);
 
   &__title {
     font-size: $font-size-base;
-    font-weight: 700;
+    font-weight: 600;
     color: $stb-text-primary;
   }
 

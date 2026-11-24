@@ -252,7 +252,7 @@ onMounted(async () => {
   }
 }
 .report-row--sub td {
-  font-weight: 700;
+  font-weight: 600;
   color: $stb-text-secondary;
 }
 .link-btn {

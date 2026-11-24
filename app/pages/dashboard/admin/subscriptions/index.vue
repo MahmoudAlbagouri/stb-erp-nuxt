@@ -587,7 +587,7 @@ onMounted(() => {
   color: $stb-text-secondary;
   strong {
     color: $stb-text-primary;
-    font-weight: 700;
+    font-weight: 600;
   }
   &--accent {
     border-color: rgba($stb-accent, 0.3);
@@ -745,17 +745,11 @@ onMounted(() => {
     @include glass-card;
     padding: $space-5;
     @include flex(row, flex-start, center, $space-4);
-    background: linear-gradient(
-      135deg,
-      rgba($stb-surface-2, 0.9),
-      rgba($stb-surface, 0.6)
-    );
 
     .plan-icon-wrapper {
-      width: 56px;
-      height: 56px;
+      width: auto;
+      height: auto;
       border-radius: $radius-lg;
-      background: rgba($stb-accent, 0.1);
       color: $stb-accent;
       @include flex(row, center, center);
       flex-shrink: 0;
@@ -780,7 +774,7 @@ onMounted(() => {
         width: fit-content;
 
         strong {
-          font-weight: 700;
+          font-weight: 600;
         }
       }
 
@@ -822,7 +816,7 @@ onMounted(() => {
     .plan-price-tag {
       text-align: left;
       font-size: $font-size-xl;
-      font-weight: 800;
+      font-weight: 600;
       color: $stb-text-primary;
       .cycle {
         display: block;

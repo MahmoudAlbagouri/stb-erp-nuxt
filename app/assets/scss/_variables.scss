@@ -21,7 +21,7 @@
 
 // ============================================
 // STB ERP - Design Tokens
-// Brand: Deep tech blue, metallic silver, glow accents
+// الهوية: أداة عمل هادئة بلون فعل واحد (أزرق STB). المرجع: Design System «STB ERP»
 // ============================================
 
 // --- Core Brand Colors (extracted from STB logo) ---
@@ -53,34 +53,20 @@ $stb-info: var(--stb-info);
 // --- Theme helpers ---
 $stb-on-accent: var(--stb-on-accent); // النص فوق خلفية accent
 $stb-scrim: var(--stb-scrim); // خلفية معتمة خلف النوافذ/الأدراج
+$stb-brand-soft: var(--stb-brand-soft); // خلفية العنصر المختار/النشط
+$stb-line-strong: var(--stb-line-strong); // حدود الحقول (3:1)
+$stb-focus-ring: var(--stb-focus-ring);
+$stb-success-soft: var(--stb-success-soft);
+$stb-warning-soft: var(--stb-warning-soft);
+$stb-danger-soft: var(--stb-danger-soft);
 
-// --- Gradients ---
-$gradient-primary: linear-gradient(
-  135deg,
-  #{$stb-primary-dark} 0%,
-  #{$stb-primary} 50%,
-  #{$stb-primary-light} 100%
-);
-$gradient-accent: linear-gradient(
-  135deg,
-  #{$stb-accent} 0%,
-  #{$stb-accent-glow} 100%
-);
-$gradient-surface: linear-gradient(
-  180deg,
-  #{$stb-surface} 0%,
-  #{$stb-dark} 100%
-);
-$gradient-card: linear-gradient(
-  145deg,
-  #{$stb-surface-2} 0%,
-  #{$stb-surface} 100%
-);
-$gradient-sidebar: linear-gradient(
-  180deg,
-  #{$stb-primary-dark} 0%,
-  #030d1a 100%
-);
+// --- "Gradients" ---
+// لم تعد تدرجات: الهوية بلا تدرجات. الأسماء باقية لأن الصفحات تستخدمها في background
+$gradient-primary: $stb-primary;
+$gradient-accent: $stb-primary;
+$gradient-surface: $stb-dark;
+$gradient-card: $stb-surface-2;
+$gradient-sidebar: $stb-surface-2;
 
 // --- Shadows ---
 $shadow-sm: var(--stb-shadow-sm);
@@ -102,15 +88,16 @@ $space-12: 3rem;
 $space-16: 4rem;
 
 // --- Border Radius ---
-$radius-sm: 4px;
-$radius-md: 8px;
-$radius-lg: 12px;
-$radius-xl: 16px;
-$radius-2xl: 24px;
+$radius-sm: 4px; // الشارات ومربعات الاختيار
+$radius-md: 6px; // الأزرار والحقول
+$radius-lg: 8px; // اللوحات والنوافذ — أكبر حافة فعلية
+$radius-xl: 8px;
+$radius-2xl: 10px;
 $radius-full: 9999px;
 
 // --- Typography ---
-$font-family: "Cairo", sans-serif;
+$font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+$font-mono: "IBM Plex Mono", Consolas, "Courier New", monospace; // أرقام المستندات والأكواد
 $font-size-xs: 0.75rem;
 $font-size-sm: 0.875rem;
 $font-size-base: 1rem;
@@ -121,15 +108,16 @@ $font-size-3xl: 1.875rem;
 $font-size-4xl: 2.25rem;
 
 // --- Layout ---
-$sidebar-width: 260px;
-$sidebar-collapsed: 72px;
-$topbar-height: 64px;
+$sidebar-width: 248px;
+$sidebar-collapsed: 64px;
+$topbar-height: 56px;
 $container-max: 1400px;
 
 // --- Transitions ---
-$transition-fast: 150ms ease;
-$transition-base: 250ms ease;
-$transition-slow: 400ms ease;
+$ease-standard: cubic-bezier(0.2, 0, 0, 1);
+$transition-fast: 120ms $ease-standard;
+$transition-base: 180ms $ease-standard;
+$transition-slow: 300ms $ease-standard;
 
 // --- Z-Index ---
 $z-sidebar: 100;

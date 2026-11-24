@@ -575,7 +575,7 @@ onMounted(async () => {
       font-size: $font-size-sm;
     }
     li.is-group {
-      font-weight: 700;
+      font-weight: 600;
     }
     code {
       color: $stb-text-muted;
